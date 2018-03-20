@@ -6,7 +6,7 @@ echo "--------------------------------------------------------------------------
 echo "Installing s3fs"
 ##### s3fs
 # https://github.com/s3fs-fuse/s3fs-fuse
-# used to mount the S3 bucket with the st2 config to the instance 
+# used to mount the S3 bucket with the st2 config to the instance
 sudo apt-get install -y automake autotools-dev fuse g++ git libcurl4-gnutls-dev libfuse-dev libssl-dev libxml2-dev make pkg-config
 
 cd /tmp/
@@ -35,3 +35,6 @@ echo "Install awscli"
 
 sudo apt-get install -y python-pip
 pip install awscli --upgrade
+
+# TODO: see if we can set this via IAM profiles
+export AWS_DEFAULT_REGION=ap-southeast-2

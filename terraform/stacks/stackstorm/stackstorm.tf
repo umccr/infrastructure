@@ -78,15 +78,15 @@ resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
     roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
 }
 
-resource "aws_iam_policy" "ebs_stackstorm_policy" {
-  name   = "ebs_stackstorm_policy"
+resource "aws_iam_policy" "ec2_stackstorm_policy" {
+  name   = "ec2_stackstorm_policy"
   path   = "/"
-  policy = "${file("policies/ebs_stackstorm_policy.json")}"
+  policy = "${file("policies/ec2_stackstorm_policy.json")}"
 }
 
-resource "aws_iam_policy_attachment" "ebs_policy_to_stackstorm_role_attachment" {
-    name       = "ebs_policy_to_stackstorm_role_attachment"
-    policy_arn = "${aws_iam_policy.ebs_stackstorm_policy.arn}"
+resource "aws_iam_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" {
+    name       = "ec2_policy_to_stackstorm_role_attachment"
+    policy_arn = "${aws_iam_policy.ec2_stackstorm_policy.arn}"
     groups     = []
     users      = []
     roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
@@ -151,7 +151,7 @@ resource "aws_launch_configuration" "lc_arteria" {
 data "template_file" "lc_userdata" {
     template = "${file("template-files/lc-userdata.tpl")}"
     vars {
-        device_name = "/dev/sdf"
+        allocation_id = "${aws_eip.stackstorm.id}"
     }
 }
 # data "aws_ebs_snapshot" "st2_ebs_volume" {
@@ -183,17 +183,17 @@ resource "aws_key_pair" "stackstorm_ssh_key" {
 
 
 
-resource "aws_route53_zone" "dev" {
-  name = "dev.nopcode.org"
-}
-
-resource "aws_route53_record" "stackstorm_dev" {
-  zone_id = "${aws_route53_zone.dev.zone_id}"
-  name    = "stackstorm.dev.nopcode.org"
-  type    = "CNAME"
-  ttl     = "300"
-  records = ["${aws_eip.stackstorm.public_ip}"]
-}
+# resource "aws_route53_zone" "dev" {
+#   name = "umccrdev.nopcode.org"
+# }
+#
+# resource "aws_route53_record" "stackstorm_dev" {
+#   zone_id = "${aws_route53_zone.dev.zone_id}"
+#   name    = "stackstorm.umccrdev.nopcode.org"
+#   type    = "CNAME"
+#   ttl     = "300"
+#   records = ["${aws_eip.stackstorm.public_ip}"]
+# }
 
 resource "aws_eip" "stackstorm" {
   vpc         = true

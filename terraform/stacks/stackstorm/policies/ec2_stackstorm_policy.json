@@ -4,10 +4,10 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:AttachVolume",
-        "ec2:DetachVolume"
+        "ec2:AssociateAddress",
+        "ec2:DisassociateAddress"
       ],
-      "Resource": "arn:aws:ec2:ap-southeast-2::instance/*"
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
@@ -15,7 +15,10 @@
         "ec2:AttachVolume",
         "ec2:DetachVolume"
       ],
-      "Resource": "arn:aws:ec2:ap-southeast-2::volume/*"
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-2:*:instance/*",
+        "arn:aws:ec2:ap-southeast-2:*:volume/*"
+      ]
     },
     {
       "Effect": "Allow",
@@ -29,7 +32,6 @@
         "ec2:DescribeVolumesModifications",
         "ec2:ModifyVolume",
         "ec2:ModifyVolumeAttribute",
-
         "ec2:CreateSnapshot",
         "ec2:DeleteSnapshot",
         "ec2:DescribeAvailabilityZones",
@@ -45,28 +47,17 @@
       "Action": [
         "ec2:CreateVolume"
       ],
-      "Resource": "arn:aws:ec2:ap-southeast-2::volume/*",
-      "Condition": {
-        "StringLike": {
-          "aws:RequestTag/volume_name": "umccr-stackstorm-dockervol-*"
-        },
-        "ForAllValues:StringEquals": {
-          "aws:TagKeys": ["volume_name"]
-        }
-      }
+      "Resource": "arn:aws:ec2:ap-southeast-2:*:volume/*"
     },
     {
       "Effect": "Allow",
       "Action": [
         "ec2:DeleteVolume"
       ],
-      "Resource": "arn:aws:ec2:ap-southeast-2::volume/*",
+      "Resource": "arn:aws:ec2:ap-southeast-2:*:volume/*",
       "Condition": {
         "StringLike": {
-          "ec2:ResourceTag/volume_name": "umccr-stackstorm-dockervol-*"
-        },
-        "ForAllValues:StringEquals": {
-          "aws:TagKeys": ["volume_name"]
+          "ec2:ResourceTag/Name": "st2dockerumccr_*"
         }
       }
     }

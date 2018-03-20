@@ -4,6 +4,8 @@ provider "aws" {
   region  = "${var.aws_region}"
 }
 
+# to get the account ID if needed
+# data "aws_caller_identity" "current" { }
 
 module "stackstorm_user" {
   source = "../../modules/iam_user/default_user"
@@ -18,15 +20,15 @@ resource "aws_iam_role" "stackstorm_role" {
 }
 data "aws_iam_policy_document" "stackstorm_assume_policy" {
   statement {
-    actions = ["sts:AssumeRole"]
+    actions = [ "sts:AssumeRole" ]
 
     principals {
       type        = "AWS"
-      identifiers = ["${module.stackstorm_user.arn}"]
+      identifiers = [ "${module.stackstorm_user.arn}" ]
     }
     principals {
       type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
+      identifiers = [ "ec2.amazonaws.com" ]
     }
   }
 }
@@ -35,23 +37,56 @@ data "aws_iam_policy_document" "stackstorm_assume_policy" {
 resource "aws_iam_policy" "s3_stackstorm_policy" {
   name   = "s3_stackstorm_policy"
   path   = "/"
-  policy = "${data.aws_iam_policy_document.s3_stackstorm_policy.json}"
+  # policy = "${data.aws_iam_policy_document.s3_stackstorm_policy.json}"
+  policy = "${file("policies/s3_stackstorm_policy.json")}"
 }
-data "aws_iam_policy_document" "s3_stackstorm_policy" {
-  statement {
-    actions = [ "s3:Get*", "s3:List*" ]
-    resources = [ "${data.aws_s3_bucket.stackstorm_config.arn}", "${data.aws_s3_bucket.stackstorm_config.arn}/*" ]
-  }
-  statement {
-    actions = [ "s3:ListAllMyBuckets", "s3:ListObjects" ]
-    resources = [ "*" ]
-  }
-}
+# data "aws_iam_policy_document" "s3_stackstorm_policy" {
+#   statement {
+#     actions   = [ "s3:ListAllMyBuckets", "s3:GetBucketLocation" ]
+#     resources = [ "arn:aws:s3:::*" ]
+#   }
+#   statement {
+#     actions   = [ "s3:CreateBucket" ]
+#     resources = [ "arn:aws:s3:::*" ]
+#     condition = {
+#       test     = "StringLike"
+#       variable = "s3:prefix"
+#       values   = [ "umccr-stackstorm-dockervol-*" ]
+#     }
+#     # TODO: replace this condition with a more specific arn in the resource?
+#     condition = {
+#       test     = "StringEquals"
+#       variable = "s3:LocationConstraint"
+#       values   = [ "ap-southeast-2" ]
+#     }
+#   }
+#   statement {
+#     actions   = [ "s3:*" ] # TODO: perhaps restrict a bit more, or add Disallow statements?
+#     resources = [ "arn:aws:s3:::umccr-stackstorm-dockervol-*", "arn:aws:s3:::umccr-stackstorm-dockervol-*/*" ]
+#   }
+#   statement {
+#     actions   = [ "s3:Get*", "s3:List*" ]
+#     resources = [ "${data.aws_s3_bucket.stackstorm_config.arn}", "${data.aws_s3_bucket.stackstorm_config.arn}/*" ]
+#   }
+# }
 
-
-resource "aws_iam_policy_attachment" "test_s3_to_test_role_attachment" {
-    name       = "test_s3_to_test_role_attachment"
+resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
+    name       = "s3_policy_to_stackstorm_role_attachment"
     policy_arn = "${aws_iam_policy.s3_stackstorm_policy.arn}"
+    groups     = []
+    users      = []
+    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
+}
+
+resource "aws_iam_policy" "ebs_stackstorm_policy" {
+  name   = "ebs_stackstorm_policy"
+  path   = "/"
+  policy = "${file("policies/ebs_stackstorm_policy.json")}"
+}
+
+resource "aws_iam_policy_attachment" "ebs_policy_to_stackstorm_role_attachment" {
+    name       = "ebs_policy_to_stackstorm_role_attachment"
+    policy_arn = "${aws_iam_policy.ebs_stackstorm_policy.arn}"
     groups     = []
     users      = []
     roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
@@ -68,7 +103,7 @@ resource "aws_autoscaling_group" "asg_arteria" {
     health_check_grace_period = 300
     health_check_type         = "EC2"
     launch_configuration      = "${aws_launch_configuration.lc_arteria.name}"
-    vpc_zone_identifier       = ["${aws_subnet.sn_a_vpc_st2.id}"]
+    vpc_zone_identifier       = [ "${aws_subnet.sn_a_vpc_st2.id}" ]
 
     tag {
         key   = "name"
@@ -82,13 +117,17 @@ resource "aws_autoscaling_group" "asg_arteria" {
 resource "aws_launch_configuration" "lc_arteria" {
     name_prefix                 = "lc_arteria_"
     # image_id                    = "ami-9d4281ff" # only docker and stackstorm, no rexray etc
-    image_id                    = "ami-63498a01" # docker + rexray/s3fs plugin, stackstorm
+    # image_id                    = "ami-2851924a" # docker + rexray/s3fs plugin + stackstorm
+    # image_id                    = "ami-815192e3" # docker + rexray/s3fs plugin + rexray/ebs plugin + stackstorm
+    # image_id                    = "ami-9b21e3f9" # docker + rexray/ebs plugin + s3fs + stackstorm (running docker-compose up )
+    image_id                    = "ami-5362a031" # docker + rexray/ebs plugin + s3fs + stackstorm (with prebuild st2 base image, no docker-compose up)
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
-    security_groups             = ["${aws_security_group.vpc_st2.id}"]
-    # security_groups             = ["${data.aws_security_group.default_sg.id}"]
+    security_groups             = [ "${aws_security_group.vpc_st2.id}" ]
+    # security_groups             = [ "${data.aws_security_group.default_sg.id}" ]
     key_name                    = "stackstorm_ssh_key"
     ebs_optimized               = false
+    spot_price                  = "0.0225"
 
     user_data = "${data.template_file.lc_userdata.rendered}" # see: http://roshpr.net/blog/2016/10/terraform-using-user-data-in-launch-configuration/
 
@@ -98,14 +137,14 @@ resource "aws_launch_configuration" "lc_arteria" {
         volume_size           = 50
         delete_on_termination = true
     }
-    ebs_block_device {
-        device_name           = "/dev/sdf"
-        volume_type           = "gp2"
-        volume_size           = 1
-        iops                  = 100
-        snapshot_id           = "${data.aws_ebs_snapshot.st2_ebs_volume.snapshot_id}"
-        delete_on_termination = true
-    }
+    # ebs_block_device {
+    #     device_name           = "/dev/sdf"
+    #     volume_type           = "gp2"
+    #     volume_size           = 1
+    #     iops                  = 100
+    #     snapshot_id           = "${data.aws_ebs_snapshot.st2_ebs_volume.snapshot_id}"
+    #     delete_on_termination = true
+    # }
 
     lifecycle { create_before_destroy = true }
 }
@@ -115,22 +154,20 @@ data "template_file" "lc_userdata" {
         device_name = "/dev/sdf"
     }
 }
-data "aws_ebs_snapshot" "st2_ebs_volume" {
-  most_recent = true
-  owners      = ["self"]
-
-  filter {
-    name   = "tag:Name"
-    values = ["stackstorm-config-2018-03-13"]
-  }
-}
-
+# data "aws_ebs_snapshot" "st2_ebs_volume" {
+#   most_recent = true
+#   owners      = [ "self" ]
+#
+#   filter {
+#     name   = "tag:Name"
+#     values = [ "stackstorm-config-2018-03-13" ]
+#   }
+# }
 
 
 data "aws_s3_bucket" "stackstorm_config" {
   bucket = "${var.s3_stackstorm_config_bucket}"
 }
-
 
 
 resource "aws_iam_instance_profile" "stackstorm_instance_profile" {
@@ -142,6 +179,25 @@ resource "aws_key_pair" "stackstorm_ssh_key" {
    key_name = "stackstorm_ssh_key"
    # TODO: find way to insert key from secure remote resource
    public_key = "${file("./keys/id_rsa.pub")}"
+}
+
+
+
+resource "aws_route53_zone" "dev" {
+  name = "dev.nopcode.org"
+}
+
+resource "aws_route53_record" "stackstorm_dev" {
+  zone_id = "${aws_route53_zone.dev.zone_id}"
+  name    = "stackstorm.dev.nopcode.org"
+  type    = "CNAME"
+  ttl     = "300"
+  records = ["${aws_eip.stackstorm.public_ip}"]
+}
+
+resource "aws_eip" "stackstorm" {
+  vpc         = true
+  depends_on  = ["aws_internet_gateway.vpc_st2"]
 }
 
 
@@ -200,22 +256,22 @@ resource "aws_security_group" "vpc_st2" {
         from_port       = 80
         to_port         = 80
         protocol        = "tcp"
-        cidr_blocks     = ["0.0.0.0/0"]
+        cidr_blocks     = [ "0.0.0.0/0" ]
     }
 
     ingress {
         from_port        = 22
         to_port          = 22
         protocol         = "tcp"
-        cidr_blocks      = ["0.0.0.0/0"]
-        ipv6_cidr_blocks = ["::/0"]
+        cidr_blocks      = [ "0.0.0.0/0" ]
+        ipv6_cidr_blocks = [ "::/0" ]
     }
 
     ingress {
         from_port       = 443
         to_port         = 443
         protocol        = "tcp"
-        cidr_blocks     = ["0.0.0.0/0"]
+        cidr_blocks     = [ "0.0.0.0/0" ]
     }
 
     ingress {
@@ -230,8 +286,8 @@ resource "aws_security_group" "vpc_st2" {
         from_port       = 0
         to_port         = 0
         protocol        = "-1"
-        cidr_blocks     = ["0.0.0.0/0"]
-        ipv6_cidr_blocks = ["::/0"]
+        cidr_blocks     = [ "0.0.0.0/0" ]
+        ipv6_cidr_blocks = [ "::/0" ]
     }
 
 }

@@ -39,6 +39,11 @@
     },
     {
       "type": "file",
+      "source": "bootstrap-storage-drivers.sh",
+      "destination": "/tmp/bootstrap-storage-drivers.sh"
+    },
+    {
+      "type": "file",
       "source": "bootstrap-stackstorm.sh",
       "destination": "/tmp/bootstrap-stackstorm.sh"
     },
@@ -54,10 +59,13 @@
         "whoami",
         "cd /tmp",
         "chmod +x bootstrap-docker.sh",
+        "chmod +x bootstrap-storage-drivers.sh",
         "chmod +x bootstrap-stackstorm.sh",
         "chmod +x cleanup.sh",
         "ls -alh /tmp",
         "./bootstrap-docker.sh",
+        "sleep 10",
+        "./bootstrap-storage-drivers.sh",
         "sleep 10",
         "./bootstrap-stackstorm.sh",
         "sleep 10",

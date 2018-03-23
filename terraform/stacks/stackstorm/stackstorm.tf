@@ -1,3 +1,12 @@
+terraform {
+  backend "s3" {
+    bucket  = "umccr-terraform-meta"
+    key     = "production/terraform.tfstate"
+    profile = "prod"
+    region  = "ap-southeast-2"
+  }
+}
+
 provider "aws" {
   # required AWS fields: aws_access_key_id, aws_secret_access_key, region
   profile = "${var.aws_profile}"
@@ -37,38 +46,8 @@ data "aws_iam_policy_document" "stackstorm_assume_policy" {
 resource "aws_iam_policy" "s3_stackstorm_policy" {
   name   = "s3_stackstorm_policy"
   path   = "/"
-  # policy = "${data.aws_iam_policy_document.s3_stackstorm_policy.json}"
   policy = "${file("policies/s3_stackstorm_policy.json")}"
 }
-# data "aws_iam_policy_document" "s3_stackstorm_policy" {
-#   statement {
-#     actions   = [ "s3:ListAllMyBuckets", "s3:GetBucketLocation" ]
-#     resources = [ "arn:aws:s3:::*" ]
-#   }
-#   statement {
-#     actions   = [ "s3:CreateBucket" ]
-#     resources = [ "arn:aws:s3:::*" ]
-#     condition = {
-#       test     = "StringLike"
-#       variable = "s3:prefix"
-#       values   = [ "umccr-stackstorm-dockervol-*" ]
-#     }
-#     # TODO: replace this condition with a more specific arn in the resource?
-#     condition = {
-#       test     = "StringEquals"
-#       variable = "s3:LocationConstraint"
-#       values   = [ "ap-southeast-2" ]
-#     }
-#   }
-#   statement {
-#     actions   = [ "s3:*" ] # TODO: perhaps restrict a bit more, or add Disallow statements?
-#     resources = [ "arn:aws:s3:::umccr-stackstorm-dockervol-*", "arn:aws:s3:::umccr-stackstorm-dockervol-*/*" ]
-#   }
-#   statement {
-#     actions   = [ "s3:Get*", "s3:List*" ]
-#     resources = [ "${data.aws_s3_bucket.stackstorm_config.arn}", "${data.aws_s3_bucket.stackstorm_config.arn}/*" ]
-#   }
-# }
 
 resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
     name       = "s3_policy_to_stackstorm_role_attachment"
@@ -106,13 +85,12 @@ resource "aws_autoscaling_group" "asg_arteria" {
     vpc_zone_identifier       = [ "${aws_subnet.sn_a_vpc_st2.id}" ]
 
     tag {
-        key   = "name"
+        key   = "Name"
         value = "arteria"
         propagate_at_launch = true
     }
 
 }
-
 
 resource "aws_launch_configuration" "lc_arteria" {
     name_prefix                 = "lc_arteria_"
@@ -120,31 +98,36 @@ resource "aws_launch_configuration" "lc_arteria" {
     # image_id                    = "ami-2851924a" # docker + rexray/s3fs plugin + stackstorm
     # image_id                    = "ami-815192e3" # docker + rexray/s3fs plugin + rexray/ebs plugin + stackstorm
     # image_id                    = "ami-9b21e3f9" # docker + rexray/ebs plugin + s3fs + stackstorm (running docker-compose up )
-    image_id                    = "ami-5362a031" # docker + rexray/ebs plugin + s3fs + stackstorm (with prebuild st2 base image, no docker-compose up)
+    # image_id                    = "ami-5362a031" # docker + rexray/ebs plugin + s3fs + stackstorm (with prebuild st2 base image, no docker-compose up)
+    # image_id                    = "ami-f8ae639a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images)
+    # image_id                    = "ami-38e8255a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
+    # image_id                    = "ami-81d21fe3" # docker + rexray/ebs plugin + rexray + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
+    image_id                    = "ami-df24e9bd" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]
-    # security_groups             = [ "${data.aws_security_group.default_sg.id}" ]
     key_name                    = "stackstorm_ssh_key"
-    ebs_optimized               = false
-    spot_price                  = "0.0225"
+    # ebs_optimized               = true
+    spot_price                  = "0.018" # t2.medium: 0.0175 (current value)
+    # spot_price                  = "0.03" # m5.large: 0.0282 (current value) ebs_optimized=true
+    # spot_price                  = "0.07" # m4.xlarge: 0.0644 (current value) ebs_optimized=true
 
     user_data = "${data.template_file.lc_userdata.rendered}" # see: http://roshpr.net/blog/2016/10/terraform-using-user-data-in-launch-configuration/
 
     # TODO: this approach is not very flexible: https://heapanalytics.com/blog/engineering/terraform-gotchas
     root_block_device {
         volume_type           = "gp2"
-        volume_size           = 50
+        volume_size           = 20
         delete_on_termination = true
     }
-    # ebs_block_device {
-    #     device_name           = "/dev/sdf"
-    #     volume_type           = "gp2"
-    #     volume_size           = 1
-    #     iops                  = 100
-    #     snapshot_id           = "${data.aws_ebs_snapshot.st2_ebs_volume.snapshot_id}"
-    #     delete_on_termination = true
-    # }
+    ebs_block_device {
+        device_name           = "/dev/sdf"
+        volume_type           = "gp2"
+        volume_size           = 1
+        iops                  = 300
+        snapshot_id           = "${data.aws_ebs_snapshot.st2_ebs_volume.snapshot_id}"
+        delete_on_termination = true
+    }
 
     lifecycle { create_before_destroy = true }
 }
@@ -154,19 +137,14 @@ data "template_file" "lc_userdata" {
         allocation_id = "${aws_eip.stackstorm.id}"
     }
 }
-# data "aws_ebs_snapshot" "st2_ebs_volume" {
-#   most_recent = true
-#   owners      = [ "self" ]
-#
-#   filter {
-#     name   = "tag:Name"
-#     values = [ "stackstorm-config-2018-03-13" ]
-#   }
-# }
+data "aws_ebs_snapshot" "st2_ebs_volume" {
+  most_recent = true
+  owners      = [ "self" ]
 
-
-data "aws_s3_bucket" "stackstorm_config" {
-  bucket = "${var.s3_stackstorm_config_bucket}"
+  filter {
+    name   = "tag:Name"
+    values = [ "stackstorm-config-2018-03-13" ]
+  }
 }
 
 
@@ -200,6 +178,17 @@ resource "aws_eip" "stackstorm" {
   depends_on  = ["aws_internet_gateway.vpc_st2"]
 }
 
+data "aws_route53_zone" "umccr_org" {
+  name         = "umccr.org."
+}
+
+resource "aws_route53_record" "st2_dev" {
+  zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
+  name    = "stackstorm.dev.${data.aws_route53_zone.umccr_org.name}"
+  type    = "CNAME"
+  ttl     = "300"
+  records = ["${aws_eip.stackstorm.public_ip}"]
+}
 
 resource "aws_vpc" "vpc_st2" {
     cidr_block           = "172.31.0.0/16"

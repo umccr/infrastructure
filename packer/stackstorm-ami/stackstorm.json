@@ -14,7 +14,7 @@
       "secret_key": "{{user `aws_secret_key`}}",
       "iam_instance_profile": "stackstorm_instance_profile",
       "region": "ap-southeast-2",
-      "source_ami": "ami-74fa3d16",
+      "source_ami": "ami-79915c1b",
       "instance_type": "t2.medium",
       "spot_price": "auto",
       "spot_price_auto_product": "Linux/UNIX",
@@ -26,7 +26,9 @@
         "ami-create": "{{user `custom_ami_name`}}"
       },
       "tags": {
-        "ami": "{{user `custom_ami_name`}}"
+        "ami": "{{user `custom_ami_name`}}",
+        "Name": "{{user `custom_ami_name`}} {{timestamp}}",
+        "timestamp": "{{timestamp}}"
       },
       "associate_public_ip_address": true
     }
@@ -34,13 +36,13 @@
   "provisioners": [
     {
       "type": "file",
-      "source": "bootstrap-docker.sh",
-      "destination": "/tmp/bootstrap-docker.sh"
+      "source": "common-setup.sh",
+      "destination": "/tmp/common-setup.sh"
     },
     {
       "type": "file",
-      "source": "bootstrap-storage-drivers.sh",
-      "destination": "/tmp/bootstrap-storage-drivers.sh"
+      "source": "bootstrap-docker.sh",
+      "destination": "/tmp/bootstrap-docker.sh"
     },
     {
       "type": "file",
@@ -57,15 +59,13 @@
       "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
       "inline": [
         "whoami",
+        "rm /etc/localtime",
+        "ln -s /usr/share/zoneinfo/Australia/Melbourne /etc/localtime",
         "cd /tmp",
-        "chmod +x bootstrap-docker.sh",
-        "chmod +x bootstrap-storage-drivers.sh",
-        "chmod +x bootstrap-stackstorm.sh",
-        "chmod +x cleanup.sh",
-        "ls -alh /tmp",
+        "chmod +x *.sh",
+        "ls -hal /tmp",
+        "./common-setup.sh",
         "./bootstrap-docker.sh",
-        "sleep 10",
-        "./bootstrap-storage-drivers.sh",
         "sleep 10",
         "./bootstrap-stackstorm.sh",
         "sleep 10",

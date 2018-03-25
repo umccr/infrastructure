@@ -1,5 +1,5 @@
-#!/bin/bash
-sudo apt-get update
+#!/bin/bash -x
+set -e # make sure any failling command will fail the whole script
 
 echo "--------------------------------------------------------------------------------"
 echo "Set timezone"
@@ -11,12 +11,18 @@ sudo ls -al /etc/localtime
 
 
 echo "--------------------------------------------------------------------------------"
+echo "Update packages (APT)"
+sleep 5 # this delay is crucial for the apt to update properly, without it following install commands will result in package not found errors
+sudo apt-get update
+sudo apt-get -y upgrade
+
+
+
+echo "--------------------------------------------------------------------------------"
 echo "Install awscli"
+# sudo apt-get install -y awscli
 sudo apt-get install -y python-pip
 pip install awscli --upgrade
-
-# TODO: see if we can set this via IAM profiles
-export AWS_DEFAULT_REGION=ap-southeast-2
 
 
 
@@ -34,7 +40,6 @@ make
 sudo make install
 
 echo "Configuring s3fs"
-
 echo "user_allow_other" | sudo tee -a /etc/fuse.conf
 
 

@@ -59,11 +59,9 @@
       "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
       "inline": [
         "whoami",
-        "rm /etc/localtime",
-        "ln -s /usr/share/zoneinfo/Australia/Melbourne /etc/localtime",
         "cd /tmp",
         "chmod +x *.sh",
-        "ls -hal /tmp",
+        "ls -hal .",
         "./common-setup.sh",
         "./bootstrap-docker.sh",
         "sleep 10",

@@ -13,8 +13,12 @@ mount -a
 
 # associate our elastic IP with the instance
 export AWS_DEFAULT_REGION=ap-southeast-2
-instance_id=`sudo cat /var/lib/cloud/data/instance-id`
+instance_id=`cat /var/lib/cloud/data/instance-id`
 echo "Instance ID: $instance_id"
-echo "Allocation ID: $allocation_id"
+echo "Allocation ID: ${allocation_id}"
 # NOTE: allocation_id is an external variable filled by Terraform when rendering the script
 aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocation_id}
+
+
+# start StackStorm
+/opt/st2-docker-umccr/docker-compose-up.sh

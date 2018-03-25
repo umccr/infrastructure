@@ -95,14 +95,10 @@ resource "aws_autoscaling_group" "asg_arteria" {
 resource "aws_launch_configuration" "lc_arteria" {
     name_prefix                 = "lc_arteria_"
     # image_id                    = "ami-9d4281ff" # only docker and stackstorm, no rexray etc
-    # image_id                    = "ami-2851924a" # docker + rexray/s3fs plugin + stackstorm
-    # image_id                    = "ami-815192e3" # docker + rexray/s3fs plugin + rexray/ebs plugin + stackstorm
-    # image_id                    = "ami-9b21e3f9" # docker + rexray/ebs plugin + s3fs + stackstorm (running docker-compose up )
-    # image_id                    = "ami-5362a031" # docker + rexray/ebs plugin + s3fs + stackstorm (with prebuild st2 base image, no docker-compose up)
     # image_id                    = "ami-f8ae639a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images)
     # image_id                    = "ami-38e8255a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
     # image_id                    = "ami-81d21fe3" # docker + rexray/ebs plugin + rexray + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
-    image_id                    = "ami-df24e9bd" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
+    image_id                    = "ami-89b874eb" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]
@@ -185,7 +181,7 @@ data "aws_route53_zone" "umccr_org" {
 resource "aws_route53_record" "st2_dev" {
   zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
   name    = "stackstorm.dev.${data.aws_route53_zone.umccr_org.name}"
-  type    = "CNAME"
+  type    = "A"
   ttl     = "300"
   records = ["${aws_eip.stackstorm.public_ip}"]
 }

@@ -18,7 +18,8 @@ install:
  # Install Packer.io
  - curl -o /tmp/packer.zip -L "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip"
  - ls -al /tmp/
- - sudo unzip -d /usr/local/bin /tmp/packer.zip
+ - ls -al /usr/local/bin/
+ - sudo unzip -d -o /usr/local/bin /tmp/packer.zip
 
 script:
   - packer --version

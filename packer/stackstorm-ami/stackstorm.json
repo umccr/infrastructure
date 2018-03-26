@@ -2,7 +2,7 @@
   "variables": {
     "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
     "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
-    "name": "aws-docker-ce-base",
+    "name": "{{env `TRAVIS_TAG`}}",
     "custom_ami_name": "stackstorm-ami",
     "ssh_username": "ubuntu"
   },
@@ -12,7 +12,7 @@
       "type": "amazon-ebs",
       "access_key": "{{user `aws_access_key`}}",
       "secret_key": "{{user `aws_secret_key`}}",
-      "iam_instance_profile": "stackstorm_instance_profile",
+      "iam_instance_profile": "packer_instance_profile",
       "region": "ap-southeast-2",
       "source_ami": "ami-79915c1b",
       "instance_type": "t2.medium",
@@ -27,7 +27,7 @@
       },
       "tags": {
         "ami": "{{user `custom_ami_name`}}",
-        "Name": "{{user `custom_ami_name`}} {{timestamp}}",
+        "Name": "{{user `name`}}",
         "timestamp": "{{timestamp}}"
       },
       "associate_public_ip_address": true

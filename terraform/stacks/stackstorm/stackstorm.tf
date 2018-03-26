@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket  = "umccr-terraform-meta"
-    key     = "production/terraform.tfstate"
+    key     = "stackstorm/production/terraform.tfstate"
     profile = "prod"
     region  = "ap-southeast-2"
   }
@@ -17,8 +17,9 @@ provider "aws" {
 # data "aws_caller_identity" "current" { }
 
 module "stackstorm_user" {
-  source = "../../modules/iam_user/default_user"
+  source   = "../../modules/iam_user/secure_user"
   username = "stackstorm"
+  pgp_key  = "${var.pgp_key}"
 }
 
 
@@ -98,7 +99,7 @@ resource "aws_launch_configuration" "lc_arteria" {
     # image_id                    = "ami-f8ae639a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images)
     # image_id                    = "ami-38e8255a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
     # image_id                    = "ami-81d21fe3" # docker + rexray/ebs plugin + rexray + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
-    image_id                    = "ami-89b874eb" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
+    image_id                    = "ami-b7ba76d5" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]

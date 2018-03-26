@@ -16,10 +16,11 @@ before_install:
 
 install:
  # Install Packer.io
+ - packer --version
  - curl -o /tmp/packer.zip -L "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip"
- - ls -al /tmp/
- - ls -al /usr/local/bin/
- - sudo unzip -d -o /usr/local/bin /tmp/packer.zip
+ - sudo unzip -d /usr/local/packer-${PACKER_VERSION} /tmp/packer.zip
+ - ln -sf /usr/local/packer-${PACKER_VERSION}/packer /usr/local/bin/packer
+ - ls -al /user/local/bin
 
 script:
   - packer --version

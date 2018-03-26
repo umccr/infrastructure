@@ -20,10 +20,9 @@ install:
  - curl -o /tmp/packer.zip -L "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip"
  - sudo unzip -d /usr/local/packer-${PACKER_VERSION} /tmp/packer.zip
  - sudo ln -sf /usr/local/packer-${PACKER_VERSION}/packer /usr/local/bin/packer
- - ls -al /user/local/bin
+ - packer --version
 
 script:
-  - packer --version
   - echo "Running build script on tag $TRAVIS_TAG"
   - ./build-ami.sh $TRAVIS_TAG
 

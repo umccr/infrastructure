@@ -1,0 +1,33 @@
+language: python
+
+branches:
+  only:
+  - master
+
+if: tag IS present
+
+env:
+  global:
+    - PACKER_VERSION="1.2.1"
+
+before_install:
+ - sudo apt-get update -y --fix-missing
+
+install:
+ # Install Packer.io
+ - curl -o /tmp/packer.zip -L "https://dl.bintray.com/mitchellh/packer/packer_${PACKER_VERSION}_linux_amd64.zip"
+ - sudo unzip -d /usr/local/bin /tmp/packer.zip
+
+script:
+  - packer --version
+  - echo "Running build script on tag $TRAVIS_TAG"
+  - ./build-ami.sh $TRAVIS_TAG
+
+
+notifications:
+  email: false
+    # recipients:
+    #   - florian.reisinger@unimelb.edu.au
+    # on_failure: always
+    # on_success: always
+  slack: false

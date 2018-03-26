@@ -32,6 +32,7 @@ cp docker-compose.prod.yml docker-compose.yml
 echo "--------------------------------------------------------------------------------"
 echo "Add the docker-compose-up.sh start script"
 tee docker-compose-up.sh << END
+cd /opt/st2-docker-umccr
 docker-compose up -d mongo
 docker-compose up -d redis
 docker-compose up -d postgres

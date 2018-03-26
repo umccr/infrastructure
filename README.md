@@ -1,9 +1,13 @@
 # infrastructure
 Repo for the UMCCR compute infrastructure
 
+NOTE: AWS access credentials are expected as the usual env variables.
 
 ## Packer
 Packer configurations to build container/AMI images
+
+Move into the desired AMI directory and execute the packer command.
+`packer build <AMI's json config>`
 
 ### stackstorm-ami
 Generate an Amazon EC2 AMI with our custom StackStorm setup
@@ -14,6 +18,11 @@ Inspiration taken from:
 
 ## Terraform
 Provision the AWS infrastructure for various bits of UMCCR infrastructure.
+
+Stacks are kept separate from each other and each stack has it's own state. Move into the stacks directory to execute the terraform commands:
+- `terraform init` to initialise the stack (load modules and setup the remote backend)
+- `terraform plan` to see what terraform would change on your current state
+- `terraform apply` to apply the proposed changes
 
 
 ### modules

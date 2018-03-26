@@ -9,14 +9,15 @@ branches:
 
 env:
   global:
-    - PACKER_VERSION="1.2.1"
+    - PACKER_VERSION="1.2.2"
 
 before_install:
  - sudo apt-get update -y --fix-missing
 
 install:
  # Install Packer.io
- - curl -o /tmp/packer.zip -L "https://dl.bintray.com/mitchellh/packer/packer_${PACKER_VERSION}_linux_amd64.zip"
+ - curl -o /tmp/packer.zip -L "https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip"
+ - ls -al /tmp/
  - sudo unzip -d /usr/local/bin /tmp/packer.zip
 
 script:

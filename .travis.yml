@@ -4,6 +4,7 @@ branches:
   only:
   - master
 
+# only build on tags
 if: tag IS present
 
 env:

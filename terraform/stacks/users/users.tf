@@ -53,6 +53,10 @@ data "aws_iam_policy_document" "automation_assume_policy" {
       type        = "Service"
       identifiers = [ "spotfleet.amazonaws.com" ]
     }
+    principals {
+      type        = "AWS"
+      identifiers = [ "arn:aws:iam::472057503814:user/admin" ]
+    }
   }
 }
 

@@ -1,7 +1,5 @@
 {
   "variables": {
-    "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
-    "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
     "name": "{{env `TRAVIS_TAG`}}",
     "custom_ami_name": "stackstorm-ami",
     "ssh_username": "ubuntu"
@@ -10,9 +8,7 @@
     {
       "name": "{{user `custom_ami_name`}}",
       "type": "amazon-ebs",
-      "access_key": "{{user `aws_access_key`}}",
-      "secret_key": "{{user `aws_secret_key`}}",
-      "iam_instance_profile": "packer_instance_profile",
+      "iam_instance_profile": "new_packer_instance_profile",
       "region": "ap-southeast-2",
       "source_ami": "ami-79915c1b",
       "instance_type": "t2.medium",

@@ -12,9 +12,9 @@ sudo ls -al /etc/localtime
 
 echo "--------------------------------------------------------------------------------"
 echo "Update packages (APT)"
-sleep 5 # this delay is crucial for the apt to update properly, without it following install commands will result in package not found errors
+sleep 10 # this delay is crucial for the apt to update properly, without it following install commands will result in package not found errors
 sudo apt-get update
-sudo apt-get -y upgrade
+# sudo apt-get -y upgrade
 
 
 

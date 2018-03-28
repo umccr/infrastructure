@@ -1,0 +1,18 @@
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "sts:AssumeRole" ],
+      "Resource": [ "${role_arn}" ],
+      "Condition": {
+        "Bool": {
+          "aws:MultiFactorAuthPresent": "true",
+          "aws:SecureTransport": "true"
+        },
+        "NumericLessThan": {
+          "aws:MultiFactorAuthAge": "54000"
+        }
+      }
+    }
+  ]
+}

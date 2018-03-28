@@ -1,19 +1,34 @@
+[![Build Status](https://travis-ci.org/umccr/infrastructure.svg?branch=master)](https://travis-ci.org/umccr/infrastructure)
+
 # infrastructure
 Repo for the UMCCR compute infrastructure
 
 NOTE: AWS access credentials are expected as the usual env variables.
 
+## Docker
+Convenience containers
+
+### Packer
+Container to run packer.
+See README on how to build
+
 ## Packer
 Packer configurations to build container/AMI images
+Inspiration taken from:
+- https://programmaticponderings.com/2017/03/06/baking-aws-ami-with-new-docker-ce-using-packer/
 
-Move into the desired AMI directory and execute the packer command.
-`packer build <AMI's json config>`
+Packer requires sufficient AWS credentials which can be obtained assuming the `ops-admin` role:
+`assume-role prod ops-admin <mfa-token>`
+
+Packer can also be run using a docker container (see README in docker/packer)
+```
+packer build <ami.json>
+```
+
 
 ### stackstorm-ami
 Generate an Amazon EC2 AMI with our custom StackStorm setup
-
-Inspiration taken from:
-- https://programmaticponderings.com/2017/03/06/baking-aws-ami-with-new-docker-ce-using-packer/
+`packer build stackstorm.json`
 
 
 ## Terraform
@@ -31,8 +46,15 @@ Reusable Terraform modules that can be used across multiple stacks.
 ### stacks
 Each stack has it's own Terraform state and usually corresponds to a logical unit, like a service or piece of infrastructure like StackStorm.
 
+#### bastion
+Provisions users, groups and assume policies to work with our other AWS accounts.
+
+Note: the terraform state backend can be configured to use a custom AWS profile for access:
+`terraform init -backend-config="profile=bastion"`
+As this terraform stack requires access to our bastion account `terraform` commands do not rely on the default AWS credentials, but will ask for a profile name. This may change if/when a ops-admin role has been created in the bastion account.
+
 #### stackstorm
 Provisions the infrastructure needed to run the StackStorm automation service. This includes customisations and configurations for UMCCR.
 
-#### users
-Provisions an automation user 'travis' that can be used to build our custom AMIs with packer.
+#### packer
+Provisions resources used to build our custom AMIs with packer.

@@ -3,7 +3,9 @@
 # infrastructure
 Repo for the UMCCR compute infrastructure
 
-NOTE: AWS access credentials are expected as the usual env variables.
+**NOTE**: contains GIT submodules, so you may want to check it out with:  
+`git clone --recurse-submodules https://github.com/umccr/infrastructure.git`
+
 
 ## Docker
 Convenience containers
@@ -27,6 +29,7 @@ packer build <ami.json>
 
 
 ### stackstorm-ami
+NOTE: this is a GIT submodule
 Generate an Amazon EC2 AMI with our custom StackStorm setup
 `packer build stackstorm.json`
 

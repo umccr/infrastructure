@@ -36,3 +36,6 @@ resource "aws_iam_policy_attachment" "packer_ec2_policy_to_packer_role_attachmen
     users      = []
     roles      = [ "${aws_iam_role.packer_role.name}" ]
 }
+
+
+# TODO: add ops_admin_no_mfa role to use for travis to run packer

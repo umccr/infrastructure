@@ -114,7 +114,7 @@ resource "aws_iam_policy_attachment" "ops_admins_assume_ops_admin_role_attachmen
 data "template_file" "assume_ops_admin_no_mfa_role_policy" {
     template = "${file("policies/assume_role_no_mfa.json")}"
     vars {
-        role_arn = "arn:aws:iam::472057503814:role/ops-admin"
+        role_arn = "arn:aws:iam::472057503814:role/ops_admin_no_mfa"
     }
 }
 resource "aws_iam_policy" "assume_ops_admin_no_mfa_role_policy" {

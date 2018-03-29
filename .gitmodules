@@ -1,0 +1,3 @@
+[submodule "packer/stackstorm-ami"]
+	path = packer/stackstorm-ami
+	url = https://github.com/umccr/stackstorm-ami.git

@@ -8,6 +8,16 @@ output "florian_secret_access_key" {
   value = "${module.florian_user.encrypted_secret_access_key}"
 }
 
+output "brainstorm_username" {
+  value = "${module.brainstorm_user.username}"
+}
+output "brainstorm_access_key" {
+  value = "${module.brainstorm_user.access_key}"
+}
+output "brainstorm_secret_access_key" {
+  value = "${module.brainstorm_user.encrypted_secret_access_key}"
+}
+
 output "travis_username" {
   value = "${module.travis_user.username}"
 }

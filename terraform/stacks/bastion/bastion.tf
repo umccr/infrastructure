@@ -16,7 +16,7 @@ provider "aws" {
 module "florian_user" {
   source = "../../modules/iam_user/secure_user"
   username = "florian"
-  pgp_key = "${var.pgp_key}"
+  pgp_key = "keybase:freisinger"
 }
 data "template_file" "get_user_florian_policy" {
     template = "${file("policies/get_user.json")}"
@@ -37,10 +37,34 @@ resource "aws_iam_policy_attachment" "get_user_policy_florian_attachment" {
     roles      = []
 }
 
+module "brainstorm_user" {
+  source = "../../modules/iam_user/secure_user"
+  username = "brainstorm"
+  pgp_key = "keybase:brainstorm"
+}
+data "template_file" "get_user_brainstorm_policy" {
+    template = "${file("policies/get_user.json")}"
+    vars {
+        user_arn = "${module.brainstorm_user.arn}"
+    }
+}
+resource "aws_iam_policy" "get_user_brainstorm_policy" {
+  name   = "get_user_brainstorm_policy"
+  path   = "/"
+  policy = "${data.template_file.get_user_brainstorm_policy.rendered}"
+}
+resource "aws_iam_policy_attachment" "get_user_policy_brainstorm_attachment" {
+    name       = "get_user_policy_brainstorm_attachment"
+    policy_arn = "${aws_iam_policy.get_user_brainstorm_policy.arn}"
+    groups     = []
+    users      = [ "${module.brainstorm_user.username}" ]
+    roles      = []
+}
+
 module "travis_user" {
   source = "../../modules/iam_user/secure_user"
   username = "travis"
-  pgp_key = "${var.pgp_key}"
+  pgp_key = "keybase:freisinger"
 }
 data "template_file" "get_user_travis_policy" {
     template = "${file("policies/get_user.json")}"
@@ -75,7 +99,8 @@ resource "aws_iam_group_membership" "ops_admins_prod" {
   name = "ops_admins_prod_group_membership"
 
   users = [
-    "${module.florian_user.username}"
+    "${module.florian_user.username}",
+    "${module.brainstorm_user.username}"
   ]
 
   group = "${aws_iam_group.ops_admins_prod.name}"

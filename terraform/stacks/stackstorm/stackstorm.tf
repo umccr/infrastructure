@@ -16,13 +16,6 @@ provider "aws" {
 # to get the account ID if needed
 # data "aws_caller_identity" "current" { }
 
-module "stackstorm_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "stackstorm"
-  pgp_key  = "${var.pgp_key}"
-}
-
-
 resource "aws_iam_role" "stackstorm_role" {
   name               = "stackstorm_role"
   path               = "/"
@@ -32,10 +25,6 @@ data "aws_iam_policy_document" "stackstorm_assume_policy" {
   statement {
     actions = [ "sts:AssumeRole" ]
 
-    principals {
-      type        = "AWS"
-      identifiers = [ "${module.stackstorm_user.arn}" ]
-    }
     principals {
       type        = "Service"
       identifiers = [ "ec2.amazonaws.com" ]
@@ -103,7 +92,6 @@ resource "aws_launch_configuration" "lc_arteria" {
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]
-    key_name                    = "stackstorm_ssh_key"
     # ebs_optimized               = true
     spot_price                  = "0.018" # t2.medium: 0.0175 (current value)
     # spot_price                  = "0.03" # m5.large: 0.0282 (current value) ebs_optimized=true
@@ -149,14 +137,6 @@ resource "aws_iam_instance_profile" "stackstorm_instance_profile" {
   name  = "stackstorm_instance_profile"
   role = "${aws_iam_role.stackstorm_role.name}"
 }
-
-resource "aws_key_pair" "stackstorm_ssh_key" {
-   key_name = "stackstorm_ssh_key"
-   # TODO: find way to insert key from secure remote resource
-   public_key = "${file("./keys/id_rsa.pub")}"
-}
-
-
 
 # resource "aws_route53_zone" "dev" {
 #   name = "umccrdev.nopcode.org"

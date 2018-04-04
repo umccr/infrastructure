@@ -1,5 +1,20 @@
 [![Build Status](https://travis-ci.org/umccr/infrastructure.svg?branch=master)](https://travis-ci.org/umccr/infrastructure)
 
+Table of Contents
+=================
+
+   * [infrastructure](#infrastructure)
+      * [Docker](#docker)
+         * [Packer](#packer)
+      * [Packer](#packer-1)
+         * [stackstorm-ami](#stackstorm-ami)
+      * [Terraform](#terraform)
+         * [modules](#modules)
+         * [stacks](#stacks)
+            * [bastion](#bastion)
+            * [stackstorm](#stackstorm)
+            * [packer](#packer-2)
+
 # infrastructure
 Repo for the UMCCR compute infrastructure
 
@@ -19,18 +34,19 @@ Packer configurations to build container/AMI images
 Inspiration taken from:
 - https://programmaticponderings.com/2017/03/06/baking-aws-ami-with-new-docker-ce-using-packer/
 
-Packer requires sufficient AWS credentials which can be obtained assuming the `ops-admin` role:
+Packer requires sufficient AWS credentials which can be obtained assuming the `ops-admin` role:  
 `assume-role prod ops-admin <mfa-token>`
 
-Packer can also be run using a docker container (see README in docker/packer)
 ```
 packer build <ami.json>
 ```
+**NOTE**: Packer can also be run using a docker container (see README in [docker/packer](docker/packer/README.md))
 
 
 ### stackstorm-ami
-NOTE: this is a GIT submodule
-Generate an Amazon EC2 AMI with our custom StackStorm setup
+**NOTE**: this is a GIT submodule
+
+Generate an Amazon EC2 AMI with our custom StackStorm setup  
 `packer build stackstorm.json`
 
 

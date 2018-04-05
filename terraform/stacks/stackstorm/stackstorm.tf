@@ -1,20 +1,14 @@
 terraform {
   backend "s3" {
-    bucket  = "umccr-terraform-meta"
-    key     = "stackstorm/production/terraform.tfstate"
-    profile = "prod"
+    bucket  = "umccr-terraform-prod"
+    key     = "stackstorm/terraform.tfstate"
     region  = "ap-southeast-2"
   }
 }
 
 provider "aws" {
-  # required AWS fields: aws_access_key_id, aws_secret_access_key, region
-  profile = "${var.aws_profile}"
   region  = "${var.aws_region}"
 }
-
-# to get the account ID if needed
-# data "aws_caller_identity" "current" { }
 
 resource "aws_iam_role" "stackstorm_role" {
   name               = "stackstorm_role"
@@ -60,8 +54,6 @@ resource "aws_iam_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" 
     users      = []
     roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
 }
-
-
 
 
 resource "aws_autoscaling_group" "asg_arteria" {

@@ -18,12 +18,12 @@ output "brainstorm_secret_access_key" {
   value = "${module.brainstorm_user.encrypted_secret_access_key}"
 }
 
-output "travis_username" {
-  value = "${module.travis_user.username}"
+output "packer_username" {
+  value = "${module.packer_user.username}"
 }
-output "travis_access_key" {
-  value = "${module.travis_user.access_key}"
+output "packer_access_key" {
+  value = "${module.packer_user.access_key}"
 }
-output "travis_secret_access_key" {
-  value = "${module.travis_user.encrypted_secret_access_key}"
+output "packer_secret_access_key" {
+  value = "${module.packer_user.encrypted_secret_access_key}"
 }

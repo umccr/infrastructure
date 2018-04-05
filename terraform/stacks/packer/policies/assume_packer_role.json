@@ -6,7 +6,8 @@
       "Effect": "Allow",
       "Principal": {
         "Service": "spotfleet.amazonaws.com",
-        "Service": "ec2.amazonaws.com"
+        "Service": "ec2.amazonaws.com",
+        "AWS": "arn:aws:iam::383856791668:root"
       },
       "Action": "sts:AssumeRole"
     }

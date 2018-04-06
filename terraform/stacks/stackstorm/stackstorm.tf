@@ -80,7 +80,8 @@ resource "aws_launch_configuration" "lc_arteria" {
     # image_id                    = "ami-f8ae639a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images)
     # image_id                    = "ami-38e8255a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
     # image_id                    = "ami-81d21fe3" # docker + rexray/ebs plugin + rexray + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
-    image_id                    = "ami-b7ba76d5" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
+    # image_id                    = "ami-b7ba76d5" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
+    image_id                    = "ami-b9b678db" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]

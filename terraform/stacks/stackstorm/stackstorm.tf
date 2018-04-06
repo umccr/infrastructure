@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "umccr-terraform-prod"
+    # bucket  = "umccr-terraform-prod"
     key     = "stackstorm/terraform.tfstate"
     region  = "ap-southeast-2"
   }
@@ -76,18 +76,11 @@ resource "aws_autoscaling_group" "asg_arteria" {
 
 resource "aws_launch_configuration" "lc_arteria" {
     name_prefix                 = "lc_arteria_"
-    # image_id                    = "ami-9d4281ff" # only docker and stackstorm, no rexray etc
-    # image_id                    = "ami-f8ae639a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images)
-    # image_id                    = "ami-38e8255a" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
-    # image_id                    = "ami-81d21fe3" # docker + rexray/ebs plugin + rexray + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime
-    image_id                    = "ami-b7ba76d5" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI)
+    image_id                    = "ami-472be525" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI) + prebaked authorized_keys
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]
-    # ebs_optimized               = true
     spot_price                  = "0.018" # t2.medium: 0.0175 (current value)
-    # spot_price                  = "0.03" # m5.large: 0.0282 (current value) ebs_optimized=true
-    # spot_price                  = "0.07" # m4.xlarge: 0.0644 (current value) ebs_optimized=true
 
     user_data = "${data.template_file.lc_userdata.rendered}" # see: http://roshpr.net/blog/2016/10/terraform-using-user-data-in-launch-configuration/
 
@@ -129,18 +122,6 @@ resource "aws_iam_instance_profile" "stackstorm_instance_profile" {
   name  = "stackstorm_instance_profile"
   role = "${aws_iam_role.stackstorm_role.name}"
 }
-
-# resource "aws_route53_zone" "dev" {
-#   name = "umccrdev.nopcode.org"
-# }
-#
-# resource "aws_route53_record" "stackstorm_dev" {
-#   zone_id = "${aws_route53_zone.dev.zone_id}"
-#   name    = "stackstorm.umccrdev.nopcode.org"
-#   type    = "CNAME"
-#   ttl     = "300"
-#   records = ["${aws_eip.stackstorm.public_ip}"]
-# }
 
 resource "aws_eip" "stackstorm" {
   vpc         = true

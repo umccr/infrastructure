@@ -53,11 +53,15 @@ Generate an Amazon EC2 AMI with our custom StackStorm setup
 ## Terraform
 Provision the AWS infrastructure for various bits of UMCCR infrastructure.
 
-Stacks are kept separate from each other and each stack has it's own state. Move into the stacks directory to execute the terraform commands:
-- `terraform init` to initialise the stack (load modules and setup the remote backend)
-- `terraform plan` to see what terraform would change on your current state
+Stacks are kept separate from each other and each stack has it's own state. Move into the stacks directory to execute the Terraform commands:
+- `terraform init` to initialise the stack (load modules and setup the remote backend) on first use or config changes
+- `terraform plan` to see what Terraform would change on the current state
 - `terraform apply` to apply the proposed changes
 
+More details with `terraform help`.
+
+Terraform requires AWS credentials to manipulate AWS resources. It uses the usual AWS supported methods to retrieve them, i.e. env variables or AWS profiles. If not stated otherwise, all stacks require ops-admin credentials, which can be obtained assuming the `ops-admin` role.
+For more details please refer to the `assume-role` setup.
 
 ### modules
 Reusable Terraform modules that can be used across multiple stacks.
@@ -66,14 +70,29 @@ Reusable Terraform modules that can be used across multiple stacks.
 Each stack has it's own Terraform state and usually corresponds to a logical unit, like a service or piece of infrastructure like StackStorm.
 
 #### bastion
-Provisions users, groups and assume policies to work with our other AWS accounts.
+Provisions global users, groups and assume policies specific to the AWS `bastion` account.
 
-Note: the terraform state backend can be configured to use a custom AWS profile for access:
-`terraform init -backend-config="profile=bastion"`
-As this terraform stack requires access to our bastion account `terraform` commands do not rely on the default AWS credentials, but will ask for a profile name. This may change if/when a ops-admin role has been created in the bastion account.
+**Note**: This stack can only be run by AWS admin users of the AWS `bastion` account.
+
+If your default credentials (either env vars or default profile) are not from a `bastion` admin account, you have to set them. Either set the AWS env vars with your credentials or set an env variable defining the AWS profile to use.
+`export AWS_PROFILE=<your bastion admin profile>`
+
 
 #### stackstorm
 Provisions the infrastructure needed to run the StackStorm automation service. This includes customisations and configurations for UMCCR.
 
+**NOTE**: This stack can be applied equally against the `prod` AND the `dev` account and the Terraform state for each is kept separate in account specific S3 buckets. This means to operate on the stack Terraform has to be initialised against the correct account/bucket. To make sure you are working on the correct account/bucket remove the existing Terraform config and initialise with the account specific bucket (after `assume-role` into the account specific role):  
+```
+rm -rf .terraform
+terraform init -backend-config="bucket=umccr-terraform-${AWS_ACCOUNT_NAME}"
+```
+
+
+
 #### packer
-Provisions resources used to build our custom AMIs with packer.
+Provisions resources used by Packer to build custom AWS AMIs.
+
+**NOTE**: Currently set up against the `prod` account only, but this should change.
+This *should* only be applied against the `dev` account to limit any potential impact on production resources.
+
+**NOTE**: This is used by Travis to automatically build new AMIs based on GitHub commits. If these resources are revoked or changed it may affect these Travis builds.

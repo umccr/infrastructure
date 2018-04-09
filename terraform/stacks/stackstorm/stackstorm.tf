@@ -68,7 +68,7 @@ resource "aws_autoscaling_group" "asg_arteria" {
 
     tag {
         key   = "Name"
-        value = "arteria"
+        value = "stackstorm"
         propagate_at_launch = true
     }
 
@@ -76,7 +76,7 @@ resource "aws_autoscaling_group" "asg_arteria" {
 
 resource "aws_launch_configuration" "lc_arteria" {
     name_prefix                 = "lc_arteria_"
-    image_id                    = "ami-0425eb66" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI) + prebaked authorized_keys
+    image_id                    = "ami-4bc80129" # docker + rexray/ebs plugin + s3fs + awscli + stackstorm (with prebuild st2 base image and pre-loaded images) + docker-compose-up.sh + localtime (newer base AMI) + prebaked authorized_keys
     instance_type               = "t2.medium"
     iam_instance_profile        = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
     security_groups             = [ "${aws_security_group.vpc_st2.id}" ]

@@ -19,6 +19,18 @@ echo "Allocation ID: ${allocation_id}"
 # NOTE: allocation_id is an external variable filled by Terraform when rendering the script
 aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocation_id}
 
+# start the DataDog agent
+docker run -d --name dd-agent \
+           --hostname umccr-stackstorm-dd
+           -v /var/run/docker.sock:/var/run/docker.sock:ro \
+           -v /proc/:/host/proc/:ro \
+           -v /cgroup/:/host/sys/fs/cgroup:ro \
+           -v /mnt/stackstorm-data/datadog/conf.d:/conf.d/:ro \
+           -v /mnt/stackstorm-data/datadog/run:/opt/datadog-agent/run:rw \
+           -e DD_API_KEY=e0dcb38a11a21b9315c12d594e7772f1 \
+           -e DD_LOGS_ENABLED=true \
+           -e DD_HOSTNAME=umccr-stackstorm-dd \
+           datadog/agent:latest
 
 # start StackStorm
 /opt/st2-docker-umccr/docker-compose-up.sh

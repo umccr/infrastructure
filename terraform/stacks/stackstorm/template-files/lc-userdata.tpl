@@ -19,6 +19,7 @@ echo "Allocation ID: ${allocation_id}"
 # NOTE: allocation_id is an external variable filled by Terraform when rendering the script
 aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocation_id}
 
+# TODO: the host name is hard coded to `prod`, but should be dependent on the AWS account we are deploying to
 # start the DataDog agent
 docker run --rm -d --name dd-agent \
            --hostname umccr-stackstorm-prod \

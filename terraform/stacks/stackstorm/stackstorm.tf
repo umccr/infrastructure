@@ -1,5 +1,6 @@
 terraform {
   backend "s3" {
+    # bucket name provided at init time and read from the env variable (see README)
     # bucket  = "umccr-terraform-prod"
     key     = "stackstorm/terraform.tfstate"
     region  = "ap-southeast-2"
@@ -91,6 +92,13 @@ resource "aws_launch_configuration" "lc_arteria" {
         delete_on_termination = true
     }
     ebs_block_device {
+        # configuration volume to be mounted to /mnt/stackstorm-data
+        # TODO: this recreated on instance creation from a snapshot.
+        #       This should probably be an independent EBS volume that
+        #       is only attached to the instance once that is created
+        # TODO: this is using a snapshot is specific to one AWS account.
+        #       This should not be account specific to allow deployment
+        #       against prod and dev environments.
         device_name           = "/dev/sdf"
         volume_type           = "gp2"
         volume_size           = 1

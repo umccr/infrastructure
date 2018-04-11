@@ -20,11 +20,11 @@ echo "Allocation ID: ${allocation_id}"
 aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocation_id}
 
 # start the DataDog agent
-docker run -d --name dd-agent \
-           --hostname umccr-stackstorm-dd
+docker run --rm -d --name dd-agent \
+           --hostname umccr-stackstorm-prod \
            -v /var/run/docker.sock:/var/run/docker.sock:ro \
            -v /proc/:/host/proc/:ro \
-           -v /cgroup/:/host/sys/fs/cgroup:ro \
+           -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
            -v /mnt/stackstorm-data/datadog/conf.d:/conf.d/:ro \
            -v datadog-run-volume:/opt/datadog-agent/run:rw \
            -e DD_API_KEY=e0dcb38a11a21b9315c12d594e7772f1 \

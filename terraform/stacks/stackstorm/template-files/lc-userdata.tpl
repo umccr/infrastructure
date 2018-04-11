@@ -26,7 +26,7 @@ docker run -d --name dd-agent \
            -v /proc/:/host/proc/:ro \
            -v /cgroup/:/host/sys/fs/cgroup:ro \
            -v /mnt/stackstorm-data/datadog/conf.d:/conf.d/:ro \
-           -v /mnt/stackstorm-data/datadog/run:/opt/datadog-agent/run:rw \
+           -v datadog-run-volume:/opt/datadog-agent/run:rw \
            -e DD_API_KEY=e0dcb38a11a21b9315c12d594e7772f1 \
            -e DD_LOGS_ENABLED=true \
            -e DD_HOSTNAME=umccr-stackstorm-dd \

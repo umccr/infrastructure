@@ -121,7 +121,7 @@ data "aws_ebs_snapshot" "st2_ebs_volume" {
 
   filter {
     name   = "tag:Name"
-    values = [ "stackstorm-config-2018-03-13" ]
+    values = [ "stackstorm-data-20180412" ]
   }
 }
 

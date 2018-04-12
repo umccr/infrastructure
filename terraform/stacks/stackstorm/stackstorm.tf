@@ -141,6 +141,7 @@ data "aws_route53_zone" "umccr_org" {
 }
 
 resource "aws_route53_record" "st2_dev" {
+  # TODO: the domain should depend on the account the stack is deployed against!
   zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
   name    = "stackstorm.dev.${data.aws_route53_zone.umccr_org.name}"
   type    = "A"

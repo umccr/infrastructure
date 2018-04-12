@@ -30,7 +30,8 @@ docker run --rm -d --name dd-agent \
            -v datadog-run-volume:/opt/datadog-agent/run:rw \
            -e DD_API_KEY=e0dcb38a11a21b9315c12d594e7772f1 \
            -e DD_LOGS_ENABLED=true \
-           -e DD_HOSTNAME=umccr-stackstorm-dd \
+           -e DD_PROCESS_AGENT_ENABLED=true \
+           -e DD_HOSTNAME=umccr-stackstorm-prod \
            datadog/agent:latest
 
 # start StackStorm

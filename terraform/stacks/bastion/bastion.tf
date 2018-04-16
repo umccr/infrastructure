@@ -88,8 +88,6 @@ resource "aws_iam_policy_attachment" "get_user_policy_packer_attachment" {
 resource "aws_iam_group" "ops_admins_prod" {
   name = "ops_admins_prod"
 }
-
-# assign members to groups
 resource "aws_iam_group_membership" "ops_admins_prod" {
   name = "ops_admins_prod_group_membership"
 
@@ -100,6 +98,22 @@ resource "aws_iam_group_membership" "ops_admins_prod" {
 
   group = "${aws_iam_group.ops_admins_prod.name}"
 }
+
+resource "aws_iam_group" "packer_users" {
+  name = "packer_users"
+}
+resource "aws_iam_group_membership" "packer_users" {
+  name = "packer_users_group_membership"
+
+  users = [
+    "${module.florian_user.username}",
+    "${module.brainstorm_user.username}",
+    "${module.packer_user.username}"
+  ]
+
+  group = "${aws_iam_group.packer_users.name}"
+}
+
 
 # define the assume role policy and define who can use it
 data "template_file" "assume_ops_admin_role_policy" {
@@ -135,7 +149,7 @@ resource "aws_iam_policy" "assume_packer_role_policy" {
 resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
     name       = "packer_assume_packer_role_attachment"
     policy_arn = "${aws_iam_policy.assume_packer_role_policy.arn}"
-    groups     = []
-    users      = [ "${module.packer_user.username}" ]
+    groups     = [ "${aws_iam_group.packer_users.name}" ]
+    users      = []
     roles      = []
 }

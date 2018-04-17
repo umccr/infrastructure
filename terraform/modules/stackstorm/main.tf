@@ -43,11 +43,19 @@ resource "aws_iam_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" 
     roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
 }
 
+
+data "aws_ami" "stackstorm_ami" {
+  most_recent      = true
+  owners           = ["self"]
+
+  filter = "${var.ami_filters}"
+}
+
 resource "aws_spot_instance_request" "stackstorm_instance" {
   spot_price             = "0.018" # t2.medium: 0.0175 (current value)
   wait_for_fulfillment   = true
 
-  ami                    = "${var.stackstorm_ami}"
+  ami                    = "${data.aws_ami.stackstorm_ami.id}"
   instance_type          = "${var.instance_type}"
   availability_zone      = "${var.availability_zone}"
   iam_instance_profile   = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"

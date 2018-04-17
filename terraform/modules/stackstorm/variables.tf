@@ -2,10 +2,6 @@ variable "name_suffix" {
   description = "Suffix to be applied to AWS resource names in order to make them unique. This way the module can be deployed several times into the same account without causing name clashes."
 }
 
-variable "stackstorm_ami" {
-  description = "The AMI to use for the stackstorm instance."
-}
-
 variable "instance_type" {
   description = "The EC2 instance type to use for the stackstorm instance."
 }
@@ -32,4 +28,14 @@ variable "stackstorm_docker_volume_name" {
 
 variable "st2_hostname" {
   description = "The hostname of the stackstorm instance DataDog will be using to collect the metrics/logs."
+}
+
+variable "ami_filters" {
+  description = "The filters to use when looking for the AMI to use."
+  default = [
+    {
+      name   = "tag:ami"
+      values = ["stackstorm-ami"]
+    }
+  ]
 }

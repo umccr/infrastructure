@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket  = "umccr-terraform-prod"
-    key     = "stackstorm-prod/terraform.tfstate"
+    key     = "stackstorm/terraform.tfstate"
     region  = "ap-southeast-2"
   }
 }

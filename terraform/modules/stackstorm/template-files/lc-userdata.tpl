@@ -1,16 +1,29 @@
 #!/bin/bash
 
+################################################################################
+# shut down docker service, since we are going to overwrite /var/lib/docker
+echo "Stopping docker"
+sudo systemctl stop docker
+sudo rm -rf /var/lib/docker/volumes/* /var/lib/docker/volumes/.*
+
 
 ################################################################################
 # mount the stackstorm configuration volume and docker volume onto the instance
 echo "Creating mount points"
 mkdir "/mnt/stackstorm-data"
-mkdir "/mnt/stackstorm-docker"
+#mkdir "/mnt/stackstorm-docker"
 
 # TODO: find better way to get the actual device name
 echo "/dev/xvdf  /mnt/stackstorm-data ext4  defaults,nofail  0  2" >> /etc/fstab
-echo "/dev/xvdg  /mnt/stackstorm-docker ext4  defaults,nofail  0  2" >> /etc/fstab
-mount -a
+#echo "/dev/xvdg  /mnt/stackstorm-docker ext4  defaults,nofail  0  2" >> /etc/fstab
+echo "/dev/xvdg  /var/lib/docker/volumes ext4  defaults,nofail  0  2" >> /etc/fstab
+sudo mount -a
+
+################################################################################
+# restart docker service
+echo "Restarting docker"
+sudo systemctl start docker
+
 
 ################################################################################
 # associate our elastic IP with the instance

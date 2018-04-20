@@ -43,6 +43,20 @@
       "Resource": "*"
     },
     {
+      "Sid": "AmiCleanerPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DeleteSnapshot",
+        "ec2:DeregisterImage",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstances",
+        "ec2:DescribeSnapshots",
+        "autoscaling:DescribeAutoScalingGroups",
+        "autoscaling:DescribeLaunchConfigurations"
+      ],
+      "Resource": "*"
+    },
+    {
       "Effect": "Allow",
       "Action": [
         "ec2:CreateVolume"

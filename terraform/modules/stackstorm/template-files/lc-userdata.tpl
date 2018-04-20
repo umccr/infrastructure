@@ -27,6 +27,7 @@ sudo systemctl start docker
 
 ################################################################################
 # associate our elastic IP with the instance
+echo "Associating public address"
 export AWS_DEFAULT_REGION=ap-southeast-2
 instance_id=`cat /var/lib/cloud/data/instance-id`
 echo "Instance ID: $instance_id"
@@ -36,8 +37,8 @@ aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocatio
 
 
 ################################################################################
-# TODO: the host name is hard coded to `prod`, but should be dependent on the AWS account we are deploying to
 # start the DataDog agent
+echo "Starting DataDog agent"
 my_hostname="${st2_hostname}"
 echo "Using DataDog hostname: $my_hostname"
 if [[ $my_hostname ]];
@@ -58,4 +59,11 @@ fi
 
 ################################################################################
 # start StackStorm
+echo "Starting StackStorm"
 /opt/st2-docker-umccr/docker-compose-up.sh
+
+################################################################################
+# Redirect AMI cleaner logs to presistent location
+echo "Setting up AMI cleaner log redirection"
+sudo rm -f /opt/ami-cleaner/run.log
+sudo ln -s /mnt/stackstorm-data/ami-cleaner.log /opt/ami-cleaner/run.log

@@ -153,3 +153,17 @@ resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
     users      = []
     roles      = []
 }
+
+# assign permissions to access the Terraform state bucket
+resource "aws_iam_policy" "tf_state_write_policy" {
+  name   = "tf_state_write_policy"
+  path   = "/"
+  policy = "${file("policies/tf_state_write.json")}"
+}
+resource "aws_iam_policy_attachment" "ops_admin_ft_state_policy_attachment" {
+    name       = "ops_admin_ft_state_policy_attachment"
+    policy_arn = "${aws_iam_policy.tf_state_write_policy.arn}"
+    groups     = [ "${aws_iam_group.ops_admins_prod.name}" ]
+    users      = []
+    roles      = []
+}

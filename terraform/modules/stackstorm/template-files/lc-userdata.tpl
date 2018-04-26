@@ -60,7 +60,14 @@ fi
 ################################################################################
 # start StackStorm
 echo "Starting StackStorm"
-/opt/st2-docker-umccr/docker-compose-up.sh
+# we want to persist the letsencrypt data, which is stored in ./data
+# This can be controlled via an env var, which may not persist accross sessions:
+#    export NGINX_FILES_PATH=/mnt/stackstorm-data/letsencrypt-data
+# So we are manipulating the default location:
+cd /opt/st2-docker-umccr
+sudo rm -rf ./data
+sudo ln -s /mnt/stackstorm-data/letsencrypt-data data
+docker-compose up -d
 
 ################################################################################
 # Redirect AMI cleaner logs to presistent location

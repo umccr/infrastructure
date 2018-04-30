@@ -71,6 +71,9 @@ resource "aws_spot_instance_request" "stackstorm_instance" {
       delete_on_termination = true
   }
 
+  # tags apply to the spot request, NOT the instance!
+  # https://github.com/terraform-providers/terraform-provider-aws/issues/174
+  # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
   tags {
     Name = "stackstorm${var.name_suffix}"
   }

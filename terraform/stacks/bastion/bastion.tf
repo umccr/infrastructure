@@ -3,6 +3,7 @@ terraform {
     bucket  = "umccr-terraform-bastion"
     key     = "bastion/terraform.tfstate"
     region  = "ap-southeast-2"
+    dynamodb_table = "terraform-state-lock"
   }
 }
 

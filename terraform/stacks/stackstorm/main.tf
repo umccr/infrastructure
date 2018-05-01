@@ -11,31 +11,32 @@ terraform {
 variable "workspace_name_suffix" {
   default = {
     prod = "_prod"
-    play = "_play"
+    dev = "_dev"
   }
 }
 variable "workspace_zone_domain" {
   default = {
     prod = "prod.umccr.org"
-    play = "play.umccr.org"
+    dev = "dev.umccr.org"
   }
 }
+# NOTE: the volumes could have the same name as long as they are in different AWS accounts, keeping them different however allows the deployment of the stack into the same account
 variable "workspace_st_data_volume" {
   default = {
     prod = "stackstorm-data-prod"
-    play = "stackstorm-data-play"
+    dev = "stackstorm-data-dev"
   }
 }
 variable "workspace_st_docker_volume" {
   default = {
     prod = "stackstorm-docker-volumes-prod"
-    play = "stackstorm-docker-volumes-play"
+    dev = "stackstorm-docker-volumes-dev"
   }
 }
 variable "workspace_dd_hostname" {
   default = {
     prod = "umccr-stackstorm-prod"
-    play = ""
+    dev = ""
   }
 }
 

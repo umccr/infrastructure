@@ -64,10 +64,12 @@ Terraform requires AWS credentials to manipulate AWS resources. It uses the usua
 For more details please refer to the `assume-role` setup.
 
 ### modules
-Reusable Terraform modules that can be used across multiple stacks.
+Reusable Terraform modules that can be used across multiple stacks. If you want to create a new module, use the `skel` module as a template.
 
 ### stacks
 Each stack has it's own Terraform state and usually corresponds to a logical unit, like a service or piece of infrastructure like StackStorm.
+
+Use the `skel` stack as a template if you wish to create a new one from scratch.
 
 #### bastion
 Provisions global users, groups and assume policies specific to the AWS `bastion` account.

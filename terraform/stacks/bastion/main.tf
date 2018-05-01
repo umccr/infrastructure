@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "umccr-terraform-bastion"
+    bucket  = "umccr-terraform-states"
     key     = "bastion/terraform.tfstate"
     region  = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "${var.aws_region}"
+  region  = "ap-southeast-2"
 }
 
 
@@ -173,7 +173,7 @@ resource "aws_iam_policy_attachment" "ops_admins_dev_assume_ops_admin_dev_role_a
 data "template_file" "assume_packer_role_policy" {
     template = "${file("policies/assume_role_no_mfa.json")}"
     vars {
-        role_arn = "arn:aws:iam::472057503814:role/packer_role"
+        role_arn = "arn:aws:iam::620123204273:role/packer_role"
     }
 }
 resource "aws_iam_policy" "assume_packer_role_policy" {
@@ -185,20 +185,6 @@ resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
     name       = "packer_assume_packer_role_attachment"
     policy_arn = "${aws_iam_policy.assume_packer_role_policy.arn}"
     groups     = [ "${aws_iam_group.packer_users.name}" ]
-    users      = []
-    roles      = []
-}
-
-# assign permissions to access the Terraform state bucket
-resource "aws_iam_policy" "tf_state_write_policy" {
-  name   = "tf_state_write_policy"
-  path   = "/"
-  policy = "${file("policies/tf_state_write.json")}"
-}
-resource "aws_iam_policy_attachment" "ops_admin_ft_state_policy_attachment" {
-    name       = "ops_admin_ft_state_policy_attachment"
-    policy_arn = "${aws_iam_policy.tf_state_write_policy.arn}"
-    groups     = [ "${aws_iam_group.ops_admins_prod.name}" ]
     users      = []
     roles      = []
 }

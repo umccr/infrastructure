@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "umccr-terraform-bastion"
+    bucket  = "umccr-terraform-states"
     key     = "bastion/terraform.tfstate"
     region  = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "${var.aws_region}"
+  region  = "ap-southeast-2"
 }
 
 
@@ -173,7 +173,7 @@ resource "aws_iam_policy_attachment" "ops_admins_dev_assume_ops_admin_dev_role_a
 data "template_file" "assume_packer_role_policy" {
     template = "${file("policies/assume_role_no_mfa.json")}"
     vars {
-        role_arn = "arn:aws:iam::472057503814:role/packer_role"
+        role_arn = "arn:aws:iam::620123204273:role/packer_role"
     }
 }
 resource "aws_iam_policy" "assume_packer_role_policy" {

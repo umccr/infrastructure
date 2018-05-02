@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "umccr-terraform-prod"
+    bucket  = "umccr-terraform-states"
     key     = "packer/terraform.tfstate"
     region  = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "${var.aws_region}"
+  region  = "ap-southeast-2"
 }
 
 

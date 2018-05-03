@@ -36,7 +36,7 @@ variable "workspace_st_docker_volume" {
 variable "workspace_dd_hostname" {
   default = {
     prod = "umccr-stackstorm-prod"
-    dev = ""
+    dev = "" # NOTE: if empty then no datadog container will be launched (avoiding additional DataDog charges)
   }
 }
 

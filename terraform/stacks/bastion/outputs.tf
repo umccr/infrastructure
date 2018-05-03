@@ -27,3 +27,13 @@ output "packer_access_key" {
 output "packer_secret_access_key" {
   value = "${module.packer_user.encrypted_secret_access_key}"
 }
+
+output "terraform_username" {
+  value = "${module.terraform_user.username}"
+}
+output "terraform_access_key" {
+  value = "${module.terraform_user.access_key}"
+}
+output "terraform_secret_access_key" {
+  value = "${module.terraform_user.encrypted_secret_access_key}"
+}

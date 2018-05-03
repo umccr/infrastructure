@@ -3,8 +3,8 @@
 
 terraform {
   backend "s3" {
-    bucket         = "umccr-terraform-prod"
-    key            = "stackstorm/terraform.tfstate"
+    bucket         = "umccr-terraform-states"
+    key            = "pcgr/terraform.tfstate"
     region         = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
   }
@@ -48,7 +48,7 @@ resource "aws_iam_policy_attachment" "sqs_policy_to_role_attachment" {
   roles      = ["${aws_iam_role.pcgr_role.name}"]
 }
 
-resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
+resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
   name       = "s3_policy_to_role_attachment${var.name_suffix}"
   policy_arn = "${aws_iam_policy.s3_pcgr_policy.arn}"
   roles      = ["${aws_iam_role.pcgr_role.name}"]
@@ -57,7 +57,7 @@ resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
 resource "aws_iam_policy" "s3_pcgr_policy" {
   name   = "s3_bucket_policy${var.name_suffix}"
   path   = "/"
-  policy = "${file("${path.module}/policies/s3_bucket_policy.json")}"
+  policy = "${file("./policies/s3_bucket_policy.json")}"
 }
 
 resource "aws_s3_bucket" "pcgr_s3_bucket" {
@@ -89,13 +89,14 @@ data "aws_ami" "pcgr_ami" {
   filter = "${var.ami_filters}"
 }
 
-resource "aws_spot_instance_request" "stackstorm_instance" {
+resource "aws_spot_instance_request" "pcgr_instance" {
   spot_price           = "0.09"
   wait_for_fulfillment = true
 
-  ami                    = "${data.aws_ami..id}"
+  ami                    = "${data.aws_ami.pcgr_ami.id}"
   instance_type          = "${var.instance_type}"
   iam_instance_profile   = "${aws_iam_instance_profile.instance_profile.id}"
+  availability_zone      = "ap-southeast-2"
   subnet_id              = "${aws_subnet.vpc_subnet_a_pcgr.id}"
   vpc_security_group_ids = ["${aws_security_group.vpc_pcgr.id}"]
 
@@ -121,7 +122,7 @@ resource "aws_vpc" "vpc_pcgr" {
 }
 
 resource "aws_subnet" "vpc_subnet_a_pcgr" {
-  vpc_id                  = "${aws_vpc.vpc_st2.id}"
+  vpc_id                  = "${aws_vpc.vpc_pcgr.id}"
   cidr_block              = "172.31.0.0/20"
   map_public_ip_on_launch = true
   availability_zone       = "${var.availability_zone}"
@@ -134,7 +135,7 @@ resource "aws_subnet" "vpc_subnet_a_pcgr" {
 resource "aws_security_group" "vpc_pcgr" {
   name        = "sg_pcgr${var.name_suffix}"
   description = "Security group for pcgr VPC"
-  vpc_id      = "${aws_vpc.vpc_st2.id}"
+  vpc_id      = "${aws_vpc.vpc_pcgr.id}"
 
   ingress {
     from_port        = 22
@@ -185,7 +186,7 @@ resource "aws_lambda_function" "test_lambda" {
   function_name    = "lambda_function_name"
   role             = "${aws_iam_role.iam_for_lambda.arn}"
   handler          = "exports.test"
-  source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
+  source_code_hash = "${base64sha256(file("lambda/lambda_function_payload.zip"))}"
   runtime          = "python3.6"
 
   environment {

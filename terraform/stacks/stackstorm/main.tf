@@ -47,7 +47,7 @@ provider "aws" {
 
 module "stackstorm" {
   # NOTE: the source cannot be interpolated, so we can't use a variable here and have to keep the difference bwtween production and developmment in a branch
-  source                        = "git::git@github.com:umccr/infrastructure.git//terraform/modules/stackstorm?ref=v0.0.1"
+  source                        = "git::git@github.com:umccr/infrastructure.git//terraform/modules/stackstorm?ref=v0.0.2"
   instance_type                 = "t2.medium"
   name_suffix                   = "${var.workspace_name_suffix[terraform.workspace]}"
   availability_zone             = "ap-southeast-2a"

@@ -38,6 +38,7 @@ aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocatio
 
 ################################################################################
 # start the DataDog agent
+dd_api_key=`cat /mnt/stackstorm-data/datadog/api.key`
 echo "Starting DataDog agent"
 my_hostname="${st2_hostname}"
 echo "Using DataDog hostname: $my_hostname"
@@ -50,7 +51,7 @@ then
            -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
            -v /mnt/stackstorm-data/datadog/conf.d:/conf.d/:ro \
            -v datadog-run-volume:/opt/datadog-agent/run:rw \
-           -e DD_API_KEY=e0dcb38a11a21b9315c12d594e7772f1 \
+           -e DD_API_KEY=$dd_api_key \
            -e DD_LOGS_ENABLED=true \
            -e DD_PROCESS_AGENT_ENABLED=true \
            -e DD_HOSTNAME="$my_hostname" \

@@ -26,3 +26,23 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
      Name = "Terraform Lock Table"
    }
 }
+
+
+################################################################################
+## dev only resources
+
+resource "aws_iam_role" "ops_admin_no_mfa_role" {
+  count              = "${terraform.workspace == "dev" ? 1 : 0}"
+  name               = "ops_admin_no_mfa"
+  path               = "/"
+  assume_role_policy = "${file("policies/assume_ops_admin_no_mfa_role.json")}"
+}
+
+resource "aws_iam_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
+    count      = "${terraform.workspace == "dev" ? 1 : 0}"
+    name       = "admin_access_to_ops_admin_no_mfa_role_attachment"
+    policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+    groups     = []
+    users      = []
+    roles      = [ "${aws_iam_role.ops_admin_no_mfa_role.name}" ]
+}

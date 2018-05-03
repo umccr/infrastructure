@@ -86,6 +86,30 @@ resource "aws_iam_policy_attachment" "get_user_policy_packer_attachment" {
     roles      = []
 }
 
+module "terraform_user" {
+  source = "../../modules/iam_user/secure_user"
+  username = "terraform"
+  pgp_key = "keybase:freisinger"
+}
+data "template_file" "get_user_terraform_policy" {
+    template = "${file("policies/get_user.json")}"
+    vars {
+        user_arn = "${module.terraform_user.arn}"
+    }
+}
+resource "aws_iam_policy" "get_user_terraform_policy" {
+  name   = "get_user_terraform_policy"
+  path   = "/"
+  policy = "${data.template_file.get_user_terraform_policy.rendered}"
+}
+resource "aws_iam_policy_attachment" "get_user_policy_terraform_attachment" {
+    name       = "get_user_policy_terraform_attachment"
+    policy_arn = "${aws_iam_policy.get_user_terraform_policy.arn}"
+    groups     = []
+    users      = [ "${module.terraform_user.username}" ]
+    roles      = []
+}
+
 # define groups
 resource "aws_iam_group" "ops_admins_prod" {
   name = "ops_admins_prod"
@@ -128,6 +152,21 @@ resource "aws_iam_group_membership" "packer_users" {
   ]
 
   group = "${aws_iam_group.packer_users.name}"
+}
+
+resource "aws_iam_group" "ops_admins_dev_no_mfa_users" {
+  name = "ops_admins_dev_no_mfa_users"
+}
+resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
+  name = "ops_admins_dev_no_mfa_users_group_membership"
+
+  users = [
+    "${module.florian_user.username}",
+    "${module.brainstorm_user.username}",
+    "${module.terraform_user.username}"
+  ]
+
+  group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"
 }
 
 
@@ -185,6 +224,25 @@ resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
     name       = "packer_assume_packer_role_attachment"
     policy_arn = "${aws_iam_policy.assume_packer_role_policy.arn}"
     groups     = [ "${aws_iam_group.packer_users.name}" ]
+    users      = []
+    roles      = []
+}
+
+data "template_file" "assume_ops_admin_dev_no_mfa_role_policy" {
+    template = "${file("policies/assume_role_no_mfa.json")}"
+    vars {
+        role_arn = "arn:aws:iam::620123204273:role/ops_admin_no_mfa"
+    }
+}
+resource "aws_iam_policy" "assume_ops_admin_dev_no_mfa_role_policy" {
+  name   = "assume_ops_admin_dev_no_mfa_role_policy"
+  path   = "/"
+  policy = "${data.template_file.assume_ops_admin_dev_no_mfa_role_policy.rendered}"
+}
+resource "aws_iam_policy_attachment" "terraform_assume_terraform_role_attachment" {
+    name       = "terraform_assume_terraform_role_attachment"
+    policy_arn = "${aws_iam_policy.assume_ops_admin_dev_no_mfa_role_policy.arn}"
+    groups     = [ "${aws_iam_group.ops_admins_dev_no_mfa_users.name}" ]
     users      = []
     roles      = []
 }

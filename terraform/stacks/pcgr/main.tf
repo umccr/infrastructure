@@ -191,7 +191,10 @@ resource "aws_lambda_function" "test_lambda" {
 
   environment {
     variables = {
-      foo = "bar"
+      QUEUE_NAME  = "${var.stack}"
+      ST2_API_KEY = "${var.vault.st2_api_key}"
+      ST2_API_URL = "${var.vault.st2_api_url}"
+      ST2_HOST    = "${var.vault.st2_host}"
     }
   }
 }

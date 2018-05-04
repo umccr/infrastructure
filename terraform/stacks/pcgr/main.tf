@@ -181,12 +181,30 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-resource "aws_lambda_function" "test_lambda" {
-  filename         = "lambda_function_payload.zip"
-  function_name    = "lambda_function_name"
+resource "aws_lambda_function" "pcgr_lambda_trigger" {
+  filename         = "lambda_function_triggerPCGR.zip"
+  function_name    = "lambda_handler"
   role             = "${aws_iam_role.iam_for_lambda.arn}"
-  handler          = "exports.test"
-  source_code_hash = "${base64sha256(file("lambda/lambda_function_payload.zip"))}"
+  handler          = "lambda_function.lambda_handler"
+  source_code_hash = "${base64sha256(file("lambda/lambda_function_triggerPCGR.zip"))}"
+  runtime          = "python3.6"
+
+  environment {
+    variables = {
+      QUEUE_NAME  = "${var.stack}"
+      ST2_API_KEY = "${var.vault.st2_api_key}"
+      ST2_API_URL = "${var.vault.st2_api_url}"
+      ST2_HOST    = "${var.vault.st2_host}"
+    }
+  }
+}
+
+resource "aws_lambda_function" "pcgr_lambda_done" {
+  filename         = "lambda_function_donePCGR.zip"
+  function_name    = "lambda_handler"
+  role             = "${aws_iam_role.iam_for_lambda.arn}"
+  handler          = "lambda_function.lambda_handler"
+  source_code_hash = "${base64sha256(file("lambda/lambda_function_donePCGR.zip"))}"
   runtime          = "python3.6"
 
   environment {

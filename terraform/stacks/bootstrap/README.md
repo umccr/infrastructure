@@ -21,3 +21,5 @@ terraform workspace list
 ```
 
 NOTE: This stack does **not** use state locking as it is setting up the required DynamoDB table!
+
+NOTE: This stack requires **one AWS account per workspace**! If two workspaces refer to the same AWS account you will run into resource name clashes.

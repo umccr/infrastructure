@@ -212,14 +212,14 @@ resource "aws_route_table" "vault" {
     gateway_id = "${aws_internet_gateway.vault.id}"
   }
 }
-resource "aws_route_table_association" "st2_rt" {
+resource "aws_route_table_association" "vault" {
   subnet_id = "${aws_subnet.vault_subnet_a.id}"
   route_table_id = "${aws_route_table.vault.id}"
 }
 data "aws_route53_zone" "umccr_org" {
   name         = "${var.workspace_root_domain[terraform.workspace]}."
 }
-resource "aws_route53_record" "st2_prod" {
+resource "aws_route53_record" "vault" {
   zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
   name    = "${var.vault_sub_domain}.${data.aws_route53_zone.umccr_org.name}"
   type    = "A"

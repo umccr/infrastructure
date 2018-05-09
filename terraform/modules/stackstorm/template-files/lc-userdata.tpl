@@ -38,7 +38,7 @@ aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocatio
 
 ################################################################################
 # start the DataDog agent
-dd_api_key=`cat /mnt/stackstorm-data/datadog/api.key`
+dd_api_key=${datadog_apikey}
 echo "Starting DataDog agent"
 my_hostname="${st2_hostname}"
 echo "Using DataDog hostname: $my_hostname"

@@ -84,7 +84,8 @@ data "template_file" "userdata" {
     template = "${file("${path.module}/templates/userdata.tpl")}"
     vars {
         allocation_id = "${aws_eip.vault.id}"
-        bucket_name = "${aws_s3_bucket.vault.id}"
+        bucket_name   = "${aws_s3_bucket.vault.id}"
+        vault_domain  = "${aws_route53_record.vault.fqdn}"
     }
 }
 
@@ -159,6 +160,14 @@ resource "aws_subnet" "vault_subnet_a" {
 resource "aws_security_group" "vault" {
     description = "Security group for Vault VPC"
     vpc_id      = "${aws_vpc.vault.id}"
+
+    # required for letsencrypt
+    ingress {
+        from_port       = 80
+        to_port         = 80
+        protocol        = "tcp"
+        cidr_blocks     = [ "0.0.0.0/0" ]
+    }
 
     ingress {
         from_port       = 8200

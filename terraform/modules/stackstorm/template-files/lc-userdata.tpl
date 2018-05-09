@@ -69,9 +69,3 @@ cd /opt/st2-docker-umccr
 sudo rm -rf ./data
 sudo ln -s /mnt/stackstorm-data/letsencrypt-data data
 docker-compose up -d
-
-################################################################################
-# Redirect AMI cleaner logs to presistent location
-echo "Setting up AMI cleaner log redirection"
-sudo rm -f /opt/ami-cleaner/run.log
-sudo ln -s /mnt/stackstorm-data/ami-cleaner.log /opt/ami-cleaner/run.log

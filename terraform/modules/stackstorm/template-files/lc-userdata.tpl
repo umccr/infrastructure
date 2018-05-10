@@ -38,7 +38,7 @@ aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocatio
 
 ################################################################################
 # start the DataDog agent
-dd_api_key=`cat /mnt/stackstorm-data/datadog/api.key`
+dd_api_key=${datadog_apikey}
 echo "Starting DataDog agent"
 my_hostname="${st2_hostname}"
 echo "Using DataDog hostname: $my_hostname"
@@ -69,9 +69,3 @@ cd /opt/st2-docker-umccr
 sudo rm -rf ./data
 sudo ln -s /mnt/stackstorm-data/letsencrypt-data data
 docker-compose up -d
-
-################################################################################
-# Redirect AMI cleaner logs to presistent location
-echo "Setting up AMI cleaner log redirection"
-sudo rm -f /opt/ami-cleaner/run.log
-sudo ln -s /mnt/stackstorm-data/ami-cleaner.log /opt/ami-cleaner/run.log

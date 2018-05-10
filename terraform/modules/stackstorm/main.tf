@@ -81,8 +81,9 @@ resource "aws_spot_instance_request" "stackstorm_instance" {
 data "template_file" "lc_userdata" {
     template = "${file("${path.module}/template-files/lc-userdata.tpl")}"
     vars {
-        allocation_id = "${aws_eip.stackstorm.id}"
-        st2_hostname  = "${var.st2_hostname}"
+        allocation_id  = "${aws_eip.stackstorm.id}"
+        st2_hostname   = "${var.st2_hostname}"
+        datadog_apikey = "${var.datadog_apikey}"
     }
 }
 

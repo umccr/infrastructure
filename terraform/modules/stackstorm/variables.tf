@@ -30,6 +30,10 @@ variable "st2_hostname" {
   description = "The hostname of the stackstorm instance DataDog will be using to collect the metrics/logs."
 }
 
+variable "datadog_apikey" {
+  description = "The API key to use to connect to the UMCCR DataDog account."
+}
+
 variable "ami_filters" {
   description = "The filters to use when looking for the AMI to use."
   default = [

@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# To be used as an extenstion to the assume-role scipt to setup Vault access for Terraform.
+# For this to work the assume-role script needs to call this script, which can be done via an assume-role extension like:
+#    if [ ! $AFTER_SCRIPT = "" ]; then
+#      echo "Running script: $AFTER_SCRIPT"
+#      . $AFTER_SCRIPT
+#    fi
+# And an env variable AFTER_SCRIPT pointing to this script.
+
+
+
 MAX_TTL='12h'
 RENEWAL_PERIOD='60m'
 

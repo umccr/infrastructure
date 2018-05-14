@@ -1,0 +1,3 @@
+{
+  "policy": "path \"auth/token/renew-self\" {\n  capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]\n}"
+}

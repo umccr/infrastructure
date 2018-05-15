@@ -46,10 +46,11 @@ resource "aws_iam_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" 
 
 data "aws_ami" "stackstorm_ami" {
   most_recent      = true
-  owners           = ["self"]
-
-  filter = "${var.ami_filters}"
+  owners           = [ "620123204273" ]
+  executable_users = [ "self" ]
+  name_regex = "^stackstorm-ami*"
 }
+
 
 resource "aws_spot_instance_request" "stackstorm_instance" {
   spot_price             = "0.018" # t2.medium: 0.0175 (current value)

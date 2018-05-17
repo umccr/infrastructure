@@ -29,6 +29,8 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    }
 }
 
+## General resources #############################################################
+
 # S3 bucket to hold primary data
 resource "aws_s3_bucket" "primary_data" {
   bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
@@ -39,6 +41,32 @@ resource "aws_s3_bucket" "primary_data" {
     Environment = "${terraform.workspace}"
   }
 }
+
+# S3 bucket for PCGR
+# NOTE: this could possibly be removed if instead data is directly retrieved from the primary-data bucket
+#       (but that requires major refactoring of the PCGR workflow)
+resource "aws_s3_bucket" "pcgr_s3_bucket" {
+  bucket = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+
+  lifecycle_rule {
+    id      = "pcgr_expire_uploads"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "ONEZONE_IA"
+    }
+
+    expiration {
+      days = 7
+    }
+
+    noncurrent_version_expiration {
+      days = 7
+    }
+  }
+}
+
 
 
 ## Vault resources #############################################################

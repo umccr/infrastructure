@@ -1,6 +1,3 @@
-# Lambdas deployment
-# Vault
-
 terraform {
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -58,28 +55,6 @@ resource "aws_iam_policy" "s3_pcgr_policy" {
   name   = "s3_bucket_policy${var.name_suffix}"
   path   = "/"
   policy = "${file("./policies/s3_bucket_policy.json")}"
-}
-
-resource "aws_s3_bucket" "pcgr_s3_bucket" {
-  bucket = "umccr-pcgr"
-
-  lifecycle_rule {
-    id      = "pcgr_expire_uploads"
-    enabled = true
-
-    transition {
-      days          = 0
-      storage_class = "ONEZONE_IA"
-    }
-
-    expiration {
-      days = 7
-    }
-
-    noncurrent_version_expiration {
-      days = 7
-    }
-  }
 }
 
 data "aws_ami" "pcgr_ami" {

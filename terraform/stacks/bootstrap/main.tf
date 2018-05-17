@@ -72,9 +72,6 @@ resource "aws_spot_instance_request" "vault" {
   subnet_id              = "${aws_subnet.vault_subnet_a.id}"
   vpc_security_group_ids = [ "${aws_security_group.vault.id}" ]
 
-  # TODO: remove ssh key association! for development only
-  key_name               = "freisinger"
-
   monitoring             = true
   user_data              = "${data.template_file.userdata.rendered}"
 
@@ -180,20 +177,12 @@ resource "aws_security_group" "vault" {
         cidr_blocks     = [ "0.0.0.0/0" ]
     }
 
+    # port for vault communication
     ingress {
         from_port       = 8200
         to_port         = 8200
         protocol        = "tcp"
         cidr_blocks     = [ "0.0.0.0/0" ]
-    }
-
-    # TODO: remove SSH access! only for development
-    ingress {
-        from_port        = 22
-        to_port          = 22
-        protocol         = "tcp"
-        cidr_blocks      = [ "0.0.0.0/0" ]
-        ipv6_cidr_blocks = [ "::/0" ]
     }
 
     ingress {

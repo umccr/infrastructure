@@ -2,6 +2,10 @@ variable "vault_instance_type" {
   default = "t2.micro"
 }
 
+variable "vault_instance_spot_price" {
+  default = "0.0045"
+}
+
 variable "vault_availability_zone" {
   default = "ap-southeast-2a"
 }

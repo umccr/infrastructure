@@ -20,6 +20,13 @@ variable "workspace_name_suffix" {
   }
 }
 
+variable "workspace_primary_data_bucket_name" {
+  default = {
+    prod = "umccr-primary-data-prod"
+    dev  = "umccr-primary-data-dev"
+  }
+}
+
 variable "workspace_vault_bucket_name" {
   default = {
     prod = "umccr-vault-data-prod"

@@ -12,7 +12,7 @@ provider "aws" {
 
 ## Terraform resources #############################################################
 
-# DynamoDB table for Terraform statw locking
+# DynamoDB table for Terraform state locking
 resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    name = "terraform-state-lock"
    hash_key = "LockID"
@@ -27,6 +27,17 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    tags {
      Name = "Terraform Lock Table"
    }
+}
+
+# S3 bucket to hold primary data
+resource "aws_s3_bucket" "primary_data" {
+  bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
+  acl    = "private"
+
+  tags {
+    Name        = "primary-data"
+    Environment = "${terraform.workspace}"
+  }
 }
 
 

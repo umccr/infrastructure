@@ -58,10 +58,11 @@ resource "aws_iam_policy" "s3_pcgr_policy" {
 }
 
 data "aws_ami" "pcgr_ami" {
-  most_recent = true
-  owners      = ["self"]
+  most_recent      = true
+  owners           = [ "620123204273" ]
+  executable_users = [ "self" ]
+  name_regex = "^pcgr-ami*"
 
-  filter = "${var.ami_filters}"
 }
 
 resource "aws_spot_instance_request" "pcgr_instance" {

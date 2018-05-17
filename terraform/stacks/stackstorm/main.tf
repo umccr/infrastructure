@@ -26,6 +26,7 @@ module "stackstorm" {
   # NOTE: the source cannot be interpolated, so we can't use a variable here and have to keep the difference bwtween production and developmment in a branch
   source                        = "../../modules/stackstorm"
   instance_type                 = "t2.medium"
+  instance_spot_price           = "0.018"
   name_suffix                   = "${var.workspace_name_suffix[terraform.workspace]}"
   availability_zone             = "ap-southeast-2a"
   root_domain                   = "${var.workspace_zone_domain[terraform.workspace]}"

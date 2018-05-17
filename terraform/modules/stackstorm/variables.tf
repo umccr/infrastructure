@@ -6,6 +6,10 @@ variable "instance_type" {
   description = "The EC2 instance type to use for the stackstorm instance."
 }
 
+variable "instance_spot_price" {
+  description = "The spot price limit for the EC2 instance requested."
+}
+
 variable "availability_zone" {
   description = "The availability_zone in which to create the resources."
 }

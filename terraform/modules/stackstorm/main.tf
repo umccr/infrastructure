@@ -53,7 +53,7 @@ data "aws_ami" "stackstorm_ami" {
 
 
 resource "aws_spot_instance_request" "stackstorm_instance" {
-  spot_price             = "0.018" # t2.medium: 0.0175 (current value)
+  spot_price             = "${var.instance_spot_price}"
   wait_for_fulfillment   = true
 
   ami                    = "${data.aws_ami.stackstorm_ami.id}"

@@ -54,7 +54,7 @@ resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
 resource "aws_iam_policy" "s3_pcgr_policy" {
   name   = "s3_bucket_policy${var.name_suffix}"
   path   = "/"
-  policy = "${file("./policies/s3_bucket_policy.json")}"
+  policy = "${file("${path.module}/policies/s3_bucket_policy.json")}"
 }
 
 data "aws_ami" "pcgr_ami" {
@@ -138,23 +138,7 @@ resource "aws_security_group" "vpc_pcgr" {
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
+  assume_role_policy = "${file("${path.module}/policies/lambda_assume_role.json")}"
 }
 
 resource "aws_lambda_function" "pcgr_lambda_trigger" {
@@ -162,7 +146,7 @@ resource "aws_lambda_function" "pcgr_lambda_trigger" {
   function_name    = "lambda_handler"
   role             = "${aws_iam_role.iam_for_lambda.arn}"
   handler          = "lambda_function.lambda_handler"
-  source_code_hash = "${base64sha256(file("lambda/lambda_function_triggerPCGR.zip"))}"
+  source_code_hash = "${base64sha256(file("${path.module}/lambda/lambda_function_triggerPCGR.zip"))}"
   runtime          = "python3.6"
 
   environment {
@@ -180,7 +164,7 @@ resource "aws_lambda_function" "pcgr_lambda_done" {
   function_name    = "lambda_handler"
   role             = "${aws_iam_role.iam_for_lambda.arn}"
   handler          = "lambda_function.lambda_handler"
-  source_code_hash = "${base64sha256(file("lambda/lambda_function_donePCGR.zip"))}"
+  source_code_hash = "${base64sha256(file("${path.module}/lambda/lambda_function_donePCGR.zip"))}"
   runtime          = "python3.6"
 
   environment {

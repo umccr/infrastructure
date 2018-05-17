@@ -93,12 +93,11 @@ For more details please refer to the `assume-role` script.
 
 
 ### modules
-Reusable Terraform modules that can be used across multiple stacks.
+Reusable Terraform modules that can be used across multiple stacks. If you want to create a new module, use the `skel` module as a template.
 
 
 ### stacks
 A Terraform stack usually corresponds to a logical unit, like a piece of infrastructure for a service like StackStorm. We use a central S3 bucket in our AWS `bastion` account to keep all Terraform state and we use DynamoDB tables in each account to enable state locking.
-
 
 #### bastion
 See [README](terraform/stacks/bastion/README.md)

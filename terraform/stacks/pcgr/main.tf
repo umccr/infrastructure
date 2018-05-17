@@ -11,6 +11,20 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
+provider "vault" {
+  # Vault server address and access token are retrieved from env variables (VAULT_ADDR and VAULT_TOKEN)
+}
+
+# TODO: make sure the needed key value pairs are in the Vault:
+# vault kv put kv/pcgr <key>=<value>
+#  st2-api-key=<api key>
+#  st2-api-url=<api url>
+#  st2-host=<st2 host>
+data "vault_generic_secret" "pcgr" {
+  path = "kv/pcgr"
+}
+
+
 resource "aws_iam_instance_profile" "instance_profile" {
   name = "${var.stack}_instance_profile${var.name_suffix}"
   role = "${aws_iam_role.pcgr_role.name}"
@@ -152,9 +166,10 @@ resource "aws_lambda_function" "pcgr_lambda_trigger" {
   environment {
     variables = {
       QUEUE_NAME  = "${var.stack}"
-      ST2_API_KEY = "${var.vault.st2_api_key}"
-      ST2_API_URL = "${var.vault.st2_api_url}"
-      ST2_HOST    = "${var.vault.st2_host}"
+      ST2_API_KEY = "${data.vault_generic_secret.datadog.data["st2-api-key"]}"
+      # TODO: would it not be better to retrieve the host/url using workspace variables (they are dependent on the workspace and not really secret, right?)
+      ST2_API_URL = "${data.vault_generic_secret.datadog.data["st2-api-url"]}"
+      ST2_HOST    = "${data.vault_generic_secret.datadog.data["st2-host"]}"
     }
   }
 }
@@ -170,9 +185,10 @@ resource "aws_lambda_function" "pcgr_lambda_done" {
   environment {
     variables = {
       QUEUE_NAME  = "${var.stack}"
-      ST2_API_KEY = "${var.vault.st2_api_key}"
-      ST2_API_URL = "${var.vault.st2_api_url}"
-      ST2_HOST    = "${var.vault.st2_host}"
+      ST2_API_KEY = "${data.vault_generic_secret.datadog.data["st2-api-key"]}"
+      # TODO: would it not be better to retrieve the host/url using workspace variables (they are dependent on the workspace and not really secret, right?)
+      ST2_API_URL = "${data.vault_generic_secret.datadog.data["st2-api-url"]}"
+      ST2_HOST    = "${data.vault_generic_secret.datadog.data["st2-host"]}"
     }
   }
 }

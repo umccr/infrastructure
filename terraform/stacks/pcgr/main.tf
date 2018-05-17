@@ -66,8 +66,8 @@ data "aws_ami" "pcgr_ami" {
 }
 
 resource "aws_spot_instance_request" "pcgr_instance" {
-  spot_price           = "0.09"
-  wait_for_fulfillment = true
+  spot_price             = "${var.instance_spot_price}"
+  wait_for_fulfillment   = true
 
   ami                    = "${data.aws_ami.pcgr_ami.id}"
   instance_type          = "${var.instance_type}"
@@ -76,7 +76,7 @@ resource "aws_spot_instance_request" "pcgr_instance" {
   subnet_id              = "${aws_subnet.vpc_subnet_a_pcgr.id}"
   vpc_security_group_ids = ["${aws_security_group.vpc_pcgr.id}"]
 
-  monitoring = true
+  monitoring             = true
 
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174

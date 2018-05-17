@@ -4,8 +4,13 @@ variable "stack" {
 }
 
 variable "instance_type" {
-  description = "The EC2 instance type to use for the stackstorm instance."
+  description = "The EC2 instance type to use for the pcgr instance."
   default     = "m4.xlarge"
+}
+
+variable "instance_spot_price" {
+  description = "The spot price limit for the EC2 instance."
+  default     = "0.09"
 }
 
 variable "name_suffix" {

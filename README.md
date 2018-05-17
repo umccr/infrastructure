@@ -4,33 +4,40 @@ Table of Contents
 =================
 
    * [infrastructure](#infrastructure)
-      * [Docker](#docker)
-         * [Packer](#packer)
-      * [Packer](#packer-1)
+      * [docker](#docker)
+         * [packer](#packer)
+      * [packer](#packer-1)
+         * [pcgr-ami](#pcgr-ami)
          * [stackstorm-ami](#stackstorm-ami)
-      * [Terraform](#terraform)
+         * [vault-ami](#vault-ami)
+      * [scripts](#scripts)
+      * [terraform](#terraform)
          * [modules](#modules)
          * [stacks](#stacks)
             * [bastion](#bastion)
             * [bootstrap](#bootstrap)
             * [packer](#packer-2)
             * [stackstorm](#stackstorm)
+      * [vault](#vault)
 
 # infrastructure
 Repo for the UMCCR compute infrastructure as code
 
-**NOTE**: contains GIT submodules, so you may want to check it out with:  
+**NOTE**: contains GIT submodules.
+The submodules refer to a specific commit in the external repo and therefore you may not get the latest version of the code.
+
+You may want to clone it with:  
 `git clone --recurse-submodules https://github.com/umccr/infrastructure.git`
 
 
-## Docker
+## docker
 Convenience containers
 
-### Packer
+### packer
 Container to run packer.
 See [README](docker/packer/README.md) on how to build and use it.
 
-## Packer
+## packer
 Packer configurations to build container/AMI images
 Inspiration taken from:
 - https://programmaticponderings.com/2017/03/06/baking-aws-ami-with-new-docker-ce-using-packer/
@@ -44,13 +51,29 @@ packer build <ami.json>
 **NOTE**: Packer can also be run using a docker container (see above).
 
 
+### pcgr-ami
+**NOTE**: this is a GIT submodule
+
+See the README in packer/pcgr-ami
+
 ### stackstorm-ami
 **NOTE**: this is a GIT submodule
 
-See the stackstorm-ami [README](packer/stackstorm-ami/README.md)
+See the README in packer/stackstorm-ami
+
+### vault-ami
+**NOTE**: this is a GIT submodule
+
+See the README in packer/vault-ami
 
 
-## Terraform
+## scripts
+Convenience scripts to help with the management of the infrastructure.
+
+See this [README](scripts/README.md) for more details.
+
+
+## terraform
 UMCCR infrastructure as code
 
 We use `modules` for reusable components and live `stacks` that are applied to generate the actual infrastructure.
@@ -91,3 +114,6 @@ See [README](terraform/stacks/packer/README.md)
 
 #### stackstorm
 See [README](terraform/stacks/stackstorm/README.md)
+
+## vault
+Codified configuration of the UMCCR Vault setup. See the [README](vault/README.md)

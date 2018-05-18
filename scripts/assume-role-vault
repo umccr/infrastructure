@@ -1,20 +1,12 @@
 #!/bin/bash
 
-# To be used as an extenstion to the assume-role scipt to setup Vault access for Terraform.
-# For this to work the assume-role script needs to call this script, which can be done via an assume-role extension like:
-#    if [ ! $AFTER_SCRIPT = "" ]; then
-#      echo "Running script: $AFTER_SCRIPT"
-#      . $AFTER_SCRIPT
-#    fi
-# And an env variable AFTER_SCRIPT pointing to this script.
+# wrapper script around 'assume-role' to add env var for Vault access
 
-
-
-MAX_TTL='12h'
-RENEWAL_PERIOD='60m'
+MAX_TTL='10m'
+RENEWAL_PERIOD='5m'
 
 after_script(){
-  echo "name: $AWS_ACCOUNT_NAME"
+
   # build the Vault server address based on the AWS account name
   if [ ! $AWS_ACCOUNT_NAME = "" ]; then
     echo "Using AWS account: $AWS_ACCOUNT_NAME"
@@ -46,7 +38,8 @@ after_script(){
   fi
 
   echo "Requesting Vault access token..."
-  vault_token=$(vault token create -explicit-max-ttl=$MAX_TTL -period=$RENEWAL_PERIOD --format=json | jq -r .auth.client_token)
+    vault_token=$(vault token create -explicit-max-ttl=$MAX_TTL -period=$RENEWAL_PERIOD --format=json | jq -r .auth.client_token)
+  echo "$vault_token"
   if [ $vault_token = "" ]; then
     echo "ERROR requesting Vault token"
   fi
@@ -54,4 +47,7 @@ after_script(){
   echo "Vault access token successful retrieved. Session envars exported."
 }
 
-after_script;
+
+
+assume-role "$@"
+after_script

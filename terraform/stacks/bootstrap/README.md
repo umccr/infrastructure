@@ -1,15 +1,12 @@
 # bootstrap stack
+This stack uses workspaces!
 
 ```
-assume-role prod ops-admin
+assume-role dev ops-admin
 
-terraform init
+terraform workspace select dev
 
-terraform workspace select prod
-
-terraform plan
-
-terraform apply
+terraform ...
 ```
 
 This Terraform stack sets up some initial AWS infrastructure that needs to be in place before other stacks can be used. It is applied against the AWS `prod` and `dev` accounts and uses Terraform workspaces to distinguish between those accounts.

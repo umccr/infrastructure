@@ -3,11 +3,7 @@
 ```
 export AWS_PROFILE=umccr_bastion
 
-terraform init
-
-terraform plan
-
-terraform apply
+terraform ...
 ```
 
 

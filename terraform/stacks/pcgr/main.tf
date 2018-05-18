@@ -18,20 +18,18 @@ provider "vault" {
 # TODO: make sure the needed key value pairs are in the Vault:
 # vault kv put kv/pcgr <key>=<value>
 #  st2-api-key=<api key>
-#  st2-api-url=<api url>
-#  st2-host=<st2 host>
 data "vault_generic_secret" "pcgr" {
   path = "kv/pcgr"
 }
 
 
 resource "aws_iam_instance_profile" "instance_profile" {
-  name = "${var.stack}_instance_profile${var.name_suffix}"
+  name = "${var.stack}_instance_profile${var.workspace_name_suffix[terraform.workspace]}"
   role = "${aws_iam_role.pcgr_role.name}"
 }
 
 resource "aws_iam_role" "pcgr_role" {
-  name               = "pcgr_role${var.name_suffix}"
+  name               = "pcgr_role${var.workspace_name_suffix[terraform.workspace]}"
   path               = "/"
   assume_role_policy = "${data.aws_iam_policy_document.pcgr_assume_policy.json}"
 }
@@ -47,28 +45,41 @@ data "aws_iam_policy_document" "pcgr_assume_policy" {
   }
 }
 
+
+data "template_file" "s3_pcgr_policy" {
+    template = "${file("${path.module}/policies/s3_bucket_policy.json")}"
+    vars {
+        bucket_name = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+    }
+}
+resource "aws_iam_policy" "s3_pcgr_policy" {
+  path   = "/"
+  policy = "${data.template_file.s3_pcgr_policy.rendered}"
+}
+resource "aws_iam_policy" "ec2_pcgr_policy" {
+  path   = "/"
+  policy = "${file("${path.module}/policies/ec2.json")}"
+}
+resource "aws_iam_policy" "sqs_pcgr_policy" {
+  path   = "/"
+  policy = "${file("${path.module}/policies/sqs.json")}"
+}
 resource "aws_iam_policy_attachment" "ec2_policy_to_role_attachment" {
-  name       = "ec2_policy_to_role_attachment${var.name_suffix}"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+  name       = "ec2_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
+  policy_arn = "${aws_iam_policy.ec2_pcgr_policy.arn}"
   roles      = ["${aws_iam_role.pcgr_role.name}"]
 }
 
 resource "aws_iam_policy_attachment" "sqs_policy_to_role_attachment" {
-  name       = "sqs_policy_to_role_attachment${var.name_suffix}"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+  name       = "sqs_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
+  policy_arn = "${aws_iam_policy.sqs_pcgr_policy.arn}"
   roles      = ["${aws_iam_role.pcgr_role.name}"]
 }
 
 resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
-  name       = "s3_policy_to_role_attachment${var.name_suffix}"
+  name       = "s3_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
   policy_arn = "${aws_iam_policy.s3_pcgr_policy.arn}"
   roles      = ["${aws_iam_role.pcgr_role.name}"]
-}
-
-resource "aws_iam_policy" "s3_pcgr_policy" {
-  name   = "s3_bucket_policy${var.name_suffix}"
-  path   = "/"
-  policy = "${file("${path.module}/policies/s3_bucket_policy.json")}"
 }
 
 data "aws_ami" "pcgr_ami" {
@@ -96,7 +107,7 @@ resource "aws_spot_instance_request" "pcgr_instance" {
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
   tags {
-    Name = "pcgr${var.name_suffix}"
+    Name = "pcgr${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
 
@@ -107,7 +118,7 @@ resource "aws_vpc" "vpc_pcgr" {
   instance_tenancy     = "default"
 
   tags {
-    Name = "vpc_pcgr${var.name_suffix}"
+    Name = "vpc_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
 
@@ -118,12 +129,12 @@ resource "aws_subnet" "vpc_subnet_a_pcgr" {
   availability_zone       = "${var.availability_zone}"
 
   tags {
-    Name = "vpc_subnet_a_pcgr${var.name_suffix}"
+    Name = "vpc_subnet_a_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
 
 resource "aws_security_group" "vpc_pcgr" {
-  name        = "sg_pcgr${var.name_suffix}"
+  name        = "sg_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   description = "Security group for pcgr VPC"
   vpc_id      = "${aws_vpc.vpc_pcgr.id}"
 
@@ -167,9 +178,8 @@ resource "aws_lambda_function" "pcgr_lambda_trigger" {
     variables = {
       QUEUE_NAME  = "${var.stack}"
       ST2_API_KEY = "${data.vault_generic_secret.datadog.data["st2-api-key"]}"
-      # TODO: would it not be better to retrieve the host/url using workspace variables (they are dependent on the workspace and not really secret, right?)
-      ST2_API_URL = "${data.vault_generic_secret.datadog.data["st2-api-url"]}"
-      ST2_HOST    = "${data.vault_generic_secret.datadog.data["st2-host"]}"
+      ST2_API_URL = "http://${var.workspace_st2_host[terraform.workspace]}/api"
+      ST2_HOST    = "${var.workspace_st2_host[terraform.workspace]}"
     }
   }
 }
@@ -186,9 +196,8 @@ resource "aws_lambda_function" "pcgr_lambda_done" {
     variables = {
       QUEUE_NAME  = "${var.stack}"
       ST2_API_KEY = "${data.vault_generic_secret.datadog.data["st2-api-key"]}"
-      # TODO: would it not be better to retrieve the host/url using workspace variables (they are dependent on the workspace and not really secret, right?)
-      ST2_API_URL = "${data.vault_generic_secret.datadog.data["st2-api-url"]}"
-      ST2_HOST    = "${data.vault_generic_secret.datadog.data["st2-host"]}"
+      ST2_API_URL = "http://${var.workspace_st2_host[terraform.workspace]}/api"
+      ST2_HOST    = "${var.workspace_st2_host[terraform.workspace]}"
     }
   }
 }

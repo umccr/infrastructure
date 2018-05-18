@@ -276,10 +276,15 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   path               = "/"
   assume_role_policy = "${file("policies/assume_ops_admin_no_mfa_role.json")}"
 }
+resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
+  path   = "/"
+  policy = "${file("policies/ops_admin_no_mfa_policy.json")}"
+}
+
 resource "aws_iam_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
     count      = "${terraform.workspace == "dev" ? 1 : 0}"
     name       = "admin_access_to_ops_admin_no_mfa_role_attachment"
-    policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+    policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
     groups     = []
     users      = []
     roles      = [ "${aws_iam_role.ops_admin_no_mfa_role.name}" ]

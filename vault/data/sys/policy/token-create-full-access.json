@@ -1,3 +1,3 @@
 {
-  "policy": "path \"auth/token/create\" {\n  capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]\n}"
+  "policy": "path \"auth/token/create\" {\n  capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\", \"sudo\"]\n}"
 }

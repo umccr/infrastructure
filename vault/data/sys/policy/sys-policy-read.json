@@ -1,0 +1,3 @@
+{
+  "policy": "path \"sys/policy\" {\n  capabilities = [\"read\", \"list\"]\n}"
+}

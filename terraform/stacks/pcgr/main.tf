@@ -177,7 +177,7 @@ resource "aws_lambda_function" "pcgr_lambda_trigger" {
   environment {
     variables = {
       QUEUE_NAME  = "${var.stack}"
-      ST2_API_KEY = "${data.vault_generic_secret.datadog.data["st2-api-key"]}"
+      ST2_API_KEY = "${data.vault_generic_secret.pcgr.data["st2-api-key"]}"
       ST2_API_URL = "http://${var.workspace_st2_host[terraform.workspace]}/api"
       ST2_HOST    = "${var.workspace_st2_host[terraform.workspace]}"
     }
@@ -195,7 +195,7 @@ resource "aws_lambda_function" "pcgr_lambda_done" {
   environment {
     variables = {
       QUEUE_NAME  = "${var.stack}"
-      ST2_API_KEY = "${data.vault_generic_secret.datadog.data["st2-api-key"]}"
+      ST2_API_KEY = "${data.vault_generic_secret.pcgr.data["st2-api-key"]}"
       ST2_API_URL = "http://${var.workspace_st2_host[terraform.workspace]}/api"
       ST2_HOST    = "${var.workspace_st2_host[terraform.workspace]}"
     }

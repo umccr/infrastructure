@@ -15,9 +15,6 @@ provider "vault" {
   # Vault server address and access token are retrieved from env variables (VAULT_ADDR and VAULT_TOKEN)
 }
 
-# TODO: make sure the needed key value pairs are in the Vault:
-# vault kv put kv/pcgr <key>=<value>
-#  st2-api-key=<api key>
 data "vault_generic_secret" "pcgr" {
   path = "kv/pcgr"
 }
@@ -82,34 +79,34 @@ resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
   roles      = ["${aws_iam_role.pcgr_role.name}"]
 }
 
-data "aws_ami" "pcgr_ami" {
-  most_recent      = true
-  owners           = [ "620123204273" ]
-  executable_users = [ "self" ]
-  name_regex = "^pcgr-ami*"
+# data "aws_ami" "pcgr_ami" {
+#   most_recent      = true
+#   owners           = [ "620123204273" ]
+#   executable_users = [ "self" ]
+#   name_regex = "^pcgr-ami*"
+#
+# }
 
-}
-
-resource "aws_spot_instance_request" "pcgr_instance" {
-  spot_price             = "${var.instance_spot_price}"
-  wait_for_fulfillment   = true
-
-  ami                    = "${data.aws_ami.pcgr_ami.id}"
-  instance_type          = "${var.instance_type}"
-  iam_instance_profile   = "${aws_iam_instance_profile.instance_profile.id}"
-  availability_zone      = "ap-southeast-2"
-  subnet_id              = "${aws_subnet.vpc_subnet_a_pcgr.id}"
-  vpc_security_group_ids = ["${aws_security_group.vpc_pcgr.id}"]
-
-  monitoring             = true
-
-  # tags apply to the spot request, NOT the instance!
-  # https://github.com/terraform-providers/terraform-provider-aws/issues/174
-  # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
-  tags {
-    Name = "pcgr${var.workspace_name_suffix[terraform.workspace]}"
-  }
-}
+# resource "aws_spot_instance_request" "pcgr_instance" {
+#   spot_price             = "${var.instance_spot_price}"
+#   wait_for_fulfillment   = true
+#
+#   ami                    = "${data.aws_ami.pcgr_ami.id}"
+#   instance_type          = "${var.instance_type}"
+#   iam_instance_profile   = "${aws_iam_instance_profile.instance_profile.id}"
+#   availability_zone      = "ap-southeast-2"
+#   subnet_id              = "${aws_subnet.vpc_subnet_a_pcgr.id}"
+#   vpc_security_group_ids = ["${aws_security_group.vpc_pcgr.id}"]
+#
+#   monitoring             = true
+#
+#   # tags apply to the spot request, NOT the instance!
+#   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
+#   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
+#   tags {
+#     Name = "pcgr${var.workspace_name_suffix[terraform.workspace]}"
+#   }
+# }
 
 resource "aws_vpc" "vpc_pcgr" {
   cidr_block           = "172.31.0.0/16"

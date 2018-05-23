@@ -53,16 +53,16 @@ resource "aws_s3_bucket" "pcgr_s3_bucket" {
     enabled = true
 
     transition {
-      days          = 0
+      days          = 30
       storage_class = "ONEZONE_IA"
     }
 
     expiration {
-      days = 7
+      days = 31
     }
 
     noncurrent_version_expiration {
-      days = 7
+      days = 31
     }
   }
 }

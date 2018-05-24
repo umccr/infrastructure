@@ -10,7 +10,7 @@ provider "aws" {
   region      = "ap-southeast-2"
 }
 
-## Terraform resources #############################################################
+## Terraform resources #########################################################
 
 # DynamoDB table for Terraform state locking
 resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
@@ -29,7 +29,24 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    }
 }
 
-## General resources #############################################################
+## S3 buckets  #3333############################################################
+
+# S3 bucket for FASTQ data
+# NOTE: is meant to be a temporary solution until full support of primary data is there
+resource "aws_s3_bucket" "fastq-data" {
+  bucket = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
+
+  lifecycle_rule {
+    id      = "move_to_glacier"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "GLACIER"
+    }
+  }
+}
+
 
 # S3 bucket to hold primary data
 resource "aws_s3_bucket" "primary_data" {
@@ -67,10 +84,6 @@ resource "aws_s3_bucket" "pcgr_s3_bucket" {
   }
 }
 
-
-
-## Vault resources #############################################################
-
 # S3 bucket as Vault backend store
 resource "aws_s3_bucket" "vault" {
   bucket = "${var.workspace_vault_bucket_name[terraform.workspace]}"
@@ -81,6 +94,9 @@ resource "aws_s3_bucket" "vault" {
     Environment = "${terraform.workspace}"
   }
 }
+
+
+## Vault resources #############################################################
 
 # EC2 instance to run Vault server
 data "aws_ami" "vault_ami" {

@@ -24,6 +24,13 @@ variable "workspace_name_suffix" {
   }
 }
 
+variable "workspace_fastq_data_bucket_name" {
+  default = {
+    prod = "umccr-fastq-data-prod"
+    dev  = "umccr-fastq-data-dev"
+  }
+}
+
 variable "workspace_pcgr_bucket_name" {
   default = {
     prod = "umccr-pcgr-prod"

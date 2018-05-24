@@ -25,12 +25,6 @@ resource "aws_iam_instance_profile" "instance_profile" {
   role = "${aws_iam_role.pcgr_role.name}"
 }
 
-resource "aws_iam_role" "pcgr_role" {
-  name               = "pcgr_role${var.workspace_name_suffix[terraform.workspace]}"
-  path               = "/"
-  assume_role_policy = "${data.aws_iam_policy_document.pcgr_assume_policy.json}"
-}
-
 data "aws_iam_policy_document" "pcgr_assume_policy" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -41,7 +35,11 @@ data "aws_iam_policy_document" "pcgr_assume_policy" {
     }
   }
 }
-
+resource "aws_iam_role" "pcgr_role" {
+  name               = "pcgr_role${var.workspace_name_suffix[terraform.workspace]}"
+  path               = "/"
+  assume_role_policy = "${data.aws_iam_policy_document.pcgr_assume_policy.json}"
+}
 
 data "template_file" "s3_pcgr_policy" {
     template = "${file("${path.module}/policies/s3_bucket_policy.json")}"
@@ -53,13 +51,15 @@ resource "aws_iam_policy" "s3_pcgr_policy" {
   path   = "/"
   policy = "${data.template_file.s3_pcgr_policy.rendered}"
 }
+resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
+  name       = "s3_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
+  policy_arn = "${aws_iam_policy.s3_pcgr_policy.arn}"
+  roles      = ["${aws_iam_role.pcgr_role.name}"]
+}
+
 resource "aws_iam_policy" "ec2_pcgr_policy" {
   path   = "/"
   policy = "${file("${path.module}/policies/ec2.json")}"
-}
-resource "aws_iam_policy" "sqs_pcgr_policy" {
-  path   = "/"
-  policy = "${file("${path.module}/policies/sqs.json")}"
 }
 resource "aws_iam_policy_attachment" "ec2_policy_to_role_attachment" {
   name       = "ec2_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
@@ -67,49 +67,18 @@ resource "aws_iam_policy_attachment" "ec2_policy_to_role_attachment" {
   roles      = ["${aws_iam_role.pcgr_role.name}"]
 }
 
+resource "aws_iam_policy" "sqs_pcgr_policy" {
+  path   = "/"
+  policy = "${file("${path.module}/policies/sqs.json")}"
+}
 resource "aws_iam_policy_attachment" "sqs_policy_to_role_attachment" {
   name       = "sqs_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
   policy_arn = "${aws_iam_policy.sqs_pcgr_policy.arn}"
   roles      = ["${aws_iam_role.pcgr_role.name}"]
 }
 
-resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
-  name       = "s3_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
-  policy_arn = "${aws_iam_policy.s3_pcgr_policy.arn}"
-  roles      = ["${aws_iam_role.pcgr_role.name}"]
-}
-
-# data "aws_ami" "pcgr_ami" {
-#   most_recent      = true
-#   owners           = [ "620123204273" ]
-#   executable_users = [ "self" ]
-#   name_regex = "^pcgr-ami*"
-#
-# }
-
-# resource "aws_spot_instance_request" "pcgr_instance" {
-#   spot_price             = "${var.instance_spot_price}"
-#   wait_for_fulfillment   = true
-#
-#   ami                    = "${data.aws_ami.pcgr_ami.id}"
-#   instance_type          = "${var.instance_type}"
-#   iam_instance_profile   = "${aws_iam_instance_profile.instance_profile.id}"
-#   availability_zone      = "ap-southeast-2"
-#   subnet_id              = "${aws_subnet.vpc_subnet_a_pcgr.id}"
-#   vpc_security_group_ids = ["${aws_security_group.vpc_pcgr.id}"]
-#
-#   monitoring             = true
-#
-#   # tags apply to the spot request, NOT the instance!
-#   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
-#   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
-#   tags {
-#     Name = "pcgr${var.workspace_name_suffix[terraform.workspace]}"
-#   }
-# }
-
 resource "aws_vpc" "vpc_pcgr" {
-  cidr_block           = "172.31.0.0/16"
+  cidr_block           = "172.32.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
   instance_tenancy     = "default"
@@ -121,7 +90,7 @@ resource "aws_vpc" "vpc_pcgr" {
 
 resource "aws_subnet" "vpc_subnet_a_pcgr" {
   vpc_id                  = "${aws_vpc.vpc_pcgr.id}"
-  cidr_block              = "172.31.0.0/20"
+  cidr_block              = "172.32.0.0/20"
   map_public_ip_on_launch = true
   availability_zone       = "${var.availability_zone}"
 
@@ -159,20 +128,23 @@ resource "aws_security_group" "vpc_pcgr" {
   }
 }
 
-resource "aws_iam_role" "iam_for_lambda" {
-  assume_role_policy = "${file("${path.module}/policies/lambda_assume_role.json")}"
-}
+# TODO: find a way to attach event trigger to function (perhaps via aws cli command)
+module "lambda" {
+  source = "github.com/claranet/terraform-aws-lambda"
 
-resource "aws_lambda_function" "pcgr_lambda_trigger" {
-  filename         = "lambda_function_triggerPCGR.zip"
-  function_name    = "lambda_handler"
-  role             = "${aws_iam_role.iam_for_lambda.arn}"
-  handler          = "lambda_function.lambda_handler"
-  source_code_hash = "${base64sha256(file("${path.module}/lambda/lambda_function_triggerPCGR.zip"))}"
-  runtime          = "python3.6"
+  function_name = "pcgr_trigger_lambda"
+  description   = "Lambda function to trigger PCGR data arrival"
+  handler       = "lambda_function_triggerPCGR.lambda_handler"
+  runtime       = "python3.6"
+  timeout       = 300
+
+  source_path = "${path.module}/lambda/lambda_function_triggerPCGR.py"
+
+  attach_policy = true
+  policy        = "${aws_iam_policy.lambda_policy.policy}"
 
   environment {
-    variables = {
+    variables {
       QUEUE_NAME  = "${var.stack}"
       ST2_API_KEY = "${data.vault_generic_secret.pcgr.data["st2-api-key"]}"
       ST2_API_URL = "http://${var.workspace_st2_host[terraform.workspace]}/api"
@@ -181,20 +153,37 @@ resource "aws_lambda_function" "pcgr_lambda_trigger" {
   }
 }
 
-resource "aws_lambda_function" "pcgr_lambda_done" {
-  filename         = "lambda_function_donePCGR.zip"
-  function_name    = "lambda_handler"
-  role             = "${aws_iam_role.iam_for_lambda.arn}"
-  handler          = "lambda_function.lambda_handler"
-  source_code_hash = "${base64sha256(file("${path.module}/lambda/lambda_function_donePCGR.zip"))}"
-  runtime          = "python3.6"
+module "lambda" {
+  source = "github.com/claranet/terraform-aws-lambda"
+
+  function_name = "pcgr_done_lambda"
+  description   = "Lambda function to trigger PCGR done"
+  handler       = "lambda_function_donePCGR.lambda_handler"
+  runtime       = "python3.6"
+  timeout       = 300
+
+  source_path = "${path.module}/lambda/lambda_function_donePCGR.py"
+
+  attach_policy = true
+  policy        = "${aws_iam_policy.lambda_policy.policy}"
 
   environment {
-    variables = {
+    variables {
       QUEUE_NAME  = "${var.stack}"
       ST2_API_KEY = "${data.vault_generic_secret.pcgr.data["st2-api-key"]}"
       ST2_API_URL = "http://${var.workspace_st2_host[terraform.workspace]}/api"
       ST2_HOST    = "${var.workspace_st2_host[terraform.workspace]}"
     }
   }
+}
+
+data "template_file" "lambda_policy" {
+    template = "${file("${path.module}/policies/lambda-policies.json")}"
+    vars {
+        bucket_name = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+    }
+}
+resource "aws_iam_policy" "lambda_policy" {
+  path   = "/"
+  policy = "${data.template_file.lambda_policy.rendered}"
 }

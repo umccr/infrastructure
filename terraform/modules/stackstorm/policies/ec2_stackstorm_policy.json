@@ -38,7 +38,8 @@
         "ec2:DescribeSnapshots",
         "ec2:CopySnapshot",
         "ec2:DescribeSnapshotAttribute",
-        "ec2:ModifySnapshotAttribute"
+        "ec2:ModifySnapshotAttribute",
+        "ec2:DescribeSecurityGroups"
       ],
       "Resource": "*"
     },

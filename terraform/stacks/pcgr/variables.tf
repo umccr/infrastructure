@@ -1,8 +1,10 @@
-variable "stack" {
-  description = "Name of the Stack."
+variable "pcgr_sqs_queue" {
+  description = "Name of the SQS queue use by the PCGR service"
   default     = "pcgr"
+  # NOTE: this queue is not controlled by terraform and had to correspond
+  # with the queue defined by the deamon running on the pcgr instance
+  # SEE: https://github.com/umccr/pcgr-deploy/commit/0de1204a43dc086f249c5dbc1e7a95597171a2c8
 }
-
 
 variable "availability_zone" {
   description = "The availability_zone in which to create the resources."

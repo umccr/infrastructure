@@ -193,7 +193,9 @@ resource "aws_lambda_permission" "allow_s3_for_pcgr_done" {
   source_arn     = "arn:aws:s3:::${var.workspace_pcgr_bucket_name[terraform.workspace]}"
 }
 
-resource "aws_s3_bucket_notification" "pcgr_trigger_notification" {
+# notifications for the same bucket need to go in the same
+# aws_s3_bucket_notification resource, otherwise they will overwrite each other
+resource "aws_s3_bucket_notification" "pcgr_notifications" {
   bucket = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
 
   lambda_function {

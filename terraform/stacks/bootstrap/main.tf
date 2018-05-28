@@ -29,6 +29,31 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    }
 }
 
+resource "aws_iam_role" "fastq_data_uploader" {
+  name               = "fastq_data_uploader"
+  path               = "/"
+  assume_role_policy = "${file("policies/assume_role_from_bastion.json")}"
+}
+data "template_file" "fastq_data_uploader" {
+    template = "${file("policies/fastq_data_uploader.json")}"
+    vars {
+        bucket_name = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
+    }
+}
+resource "aws_iam_policy" "fastq_data_uploader" {
+  name   = "fastq_data_uploader${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.fastq_data_uploader.rendered}"
+}
+resource "aws_iam_policy_attachment" "fastq_data_uploader" {
+    name       = "fastq_data_uploader"
+    policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
+    groups     = []
+    users      = []
+    roles      = [ "${aws_iam_role.fastq_data_uploader.name}" ]
+}
+
+
 ## S3 buckets  #3333############################################################
 
 # S3 bucket for FASTQ data
@@ -290,7 +315,7 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   count              = "${terraform.workspace == "dev" ? 1 : 0}"
   name               = "ops_admin_no_mfa"
   path               = "/"
-  assume_role_policy = "${file("policies/assume_ops_admin_no_mfa_role.json")}"
+  assume_role_policy = "${file("policies/assume_role_from_bastion.json")}"
 }
 resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
   path   = "/"

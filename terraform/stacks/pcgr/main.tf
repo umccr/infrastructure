@@ -20,6 +20,7 @@ data "vault_generic_secret" "pcgr" {
 }
 
 
+# setup PCGR instance profile with relevant policies
 resource "aws_iam_instance_profile" "instance_profile" {
   name = "${var.stack}_instance_profile${var.workspace_name_suffix[terraform.workspace]}"
   role = "${aws_iam_role.pcgr_role.name}"
@@ -87,7 +88,6 @@ resource "aws_vpc" "vpc_pcgr" {
     Name = "vpc_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
-
 resource "aws_subnet" "vpc_subnet_a_pcgr" {
   vpc_id                  = "${aws_vpc.vpc_pcgr.id}"
   cidr_block              = "172.32.0.0/20"
@@ -98,7 +98,6 @@ resource "aws_subnet" "vpc_subnet_a_pcgr" {
     Name = "vpc_subnet_a_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
-
 resource "aws_security_group" "vpc_pcgr" {
   name        = "sg_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   description = "Security group for pcgr VPC"
@@ -128,8 +127,9 @@ resource "aws_security_group" "vpc_pcgr" {
   }
 }
 
-# TODO: find a way to attach event trigger to function (perhaps via aws cli command)
-module "lambda" {
+
+# add lambdas
+module "lambda_pcgr_trigger" {
   source = "github.com/claranet/terraform-aws-lambda"
 
   function_name = "pcgr_trigger_lambda"
@@ -152,8 +152,16 @@ module "lambda" {
     }
   }
 }
+resource "aws_lambda_permission" "allow_s3_for_pcgr_trigger" {
+  statement_id   = "AllowExecutionFromS3"
+  action         = "lambda:InvokeFunction"
+  function_name  = "${module.lambda_pcgr_trigger.function_name}"
+  principal      = "s3.amazonaws.com"
+  source_account = "${var.workspace_aws_account_number[terraform.workspace]}"
+  source_arn     = "arn:aws:s3:::${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+}
 
-module "lambda" {
+module "lambda_pcgr_done" {
   source = "github.com/claranet/terraform-aws-lambda"
 
   function_name = "pcgr_done_lambda"
@@ -176,6 +184,39 @@ module "lambda" {
     }
   }
 }
+resource "aws_lambda_permission" "allow_s3_for_pcgr_done" {
+  statement_id   = "AllowExecutionFromS3"
+  action         = "lambda:InvokeFunction"
+  function_name  = "${module.lambda_pcgr_done.function_name}"
+  principal      = "s3.amazonaws.com"
+  source_account = "${var.workspace_aws_account_number[terraform.workspace]}"
+  source_arn     = "arn:aws:s3:::${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+}
+
+resource "aws_s3_bucket_notification" "pcgr_trigger_notification" {
+  bucket = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+
+  lambda_function {
+    lambda_function_arn = "${module.lambda_pcgr_trigger.function_arn}"
+    events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = "-germline.tar.gz"
+  }
+  lambda_function {
+    lambda_function_arn = "${module.lambda_pcgr_trigger.function_arn}"
+    events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = "-somatic.tar.gz"
+  }
+  lambda_function {
+    lambda_function_arn = "${module.lambda_pcgr_trigger.function_arn}"
+    events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = "-normal.tar.gz"
+  }
+  lambda_function {
+    lambda_function_arn = "${module.lambda_pcgr_done.function_arn}"
+    events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = "-output.tar.gz"
+  }
+}
 
 data "template_file" "lambda_policy" {
     template = "${file("${path.module}/policies/lambda-policies.json")}"
@@ -184,6 +225,7 @@ data "template_file" "lambda_policy" {
     }
 }
 resource "aws_iam_policy" "lambda_policy" {
+  name   = "lambda_pcgr_policy"
   path   = "/"
   policy = "${data.template_file.lambda_policy.rendered}"
 }

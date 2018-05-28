@@ -34,3 +34,11 @@ variable "workspace_st2_host" {
     dev  = "stackstorm.dev.umccr.org"
   }
 }
+
+variable "workspace_aws_account_number" {
+  description = "The AWS account numbers associated to the workspaces"
+  default = {
+    prod = "472057503814"
+    dev  = "620123204273"
+  }
+}

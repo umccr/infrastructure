@@ -9,32 +9,6 @@
         "cloudwatch:*"
       ],
       "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:CreateServiceLinkedRole",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "iam:AWSServiceName": [
-            "autoscaling.amazonaws.com",
-            "ec2scheduled.amazonaws.com",
-            "elasticloadbalancing.amazonaws.com",
-            "spot.amazonaws.com",
-            "spotfleet.amazonaws.com"
-          ]
-        }
-      }
-    },
-    {
-        "Effect": "Allow",
-        "Action": [
-            "s3:PutObject",
-            "s3:GetObject"
-        ],
-        "Resource": [
-            "arn:aws:s3:::${bucket_name}/*"
-        ]
     }
   ]
 }

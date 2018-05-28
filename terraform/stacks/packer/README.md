@@ -1,5 +1,5 @@
 # packer stack
-This stack uses workspaces!
+Use against `dev` only!
 
 ```
 assume-role dev ops-admin

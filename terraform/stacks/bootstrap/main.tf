@@ -33,6 +33,7 @@ resource "aws_iam_role" "fastq_data_uploader" {
   name               = "fastq_data_uploader"
   path               = "/"
   assume_role_policy = "${file("policies/assume_role_from_bastion.json")}"
+  max_session_duration = "43200"
 }
 data "template_file" "fastq_data_uploader" {
     template = "${file("policies/fastq_data_uploader.json")}"
@@ -316,6 +317,7 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   name               = "ops_admin_no_mfa"
   path               = "/"
   assume_role_policy = "${file("policies/assume_role_from_bastion.json")}"
+  max_session_duration = "43200"
 }
 resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
   path   = "/"

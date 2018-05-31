@@ -17,6 +17,7 @@ Table of Contents
             * [bastion](#bastion)
             * [bootstrap](#bootstrap)
             * [packer](#packer-2)
+            * [pcgr](#pcgr)
             * [stackstorm](#stackstorm)
       * [vault](#vault)
 
@@ -81,6 +82,7 @@ We use `modules` for reusable components and live `stacks` that are applied to g
 The recommended Terraform workflow consists of the following commands:
 
 - `terraform init` to initialise the stack (optional; use on first use or after configuration change).
+- `terraform workspace list` to see which workspace you are currently on.
 - `terraform workspace select dev` to select a workspace (optional; use for stacks that use workspaces).
 - `terraform plan -out=change.tfplan` to see what Terraform would change on the current state and to write the changes to a file.
 - `terraform show change.tfplan` to review the proposed changes.
@@ -89,16 +91,16 @@ The recommended Terraform workflow consists of the following commands:
 More details with `terraform help`.
 
 Terraform requires AWS credentials to manipulate AWS resources. It uses the usual AWS supported methods to retrieve them, i.e. env variables or AWS profiles. If not stated otherwise, all stacks require ops-admin credentials, which can be obtained assuming the `ops-admin` role.
-For more details please refer to the `assume-role` script.
+For more details please refer to the `assume-role` script [documentation](https://github.com/coinbase/assume-role).
 
+Some Terraform stacks require access to sensitive data. We store those secrets in [Vault](https://www.vaultproject.io). Use the `assume-role-vault` wrapper script for convenience, more details [here](scripts/README.md).
 
 ### modules
-Reusable Terraform modules that can be used across multiple stacks.
+Reusable Terraform modules that can be used across multiple stacks. If you want to create a new module, use the `skel` module as a template.
 
 
 ### stacks
 A Terraform stack usually corresponds to a logical unit, like a piece of infrastructure for a service like StackStorm. We use a central S3 bucket in our AWS `bastion` account to keep all Terraform state and we use DynamoDB tables in each account to enable state locking.
-
 
 #### bastion
 See [README](terraform/stacks/bastion/README.md)
@@ -110,6 +112,10 @@ See [README](terraform/stacks/bootstrap/README.md)
 
 #### packer
 See [README](terraform/stacks/packer/README.md)
+
+
+#### pcgr
+See [README](terraform/stacks/pcgr/README.md)
 
 
 #### stackstorm

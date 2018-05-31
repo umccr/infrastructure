@@ -1,13 +1,12 @@
 # packer stack
+Use against `dev` only!
 
 ```
 assume-role dev ops-admin
 
-terraform init
+terraform workspace select dev
 
-terraform plan
-
-terraform apply
+terraform ...
 ```
 
 This Terraform stack provisions AWS resources required for Packer to build our AWS AMIs. This includes the `packer_role` which the `packer` user is allowed to assume to gain permissions within the `dev` account.

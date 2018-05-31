@@ -10,9 +10,9 @@ provider "aws" {
   region      = "ap-southeast-2"
 }
 
-## Terraform resources #############################################################
+## Terraform resources #########################################################
 
-# DynamoDB table for Terraform statw locking
+# DynamoDB table for Terraform state locking
 resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    name = "terraform-state-lock"
    hash_key = "LockID"
@@ -29,8 +29,86 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
    }
 }
 
+resource "aws_iam_role" "fastq_data_uploader" {
+  name               = "fastq_data_uploader"
+  path               = "/"
+  assume_role_policy = "${file("policies/assume_role_from_bastion.json")}"
+  max_session_duration = "43200"
+}
+data "template_file" "fastq_data_uploader" {
+    template = "${file("policies/fastq_data_uploader.json")}"
+    vars {
+        bucket_name = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
+    }
+}
+resource "aws_iam_policy" "fastq_data_uploader" {
+  name   = "fastq_data_uploader${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.fastq_data_uploader.rendered}"
+}
+resource "aws_iam_policy_attachment" "fastq_data_uploader" {
+    name       = "fastq_data_uploader"
+    policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
+    groups     = []
+    users      = []
+    roles      = [ "${aws_iam_role.fastq_data_uploader.name}" ]
+}
 
-## Vault resources #############################################################
+
+## S3 buckets  #3333############################################################
+
+# S3 bucket for FASTQ data
+# NOTE: is meant to be a temporary solution until full support of primary data is there
+resource "aws_s3_bucket" "fastq-data" {
+  bucket = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
+
+  lifecycle_rule {
+    id      = "move_to_glacier"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "GLACIER"
+    }
+  }
+}
+
+
+# S3 bucket to hold primary data
+resource "aws_s3_bucket" "primary_data" {
+  bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
+  acl    = "private"
+
+  tags {
+    Name        = "primary-data"
+    Environment = "${terraform.workspace}"
+  }
+}
+
+# S3 bucket for PCGR
+# NOTE: this could possibly be removed if instead data is directly retrieved from the primary-data bucket
+#       (but that requires major refactoring of the PCGR workflow)
+resource "aws_s3_bucket" "pcgr_s3_bucket" {
+  bucket = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+
+  lifecycle_rule {
+    id      = "pcgr_expire_uploads"
+    enabled = true
+
+    transition {
+      days          = 30
+      storage_class = "ONEZONE_IA"
+    }
+
+    expiration {
+      days = 31
+    }
+
+    noncurrent_version_expiration {
+      days = 31
+    }
+  }
+}
 
 # S3 bucket as Vault backend store
 resource "aws_s3_bucket" "vault" {
@@ -43,6 +121,9 @@ resource "aws_s3_bucket" "vault" {
   }
 }
 
+
+## Vault resources #############################################################
+
 # EC2 instance to run Vault server
 data "aws_ami" "vault_ami" {
   most_recent      = true
@@ -51,7 +132,7 @@ data "aws_ami" "vault_ami" {
   name_regex = "^vault-ami*"
 }
 resource "aws_spot_instance_request" "vault" {
-  spot_price             = "0.0045"
+  spot_price             = "${var.vault_instance_spot_price}"
   wait_for_fulfillment   = true
 
   ami                    = "${data.aws_ami.vault_ami.id}"
@@ -60,9 +141,6 @@ resource "aws_spot_instance_request" "vault" {
   iam_instance_profile   = "${aws_iam_instance_profile.vault.id}"
   subnet_id              = "${aws_subnet.vault_subnet_a.id}"
   vpc_security_group_ids = [ "${aws_security_group.vault.id}" ]
-
-  # TODO: remove ssh key association! for development only
-  key_name               = "freisinger"
 
   monitoring             = true
   user_data              = "${data.template_file.userdata.rendered}"
@@ -169,20 +247,12 @@ resource "aws_security_group" "vault" {
         cidr_blocks     = [ "0.0.0.0/0" ]
     }
 
+    # port for vault communication
     ingress {
         from_port       = 8200
         to_port         = 8200
         protocol        = "tcp"
         cidr_blocks     = [ "0.0.0.0/0" ]
-    }
-
-    # TODO: remove SSH access! only for development
-    ingress {
-        from_port        = 22
-        to_port          = 22
-        protocol         = "tcp"
-        cidr_blocks      = [ "0.0.0.0/0" ]
-        ipv6_cidr_blocks = [ "::/0" ]
     }
 
     ingress {
@@ -246,12 +316,18 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   count              = "${terraform.workspace == "dev" ? 1 : 0}"
   name               = "ops_admin_no_mfa"
   path               = "/"
-  assume_role_policy = "${file("policies/assume_ops_admin_no_mfa_role.json")}"
+  assume_role_policy = "${file("policies/assume_role_from_bastion.json")}"
+  max_session_duration = "43200"
 }
+resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
+  path   = "/"
+  policy = "${file("policies/ops_admin_no_mfa_policy.json")}"
+}
+
 resource "aws_iam_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
     count      = "${terraform.workspace == "dev" ? 1 : 0}"
     name       = "admin_access_to_ops_admin_no_mfa_role_attachment"
-    policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+    policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
     groups     = []
     users      = []
     roles      = [ "${aws_iam_role.ops_admin_no_mfa_role.name}" ]

@@ -169,6 +169,21 @@ resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
   group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"
 }
 
+resource "aws_iam_group" "fastq_data_uploaders" {
+  name = "fastq_data_uploaders"
+}
+resource "aws_iam_group_membership" "fastq_data_uploaders" {
+  name = "ops_admins_dev_no_mfa_users_group_membership"
+
+  users = [
+    "${module.florian_user.username}",
+    "${module.brainstorm_user.username}",
+    "${module.terraform_user.username}"
+  ]
+
+  group = "${aws_iam_group.fastq_data_uploaders.name}"
+}
+
 
 # define the assume role policy and define who can use it
 data "template_file" "assume_ops_admin_prod_role_policy" {
@@ -243,6 +258,43 @@ resource "aws_iam_policy_attachment" "terraform_assume_terraform_role_attachment
     name       = "terraform_assume_terraform_role_attachment"
     policy_arn = "${aws_iam_policy.assume_ops_admin_dev_no_mfa_role_policy.arn}"
     groups     = [ "${aws_iam_group.ops_admins_dev_no_mfa_users.name}" ]
+    users      = []
+    roles      = []
+}
+
+data "template_file" "assume_fastq_data_uploader_prod_policy" {
+    template = "${file("policies/assume_role_no_mfa.json")}"
+    vars {
+        role_arn = "arn:aws:iam::472057503814:role/fastq_data_uploader"
+    }
+}
+resource "aws_iam_policy" "assume_fastq_data_uploader_prod_policy" {
+  name   = "assume_fastq_data_uploader_prod_policy"
+  path   = "/"
+  policy = "${data.template_file.assume_fastq_data_uploader_prod_policy.rendered}"
+}
+resource "aws_iam_policy_attachment" "assume_fastq_data_uploader_prod_role_attachment" {
+    name       = "assume_fastq_data_uploader_prod_role_attachment"
+    policy_arn = "${aws_iam_policy.assume_fastq_data_uploader_prod_policy.arn}"
+    groups     = [ "${aws_iam_group.fastq_data_uploaders.name}" ]
+    users      = []
+    roles      = []
+}
+data "template_file" "assume_fastq_data_uploader_dev_policy" {
+    template = "${file("policies/assume_role_no_mfa.json")}"
+    vars {
+        role_arn = "arn:aws:iam::620123204273:role/fastq_data_uploader"
+    }
+}
+resource "aws_iam_policy" "assume_fastq_data_uploader_dev_policy" {
+  name   = "assume_fastq_data_uploader_dev_policy"
+  path   = "/"
+  policy = "${data.template_file.assume_fastq_data_uploader_dev_policy.rendered}"
+}
+resource "aws_iam_policy_attachment" "assume_fastq_data_uploader_dev_role_attachment" {
+    name       = "assume_fastq_data_uploader_dev_role_attachment"
+    policy_arn = "${aws_iam_policy.assume_fastq_data_uploader_dev_policy.arn}"
+    groups     = [ "${aws_iam_group.fastq_data_uploaders.name}" ]
     users      = []
     roles      = []
 }

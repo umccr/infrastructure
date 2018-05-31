@@ -2,6 +2,10 @@ variable "vault_instance_type" {
   default = "t2.micro"
 }
 
+variable "vault_instance_spot_price" {
+  default = "0.0045"
+}
+
 variable "vault_availability_zone" {
   default = "ap-southeast-2a"
 }
@@ -17,6 +21,27 @@ variable "workspace_name_suffix" {
   default = {
     prod = "_prod"
     dev  = "_dev"
+  }
+}
+
+variable "workspace_fastq_data_bucket_name" {
+  default = {
+    prod = "umccr-fastq-data-prod"
+    dev  = "umccr-fastq-data-dev"
+  }
+}
+
+variable "workspace_pcgr_bucket_name" {
+  default = {
+    prod = "umccr-pcgr-prod"
+    dev  = "umccr-pcgr-dev"
+  }
+}
+
+variable "workspace_primary_data_bucket_name" {
+  default = {
+    prod = "umccr-primary-data-prod"
+    dev  = "umccr-primary-data-dev"
   }
 }
 

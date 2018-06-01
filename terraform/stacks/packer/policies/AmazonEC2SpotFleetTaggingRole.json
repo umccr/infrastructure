@@ -21,8 +21,7 @@
             "Condition": {
                 "StringEquals": {
                     "iam:PassedToService": [
-                        "ec2.amazonaws.com",
-                        "ec2.amazonaws.com.cn"
+                        "ec2.amazonaws.com"
                     ]
                 }
             },

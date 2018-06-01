@@ -2,30 +2,15 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "GeneralEC2Permissions",
       "Effect": "Allow",
       "Action": [
         "ec2:AssociateAddress",
-        "ec2:DisassociateAddress"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:AttachVolume",
-        "ec2:DetachVolume"
-      ],
-      "Resource": [
-        "arn:aws:ec2:ap-southeast-2:*:instance/*",
-        "arn:aws:ec2:ap-southeast-2:*:volume/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
+        "ec2:DisassociateAddress",
         "ec2:DescribeTags",
         "ec2:CreateTags",
         "ec2:DescribeInstances",
+        "ec2:RunInstances",
         "ec2:DescribeVolumeAttribute",
         "ec2:DescribeVolumeStatus",
         "ec2:DescribeVolumes",
@@ -44,6 +29,18 @@
       "Resource": "*"
     },
     {
+      "Sid": "VolumeAttachmentPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:AttachVolume",
+        "ec2:DetachVolume"
+      ],
+      "Resource": [
+        "arn:aws:ec2:ap-southeast-2:*:instance/*",
+        "arn:aws:ec2:ap-southeast-2:*:volume/*"
+      ]
+    },
+    {
       "Sid": "AmiCleanerPermissions",
       "Effect": "Allow",
       "Action": [
@@ -58,6 +55,7 @@
       "Resource": "*"
     },
     {
+      "Sid": "VolumeCreationPermission",
       "Effect": "Allow",
       "Action": [
         "ec2:CreateVolume"
@@ -65,6 +63,7 @@
       "Resource": "arn:aws:ec2:ap-southeast-2:*:volume/*"
     },
     {
+      "Sid": "VolumeDeletionPermission",
       "Effect": "Allow",
       "Action": [
         "ec2:DeleteVolume"

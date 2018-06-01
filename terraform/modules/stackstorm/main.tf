@@ -16,11 +16,10 @@ data "aws_iam_policy_document" "stackstorm_assume_policy" {
 
 
 resource "aws_iam_policy" "s3_stackstorm_policy" {
-  # name   = "s3_stackstorm_policy${var.name_suffix}" # optional
+  name   = "s3_stackstorm_policy${var.name_suffix}"
   path   = "/"
   policy = "${file("${path.module}/policies/s3_stackstorm_policy.json")}"
 }
-
 resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
     name       = "s3_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
     policy_arn = "${aws_iam_policy.s3_stackstorm_policy.arn}"
@@ -30,14 +29,39 @@ resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
 }
 
 resource "aws_iam_policy" "ec2_stackstorm_policy" {
-  # name   = "ec2_stackstorm_policy${var.name_suffix}" # optional
+  name   = "ec2_stackstorm_policy${var.name_suffix}"
   path   = "/"
   policy = "${file("${path.module}/policies/ec2_stackstorm_policy.json")}"
 }
-
 resource "aws_iam_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" {
     name       = "ec2_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
     policy_arn = "${aws_iam_policy.ec2_stackstorm_policy.arn}"
+    groups     = []
+    users      = []
+    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
+}
+
+resource "aws_iam_policy" "iam_stackstorm_policy" {
+  name   = "iam_stackstorm_policy${var.name_suffix}"
+  path   = "/"
+  policy = "${file("${path.module}/policies/iam_stackstorm_policy.json")}"
+}
+resource "aws_iam_policy_attachment" "iam_policy_to_stackstorm_role_attachment" {
+    name       = "iam_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
+    policy_arn = "${aws_iam_policy.iam_stackstorm_policy.arn}"
+    groups     = []
+    users      = []
+    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
+}
+
+resource "aws_iam_policy" "spot_stackstorm_policy" {
+  name   = "spot_stackstorm_policy${var.name_suffix}"
+  path   = "/"
+  policy = "${file("${path.module}/policies/AmazonEC2SpotFleetTaggingRole.json")}"
+}
+resource "aws_iam_policy_attachment" "spot_policy_to_stackstorm_role_attachment" {
+    name       = "spot_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
+    policy_arn = "${aws_iam_policy.spot_stackstorm_policy.arn}"
     groups     = []
     users      = []
     roles      = [ "${aws_iam_role.stackstorm_role.name}" ]

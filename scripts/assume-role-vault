@@ -2,8 +2,8 @@
 
 # wrapper script around 'assume-role' to add env var for Vault access
 
-MAX_TTL='10m'
-RENEWAL_PERIOD='5m'
+MAX_TTL='12h'
+RENEWAL_PERIOD='12h'
 
 after_script(){
 

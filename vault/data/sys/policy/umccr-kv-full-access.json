@@ -1,0 +1,3 @@
+{
+  "policy": "path \"umccr/*\" {\n  capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]\n}"
+}

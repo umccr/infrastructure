@@ -2,29 +2,25 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "AllowDescribe",
+      "Effect": "Allow",
+      "Action": "ec2:Describe*",
+      "Resource": "*"
+    },
+    {
       "Sid": "GeneralEC2Permissions",
       "Effect": "Allow",
       "Action": [
         "ec2:AssociateAddress",
         "ec2:DisassociateAddress",
-        "ec2:DescribeTags",
         "ec2:CreateTags",
-        "ec2:DescribeInstances",
         "ec2:RunInstances",
-        "ec2:DescribeVolumeAttribute",
-        "ec2:DescribeVolumeStatus",
-        "ec2:DescribeVolumes",
-        "ec2:DescribeVolumesModifications",
         "ec2:ModifyVolume",
         "ec2:ModifyVolumeAttribute",
         "ec2:CreateSnapshot",
         "ec2:DeleteSnapshot",
-        "ec2:DescribeAvailabilityZones",
-        "ec2:DescribeSnapshots",
         "ec2:CopySnapshot",
-        "ec2:DescribeSnapshotAttribute",
-        "ec2:ModifySnapshotAttribute",
-        "ec2:DescribeSecurityGroups"
+        "ec2:ModifySnapshotAttribute"
       ],
       "Resource": "*"
     },
@@ -41,39 +37,16 @@
       ]
     },
     {
-      "Sid": "AmiCleanerPermissions",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:DeleteSnapshot",
-        "ec2:DeregisterImage",
-        "ec2:DescribeImages",
-        "ec2:DescribeInstances",
-        "ec2:DescribeSnapshots",
-        "autoscaling:DescribeAutoScalingGroups",
-        "autoscaling:DescribeLaunchConfigurations"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "VolumeCreationPermission",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:CreateVolume"
-      ],
-      "Resource": "arn:aws:ec2:ap-southeast-2:*:volume/*"
-    },
-    {
-      "Sid": "VolumeDeletionPermission",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:DeleteVolume"
-      ],
-      "Resource": "arn:aws:ec2:ap-southeast-2:*:volume/*",
-      "Condition": {
-        "StringLike": {
-          "ec2:ResourceTag/Name": "st2dockerumccr_*"
-        }
-      }
+        "Sid": "AnsibleAllowManageSecurityGroupsForSetup",
+        "Effect": "Allow",
+        "Action": [
+            "ec2:CreateSecurityGroup",
+            "ec2:RevokeSecurityGroupEgress",
+            "ec2:AuthorizeSecurityGroupIngress",
+            "ec2:DeleteSecurityGroup",
+            "ec2:RevokeSecurityGroupIngress"
+        ],
+        "Resource": "arn:aws:ec2:ap-southeast-2:*:security-group/*"
     }
   ]
 }

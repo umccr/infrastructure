@@ -255,6 +255,14 @@ resource "aws_security_group" "vault" {
         cidr_blocks     = [ "0.0.0.0/0" ]
     }
 
+    # port for goldfish communication
+    ingress {
+        from_port       = 5000
+        to_port         = 5000
+        protocol        = "tcp"
+        cidr_blocks     = [ "0.0.0.0/0" ]
+    }
+
     ingress {
         from_port       = 0
         to_port         = 0

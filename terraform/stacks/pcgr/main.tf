@@ -133,7 +133,7 @@ resource "aws_security_group" "vpc_pcgr" {
 
 # add lambdas
 module "lambda_pcgr_trigger" {
-  source = "github.com/claranet/terraform-aws-lambda"
+  source = "git::https://github.com/brainstorm/terraform-aws-lambda?ref=python3_only"
 
   function_name = "pcgr_trigger_lambda"
   description   = "Lambda function to trigger PCGR data arrival"
@@ -165,7 +165,7 @@ resource "aws_lambda_permission" "allow_s3_for_pcgr_trigger" {
 }
 
 module "lambda_pcgr_done" {
-  source = "github.com/claranet/terraform-aws-lambda"
+  source = "git::https://github.com/brainstorm/terraform-aws-lambda?ref=python3_only"
 
   function_name = "pcgr_done_lambda"
   description   = "Lambda function to trigger PCGR done"

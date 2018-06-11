@@ -1,0 +1,3 @@
+{
+  "policy": "path \"kv/*\" {\n  capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]\n}"
+}

@@ -122,4 +122,4 @@ See [README](terraform/stacks/pcgr/README.md)
 See [README](terraform/stacks/stackstorm/README.md)
 
 ## vault
-Codified configuration of the UMCCR Vault setup. See the [README](vault/README.md)
+The UMCCR is using HashiCorp's Vault to store secrets. Here we keep the codified configuration of the UMCCR Vault setup. See the [README](vault/README.md) for more details.

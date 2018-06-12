@@ -13,3 +13,10 @@ Usage:
 - call `assume-role-vault` the same as you would `assume-role` itself: `assume-role-vault prod ops-admin`
 
 The `assume-role` script will populate the env with AWS access credentials and the `assume-role-vault` wrapper will add Vault access credentials. You should then be able to query Vault and use tools like Terraform that require access to AWS and Vault.
+
+## safe-terraform
+Wrapper to call `terraform` commands that checks the current environment. It compares the `git` branch, the `terraform.workspace` and the `AWS` account name to avoid accidental cross account deployments.
+
+Usage:
+- put the script on your `$PATH`
+- use `safe-terraform` instead of `terraform`

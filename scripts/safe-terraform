@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+set -o pipefail
+
+echo "Checking your environment..."
+aws_env="$AWS_ACCOUNT_NAME"
+
+terraform_env=$(terraform workspace list | grep '*' | awk '{print $2}')
+
+branch_name=$(git symbolic-ref -q HEAD)
+branch_name=${branch_name##refs/heads/}
+if test "$branch_name" = "master"
+then
+  git_env="prod"
+elif test "$branch_name" = "development"
+then
+  git_env="dev"
+else
+  git_env="unknown"
+fi
+
+
+if ! test "$aws_env" = "$terraform_env"
+then
+  echo "ERROR: Your Terraform workspace does not match the AWS account. Aborting!"
+  exit 1
+fi
+
+if ! test "$terraform_env" = "$git_env"
+then
+  echo "WARNING: You are not on the correct Git branch for the Terraform workspace $terraform_env!"
+
+  read -p "Are you sure you want to continue (y/n)? " answer
+  case ${answer:0:1} in
+    y|Y )
+        echo "As you wish."
+    ;;
+    * )
+        exit 1
+    ;;
+  esac
+fi
+
+terraform "$@"

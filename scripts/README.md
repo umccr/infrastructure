@@ -20,3 +20,6 @@ Wrapper to call `terraform` commands that checks the current environment. It com
 Usage:
 - put the script on your `$PATH`
 - use `safe-terraform` instead of `terraform`
+
+## bash-utils.sh
+XXX

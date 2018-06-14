@@ -23,9 +23,11 @@ echo "Starting letsencrypt renewal service"
 sudo systemctl enable letsencrypt
 sudo systemctl start letsencrypt
 
+
 ################################################################################
 # Run Vault server
 
+# create the config file for vault
 echo "Writing Vault config"
 sudo tee /opt/vault.hcl << END
 storage "s3" {
@@ -40,11 +42,34 @@ listener "tcp" {
 }
 END
 
-sudo tee /opt/vault.env << END
-CONFIG='/opt/vault.hcl'
-OPTIONS=''
-END
+# not used
+# sudo tee /opt/vault.env << END
+# CONFIG='/opt/vault.hcl'
+# OPTIONS=''
+# END
 
 echo "Starting Vault server"
-sudo systemctl enable vault
-sudo systemctl start vault
+sudo systemctl enable vault.service
+sudo systemctl start vault.service
+
+
+################################################################################
+# Run goldfish server
+# create the config file for goldfish
+echo "Writing Vault config"
+sudo tee /opt/goldfish.hcl << END
+listener "tcp" {
+  address       = ":5000"
+  certificate "local" {
+    cert_file   = "/etc/letsencrypt/live/${vault_domain}/fullchain.pem"
+    key_file    = "/etc/letsencrypt/live/${vault_domain}/privkey.pem"
+  }
+}
+vault {
+  address       = "https://${vault_domain}:8200"
+}
+END
+
+echo "Starting goldfish server"
+sudo systemctl enable goldfish.service
+sudo systemctl start goldfish.service

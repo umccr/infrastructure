@@ -62,6 +62,30 @@ resource "aws_iam_policy_attachment" "get_user_policy_brainstorm_attachment" {
     roles      = []
 }
 
+module "oliver_user" {
+  source = "../../modules/iam_user/secure_user"
+  username = "oliver"
+  pgp_key = "keybase:fiamh"
+}
+data "template_file" "get_user_oliver_policy" {
+    template = "${file("policies/get_user.json")}"
+    vars {
+        user_arn = "${module.oliver_user.arn}"
+    }
+}
+resource "aws_iam_policy" "get_user_oliver_policy" {
+  name   = "get_user_oliver_policy"
+  path   = "/"
+  policy = "${data.template_file.get_user_oliver_policy.rendered}"
+}
+resource "aws_iam_policy_attachment" "get_user_policy_oliver_attachment" {
+    name       = "get_user_policy_oliver_attachment"
+    policy_arn = "${aws_iam_policy.get_user_oliver_policy.arn}"
+    groups     = []
+    users      = [ "${module.oliver_user.username}" ]
+    roles      = []
+}
+
 module "packer_user" {
   source = "../../modules/iam_user/secure_user"
   username = "packer"
@@ -178,6 +202,7 @@ resource "aws_iam_group_membership" "fastq_data_uploaders" {
   users = [
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
+    "${module.oliver_user.username}",
     "${module.terraform_user.username}"
   ]
 

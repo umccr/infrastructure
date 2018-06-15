@@ -65,7 +65,7 @@ resource "aws_iam_policy_attachment" "get_user_policy_brainstorm_attachment" {
 module "oliver_user" {
   source = "../../modules/iam_user/secure_user"
   username = "oliver"
-  pgp_key = "keybase:fiamh"
+  pgp_key = "keybase:ohofmann"
 }
 data "template_file" "get_user_oliver_policy" {
     template = "${file("policies/get_user.json")}"

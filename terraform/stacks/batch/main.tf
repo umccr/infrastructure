@@ -46,30 +46,35 @@ resource "aws_iam_role" "aws_batch_service_role" {
 EOF
 }
 
+resource "aws_iam_policy" "umccr_spotfleet" {
+  path   = "/"
+  policy = "${file("${path.module}/policies/AmazonEC2SpotFleetTaggingRole.json")}"
+}
+
 resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
   role       = "${aws_iam_role.aws_batch_service_role.name}"
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
 }
 
-resource "aws_security_group" "umccrise" {
+resource "aws_security_group" "batch" {
   name = "aws_batch_compute_environment_security_group"
 }
 
-resource "aws_vpc" "umccrise" {
+resource "aws_vpc" "batch" {
   cidr_block = "10.1.0.0/16"
 }
 
-resource "aws_subnet" "umccrise" {
-  vpc_id     = "${aws_vpc.umccrise.id}"
+resource "aws_subnet" "batch" {
+  vpc_id     = "${aws_vpc.batch.id}"
   cidr_block = "10.1.1.0/24"
 }
 
-resource "aws_batch_compute_environment" "umccrise" {
+resource "aws_batch_compute_environment" "batch" {
   compute_environment_name = "umccr_aws_batch_dev"
 
   compute_resources {
     instance_role = "${aws_iam_instance_profile.ecs_instance_role.arn}"
-    image_id      = "ami-0e72b22a59e4345aa"                             # XXX: umccrise AMI for now
+    image_id      = "ami-0e72b22a59e4345aa"                             # XXX: batch AMI for now
 
     instance_type = [
       "m4.large",
@@ -80,17 +85,18 @@ resource "aws_batch_compute_environment" "umccrise" {
     min_vcpus     = 0
 
     security_group_ids = [
-      "${aws_security_group.umccrise.id}",
+      "${aws_security_group.batch.id}",
     ]
 
     subnets = [
-      "${aws_subnet.umccrise.id}",
+      "${aws_subnet.batch.id}",
     ]
 
     tags = {
-      Name = "umccrise"
+      Name = "batch"
     }
 
+    #spot_iam_fleet_role = 
     type           = "SPOT"
     bid_percentage = 50
   }

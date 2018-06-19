@@ -17,6 +17,9 @@ after_script(){
 
   export VAULT_ADDR="https://vault.$AWS_ACCOUNT_NAME.umccr.org:8200"
 
+  echo "Removing existing (probably stale) Vault token"
+  unset VAULT_TOKEN
+
   # if GITHUB_TOKEN is not set, the vault login will ask for it
   echo "Attempting a Vault login"
   vault login -method=github token=$GITHUB_TOKEN

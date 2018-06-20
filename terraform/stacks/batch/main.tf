@@ -17,9 +17,14 @@ resource "aws_iam_role" "ecs_instance_role" {
 EOF
 }
 
+resource "aws_iam_policy" "umccr_container_role" {
+  path   = "/"
+  policy = "${file("policies/AmazonEC2ContainerServiceforEC2Role.json")}"
+}
+
 resource "aws_iam_role_policy_attachment" "ecs_instance_role" {
   role       = "${aws_iam_role.ecs_instance_role.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+  policy_arn = "${aws_iam_policy.umccr_container_role.arn}"
 }
 
 resource "aws_iam_instance_profile" "ecs_instance_role" {
@@ -46,18 +51,48 @@ resource "aws_iam_role" "aws_batch_service_role" {
 EOF
 }
 
+resource "aws_iam_role" "aws_spotfleet_service_role" {
+  name = "aws_spotfleet_service_role"
+
+  assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+    {
+        "Action": "sts:AssumeRole",
+        "Effect": "Allow",
+        "Principal": {
+        "Service": "spotfleet.amazonaws.com"
+        }
+    }
+    ]
+}
+EOF
+}
+
 resource "aws_iam_policy" "umccr_spotfleet" {
   path   = "/"
-  policy = "${file("${path.module}/policies/AmazonEC2SpotFleetTaggingRole.json")}"
+  policy = "${file("policies/AmazonEC2SpotFleetTaggingRole.json")}"
+}
+
+resource "aws_iam_role_policy_attachment" "aws_spotfleet_service_role" {
+  role       = "${aws_iam_role.aws_spotfleet_service_role.name}"
+  policy_arn = "${aws_iam_policy.umccr_spotfleet.arn}"
+}
+
+resource "aws_iam_policy" "umccr_batch_role" {
+  path   = "/"
+  policy = "${file("policies/AWSBatchServiceRole.json")}"
 }
 
 resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
   role       = "${aws_iam_role.aws_batch_service_role.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
+  policy_arn = "${aws_iam_policy.umccr_batch_role.arn}"
 }
 
 resource "aws_security_group" "batch" {
-  name = "aws_batch_compute_environment_security_group"
+  name   = "aws_batch_compute_environment_security_group"
+  vpc_id = "${aws_vpc.batch.id}"
 }
 
 resource "aws_vpc" "batch" {
@@ -65,8 +100,9 @@ resource "aws_vpc" "batch" {
 }
 
 resource "aws_subnet" "batch" {
-  vpc_id     = "${aws_vpc.batch.id}"
-  cidr_block = "10.1.1.0/24"
+  vpc_id            = "${aws_vpc.batch.id}"
+  cidr_block        = "10.1.1.0/24"
+  availability_zone = "${var.availability_zone}"
 }
 
 resource "aws_batch_compute_environment" "batch" {
@@ -74,7 +110,7 @@ resource "aws_batch_compute_environment" "batch" {
 
   compute_resources {
     instance_role = "${aws_iam_instance_profile.ecs_instance_role.arn}"
-    image_id      = "ami-0e72b22a59e4345aa"                             # XXX: batch AMI for now
+    image_id      = "ami-0e72b22a59e4345aa"                             # XXX: umccrise AMI for now
 
     instance_type = [
       "m4.large",
@@ -96,9 +132,9 @@ resource "aws_batch_compute_environment" "batch" {
       Name = "batch"
     }
 
-    #spot_iam_fleet_role = 
-    type           = "SPOT"
-    bid_percentage = 50
+    spot_iam_fleet_role = "${aws_iam_role.aws_spotfleet_service_role.arn}"
+    type                = "SPOT"
+    bid_percentage      = 50
   }
 
   service_role = "${aws_iam_role.aws_batch_service_role.arn}"

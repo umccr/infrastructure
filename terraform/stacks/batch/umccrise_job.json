@@ -1,0 +1,8 @@
+{
+"image": "umccr/umccrise",
+"jobRoleArn":"'${JOBROLEARN}'",
+"memory":32000,
+"vcpus":8,
+"mountPoints": [{"containerPath": "/mnt", "readOnly": false, "sourceVolume": "umccrise"}],
+"volumes": [{"name": "umccrise", "host": {"sourcePath": "/mnt"}}]
+}

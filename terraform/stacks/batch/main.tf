@@ -141,3 +141,20 @@ resource "aws_batch_compute_environment" "batch" {
   type         = "MANAGED"
   depends_on   = ["aws_iam_role_policy_attachment.aws_batch_service_role"]
 }
+
+## Create job queue
+
+resource "aws_batch_job_queue" "umccr_batch_queue" {
+  name                 = "umccr_batch_queue"
+  state                = "ENABLED"
+  priority             = 1
+  compute_environments = ["${aws_batch_compute_environment.batch.arn}"]
+}
+
+## Job definitions
+
+resource "aws_batch_job_definition" "test" {
+  name                 = "umccrise_job"
+  type                 = "container"
+  container_properties = "${file("jobs/umccrise_job.json")}"
+}

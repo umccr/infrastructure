@@ -1,0 +1,24 @@
+{
+    "command": ["umccrise", "--help"],
+    "image": "umccr/umccrise",
+    "memory": 4096,
+    "vcpus": 8,
+    "volumes": [
+      {
+        "host": {
+          "sourcePath": "/mnt"
+        },
+        "name": "umccrise"
+      }
+    ],
+    "environment": [
+        {"name": "VARNAME", "value": "VARVAL"}
+    ],
+    "mountPoints": [
+        {
+          "sourceVolume": "umccrise",
+          "containerPath": "/",
+          "readOnly": false
+        }
+    ]
+}

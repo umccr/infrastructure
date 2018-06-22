@@ -11,7 +11,10 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
-# create a users with minimal permissions
+################################################################################
+##### create AWS users
+
+# florian
 module "florian_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "florian"
@@ -40,6 +43,12 @@ resource "aws_iam_policy_attachment" "get_user_policy_florian_attachment" {
   roles      = []
 }
 
+resource "aws_iam_user_login_profile" "florian_console_login" {
+  user    = "${module.florian_user.username}"
+  pgp_key = "keybase:freisinger"
+}
+
+# brainstorm
 module "brainstorm_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "brainstorm"
@@ -68,6 +77,12 @@ resource "aws_iam_policy_attachment" "get_user_policy_brainstorm_attachment" {
   roles      = []
 }
 
+resource "aws_iam_user_login_profile" "brainstorm_console_login" {
+  user    = "${module.brainstorm_user.username}"
+  pgp_key = "keybase:brainstorm"
+}
+
+# oliver
 module "oliver_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "oliver"
@@ -96,6 +111,12 @@ resource "aws_iam_policy_attachment" "get_user_policy_oliver_attachment" {
   roles      = []
 }
 
+resource "aws_iam_user_login_profile" "oliver_console_login" {
+  user    = "${module.oliver_user.username}"
+  pgp_key = "keybase:ohofmann"
+}
+
+# vlad
 module "vlad_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "vlad"
@@ -124,6 +145,36 @@ resource "aws_iam_policy_attachment" "get_user_policy_vlad_attachment" {
   roles      = []
 }
 
+data "template_file" "get_user_vlad_policy" {
+  template = "${file("policies/get_user.json")}"
+
+  vars {
+    user_arn = "${module.vlad_user.arn}"
+  }
+}
+
+resource "aws_iam_policy" "get_user_vlad_policy" {
+  name   = "get_user_vlad_policy"
+  path   = "/"
+  policy = "${data.template_file.get_user_vlad_policy.rendered}"
+}
+
+resource "aws_iam_policy_attachment" "get_user_policy_vlad_attachment" {
+  name       = "get_user_policy_vlad_attachment"
+  policy_arn = "${aws_iam_policy.get_user_vlad_policy.arn}"
+  groups     = []
+  users      = ["${module.vlad_user.username}"]
+  roles      = []
+}
+
+resource "aws_iam_user_login_profile" "vlad_console_login" {
+  user    = "${module.vlad_user.username}"
+  pgp_key = "keybase:vladsaveliev"
+}
+
+##### create service users
+
+# packer
 module "packer_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "packer"
@@ -152,6 +203,7 @@ resource "aws_iam_policy_attachment" "get_user_policy_packer_attachment" {
   roles      = []
 }
 
+# terraform
 module "terraform_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "terraform"
@@ -180,7 +232,10 @@ resource "aws_iam_policy_attachment" "get_user_policy_terraform_attachment" {
   roles      = []
 }
 
-# define groups
+################################################################################
+##### define user groups
+
+# ops_admins_prod: admin access to the AWS prod account
 resource "aws_iam_group" "ops_admins_prod" {
   name = "ops_admins_prod"
 }
@@ -196,6 +251,7 @@ resource "aws_iam_group_membership" "ops_admins_prod" {
   group = "${aws_iam_group.ops_admins_prod.name}"
 }
 
+# ops_admins_dev: admin access to the AWS dev account
 resource "aws_iam_group" "ops_admins_dev" {
   name = "ops_admins_dev"
 }
@@ -212,6 +268,7 @@ resource "aws_iam_group_membership" "ops_admins_dev" {
   group = "${aws_iam_group.ops_admins_dev.name}"
 }
 
+# packer_users: users allowed to assume the packer role
 resource "aws_iam_group" "packer_users" {
   name = "packer_users"
 }
@@ -228,6 +285,7 @@ resource "aws_iam_group_membership" "packer_users" {
   group = "${aws_iam_group.packer_users.name}"
 }
 
+# ops_admins_dev_no_mfa_users: admin access to the AWS dev account without requiring MFA
 resource "aws_iam_group" "ops_admins_dev_no_mfa_users" {
   name = "ops_admins_dev_no_mfa_users"
 }
@@ -245,6 +303,8 @@ resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
   group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"
 }
 
+# fastq_data_uploaders: users allowed to assume the fastq_uploader role, 
+# which gives access to selected S3 buckets on prod without requiring MFA
 resource "aws_iam_group" "fastq_data_uploaders" {
   name = "fastq_data_uploaders"
 }
@@ -263,7 +323,10 @@ resource "aws_iam_group_membership" "fastq_data_uploaders" {
   group = "${aws_iam_group.fastq_data_uploaders.name}"
 }
 
-# define the assume role policy and define who can use it
+################################################################################
+# define the assume role policies and who can use them
+
+# ops-admin role (on prod)
 data "template_file" "assume_ops_admin_prod_role_policy" {
   template = "${file("policies/assume_role.json")}"
 
@@ -286,6 +349,7 @@ resource "aws_iam_policy_attachment" "ops_admins_prod_assume_ops_admin_prod_role
   roles      = []
 }
 
+# ops-admin role (on dev)
 data "template_file" "assume_ops_admin_dev_role_policy" {
   template = "${file("policies/assume_role.json")}"
 
@@ -308,6 +372,7 @@ resource "aws_iam_policy_attachment" "ops_admins_dev_assume_ops_admin_dev_role_a
   roles      = []
 }
 
+# packer_role (on dev)
 data "template_file" "assume_packer_role_policy" {
   template = "${file("policies/assume_role_no_mfa.json")}"
 
@@ -330,6 +395,7 @@ resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
   roles      = []
 }
 
+# ops_admin_no_mfa (on dev)
 data "template_file" "assume_ops_admin_dev_no_mfa_role_policy" {
   template = "${file("policies/assume_role_no_mfa.json")}"
 
@@ -352,6 +418,7 @@ resource "aws_iam_policy_attachment" "terraform_assume_terraform_role_attachment
   roles      = []
 }
 
+# fastq_data_uploader role (on prod)
 data "template_file" "assume_fastq_data_uploader_prod_policy" {
   template = "${file("policies/assume_role_no_mfa.json")}"
 
@@ -374,6 +441,7 @@ resource "aws_iam_policy_attachment" "assume_fastq_data_uploader_prod_role_attac
   roles      = []
 }
 
+# fastq_data_uploader (on dev)
 data "template_file" "assume_fastq_data_uploader_dev_policy" {
   template = "${file("policies/assume_role_no_mfa.json")}"
 

@@ -1,11 +1,9 @@
 # bootstrap stack
 This stack uses workspaces!
 
-```
+```bash
 assume-role dev ops-admin
-
 terraform workspace select dev
-
 terraform ...
 ```
 
@@ -13,7 +11,7 @@ This Terraform stack sets up some initial AWS infrastructure that needs to be in
 
 If you get access denied errors check that your Terraform workspace corresponds to the account you are operation on. I.e. if you assume the `ops-admin` role of the `dev` account, you have to use the `dev` workspace.
 
-```
+```bash
 terraform workspace list
 ```
 

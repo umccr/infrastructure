@@ -6,9 +6,18 @@
             "Effect": "Allow",
             "Action": [
                 "iam:GetUser",
-                "iam:ListMFADevices"
+                "iam:ListMFADevices",
+                "iam:ChangePassword"
             ],
             "Resource": "${user_arn}"
+        },
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetAccountPasswordPolicy"
+            ],
+            "Resource": "*"
         }
     ]
 }

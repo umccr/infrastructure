@@ -1,24 +1,74 @@
 {
-    "command": ["umccrise", "--help"],
-    "image": "umccr/umccrise",
-    "memory": 4096,
-    "vcpus": 8,
-    "volumes": [
-      {
-        "host": {
-          "sourcePath": "/mnt"
-        },
-        "name": "umccrise"
-      }
-    ],
-    "environment": [
-        {"name": "VARNAME", "value": "VARVAL"}
-    ],
-    "mountPoints": [
-        {
-          "sourceVolume": "umccrise",
-          "containerPath": "/",
-          "readOnly": false
-        }
-    ]
+  "jobDefinitionName": "umccrise_job",
+  "status": "ACTIVE",
+  "type": "container",
+  "parameters": {},
+  "containerProperties": {
+      "image": "umccr/umccrise",
+      "vcpus": 1,
+      "memory": 2048,
+      "command": [
+          "umccrise",
+          "/bcbio_project",
+          "-o",
+          "/output_dir"
+      ],
+      "volumes": [
+          {
+              "host": {
+                  "sourcePath": "/mnt/genomes"
+              },
+              "name": "genomes"
+          },
+          {
+              "host": {
+                  "sourcePath": "/mnt/panel_of_normals"
+              },
+              "name": "panel_of_normals"
+          },
+          {
+              "host": {
+                  "sourcePath": "/mnt/output"
+              },
+              "name": "output"
+          },
+          {
+              "host": {
+                  "sourcePath": "/mnt/input"
+              },
+              "name": "input"
+          }
+      ],
+      "environment": [
+          {
+              "name": "SHELL",
+              "value": "/bin/bash"
+          }
+      ],
+      "mountPoints": [
+          {
+              "containerPath": "/bcbio_genomes",
+              "readOnly": true,
+              "sourceVolume": "genomes"
+          },
+          {
+              "containerPath": "/panel_of_normals",
+              "readOnly": true,
+              "sourceVolume": "panel_of_normals"
+          },
+          {
+              "containerPath": "/output_dir",
+              "readOnly": false,
+              "sourceVolume": "output"
+          },
+          {
+              "containerPath": "/bcbio_project",
+              "readOnly": false,
+              "sourceVolume": "input"
+          }
+      ],
+      "readonlyRootFilesystem": true,
+      "privileged": true,
+      "ulimits": []
+  }
 }

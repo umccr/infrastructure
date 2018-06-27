@@ -15,13 +15,16 @@ variable "image_id" {
 }
 
 variable "instance_types" {
+  type        = "list"
   description = "An array with the instance types to use for the compute resource."
 }
 
 variable "security_group_ids" {
+  type        = "list"
   description = "An array with the security group IDs to use for the compute resource."
 }
 
 variable "subnet_ids" {
+  type        = "list"
   description = "An array with the subnet IDs to use for the compute resource."
 }

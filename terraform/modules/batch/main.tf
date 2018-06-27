@@ -1,22 +1,20 @@
 # TODO: check used resource names are unique enough to not clash with other stacks
 ################################################################################
 # create ECS instance profile for compute resources
-data "template_file" "assume_role_ec2" {
-  template = "${file("${path.module}/policies/assume-role.json")}"
+data "aws_iam_policy_document" "assume_role_ec2" {
+  statement {
+    actions = ["sts:AssumeRole"]
 
-  vars {
-    service = "ec2.amazonaws.com"
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
   }
-}
-
-resource "aws_iam_policy" "assume_role_ec2" {
-  path   = "/"
-  policy = "${data.template_file.assume_role_ec2.rendered}"
 }
 
 resource "aws_iam_role" "ecs_instance_role" {
   name               = "ecs_instance_role${var.name_suffix}"
-  assume_role_policy = "${aws_iam_policy.assume_role_ec2}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_ec2.json}"
 }
 
 resource "aws_iam_policy" "umccr_container_service_policy" {
@@ -38,22 +36,20 @@ resource "aws_iam_instance_profile" "ecs_instance_profile" {
 ################################################################################
 # create compute environment service role
 
-data "template_file" "assume_role_batch" {
-  template = "${file("${path.module}/policies/assume-role.json")}"
+data "aws_iam_policy_document" "assume_role_batch" {
+  statement {
+    actions = ["sts:AssumeRole"]
 
-  vars {
-    service = "batch.amazonaws.com"
+    principals {
+      type        = "Service"
+      identifiers = ["batch.amazonaws.com"]
+    }
   }
-}
-
-resource "aws_iam_policy" "assume_role_batch" {
-  path   = "/"
-  policy = "${data.template_file.assume_role_batch.rendered}"
 }
 
 resource "aws_iam_role" "aws_batch_service_role" {
   name               = "aws_batch_service_role${var.name_suffix}"
-  assume_role_policy = "${aws_iam_policy.assume_role_batch}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_batch.json}"
 }
 
 resource "aws_iam_policy" "umccr_batch_policy" {
@@ -70,22 +66,20 @@ resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
 ################################################################################
 # create SPOT fleet service role
 
-data "template_file" "assume_role_spotfleet" {
-  template = "${file("${path.module}/policies/assume-role.json")}"
+data "aws_iam_policy_document" "assume_role_spotfleet" {
+  statement {
+    actions = ["sts:AssumeRole"]
 
-  vars {
-    service = "spotfleet.amazonaws.com"
+    principals {
+      type        = "Service"
+      identifiers = ["spotfleet.amazonaws.com"]
+    }
   }
-}
-
-resource "aws_iam_policy" "assume_role_spotfleet" {
-  path   = "/"
-  policy = "${data.template_file.assume_role_spotfleet.rendered}"
 }
 
 resource "aws_iam_role" "aws_spotfleet_service_role" {
   name               = "aws_spotfleet_service_role${var.name_suffix}"
-  assume_role_policy = "${aws_iam_policy.assume_role_spotfleet}"
+  assume_role_policy = "${adata.aws_iam_policy_document.assume_role_spotfleet.json}"
 }
 
 resource "aws_iam_policy" "umccr_spotfleet_policy" {

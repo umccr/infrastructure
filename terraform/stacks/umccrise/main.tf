@@ -44,7 +44,7 @@ resource "aws_batch_job_queue" "umccr_batch_queue" {
   name                 = "umccr_batch_queue${var.workspace_name_suffix[terraform.workspace]}"
   state                = "ENABLED"
   priority             = 1
-  compute_environments = ["${module.compute_env.batch.compute_env_arn}"]
+  compute_environments = ["${module.compute_env.compute_env_arn}"]
 }
 
 ## Job definitions

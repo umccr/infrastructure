@@ -79,7 +79,7 @@ data "aws_iam_policy_document" "assume_role_spotfleet" {
 
 resource "aws_iam_role" "aws_spotfleet_service_role" {
   name               = "aws_spotfleet_service_role${var.name_suffix}"
-  assume_role_policy = "${adata.aws_iam_policy_document.assume_role_spotfleet.json}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_spotfleet.json}"
 }
 
 resource "aws_iam_policy" "umccr_spotfleet_policy" {
@@ -109,9 +109,9 @@ resource "aws_batch_compute_environment" "batch" {
     desired_vcpus = 8
     min_vcpus     = 0
 
-    security_group_ids = "${var.security_group_ids}"
+    security_group_ids = ["${var.security_group_ids}"]
 
-    subnets = "${var.subnet_ids}"
+    subnets = ["${var.subnet_ids}"]
 
     tags = {
       Name = "batch"

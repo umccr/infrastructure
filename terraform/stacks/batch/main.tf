@@ -1,132 +1,117 @@
-resource "aws_iam_role" "ecs_instance_role" {
-  name = "ecs_instance_role"
+# TODO: check used resource names are unique enough to not clash with other stacks
+################################################################################
+# create ECS instance profile for compute resources
+data "aws_iam_policy_document" "assume_role_ec2" {
+  statement {
+    actions = ["sts:AssumeRole"]
 
-  assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-    {
-        "Action": "sts:AssumeRole",
-        "Effect": "Allow",
-        "Principal": {
-        "Service": "ec2.amazonaws.com"
-        }
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
     }
-    ]
-}
-EOF
+  }
 }
 
-resource "aws_iam_policy" "umccr_container_role" {
+resource "aws_iam_role" "ecs_instance_role" {
+  name               = "ecs_instance_role${var.name_suffix}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_ec2.json}"
+}
+
+resource "aws_iam_policy" "umccr_container_service_policy" {
+  name   = "umccr_container_service_policy${var.name_suffix}"
   path   = "/"
-  policy = "${file("policies/AmazonEC2ContainerServiceforEC2Role.json")}"
+  policy = "${file("${path.module}/policies/AmazonEC2ContainerServiceforEC2Role.json")}"
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_instance_role" {
   role       = "${aws_iam_role.ecs_instance_role.name}"
-  policy_arn = "${aws_iam_policy.umccr_container_role.arn}"
+  policy_arn = "${aws_iam_policy.umccr_container_service_policy.arn}"
 }
 
-resource "aws_iam_instance_profile" "ecs_instance_role" {
-  name = "ecs_instance_role"
+resource "aws_iam_instance_profile" "ecs_instance_profile" {
+  name = "ecs_instance_profile${var.name_suffix}"
   role = "${aws_iam_role.ecs_instance_role.name}"
 }
 
+################################################################################
+# create compute environment service role
+
+data "aws_iam_policy_document" "assume_role_batch" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["batch.amazonaws.com"]
+    }
+  }
+}
+
 resource "aws_iam_role" "aws_batch_service_role" {
-  name = "aws_batch_service_role"
-
-  assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-    {
-        "Action": "sts:AssumeRole",
-        "Effect": "Allow",
-        "Principal": {
-        "Service": "batch.amazonaws.com"
-        }
-    }
-    ]
-}
-EOF
+  name               = "aws_batch_service_role${var.name_suffix}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_batch.json}"
 }
 
-resource "aws_iam_role" "aws_spotfleet_service_role" {
-  name = "aws_spotfleet_service_role"
-
-  assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-    {
-        "Action": "sts:AssumeRole",
-        "Effect": "Allow",
-        "Principal": {
-        "Service": "spotfleet.amazonaws.com"
-        }
-    }
-    ]
-}
-EOF
-}
-
-resource "aws_iam_policy" "umccr_spotfleet" {
+resource "aws_iam_policy" "umccr_batch_policy" {
+  name   = "umccr_batch_policy${var.name_suffix}"
   path   = "/"
-  policy = "${file("policies/AmazonEC2SpotFleetTaggingRole.json")}"
-}
-
-resource "aws_iam_role_policy_attachment" "aws_spotfleet_service_role" {
-  role       = "${aws_iam_role.aws_spotfleet_service_role.name}"
-  policy_arn = "${aws_iam_policy.umccr_spotfleet.arn}"
-}
-
-resource "aws_iam_policy" "umccr_batch_role" {
-  path   = "/"
-  policy = "${file("policies/AWSBatchServiceRole.json")}"
+  policy = "${file("${path.module}/policies/AWSBatchServiceRole.json")}"
 }
 
 resource "aws_iam_role_policy_attachment" "aws_batch_service_role" {
   role       = "${aws_iam_role.aws_batch_service_role.name}"
-  policy_arn = "${aws_iam_policy.umccr_batch_role.arn}"
+  policy_arn = "${aws_iam_policy.umccr_batch_policy.arn}"
 }
 
-resource "aws_security_group" "batch" {
-  name   = "aws_batch_compute_environment_security_group"
-  vpc_id = "${aws_vpc.batch.id}"
+################################################################################
+# create SPOT fleet service role
+
+data "aws_iam_policy_document" "assume_role_spotfleet" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["spotfleet.amazonaws.com"]
+    }
+  }
 }
 
-resource "aws_vpc" "batch" {
-  cidr_block = "10.1.0.0/16"
+resource "aws_iam_role" "aws_spotfleet_service_role" {
+  name               = "aws_spotfleet_service_role${var.name_suffix}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_spotfleet.json}"
 }
 
-resource "aws_subnet" "batch" {
-  vpc_id            = "${aws_vpc.batch.id}"
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = "${var.availability_zone}"
+resource "aws_iam_policy" "umccr_spotfleet_policy" {
+  name   = "umccr_spotfleet_policy${var.name_suffix}"
+  path   = "/"
+  policy = "${file("${path.module}/policies/AmazonEC2SpotFleetTaggingRole.json")}"
 }
+
+resource "aws_iam_role_policy_attachment" "aws_spotfleet_service_role" {
+  role       = "${aws_iam_role.aws_spotfleet_service_role.name}"
+  policy_arn = "${aws_iam_policy.umccr_spotfleet_policy.arn}"
+}
+
+################################################################################
+# create ECS compute environment
 
 resource "aws_batch_compute_environment" "batch" {
-  compute_environment_name = "umccr_aws_batch_dev"
+  compute_environment_name = "${var.compute_env_name}"
 
   compute_resources {
-    instance_role = "${aws_iam_instance_profile.ecs_instance_role.arn}"
-    image_id      = "ami-0e72b22a59e4345aa"                             # XXX: umccrise AMI for now
+    instance_role = "${aws_iam_instance_profile.ecs_instance_profile.arn}"
+    image_id      = "${var.image_id}"
 
-    instance_type = [
-      "m4.large",
-    ]
+    instance_type = "${var.instance_types}"
 
     max_vcpus     = 16
     desired_vcpus = 8
     min_vcpus     = 0
 
-    security_group_ids = [
-      "${aws_security_group.batch.id}",
-    ]
+    security_group_ids = ["${var.security_group_ids}"]
 
-    subnets = [
-      "${aws_subnet.batch.id}",
-    ]
+    subnets = ["${var.subnet_ids}"]
 
     tags = {
       Name = "batch"
@@ -140,21 +125,4 @@ resource "aws_batch_compute_environment" "batch" {
   service_role = "${aws_iam_role.aws_batch_service_role.arn}"
   type         = "MANAGED"
   depends_on   = ["aws_iam_role_policy_attachment.aws_batch_service_role"]
-}
-
-## Create job queue
-
-resource "aws_batch_job_queue" "umccr_batch_queue" {
-  name                 = "umccr_batch_queue"
-  state                = "ENABLED"
-  priority             = 1
-  compute_environments = ["${aws_batch_compute_environment.batch.arn}"]
-}
-
-## Job definitions
-
-resource "aws_batch_job_definition" "test" {
-  name                 = "umccrise_job"
-  type                 = "container"
-  container_properties = "${file("jobs/umccrise_job.json")}"
 }

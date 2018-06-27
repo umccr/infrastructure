@@ -1,72 +1,66 @@
 {
-    "jobDefinitionName": "umccrise_job",
-    "status": "ACTIVE",
-    "type": "container",
-    "parameters": {},
-    "containerProperties": {
-        "image": "umccr/umccrise",
-        "vcpus": 1,
-        "memory": 2048,
-        "command": [
-            "umccrise",
-            "/bcbio_project",
-            "-o",
-            "/output_dir",
-            "--bcbio-genomes",
-            "/bcbio_genomes",
-            "--pon",
-            "/panel_of_normals/GRCh37"
-        ],
-        "volumes": [
-            {
-                "host": {
-                    "sourcePath": "/mnt/genomes"
-                },
-                "name": "genomes"
+    "image": "umccr/umccrise",
+    "vcpus": 1,
+    "memory": 2048,
+    "command": [
+        "umccrise",
+        "/bcbio_project",
+        "-o",
+        "/output_dir",
+        "--bcbio-genomes",
+        "/bcbio_genomes",
+        "--pon",
+        "/panel_of_normals/GRCh37"
+    ],
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "/mnt/genomes"
             },
-            {
-                "host": {
-                    "sourcePath": "/mnt/panel_of_normals"
-                },
-                "name": "panel_of_normals"
+            "name": "genomes"
+        },
+        {
+            "host": {
+                "sourcePath": "/mnt/panel_of_normals"
             },
-            {
-                "host": {
-                    "sourcePath": "/mnt/output"
-                },
-                "name": "output"
+            "name": "panel_of_normals"
+        },
+        {
+            "host": {
+                "sourcePath": "/mnt/output"
             },
-            {
-                "host": {
-                    "sourcePath": "/mnt/input"
-                },
-                "name": "input"
-            }
-        ],
-        "mountPoints": [
-            {
-                "containerPath": "/bcbio_genomes",
-                "readOnly": true,
-                "sourceVolume": "genomes"
+            "name": "output"
+        },
+        {
+            "host": {
+                "sourcePath": "/mnt/input"
             },
-            {
-                "containerPath": "/panel_of_normals",
-                "readOnly": true,
-                "sourceVolume": "panel_of_normals"
-            },
-            {
-                "containerPath": "/output_dir",
-                "readOnly": false,
-                "sourceVolume": "output"
-            },
-            {
-                "containerPath": "/bcbio_project",
-                "readOnly": true,
-                "sourceVolume": "input"
-            }
-        ],
-        "readonlyRootFilesystem": true,
-        "privileged": true,
-        "ulimits": []
-    }
+            "name": "input"
+        }
+    ],
+    "mountPoints": [
+        {
+            "containerPath": "/bcbio_genomes",
+            "readOnly": true,
+            "sourceVolume": "genomes"
+        },
+        {
+            "containerPath": "/panel_of_normals",
+            "readOnly": true,
+            "sourceVolume": "panel_of_normals"
+        },
+        {
+            "containerPath": "/output_dir",
+            "readOnly": false,
+            "sourceVolume": "output"
+        },
+        {
+            "containerPath": "/bcbio_project",
+            "readOnly": true,
+            "sourceVolume": "input"
+        }
+    ],
+    "readonlyRootFilesystem": true,
+    "privileged": true,
+    "ulimits": []
 }

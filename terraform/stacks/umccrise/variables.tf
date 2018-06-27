@@ -7,3 +7,7 @@ variable "workspace_name_suffix" {
     dev  = "_dev"
   }
 }
+
+variable "availability_zone" {
+  default = "ap-southeast-2a"
+}

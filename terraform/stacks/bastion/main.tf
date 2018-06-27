@@ -297,6 +297,7 @@ resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
     "${module.vlad_user.username}",
+    "${module.oliver_user.username}",
     "${module.terraform_user.username}",
   ]
 

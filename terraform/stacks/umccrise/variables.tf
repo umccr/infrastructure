@@ -11,3 +11,7 @@ variable "workspace_name_suffix" {
 variable "availability_zone" {
   default = "ap-southeast-2a"
 }
+
+variable "umccrise_image_id" {
+  default = "ami-09fcd8117f4405c63"
+}

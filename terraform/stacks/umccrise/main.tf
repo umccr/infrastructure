@@ -34,7 +34,7 @@ module "compute_env" {
   availability_zone  = "ap-southeast-2"
   name_suffix        = "${var.workspace_name_suffix[terraform.workspace]}"
   compute_env_name   = "umccrise_compute_env${var.workspace_name_suffix[terraform.workspace]}"
-  image_id           = "ami-0e72b22a59e4345aa"
+  image_id           = "${var.umccrise_image_id}"
   instance_types     = ["m4.large"]
   security_group_ids = ["${aws_security_group.batch.id}"]
   subnet_ids         = ["${aws_subnet.batch.id}"]

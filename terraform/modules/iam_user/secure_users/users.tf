@@ -10,7 +10,7 @@ resource "aws_iam_access_key" "iam_access_key" {
   user    = "${element(keys(var.users), count.index)}"
   pgp_key = "${element(values(var.users), count.index)}"
 
-  # TODO: add depends_on aws_iam_user.iam_user
+  depends_on = ["aws_iam_user.iam_user"]
 }
 
 data "template_file" "get_user_policy" {

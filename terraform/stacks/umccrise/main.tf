@@ -49,8 +49,14 @@ resource "aws_batch_job_queue" "umccr_batch_queue" {
 
 ## Job definitions
 
-resource "aws_batch_job_definition" "test" {
+resource "aws_batch_job_definition" "umccrise_standard" {
   name                 = "umccrise_job${var.workspace_name_suffix[terraform.workspace]}"
   type                 = "container"
   container_properties = "${file("jobs/umccrise_job.json")}"
+}
+
+resource "aws_batch_job_definition" "sleeper" {
+  name                 = "sleeper${var.workspace_name_suffix[terraform.workspace]}"
+  type                 = "container"
+  container_properties = "${file("jobs/sleeper_job.json")}"
 }

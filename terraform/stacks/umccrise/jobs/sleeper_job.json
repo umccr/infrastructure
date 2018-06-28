@@ -1,0 +1,10 @@
+{
+    "image": "busybox",
+    "vcpus": 1,
+    "memory": 64,
+    "command": [
+        "sleep",
+        "86400"
+    ],
+    "ulimits": []
+}

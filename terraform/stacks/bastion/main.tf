@@ -21,28 +21,6 @@ module "florian_user" {
   pgp_key  = "keybase:freisinger"
 }
 
-data "template_file" "get_user_florian_policy" {
-  template = "${file("policies/get_user.json")}"
-
-  vars {
-    user_arn = "${module.florian_user.arn}"
-  }
-}
-
-resource "aws_iam_policy" "get_user_florian_policy" {
-  name   = "get_user_florian_policy"
-  path   = "/"
-  policy = "${data.template_file.get_user_florian_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "get_user_policy_florian_attachment" {
-  name       = "get_user_policy_florian_attachment"
-  policy_arn = "${aws_iam_policy.get_user_florian_policy.arn}"
-  groups     = []
-  users      = ["${module.florian_user.username}"]
-  roles      = []
-}
-
 resource "aws_iam_user_login_profile" "florian_console_login" {
   user    = "${module.florian_user.username}"
   pgp_key = "keybase:freisinger"
@@ -53,28 +31,6 @@ module "brainstorm_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "brainstorm"
   pgp_key  = "keybase:brainstorm"
-}
-
-data "template_file" "get_user_brainstorm_policy" {
-  template = "${file("policies/get_user.json")}"
-
-  vars {
-    user_arn = "${module.brainstorm_user.arn}"
-  }
-}
-
-resource "aws_iam_policy" "get_user_brainstorm_policy" {
-  name   = "get_user_brainstorm_policy"
-  path   = "/"
-  policy = "${data.template_file.get_user_brainstorm_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "get_user_policy_brainstorm_attachment" {
-  name       = "get_user_policy_brainstorm_attachment"
-  policy_arn = "${aws_iam_policy.get_user_brainstorm_policy.arn}"
-  groups     = []
-  users      = ["${module.brainstorm_user.username}"]
-  roles      = []
 }
 
 resource "aws_iam_user_login_profile" "brainstorm_console_login" {
@@ -89,28 +45,6 @@ module "oliver_user" {
   pgp_key  = "keybase:ohofmann"
 }
 
-data "template_file" "get_user_oliver_policy" {
-  template = "${file("policies/get_user.json")}"
-
-  vars {
-    user_arn = "${module.oliver_user.arn}"
-  }
-}
-
-resource "aws_iam_policy" "get_user_oliver_policy" {
-  name   = "get_user_oliver_policy"
-  path   = "/"
-  policy = "${data.template_file.get_user_oliver_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "get_user_policy_oliver_attachment" {
-  name       = "get_user_policy_oliver_attachment"
-  policy_arn = "${aws_iam_policy.get_user_oliver_policy.arn}"
-  groups     = []
-  users      = ["${module.oliver_user.username}"]
-  roles      = []
-}
-
 resource "aws_iam_user_login_profile" "oliver_console_login" {
   user    = "${module.oliver_user.username}"
   pgp_key = "keybase:ohofmann"
@@ -121,28 +55,6 @@ module "vlad_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "vlad"
   pgp_key  = "keybase:vladsaveliev"
-}
-
-data "template_file" "get_user_vlad_policy" {
-  template = "${file("policies/get_user.json")}"
-
-  vars {
-    user_arn = "${module.vlad_user.arn}"
-  }
-}
-
-resource "aws_iam_policy" "get_user_vlad_policy" {
-  name   = "get_user_vlad_policy"
-  path   = "/"
-  policy = "${data.template_file.get_user_vlad_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "get_user_policy_vlad_attachment" {
-  name       = "get_user_policy_vlad_attachment"
-  policy_arn = "${aws_iam_policy.get_user_vlad_policy.arn}"
-  groups     = []
-  users      = ["${module.vlad_user.username}"]
-  roles      = []
 }
 
 resource "aws_iam_user_login_profile" "vlad_console_login" {
@@ -159,55 +71,11 @@ module "packer_user" {
   pgp_key  = "keybase:freisinger"
 }
 
-data "template_file" "get_user_packer_policy" {
-  template = "${file("policies/get_user.json")}"
-
-  vars {
-    user_arn = "${module.packer_user.arn}"
-  }
-}
-
-resource "aws_iam_policy" "get_user_packer_policy" {
-  name   = "get_user_packer_policy"
-  path   = "/"
-  policy = "${data.template_file.get_user_packer_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "get_user_policy_packer_attachment" {
-  name       = "get_user_policy_packer_attachment"
-  policy_arn = "${aws_iam_policy.get_user_packer_policy.arn}"
-  groups     = []
-  users      = ["${module.packer_user.username}"]
-  roles      = []
-}
-
 # terraform
 module "terraform_user" {
   source   = "../../modules/iam_user/secure_user"
   username = "terraform"
   pgp_key  = "keybase:freisinger"
-}
-
-data "template_file" "get_user_terraform_policy" {
-  template = "${file("policies/get_user.json")}"
-
-  vars {
-    user_arn = "${module.terraform_user.arn}"
-  }
-}
-
-resource "aws_iam_policy" "get_user_terraform_policy" {
-  name   = "get_user_terraform_policy"
-  path   = "/"
-  policy = "${data.template_file.get_user_terraform_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "get_user_policy_terraform_attachment" {
-  name       = "get_user_policy_terraform_attachment"
-  policy_arn = "${aws_iam_policy.get_user_terraform_policy.arn}"
-  groups     = []
-  users      = ["${module.terraform_user.username}"]
-  roles      = []
 }
 
 ################################################################################

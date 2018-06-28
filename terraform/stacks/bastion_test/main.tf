@@ -41,12 +41,7 @@ resource "aws_iam_group" "bastion_test_group" {
 resource "aws_iam_group_membership" "bastion_test_group_members" {
   name = "bastion_test_group_membership"
 
-  users = [
-    "user1",
-    "user2",
-    "service1",
-    "service2",
-  ]
+  users = "${var.test_group_members}"
 
   group = "${aws_iam_group.bastion_test_group.name}"
 }

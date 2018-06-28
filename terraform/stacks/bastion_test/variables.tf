@@ -18,3 +18,14 @@ variable "service_users" {
     service2 = "keybase:freisinger"
   }
 }
+
+variable "test_group_members" {
+  type = "list"
+
+  default = [
+    "user1",
+    "user2",
+    "service1",
+    "service2",
+  ]
+}

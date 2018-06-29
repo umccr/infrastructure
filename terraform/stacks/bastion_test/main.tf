@@ -62,7 +62,7 @@ resource "aws_iam_group_policy" "group_assume_mfa_policy" {
     {
       "Effect": "Allow",
       "Action": [ "sts:AssumeRole" ],
-      "Resource": [ "${element(values(var.roles_with_mfa), count.index)}" ],
+      "Resource": ${jsonencode(var.roles_with_mfa[element(keys(var.roles_with_mfa), count.index)])},
       "Condition": {
         "Bool": {
           "aws:SecureTransport": "true",
@@ -89,7 +89,7 @@ resource "aws_iam_group_policy" "group_assume_policy" {
     {
       "Effect": "Allow",
       "Action": [ "sts:AssumeRole" ],
-      "Resource": [ "${element(values(var.roles_without_mfa), count.index)}" ]
+      "Resource": ${jsonencode(var.roles_without_mfa[element(keys(var.roles_without_mfa), count.index)])}
     }
   ]
 }

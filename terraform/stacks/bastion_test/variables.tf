@@ -41,7 +41,7 @@ variable "roles_with_mfa" {
   type = "map"
 
   default = {
-    test_group_1 = "arn:aws:iam::472057503814:role/ops-admin"
+    test_group_1 = ["arn:aws:iam::472057503814:role/ops-admin"]
   }
 }
 
@@ -49,6 +49,6 @@ variable "roles_without_mfa" {
   type = "map"
 
   default = {
-    test_group_1 = "arn:aws:iam::620123204273:role/ops_admin_no_mfa"
+    test_group_2 = ["arn:aws:iam::620123204273:role/ops_admin_no_mfa", "arn:aws:iam::620123204273:role/packer_role"]
   }
 }

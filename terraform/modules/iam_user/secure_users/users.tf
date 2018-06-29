@@ -6,10 +6,9 @@ resource "aws_iam_user" "iam_user" {
 }
 
 resource "aws_iam_access_key" "iam_access_key" {
-  count   = "${length(keys(var.users))}"
-  user    = "${element(keys(var.users), count.index)}"
-  pgp_key = "${element(values(var.users), count.index)}"
-
+  count      = "${length(keys(var.users))}"
+  user       = "${element(keys(var.users), count.index)}"
+  pgp_key    = "${element(values(var.users), count.index)}"
   depends_on = ["aws_iam_user.iam_user"]
 }
 
@@ -20,6 +19,8 @@ data "template_file" "get_user_policy" {
   vars {
     user_arn = "${aws_iam_user.iam_user.*.arn[count.index]}"
   }
+
+  depends_on = ["aws_iam_user.iam_user"]
 }
 
 resource "aws_iam_policy" "get_user_policy" {
@@ -35,4 +36,5 @@ resource "aws_iam_policy_attachment" "get_user_policy_attachment" {
   groups     = []
   users      = ["${aws_iam_user.iam_user.*.name[count.index]}"]
   roles      = []
+  depends_on = ["aws_iam_user.iam_user", "aws_iam_policy.get_user_policy"]
 }

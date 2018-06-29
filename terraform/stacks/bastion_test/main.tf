@@ -47,3 +47,51 @@ resource "aws_iam_group_membership" "group_members" {
   group      = "${element(keys(var.group_memberships), count.index)}"
   depends_on = ["aws_iam_group.group"]
 }
+
+################################################################################
+##### define which groups are allowed to assume which roles with/without MFA
+
+resource "aws_iam_group_policy" "group_assume_mfa_policy" {
+  count = "${length(keys(var.roles_with_mfa))}"
+  group = "${element(keys(var.roles_with_mfa), count.index)}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "sts:AssumeRole" ],
+      "Resource": [ "${element(values(var.roles_with_mfa), count.index)}" ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "true",
+          "aws:MultiFactorAuthPresent": "true"
+        },
+        "NumericLessThan": {
+          "aws:MultiFactorAuthAge": "54000"
+        }
+      }
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_group_policy" "group_assume_policy" {
+  count = "${length(keys(var.roles_without_mfa))}"
+  group = "${element(keys(var.roles_without_mfa), count.index)}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [ "sts:AssumeRole" ],
+      "Resource": [ "${element(values(var.roles_without_mfa), count.index)}" ]
+    }
+  ]
+}
+EOF
+}

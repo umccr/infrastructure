@@ -34,14 +34,16 @@ module "service_users" {
 ##### define user groups
 
 # ops_admins_dev_no_mfa_users: admin access to the AWS dev account without requiring MFA
-resource "aws_iam_group" "bastion_test_group" {
-  name = "bastion_test_group"
+resource "aws_iam_group" "group" {
+  count      = "${length(keys(var.group_memberships))}"
+  name       = "${element(keys(var.group_memberships), count.index)}"
+  depends_on = ["module.console_users"]
 }
 
-resource "aws_iam_group_membership" "bastion_test_group_members" {
-  name = "bastion_test_group_membership"
-
-  users = "${var.test_group_members}"
-
-  group = "${aws_iam_group.bastion_test_group.name}"
+resource "aws_iam_group_membership" "group_members" {
+  count      = "${length(keys(var.group_memberships))}"
+  name       = "${element(keys(var.group_memberships), count.index)}_membership"
+  users      = "${var.group_memberships[element(keys(var.group_memberships), count.index)]}"
+  group      = "${element(keys(var.group_memberships), count.index)}"
+  depends_on = ["aws_iam_group.group"]
 }

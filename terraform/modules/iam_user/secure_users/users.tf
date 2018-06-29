@@ -12,21 +12,37 @@ resource "aws_iam_access_key" "iam_access_key" {
   depends_on = ["aws_iam_user.iam_user"]
 }
 
-data "template_file" "get_user_policy" {
-  count    = "${length(keys(var.users))}"
-  template = "${file("${path.module}/policies/get_user.json")}"
-
-  vars {
-    user_arn = "${aws_iam_user.iam_user.*.arn[count.index]}"
-  }
-
-  depends_on = ["aws_iam_user.iam_user"]
-}
-
 resource "aws_iam_policy" "get_user_policy" {
-  count  = "${length(keys(var.users))}"
-  path   = "/"
-  policy = "${data.template_file.get_user_policy.*.rendered[count.index]}"
+  name        = "${aws_iam_user.iam_user.*.name[count.index]}_user_policy"
+  description = "Default permissions granted to every user."
+  count       = "${length(keys(var.users))}"
+  path        = "/"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetUser",
+                "iam:ListMFADevices",
+                "iam:ChangePassword"
+            ],
+            "Resource": "${aws_iam_user.iam_user.*.arn[count.index]}"
+        },
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetAccountPasswordPolicy"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
 }
 
 resource "aws_iam_policy_attachment" "get_user_policy_attachment" {

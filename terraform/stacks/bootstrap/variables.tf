@@ -24,10 +24,22 @@ variable "workspace_name_suffix" {
   }
 }
 
+# due to a restriction in Terraform, we cannot dynamically define bucket configurations
+# see: https://github.com/terraform-providers/terraform-provider-aws/issues/4418
+# Therefore we need to manually configure each bucket and for that we need the individual names
 variable "workspace_fastq_data_bucket_name" {
   default = {
     prod = "umccr-fastq-data-prod"
     dev  = "umccr-fastq-data-dev"
+  }
+}
+
+variable "workspace_fastq_data_bucket_name_list" {
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*"]
+    dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*"]
   }
 }
 

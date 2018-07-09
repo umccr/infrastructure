@@ -58,6 +58,7 @@ sudo systemctl start vault.service
 # create the config file for goldfish
 echo "Writing Vault config"
 sudo tee /opt/goldfish.hcl << END
+ui = true
 listener "tcp" {
   address       = ":5000"
   certificate "local" {

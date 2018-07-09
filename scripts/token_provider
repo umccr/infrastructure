@@ -11,6 +11,10 @@ set -o pipefail
 # - VAULT_ADDR: the address of the local Vault = base URL to use for API calls
 # - VAULT_USER: the user to log into the vault
 # - VAULT_PASS: the password for the user login
+# - TP_TOKEN_TTL: (optional) The TTL for the generated tokens. Default: 30s
+# - TODO: read policies from env?
+
+token_ttl="${TP_TOKEN_TTL:-30s}"
 
 # function to check if an element is contained in an array
 elementIn () {
@@ -22,15 +26,16 @@ elementIn () {
 
 
 ################################################################################
+# basic steps:
 # - log into Vault
 # - generate access token
 # - find all GitHub repos that have Travis enabled
-# - for each repo check if it carries the 'umccr-automation' topic
-# - if yes, inject Vault access token into Travis env vars
+# - for each repo check if it has the 'umccr-automation' topic
+# - if yes, inject Vault env vars
 
 
 vault_operator_token=$(vault login -no-store -token-only -method=userpass username=$VAULT_USER password=$VAULT_PASS)
-vault_token=$(VAULT_TOKEN=$vault_operator_token vault token create -policy=aws-sts-ops_admin_no_mfa-update -policy=kv-datadog-read -ttl=30s -format=json | jq -r '.auth.client_token')
+vault_token=$(VAULT_TOKEN=$vault_operator_token vault token create -policy=aws-sts-ops_admin_no_mfa-update -policy=kv-datadog-read -ttl=$token_ttl -format=json | jq -r '.auth.client_token')
 
 # retrieve the TRAVIS_TOKEN from vault to make authenticated requests against the Travis API
 travis_token=$(VAULT_TOKEN=$vault_operator_token vault kv get -format=json  kv/travis | jq -r '.data.api_token')
@@ -58,15 +63,23 @@ for repo_slug in "${repo_slugs[@]}"; do
         # requests to update a non-existing var will fail, we have to create new vars instead
         if test -z "$vault_addr_id"; then
             echo "VAULT_ADDR not set on repo marked as 'umccr-automation'! Creating new one."
-            echo "curl -X POST -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.name\": \"VAULT_ADDR\", \"env_var.value\": \"$VAULT_ADDR\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_vars"
+            cmd="curl -X POST -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.name\": \"VAULT_ADDR\", \"env_var.value\": \"$VAULT_ADDR\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_vars"
+            echo "$cmd"
+            eval "$cmd"
         else
-            echo "curl -X Patch -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.value\": \"$VAULT_ADDR\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_var/$vault_addr_id"
+            cmd="curl -X Patch -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.value\": \"$VAULT_ADDR\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_var/$vault_addr_id"
+            echo "$cmd"
+            eval "$cmd"
         fi
         if test -z "$vault_token_id"; then
             echo "VAULT_TOKEN not set on repo marked as 'umccr-automation'! Creating new one."
-            echo "curl -X POST -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.name\": \"VAULT_TOKEN\", \"env_var.value\": \"$vault_token\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_vars"
+            cmd="curl -X POST -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.name\": \"VAULT_TOKEN\", \"env_var.value\": \"$vault_token\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_vars"
+            echo "$cmd"
+            eval "$cmd"
         else
-            echo "curl -X Patch -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.value\": \"$vault_token\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_var/$vault_token_id"
+            cmd="curl -X Patch -H \"Content-Type: application/json\" -H \"Travis-API-Version: 3\" -H \"Authorization: token $travis_token\" -d '{ \"env_var.value\": \"$vault_token\", \"env_var.public\": false }' https://api.travis-ci.org/repo/$repo_slug_enc/env_var/$vault_token_id"
+            echo "$cmd"
+            eval "$cmd"
         fi
     else 
         echo "Ignoring repo that doesn't carry the 'umccr-automation' topic: $repo_slug"

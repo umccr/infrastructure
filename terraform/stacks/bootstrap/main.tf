@@ -40,7 +40,7 @@ data "template_file" "fastq_data_uploader" {
   template = "${file("policies/fastq_data_uploader.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_fastq_data_bucket_name_list[terraform.workspace])}"
+    resources = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
   }
 }
 
@@ -277,13 +277,13 @@ resource "aws_security_group" "vault" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # # allow SSH access
-  # ingress {
-  #   from_port   = 22
-  #   to_port     = 22
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
+  # allow SSH access
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   # allow full access from within the security group
   ingress {
@@ -292,6 +292,7 @@ resource "aws_security_group" "vault" {
     protocol  = "-1"
     self      = true
   }
+
   # allow all egress
   egress {
     from_port        = 0

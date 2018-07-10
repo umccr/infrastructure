@@ -1,0 +1,3 @@
+{
+  "policy": "path \"aws/sts/ops_admin_no_mfa\" {\n  capabilities = [\"update\"]\n}"
+}

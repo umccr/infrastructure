@@ -10,6 +10,10 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
+provider "vault" {
+  # Vault server address and access token are retrieved from env variables (VAULT_ADDR and VAULT_TOKEN)
+}
+
 ## Terraform resources #########################################################
 
 # DynamoDB table for Terraform state locking
@@ -125,6 +129,11 @@ resource "aws_s3_bucket" "vault" {
 
 ## Vault resources #############################################################
 
+## Retrieve secrets from Vault
+data "vault_generic_secret" "token_provider_user" {
+  path = "kv/token_provider"
+}
+
 # EC2 instance to run Vault server
 data "aws_ami" "vault_ami" {
   most_recent      = true
@@ -144,15 +153,17 @@ resource "aws_spot_instance_request" "vault" {
   subnet_id              = "${aws_subnet.vault_subnet_a.id}"
   vpc_security_group_ids = ["${aws_security_group.vault.id}"]
 
-  # key_name = "reisingerf"
+  key_name = "reisingerf"
 
   monitoring = true
   user_data  = "${data.template_file.userdata.rendered}"
+
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 8
     delete_on_termination = true
   }
+
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
@@ -162,12 +173,14 @@ resource "aws_spot_instance_request" "vault" {
 }
 
 data "template_file" "userdata" {
-  template = "${file("${path.module}/templates/userdata.tpl")}"
+  template = "${file("${path.module}/templates/vault_userdata.tpl")}"
 
   vars {
     allocation_id = "${aws_eip.vault.id}"
     bucket_name   = "${aws_s3_bucket.vault.id}"
     vault_domain  = "${aws_route53_record.vault.fqdn}"
+    tp_vault_user = "${data.vault_generic_secret.token_provider_user.data["username"]}"
+    tp_vault_pass = "${data.vault_generic_secret.token_provider_user.data["password"]}"
   }
 }
 

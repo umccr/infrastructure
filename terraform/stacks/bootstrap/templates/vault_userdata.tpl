@@ -35,6 +35,8 @@ storage "s3" {
   region = "ap-southeast-2"
 }
 
+ui = true
+
 listener "tcp" {
   address       = "0.0.0.0:8200"
   tls_cert_file = "/etc/letsencrypt/live/${vault_domain}/fullchain.pem"
@@ -58,7 +60,6 @@ sudo systemctl start vault.service
 # create the config file for goldfish
 echo "Writing Vault config"
 sudo tee /opt/goldfish.hcl << END
-ui = true
 listener "tcp" {
   address       = ":5000"
   certificate "local" {
@@ -74,3 +75,20 @@ END
 echo "Starting goldfish server"
 sudo systemctl enable goldfish.service
 sudo systemctl start goldfish.service
+
+
+################################################################################
+# Run token_provider service
+echo "Writing token_provider env"
+# NOTE: the redirection to /dev/null to silence tee (and not print secrets to STDOUT)
+sudo tee /opt/token_provider.env > /dev/null << END
+VAULT_ADDR="https://${vault_domain}:8200"
+VAULT_USER="${tp_vault_user}"
+VAULT_PASS="${tp_vault_pass}"
+TP_TOKEN_TTL=60s
+END
+
+
+echo "Starting token_provider service"
+sudo systemctl enable token_provider
+sudo systemctl start token_provider

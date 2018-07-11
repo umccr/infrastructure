@@ -52,8 +52,9 @@ resource "aws_iam_group_membership" "group_members" {
 ##### define which groups are allowed to assume which roles with/without MFA
 
 resource "aws_iam_group_policy" "group_assume_mfa_policy" {
-  count = "${length(keys(var.roles_with_mfa))}"
-  group = "${element(keys(var.roles_with_mfa), count.index)}"
+  count      = "${length(keys(var.roles_with_mfa))}"
+  group      = "${element(keys(var.roles_with_mfa), count.index)}"
+  depends_on = ["aws_iam_group.group"]
 
   policy = <<EOF
 {
@@ -79,8 +80,9 @@ EOF
 }
 
 resource "aws_iam_group_policy" "group_assume_policy" {
-  count = "${length(keys(var.roles_without_mfa))}"
-  group = "${element(keys(var.roles_without_mfa), count.index)}"
+  count      = "${length(keys(var.roles_without_mfa))}"
+  group      = "${element(keys(var.roles_without_mfa), count.index)}"
+  depends_on = ["aws_iam_group.group"]
 
   policy = <<EOF
 {

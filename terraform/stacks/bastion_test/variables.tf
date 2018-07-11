@@ -29,11 +29,8 @@ variable "group_memberships" {
 
   default = {
     test_group_1 = ["user1", "user2"]
-
-    # test_group_2 = ["service1", "service2"]
-
+    test_group_2 = ["service1", "service2"]
     test_group_2 = ["service1", "service2", "service3"]
-    test_group_3 = ["user3", "user4", "service3"]
   }
 }
 

@@ -67,7 +67,7 @@ resource "aws_s3_bucket" "fastq-data" {
 
   lifecycle_rule {
     id      = "move_to_glacier"
-    enabled = true
+    enabled = "${var.workspace_enable_bucket_lifecycle_rule[terraform.workspace]}"
 
     transition {
       days          = 0

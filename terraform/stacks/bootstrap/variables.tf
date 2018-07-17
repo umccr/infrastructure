@@ -70,3 +70,10 @@ variable "workspace_root_domain" {
     dev  = "dev.umccr.org"
   }
 }
+
+variable "workspace_enable_bucket_lifecycle_rule" {
+  default = {
+    prod = true
+    dev  = false
+  }
+}

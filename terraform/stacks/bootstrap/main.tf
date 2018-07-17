@@ -121,6 +121,10 @@ resource "aws_s3_bucket" "vault" {
   bucket = "${var.workspace_vault_bucket_name[terraform.workspace]}"
   acl    = "private"
 
+  versioning {
+    enabled = true
+  }
+
   tags {
     Name        = "vault-data"
     Environment = "${terraform.workspace}"
@@ -179,6 +183,7 @@ data "template_file" "userdata" {
     allocation_id = "${aws_eip.vault.id}"
     bucket_name   = "${aws_s3_bucket.vault.id}"
     vault_domain  = "${aws_route53_record.vault.fqdn}"
+    vault_env     = "${var.workspace_vault_env[terraform.workspace]}"
     tp_vault_user = "${data.vault_generic_secret.token_provider_user.data["username"]}"
     tp_vault_pass = "${data.vault_generic_secret.token_provider_user.data["password"]}"
   }

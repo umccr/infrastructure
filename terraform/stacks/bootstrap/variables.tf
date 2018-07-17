@@ -77,3 +77,10 @@ variable "workspace_enable_bucket_lifecycle_rule" {
     dev  = false
   }
 }
+
+variable "workspace_vault_env" {
+  default = {
+    prod = "PROD"
+    dev  = "DEV"
+  }
+}

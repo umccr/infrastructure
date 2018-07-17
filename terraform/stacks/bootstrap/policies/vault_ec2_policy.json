@@ -5,7 +5,9 @@
       "Effect": "Allow",
       "Action": [
         "ec2:AssociateAddress",
-        "ec2:DisassociateAddress"
+        "ec2:DisassociateAddress",
+        "ec2:CreateTags",
+        "ec2:DeleteTags"
       ],
       "Resource": "*"
     }

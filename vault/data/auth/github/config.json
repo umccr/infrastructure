@@ -1,3 +1,5 @@
 {
-  "organization": "umccr"
+  "organization": "umccr",
+  "ttl": "1h",
+  "max_ttl": "1h"
 }

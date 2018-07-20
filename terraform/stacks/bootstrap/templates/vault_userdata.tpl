@@ -30,8 +30,9 @@ NOTIFY_EMAIL="florian.reisinger@unimelb.edu.au"
 END
 
 echo "Starting certificate manager service"
-sudo systemctl enable cert_manager
-sudo systemctl start cert_manager
+sudo systemctl enable cert_manager.service
+sudo systemctl enable cert_manager.timer
+sudo systemctl start cert_manager.timer
 
 
 ################################################################################
@@ -90,10 +91,11 @@ VAULT_ENV="${vault_env}"
 VAULT_ADDR="https://${vault_domain}:8200"
 VAULT_USER="${tp_vault_user}"
 VAULT_PASS="${tp_vault_pass}"
-TP_TOKEN_TTL=60s
+TP_TOKEN_TTL=25h
 END
 
 
 echo "Starting token_provider service"
-sudo systemctl enable token_provider
-sudo systemctl start token_provider
+sudo systemctl enable token_provider.service
+sudo systemctl enable token_provider.timer
+sudo systemctl start token_provider.timer

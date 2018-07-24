@@ -1,0 +1,3 @@
+{
+  "policy": "path \"kv/travis\" {\n  capabilities = [\"read\"]\n}"
+}

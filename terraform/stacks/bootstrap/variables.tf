@@ -34,12 +34,12 @@ variable "workspace_fastq_data_bucket_name" {
   }
 }
 
-variable "workspace_fastq_data_bucket_name_list" {
+variable "workspace_fastq_data_uploader_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*"]
-    dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*"]
+    prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*", "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*"]
+    dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*", "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*"]
   }
 }
 
@@ -68,5 +68,19 @@ variable "workspace_root_domain" {
   default = {
     prod = "prod.umccr.org"
     dev  = "dev.umccr.org"
+  }
+}
+
+variable "workspace_enable_bucket_lifecycle_rule" {
+  default = {
+    prod = true
+    dev  = false
+  }
+}
+
+variable "workspace_vault_env" {
+  default = {
+    prod = "PROD"
+    dev  = "DEV"
   }
 }

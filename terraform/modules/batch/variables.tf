@@ -28,3 +28,27 @@ variable "subnet_ids" {
   type        = "list"
   description = "An array with the subnet IDs to use for the compute resource."
 }
+
+variable "max_vcpus" {
+  type        = "int"
+  description = "Maximum vCPUs available for the cluster"
+  default     = 16
+}
+
+variable "min_vcpus" {
+  type        = "int"
+  description = "Minimum vCPUs available for the cluster"
+  default     = 0
+}
+
+variable "desired_vcpus" {
+  type        = "int"
+  description = "Desired vCPUs available for the cluster"
+  default     = 0
+}
+
+variable "spot_bid_percent" {
+  type        = "int"
+  description = "The percent to bid for on a SPOT fleet"
+  default     = 50
+}

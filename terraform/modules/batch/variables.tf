@@ -30,25 +30,25 @@ variable "subnet_ids" {
 }
 
 variable "max_vcpus" {
-  type        = "int"
+  type        = "string"
   description = "Maximum vCPUs available for the cluster"
   default     = 16
 }
 
 variable "min_vcpus" {
-  type        = "int"
+  type        = "string"
   description = "Minimum vCPUs available for the cluster"
   default     = 0
 }
 
 variable "desired_vcpus" {
-  type        = "int"
+  type        = "string"
   description = "Desired vCPUs available for the cluster"
   default     = 0
 }
 
 variable "spot_bid_percent" {
-  type        = "int"
+  type        = "string"
   description = "The percent to bid for on a SPOT fleet"
   default     = 50
 }

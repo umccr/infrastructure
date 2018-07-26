@@ -105,9 +105,9 @@ resource "aws_batch_compute_environment" "batch" {
 
     instance_type = "${var.instance_types}"
 
-    max_vcpus     = 16
-    desired_vcpus = 8
-    min_vcpus     = 0
+    max_vcpus     = "${var.max_vcpus}"
+    desired_vcpus = "${var.desired_vcpus}"
+    min_vcpus     = "${var.min_vcpus}"
 
     security_group_ids = ["${var.security_group_ids}"]
 
@@ -119,7 +119,7 @@ resource "aws_batch_compute_environment" "batch" {
 
     spot_iam_fleet_role = "${aws_iam_role.aws_spotfleet_service_role.arn}"
     type                = "SPOT"
-    bid_percentage      = 50
+    bid_percentage      = "${var.spot_bid_percent}"
   }
 
   service_role = "${aws_iam_role.aws_batch_service_role.arn}"

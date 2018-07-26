@@ -30,7 +30,6 @@ NOTIFY_EMAIL="florian.reisinger@unimelb.edu.au"
 END
 
 echo "Starting certificate manager service"
-sudo systemctl enable cert_manager.service
 sudo systemctl enable cert_manager.timer
 sudo systemctl start cert_manager.timer
 
@@ -96,6 +95,5 @@ END
 
 
 echo "Starting token_provider service"
-sudo systemctl enable token_provider.service
 sudo systemctl enable token_provider.timer
 sudo systemctl start token_provider.timer

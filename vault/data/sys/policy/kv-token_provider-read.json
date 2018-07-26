@@ -1,0 +1,3 @@
+{
+  "policy": "path \"kv/token_provider\" {\n  capabilities = [\"read\"]\n}"
+}

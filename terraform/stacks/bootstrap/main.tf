@@ -186,7 +186,7 @@ resource "aws_spot_instance_request" "vault" {
 }
 
 data "template_file" "userdata" {
-  template = "${file("${path.module}/templates/userdata.tpl")}"
+  template = "${file("${path.module}/templates/vault_userdata.tpl")}"
 
   vars {
     allocation_id = "${aws_eip.vault.id}"

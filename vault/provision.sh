@@ -30,4 +30,6 @@ provision sys/mounts
 provision sys/policy
 provision auth/github
 provision auth/github/map/teams
+provision auth/approle/role
+provision auth/approle/role/goldfish
 popd > /dev/null

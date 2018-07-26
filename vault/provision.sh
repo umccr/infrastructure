@@ -10,7 +10,6 @@ function provision() {
     p="$1/${f%.json}"
     echo "Provisioning $p"
     curl \
-      --silent \
       --location \
       --fail \
       --header "X-Vault-Token: ${VAULT_TOKEN}" \

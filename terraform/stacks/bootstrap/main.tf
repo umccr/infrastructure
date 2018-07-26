@@ -10,6 +10,10 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
+provider "vault" {
+  # Vault server address and access token are retrieved from env variables (VAULT_ADDR and VAULT_TOKEN)
+}
+
 ## Terraform resources #########################################################
 
 # DynamoDB table for Terraform state locking
@@ -141,6 +145,10 @@ resource "aws_s3_bucket" "vault" {
     }
   }
 
+  versioning {
+    enabled = true
+  }
+
   tags {
     Name        = "vault-data"
     Environment = "${terraform.workspace}"
@@ -148,6 +156,11 @@ resource "aws_s3_bucket" "vault" {
 }
 
 ## Vault resources #############################################################
+
+## Retrieve secrets from Vault
+data "vault_generic_secret" "token_provider_user" {
+  path = "kv/token_provider"
+}
 
 # EC2 instance to run Vault server
 data "aws_ami" "vault_ami" {
@@ -192,6 +205,9 @@ data "template_file" "userdata" {
     allocation_id = "${aws_eip.vault.id}"
     bucket_name   = "${aws_s3_bucket.vault.id}"
     vault_domain  = "${aws_route53_record.vault.fqdn}"
+    vault_env     = "${var.workspace_vault_env[terraform.workspace]}"
+    tp_vault_user = "${data.vault_generic_secret.token_provider_user.data["username"]}"
+    tp_vault_pass = "${data.vault_generic_secret.token_provider_user.data["password"]}"
   }
 }
 
@@ -301,14 +317,6 @@ resource "aws_security_group" "vault" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # # allow SSH access
-  # ingress {
-  #   from_port   = 22
-  #   to_port     = 22
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
-
   # allow full access from within the security group
   ingress {
     from_port = 0
@@ -316,6 +324,7 @@ resource "aws_security_group" "vault" {
     protocol  = "-1"
     self      = true
   }
+
   # allow all egress
   egress {
     from_port        = 0

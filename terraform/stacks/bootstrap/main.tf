@@ -213,12 +213,13 @@ data "template_file" "userdata" {
   }
 }
 
-# Vault instance policies - instance profile
+# Vault instance profile / role / policies
 resource "aws_iam_instance_profile" "vault" {
   role = "${aws_iam_role.vault.name}"
 }
 
 resource "aws_iam_role" "vault" {
+  name               = "UmccrVaultInstanceProfileRole${var.workspace_name_suffix[terraform.workspace]}"
   path               = "/"
   assume_role_policy = "${data.aws_iam_policy_document.vault_assume_policy.json}"
 }
@@ -247,12 +248,9 @@ resource "aws_iam_policy" "vault_s3_policy" {
   policy = "${data.template_file.vault_s3_policy.rendered}"
 }
 
-resource "aws_iam_policy_attachment" "vault_s3_policy_attachment" {
-  name       = "vault_s3_policy_attachment${var.workspace_name_suffix[terraform.workspace]}"
+resource "aws_iam_role_policy_attachment" "vault_s3_policy_attachment" {
+  role       = "${aws_iam_role.vault.name}"
   policy_arn = "${aws_iam_policy.vault_s3_policy.arn}"
-  groups     = []
-  users      = []
-  roles      = ["${aws_iam_role.vault.name}"]
 }
 
 resource "aws_iam_policy" "vault_ec2_policy" {
@@ -260,12 +258,19 @@ resource "aws_iam_policy" "vault_ec2_policy" {
   policy = "${file("policies/vault_ec2_policy.json")}"
 }
 
-resource "aws_iam_policy_attachment" "vault_ec2_policy_attachment" {
-  name       = "vault_ec2_policy_attachment${var.workspace_name_suffix[terraform.workspace]}"
+resource "aws_iam_role_policy_attachment" "vault_ec2_policy_attachment" {
+  role       = "${aws_iam_role.vault.name}"
   policy_arn = "${aws_iam_policy.vault_ec2_policy.arn}"
-  groups     = []
-  users      = []
-  roles      = ["${aws_iam_role.vault.name}"]
+}
+
+resource "aws_iam_policy" "vault_logs_policy" {
+  path   = "/"
+  policy = "${file("policies/vault-logs-policy.json")}"
+}
+
+resource "aws_iam_role_policy_attachment" "vault_logs_policy_attachment" {
+  role       = "${aws_iam_role.vault.name}"
+  policy_arn = "${aws_iam_policy.vault_logs_policy.arn}"
 }
 
 # Vault network

@@ -1,16 +1,31 @@
 {
-    "image": "umccr/umccrise",
-    "vcpus": 1,
+    "image": "umccr/umccrise:0.8.1",
+    "vcpus": 8,
     "memory": 2048,
     "command": [
+        "aws",
+        "s3",
+        "cp",
+        "s3://umccr-umccrise-dev/${S3_INPUT_OBJ}",
+        "/bcbio_project",
+        "&&",
+        "cd",
+        "/bcbio_project",
+        "&&",
+        "tar",
+        "xvfz",
+        "*.tar.gz",
+        "&&",
         "umccrise",
         "/bcbio_project",
         "-o",
         "/output_dir",
-        "--bcbio-genomes",
-        "/bcbio_genomes",
-        "--pon",
-        "/panel_of_normals/GRCh37"
+        "--pcgr",
+        "/pcgr",
+        "--ref-fasta",
+        "/bcbio_genomes/GRCh37.fa",
+        "--truth-regions",
+        "/truth_regions.bed"
     ],
     "volumes": [
         {

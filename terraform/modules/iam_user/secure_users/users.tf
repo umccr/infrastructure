@@ -1,4 +1,9 @@
+provider "aws" {
+  alias = "account"
+}
+
 resource "aws_iam_user" "iam_user" {
+  provider      = "aws.account"
   count         = "${length(keys(var.users))}"
   name          = "${element(keys(var.users), count.index)}"
   path          = "/"
@@ -6,6 +11,7 @@ resource "aws_iam_user" "iam_user" {
 }
 
 resource "aws_iam_access_key" "iam_access_key" {
+  provider   = "aws.account"
   count      = "${length(keys(var.users))}"
   user       = "${element(keys(var.users), count.index)}"
   pgp_key    = "${element(values(var.users), count.index)}"
@@ -13,6 +19,7 @@ resource "aws_iam_access_key" "iam_access_key" {
 }
 
 resource "aws_iam_policy" "get_user_policy" {
+  provider    = "aws.account"
   name        = "${aws_iam_user.iam_user.*.name[count.index]}_user_policy"
   description = "Default permissions granted to every user."
   count       = "${length(keys(var.users))}"
@@ -46,6 +53,7 @@ EOF
 }
 
 resource "aws_iam_policy_attachment" "get_user_policy_attachment" {
+  provider   = "aws.account"
   count      = "${length(keys(var.users))}"
   name       = "get_user_policy_attachment_${aws_iam_user.iam_user.*.name[count.index]}"
   policy_arn = "${aws_iam_policy.get_user_policy.*.arn[count.index]}"

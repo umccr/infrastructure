@@ -52,7 +52,7 @@ resource "aws_batch_job_queue" "umccr_batch_queue" {
 resource "aws_batch_job_definition" "umccrise_standard" {
   name                 = "umccrise_job${var.workspace_name_suffix[terraform.workspace]}"
   type                 = "container"
-  container_properties = "${file("jobs/umccrise_job.json")}"
+  container_properties = "${file("jobs/umccrise_GRCh37_job.json")}"
 }
 
 resource "aws_batch_job_definition" "sleeper" {

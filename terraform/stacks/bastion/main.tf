@@ -62,6 +62,17 @@ resource "aws_iam_user_login_profile" "vlad_console_login" {
   pgp_key = "keybase:vladsaveliev"
 }
 
+module "lavinia_user" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "lavinia"
+  pgp_key  = "keybase:lavinia"
+}
+
+resource "aws_iam_user_login_profile" "lavinia_console_login" {
+  user    = "${module.lavinia_user.username}"
+  pgp_key = "keybase:lavinia"
+}
+
 ##### create service users
 
 # packer
@@ -145,6 +156,7 @@ resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
     "${module.vlad_user.username}",
     "${module.oliver_user.username}",
     "${module.terraform_user.username}",
+    "${module.lavinia_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"

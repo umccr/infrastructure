@@ -66,6 +66,23 @@ output "vlad_console_login" {
   value = "${aws_iam_user_login_profile.vlad_console_login.encrypted_password}"
 }
 
+# output for user: lavinia
+output "lavinia_username" {
+  value = "${module.lavinia_user.username}"
+}
+
+output "lavinia_access_key" {
+  value = "${module.lavinia_user.access_key}"
+}
+
+output "lavinia_secret_access_key" {
+  value = "${module.lavinia_user.encrypted_secret_access_key}"
+}
+
+output "lavinia_console_login" {
+  value = "${aws_iam_user_login_profile.lavinia_console_login.encrypted_password}"
+}
+
 # output for serivce: packer
 output "packer_username" {
   value = "${module.packer_user.username}"

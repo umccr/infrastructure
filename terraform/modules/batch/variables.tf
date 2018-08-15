@@ -29,22 +29,23 @@ variable "subnet_ids" {
   description = "An array with the subnet IDs to use for the compute resource."
 }
 
+# Definitions for the parameters below on: https://docs.aws.amazon.com/batch/latest/userguide/Batch_GetStarted.html
 variable "max_vcpus" {
   type        = "string"
-  description = "Maximum vCPUs available for the cluster"
-  default     = 16
+  description = "For Maximum vCPUs, choose the maximum number of EC2 vCPUs that your compute environment can scale out to, regardless of job queue demand."
+  default     = 32
 }
 
 variable "min_vcpus" {
   type        = "string"
-  description = "Minimum vCPUs available for the cluster"
+  description = "For Minimum vCPUs, choose the minimum number of EC2 vCPUs that your compute environment should maintain, regardless of job queue demand."
   default     = 0
 }
 
 variable "desired_vcpus" {
   type        = "string"
-  description = "Desired vCPUs available for the cluster"
-  default     = 0
+  description = "For Desired vCPUs, choose the number of EC2 vCPUs with which your compute environment should launch. As your job queue demand increases, AWS Batch can increase the desired number of vCPUs in your compute environment and add EC2 instances, up to the maximum vCPUs, and as demand decreases, AWS Batch can decrease the desired number of vCPUs in your compute environment and remove instances, down to the minimum vCPUs."
+  default     = 1
 }
 
 variable "spot_bid_percent" {

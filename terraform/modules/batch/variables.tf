@@ -39,7 +39,7 @@ variable "max_vcpus" {
 variable "min_vcpus" {
   type        = "string"
   description = "For Minimum vCPUs, choose the minimum number of EC2 vCPUs that your compute environment should maintain, regardless of job queue demand."
-  default     = 0
+  default     = 1
 }
 
 variable "desired_vcpus" {

@@ -13,5 +13,5 @@ variable "availability_zone" {
 }
 
 variable "umccrise_image_id" {
-  default = "ami-022bcd2eb851ac2c9"
+  default = "ami-038937e6db20b624f"
 }

@@ -4,6 +4,10 @@
         {
             "Effect": "Allow",
             "Action": [
+                "ec2:AttachVolume",
+                "ec2:CreateVolume",
+                "ec2:Describe*",
+                "ec2:ModifyInstanceAttribute",
                 "ecs:CreateCluster",
                 "ecs:DeregisterContainerInstance",
                 "ecs:DiscoverPollEndpoint",
@@ -17,7 +21,8 @@
                 "ecr:GetDownloadUrlForLayer",
                 "ecr:BatchGetImage",
                 "logs:CreateLogStream",
-                "logs:PutLogEvents"
+                "logs:PutLogEvents",
+                "kms:*"
             ],
             "Resource": "*"
         }

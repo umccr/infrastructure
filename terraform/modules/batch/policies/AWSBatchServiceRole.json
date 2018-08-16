@@ -8,6 +8,7 @@
                 "ec2:CancelSpotFleetRequests",
                 "ec2:CreateVolume",
                 "ec2:DescribeAccountAttributes",
+                "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeInstances",
                 "ec2:DescribeInstanceAttribute",
                 "ec2:DescribeSubnets",

@@ -42,8 +42,8 @@ variable "group_members_map" {
 
   default = {
     agha_gdr_admins = ["florian", "brainstorm", "oliver", "lavinia"]
-    agha_gdr_submit = ["simon", "sebastian"]
-    agha_gdr_read   = ["ametke", "ebenngarvan"]
+    agha_gdr_submit = ["florian", "brainstorm", "oliver", "lavinia", "simon", "sebastian"]
+    agha_gdr_read   = ["florian", "brainstorm", "oliver", "lavinia", "ametke", "ebenngarvan"]
   }
 }
 

@@ -45,7 +45,7 @@ variable "min_vcpus" {
 variable "desired_vcpus" {
   type        = "string"
   description = "For Desired vCPUs, choose the number of EC2 vCPUs with which your compute environment should launch. As your job queue demand increases, AWS Batch can increase the desired number of vCPUs in your compute environment and add EC2 instances, up to the maximum vCPUs, and as demand decreases, AWS Batch can decrease the desired number of vCPUs in your compute environment and remove instances, down to the minimum vCPUs."
-  default     = 1
+  default     = 2
 }
 
 variable "spot_bid_percent" {

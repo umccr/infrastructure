@@ -137,6 +137,14 @@ resource "aws_s3_bucket" "vault" {
   bucket = "${var.workspace_vault_bucket_name[terraform.workspace]}"
   acl    = "private"
 
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
   versioning {
     enabled = true
   }
@@ -181,17 +189,13 @@ resource "aws_spot_instance_request" "vault" {
   subnet_id              = "${aws_subnet.vault_subnet_a.id}"
   vpc_security_group_ids = ["${aws_security_group.vault.id}"]
 
-  key_name = "reisingerf"
-
   monitoring = true
   user_data  = "${data.template_file.userdata.rendered}"
-
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 8
     delete_on_termination = true
   }
-
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578

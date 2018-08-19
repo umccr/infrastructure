@@ -1,3 +1,6 @@
+# NOTE: two AWS profiles are used:
+# - umccr_ops_admin_no_mfa: admin access to dev account to manage resources
+# - umccr_admin_bastion: access to bastion account to create users/groups/etc 
 terraform {
   backend "s3" {
     bucket         = "umccr-terraform-states"

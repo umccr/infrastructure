@@ -29,10 +29,10 @@ variable "agha_users_map" {
   description = "Map of user names (key) to their PGP key/keybase id (value) for users with console login."
 
   default = {
-    ametke      = "keybase:ametke"
-    simon       = "keybase:freisinger"
-    sebastian   = "keybase:freisinger"
-    ebenngarvan = "keybase:ebenngarvan"
+    ametke       = "keybase:ametke"
+    simonsadedin = "keybase:simonsadedin"
+    sebastian    = "keybase:freisinger"
+    ebenngarvan  = "keybase:ebenngarvan"
   }
 }
 
@@ -42,7 +42,7 @@ variable "group_members_map" {
 
   default = {
     agha_gdr_admins = ["florian", "brainstorm", "oliver", "lavinia"]
-    agha_gdr_submit = ["florian", "brainstorm", "oliver", "lavinia", "simon", "sebastian"]
+    agha_gdr_submit = ["florian", "brainstorm", "oliver", "lavinia", "simonsadedin", "sebastian"]
     agha_gdr_read   = ["florian", "brainstorm", "oliver", "lavinia", "ametke", "ebenngarvan"]
   }
 }

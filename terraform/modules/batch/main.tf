@@ -124,5 +124,7 @@ resource "aws_batch_compute_environment" "batch" {
 
   service_role = "${aws_iam_role.aws_batch_service_role.arn}"
   type         = "MANAGED"
-  depends_on   = ["aws_iam_role_policy_attachment.aws_batch_service_role"]
+  depends_on   = ["aws_iam_role_policy_attachment.aws_batch_service_role", 
+                  "aws_iam_instance_profile.ecs_instance_profile", 
+                  "aws_iam_role.aws_spotfleet_service_role"]
 }

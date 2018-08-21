@@ -8,6 +8,7 @@
                 "ec2:DescribeSubnets",
                 "ec2:RequestSpotInstances",
                 "ec2:TerminateInstances",
+                "ec2:CancelSpotFleetRequests",
                 "ec2:DescribeInstanceStatus",
                 "ec2:CreateTags"
             ],

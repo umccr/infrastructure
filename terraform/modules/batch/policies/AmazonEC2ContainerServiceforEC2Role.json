@@ -9,6 +9,7 @@
                 "ec2:Describe*",
                 "ec2:ModifyInstanceAttribute",
                 "ecs:CreateCluster",
+                "ecs:ListClusters",
                 "ecs:DeregisterContainerInstance",
                 "ecs:DiscoverPollEndpoint",
                 "ecs:Poll",

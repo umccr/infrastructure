@@ -4,6 +4,8 @@
         {
             "Effect": "Allow",
             "Action": [
+                "ec2:CreateVolume",
+                "kms:*",
                 "ec2:DescribeAccountAttributes",
                 "ec2:DescribeInstances",
                 "ec2:DescribeInstanceAttribute",

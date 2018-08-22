@@ -6,6 +6,10 @@ variable "name_suffix" {
   description = "Suffix to be applied to AWS resource names in order to make them unique. This way the module can be deployed several times into the same account without causing name clashes."
 }
 
+variable "stack_name" {
+  description = "Name of the stack, which can be applied to AWS resource names in order to make them unique and easisy identifiable."
+}
+
 variable "compute_env_name" {
   description = "The name to give to the compute environment."
 }

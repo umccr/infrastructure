@@ -83,6 +83,23 @@ output "lavinia_console_login" {
   value = "${aws_iam_user_login_profile.lavinia_console_login.encrypted_password}"
 }
 
+# output for user: pdiakumis
+output "pdiakumis_username" {
+  value = "${module.pdiakumis_user.username}"
+}
+
+output "pdiakumis_access_key" {
+  value = "${module.pdiakumis_user.access_key}"
+}
+
+output "pdiakumis_secret_access_key" {
+  value = "${module.pdiakumis_user.encrypted_secret_access_key}"
+}
+
+output "pdiakumis_console_login" {
+  value = "${aws_iam_user_login_profile.pdiakumis_console_login.encrypted_password}"
+}
+
 # output for serivce: packer
 output "packer_username" {
   value = "${module.packer_user.username}"

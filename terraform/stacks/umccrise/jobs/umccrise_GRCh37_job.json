@@ -1,120 +1,35 @@
 {
     "image": "umccr/umccrise:0.8.2",
-    "vcpus": 8,
+    "vcpus": 2,
     "memory": 2048,
     "command": [
-        "aws",
-        "s3",
-        "sync",
-        "s3://umccr-umccrise-refdata-dev/",
-        "/mnt/refdata",
-        "&&",
-        "parallel",
-        "'tar xvfz {} -C `dirname {}`'",
-        ":::",
-        "/pcgr/data/*databundle*.tgz",
-        "&&",
-        "aws",
-        "s3",
-        "cp",
-        "s3://umccr-umccrise-dev/${S3_INPUT_OBJ}",
-        "/bcbio_project",
-        "&&",
-        "tar",
-        "xvfz",
-        "${S3_INPUT_OBJ}",
-        "&&",
-        "umccrise",
-        "/bcbio_project/${S3_INPUT_OBJ%.tar.gz}",
-        "-o",
-        "/output_dir",
-        "--pcgr",
-        "/pcgr",
-        "--ref-fasta",
-        "/bcbio_genomes/GRCh37.fa",
-        "--truth-regions",
-        "/truth_regions.bed",
-        "&&",
-        "tar",
-        "cvfz",
-        "${S3_INPUT_OBJ%.tar.gz}-output.tar.gz",
-        "/output_dir/*",
-        "&&",
-        "aws",
-        "s3",
-        "cp",
-        "${S3_INPUT_OBJ%.tar.gz}-output.tar.gz",
-        "s3://umccr-umccrise-dev/"
+        "/opt/container/umccrise-wrapper.sh"
     ],
 
     "volumes": [
         {
             "host": {
-                "sourcePath": "/mnt/refdata/Hsapiens/GRCh37/validation/giab-NA12878/truth_regions.bed"
+                "sourcePath": "/mnt"
             },
-            "name": "validation"
+            "name": "work"
         },
         {
             "host": {
-                "sourcePath": "/mnt/refdata/Hsapiens/GRCh37/PCGR/data"
+                "sourcePath": "/opt/container"
             },
-            "name": "pcgr"
-        },
-        {
-            "host": {
-                "sourcePath": "/mnt/refdata/Hsapiens/GRCh37/seq"
-            },
-            "name": "genomes"
-        },
-        {
-            "host": {
-                "sourcePath": "/mnt/refdata/GRCh37"
-            },
-            "name": "panel_of_normals"
-        },
-        {
-            "host": {
-                "sourcePath": "/mnt/output"
-            },
-            "name": "output"
-        },
-        {
-            "host": {
-                "sourcePath": "/mnt/input"
-            },
-            "name": "input"
+            "name": "container"
         }
     ],
     "mountPoints": [
         {
-            "containerPath": "/truth_regions.bed",
-            "readOnly": true,
-            "sourceVolume": "validation"
-        },
-        {
-            "containerPath": "/pcgr/data",
-            "readOnly": true,
-            "sourceVolume": "pcgr"
-        },
-        {
-            "containerPath": "/bcbio_genomes",
-            "readOnly": true,
-            "sourceVolume": "genomes"
-        },
-        {
-            "containerPath": "/panel_of_normals",
-            "readOnly": true,
-            "sourceVolume": "panel_of_normals"
-        },
-        {
-            "containerPath": "/output_dir",
+            "containerPath": "/work",
             "readOnly": false,
-            "sourceVolume": "output"
+            "sourceVolume": "work"
         },
         {
-            "containerPath": "/bcbio_project",
+            "containerPath": "/opt/container",
             "readOnly": true,
-            "sourceVolume": "input"
+            "sourceVolume": "container"
         }
     ],
     "readonlyRootFilesystem": true,

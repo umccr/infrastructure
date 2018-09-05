@@ -30,9 +30,23 @@ resource "aws_iam_role" "ecsInstanceRole" {
 POLICY
 }
 
+data "template_file" "ecsInstanceRole" {
+  template = "${file("${path.module}/policies/ec2-instance-role.json")}"
+
+  vars {
+    resources = "${jsonencode(var.umccrise_buckets)}"
+  }
+}
+
+resource "aws_iam_policy" "ecsInstanceRole" {
+  name   = "umccr_batch_ecsInstanceRole${var.name_suffix}"
+  path   = "/${var.stack_name}/"
+  policy = "${data.template_file.ecsInstanceRole.rendered}"
+}
+
 resource "aws_iam_role_policy_attachment" "ecsInstanceRole" {
   role = "${aws_iam_role.ecsInstanceRole.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+  policy_arn = "${aws_iam_policy.ecsInstanceRole.arn}"
 }
 
 ################################################################################

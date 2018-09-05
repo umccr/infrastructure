@@ -33,6 +33,11 @@ variable "subnet_ids" {
   description = "An array with the subnet IDs to use for the compute resource."
 }
 
+variable "umccrise_buckets" {
+  type = "list"
+  description = "List of buckets for umccrise to include in the ec2 instance role policy."
+}
+
 # Definitions for the parameters below on: https://docs.aws.amazon.com/batch/latest/userguide/Batch_GetStarted.html
 variable "max_vcpus" {
   type        = "string"

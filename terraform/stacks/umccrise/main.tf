@@ -100,6 +100,7 @@ module "compute_env" {
   instance_types     = ["m4.large"]
   security_group_ids = ["${aws_security_group.batch.id}"]
   subnet_ids         = ["${aws_subnet.batch.id}"]
+  umccrise_buckets   = "${var.workspace_umccrise_buckets[terraform.workspace]}"
 }
 
 resource "aws_batch_job_queue" "umccr_batch_queue" {

@@ -32,7 +32,7 @@
             "sourceVolume": "container"
         }
     ],
-    "readonlyRootFilesystem": true,
+    "readonlyRootFilesystem": false,
     "privileged": true,
     "ulimits": []
 }

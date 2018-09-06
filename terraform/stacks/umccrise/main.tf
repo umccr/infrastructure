@@ -91,16 +91,16 @@ resource "aws_route_table_association" "batch" {
 # set up the compute environment
 module "compute_env" {
   # NOTE: the source cannot be interpolated, so we can't use a variable here and have to keep the difference bwtween production and developmment in a branch
-  source             = "../../modules/batch"
-  availability_zone  = "ap-southeast-2"
-  name_suffix        = "_${terraform.workspace}"
-  stack_name         = "${var.stack_name}"
-  compute_env_name   = "${var.stack_name}_compute_env_${terraform.workspace}"
-  image_id           = "${var.umccrise_image_id}"
-  instance_types     = ["m4.large"]
-  security_group_ids = ["${aws_security_group.batch.id}"]
-  subnet_ids         = ["${aws_subnet.batch.id}"]
-  umccrise_buckets   = "${var.workspace_umccrise_buckets[terraform.workspace]}"
+  source                = "../../modules/batch"
+  availability_zone     = "ap-southeast-2"
+  name_suffix           = "_${terraform.workspace}"
+  stack_name            = "${var.stack_name}"
+  compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
+  image_id              = "${var.umccrise_image_id}"
+  instance_types        = ["m4.large"]
+  security_group_ids    = ["${aws_security_group.batch.id}"]
+  subnet_ids            = ["${aws_subnet.batch.id}"]
+  ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
 }
 
 resource "aws_batch_job_queue" "umccr_batch_queue" {
@@ -123,3 +123,22 @@ resource "aws_batch_job_definition" "sleeper" {
   type                 = "container"
   container_properties = "${file("jobs/sleeper_job.json")}"
 }
+
+
+################################################################################
+# policy for the EC2 instance
+
+data "template_file" "additionalEc2InstancePolicy" {
+  template = "${file("${path.module}/policies/ec2-instance-role.json")}"
+
+  vars {
+    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+  }
+}
+
+resource "aws_iam_policy" "additionalEc2InstancePolicy" {
+  name   = "umccr_batch_additionalEc2InstancePolicy_${terraform.workspace}"
+  path   = "/${var.stack_name}/"
+  policy = "${data.template_file.additionalEc2InstancePolicy.rendered}"
+}
+

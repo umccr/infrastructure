@@ -13,6 +13,13 @@ variable "stack_name" {
   default = "umccrise"
 }
 
+variable "workspace_umccrise_data_bucket" {
+  type    = "map"
+  default = {
+    prod = "umccr-umccrise-prod"
+    dev  = "umccr-umccrise-dev"
+  }
+}
 
 variable "workspace_umccrise_buckets" {
   type = "map"

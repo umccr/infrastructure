@@ -21,6 +21,8 @@ def lambda_handler(event, context):
     job_queue = event['jobQueue'] if event.get('jobQueue') else os.environ.get('JOBQUEUE')
     job_definition = event['jobDefinition'] if event.get('jobDefinition') else os.environ.get('JOBDEF')
 
+    container_mem = event['memory'] if event.get('memory') else ""
+    container_vcpus = event['vcpus'] if event.get('vcpus') else ""
     bucket = event['bucket'] if event.get('bucket') else os.environ.get('BUCKET')
     result_dir = event['resultDir']
     print("resultDir: %s  in bucket: %s" % (result_dir, bucket))
@@ -33,6 +35,10 @@ def lambda_handler(event, context):
         # inside the docker container
         # container_overrides = {'environment': [{'name': 'S3_INPUT_DIR', 'value': key}]}
         container_overrides['environment'] = [{'name': 'S3_INPUT_DIR', 'value': result_dir}]
+        if container_mem:
+            container_overrides['memory'] = int(container_mem)
+        if container_vcpus:
+            container_overrides['vcpus'] = int(container_vcpus)
         
         print("jobName: " + job_name)
         print("jobQueue: " + job_queue)

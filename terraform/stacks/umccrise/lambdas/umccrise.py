@@ -5,6 +5,10 @@ import boto3
 batch_client = boto3.client('batch')
 s3 = boto3.client('s3')
 
+# TODO: make the job name an input parameter
+# TODO: make more generic
+#       i.e. parse/expect different input parameters depending on job definition/type
+
 
 def lambda_handler(event, context):
     # Log the received event
@@ -39,7 +43,8 @@ def lambda_handler(event, context):
             container_overrides['memory'] = int(container_mem)
         if container_vcpus:
             container_overrides['vcpus'] = int(container_vcpus)
-        
+            parameters['vcpus'] = container_vcpus
+
         print("jobName: " + job_name)
         print("jobQueue: " + job_queue)
         print("parameters: ")

@@ -124,6 +124,9 @@ resource "aws_batch_job_queue" "umccr_batch_queue" {
 resource "aws_batch_job_definition" "umccrise_standard" {
   name                 = "${var.stack_name}_job_${terraform.workspace}"
   type                 = "container"
+  parameters           = {
+    vcpus = 1
+  }
   container_properties = "${file("jobs/umccrise_GRCh37_job.json")}"
 }
 

@@ -3,9 +3,9 @@
     "vcpus": 2,
     "memory": 2048,
     "command": [
-        "/opt/container/umccrise-wrapper.sh"
+        "/opt/container/umccrise-wrapper.sh",
+        "Ref::vcpus"
     ],
-
     "volumes": [
         {
             "host": {

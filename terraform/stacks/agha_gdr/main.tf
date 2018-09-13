@@ -96,6 +96,11 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
     }
   }
 
+  logging {
+    target_bucket = "${aws_s3_bucket.agha_gdr_log.id}"
+    target_prefix = "log/access/staging/"
+  }
+
   tags {
     Name        = "agha-gdr-staging"
     Project     = "AGHA-GDR"
@@ -115,8 +120,32 @@ resource "aws_s3_bucket" "agha_gdr_store" {
     }
   }
 
+  logging {
+    target_bucket = "${aws_s3_bucket.agha_gdr_log.id}"
+    target_prefix = "log/access/store/"
+  }
+
   tags {
     Name        = "agha-gdr-store"
+    Project     = "AGHA-GDR"
+    Environment = "${terraform.workspace}"
+  }
+}
+
+resource "aws_s3_bucket" "agha_gdr_log" {
+  bucket = "${var.agha_gdr_log_bucket_name[terraform.workspace]}"
+  acl    = "log-delivery-write"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  tags {
+    Name        = "agha-gdr-log"
     Project     = "AGHA-GDR"
     Environment = "${terraform.workspace}"
   }

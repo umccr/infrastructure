@@ -22,6 +22,13 @@ variable "agha_gdr_store_bucket_name" {
   }
 }
 
+variable "agha_gdr_log_bucket_name" {
+  default = {
+    prod = "agha-gdr-log-prod"
+    dev  = "agha-gdr-log-dev"
+  }
+}
+
 ################################################################################
 # define (AGHA specific) users
 variable "agha_users_map" {

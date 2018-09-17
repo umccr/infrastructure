@@ -1,0 +1,38 @@
+{
+    "image": "umccr/longranger:2.2.2",
+    "vcpus": 24,
+    "memory": 16000,
+    "command": [
+        "/opt/container/longranger-wrapper.sh",
+        "Ref::vcpus"
+    ],
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "/mnt"
+            },
+            "name": "work"
+        },
+        {
+            "host": {
+                "sourcePath": "/opt/container"
+            },
+            "name": "container"
+        }
+    ],
+    "mountPoints": [
+        {
+            "containerPath": "/work",
+            "readOnly": false,
+            "sourceVolume": "work"
+        },
+        {
+            "containerPath": "/opt/container",
+            "readOnly": true,
+            "sourceVolume": "container"
+        }
+    ],
+    "readonlyRootFilesystem": false,
+    "privileged": true,
+    "ulimits": []
+}

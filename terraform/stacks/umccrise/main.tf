@@ -110,6 +110,8 @@ module "compute_env" {
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
+  min_vcpus             = 1
+  desired_vcpus         = 2
 }
 
 resource "aws_batch_job_queue" "umccr_batch_queue" {
@@ -160,6 +162,10 @@ resource "aws_iam_policy" "additionalEc2InstancePolicy" {
 
 data "template_file" "lambda" {
     template = "${file("${path.module}/policies/umccrise-lambda.json")}"
+
+    vars {
+    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+  }
 }
 
 resource "aws_iam_policy" "lambda" {
@@ -185,10 +191,11 @@ module "lambda" {
 
   environment {
     variables {
-      JOBNAME  = "umccrise"
-      JOBQUEUE = "${aws_batch_job_queue.umccr_batch_queue.arn}"
-      JOBDEF   = "${aws_batch_job_definition.umccrise_standard.arn}"
-      BUCKET   = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+      JOBNAME        = "umccrise"
+      JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
+      JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
+      DATA_BUCKET   = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+      REFDATA_BUCKET = "${var.workspace_umccrise_refdata_bucket[terraform.workspace]}"
     }
   }
 

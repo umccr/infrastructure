@@ -27,18 +27,23 @@ def lambda_handler(event, context):
 
     container_mem = event['memory'] if event.get('memory') else ""
     container_vcpus = event['vcpus'] if event.get('vcpus') else ""
-    bucket = event['bucket'] if event.get('bucket') else os.environ.get('BUCKET')
+    data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
+    refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     result_dir = event['resultDir']
-    print("resultDir: %s  in bucket: %s" % (result_dir, bucket))
+    print("resultDir: %s  in data bucket: %s" % (result_dir, data_bucket))
 
     try:
-        response = s3.list_objects(Bucket=bucket, MaxKeys=5, Prefix=result_dir)
+        response = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=result_dir)
         print("Response: " + json.dumps(response, indent=2, sort_keys=True, default=str))
 
-        # Inject S3 object from the bucket into parameters for AWS Batch and
+        # Inject S3 object from the data_bucket into parameters for AWS Batch and
         # inside the docker container
         # container_overrides = {'environment': [{'name': 'S3_INPUT_DIR', 'value': key}]}
-        container_overrides['environment'] = [{'name': 'S3_INPUT_DIR', 'value': result_dir}]
+        container_overrides['environment'] = [
+            {'name': 'S3_INPUT_DIR', 'value': result_dir},
+            {'name': 'S3_DATA_BUCKET', 'value': data_bucket},
+            {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket}
+        ]
         if container_mem:
             container_overrides['memory'] = int(container_mem)
         if container_vcpus:

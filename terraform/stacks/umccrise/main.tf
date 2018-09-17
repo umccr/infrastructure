@@ -110,8 +110,8 @@ module "compute_env" {
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
-  min_vcpus             = 1
-  desired_vcpus         = 2
+  min_vcpus             = 0
+  desired_vcpus         = 0
 }
 
 resource "aws_batch_job_queue" "umccr_batch_queue" {

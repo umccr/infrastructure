@@ -16,8 +16,8 @@ variable "stack_name" {
 variable "workspace_longranger_data_bucket" {
   type    = "map"
   default = {
-    prod = "umccr-longranger-prod"
-    dev  = "umccr-longranger-dev"
+    prod = "umccr-primary-data-prod"
+    dev  = "umccr-primary-data-dev"
   }
 }
 
@@ -25,7 +25,7 @@ variable "workspace_longranger_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-longranger-prod", "arn:aws:s3:::umccr-longranger-prod/*", "arn:aws:s3:::umccr-longranger-refdata-prod", "arn:aws:s3:::umccr-longranger-refdata-prod/*"]
-    dev  = ["arn:aws:s3:::umccr-longranger-dev", "arn:aws:s3:::umccr-longranger-dev/*", "arn:aws:s3:::umccr-longranger-refdata-dev", "arn:aws:s3:::umccr-longranger-refdata-dev/*"]
+    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
   }
 }

@@ -106,7 +106,7 @@ module "compute_env" {
   stack_name            = "${var.stack_name}"
   compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
   image_id              = "${var.longranger_image_id}"
-  instance_types        = ["m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge"]
+  instance_types        = ["m4.2xlarge", "m4.4xlarge"]
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
@@ -127,13 +127,7 @@ resource "aws_batch_job_definition" "longranger_standard" {
   parameters           = {
     vcpus = 1
   }
-  container_properties = "${file("jobs/longranger_GRCh37_job.json")}"
-}
-
-resource "aws_batch_job_definition" "sleeper" {
-  name                 = "${var.stack_name}_sleeper_${terraform.workspace}"
-  type                 = "container"
-  container_properties = "${file("jobs/sleeper_job.json")}"
+  container_properties = "${file("jobs/longranger_job.json")}"
 }
 
 
@@ -173,7 +167,7 @@ module "lambda" {
   source        = "../../modules/lambda"
 
   function_name = "${var.stack_name}_lambda_${terraform.workspace}"
-  description   = "Lambda for UMCRISE"
+  description   = "Lambda for LongRanger"
   handler       = "longranger.lambda_handler"
   runtime       = "python3.6"
   timeout       = 3

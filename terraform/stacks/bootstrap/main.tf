@@ -20,8 +20,8 @@ provider "vault" {
 resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
   name           = "terraform-state-lock"
   hash_key       = "LockID"
-  read_capacity  = 20
-  write_capacity = 20
+  read_capacity  = 2
+  write_capacity = 2
 
   attribute {
     name = "LockID"
@@ -136,14 +136,6 @@ resource "aws_s3_bucket" "pcgr_s3_bucket" {
 resource "aws_s3_bucket" "vault" {
   bucket = "${var.workspace_vault_bucket_name[terraform.workspace]}"
   acl    = "private"
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
 
   versioning {
     enabled = true
@@ -402,7 +394,7 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   count                = "${terraform.workspace == "dev" ? 1 : 0}"
   name                 = "ops_admin_no_mfa"
   path                 = "/"
-  assume_role_policy   = "${file("policies/assume_role_from_bastion.json")}"
+  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
   max_session_duration = "43200"
 }
 

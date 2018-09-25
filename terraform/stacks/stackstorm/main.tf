@@ -1,9 +1,9 @@
 terraform {
   backend "s3" {
     # AWS access credentials are retrieved from env variables
-    bucket  = "umccr-terraform-states"
-    key     = "stackstorm/terraform.tfstate"
-    region  = "ap-southeast-2"
+    bucket         = "umccr-terraform-states"
+    key            = "stackstorm/terraform.tfstate"
+    region         = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
   }
 }
@@ -27,13 +27,14 @@ module "stackstorm" {
   source                        = "../../modules/stackstorm"
   instance_type                 = "t2.medium"
   instance_spot_price           = "0.018"
-  name_suffix                   = "${var.workspace_name_suffix[terraform.workspace]}"
   availability_zone             = "ap-southeast-2a"
+  name_suffix                   = "${terraform.workspace}"
   root_domain                   = "${var.workspace_zone_domain[terraform.workspace]}"
-  stackstorm_sub_domain         = "stackstorm"
+  stackstorm_sub_domain         = "${var.stack_name}"
   stackstorm_data_volume_name   = "${var.workspace_st_data_volume[terraform.workspace]}" # NOTE: volume must exist
   stackstorm_docker_volume_name = "${var.workspace_st_docker_volume[terraform.workspace]}" # NOTE: volume must exist
   st2_hostname                  = "${var.workspace_dd_hostname[terraform.workspace]}"
   datadog_apikey                = "${data.vault_generic_secret.datadog.data["api-key"]}"
+  stack_name                    = "${var.stack_name}"
   # ami_filters                   = "${var.ami_filters}" # can be used to overwrite the default AMI lookup
 }

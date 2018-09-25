@@ -1,3 +1,8 @@
+variable "stack_name" {
+  default = "stackstorm"
+}
+
+
 # TODO: use 'locals': https://medium.com/@diogok/terraform-workspaces-and-locals-for-environment-separation-a5b88dd516f5
 variable "workspace_name_suffix" {
   default = {

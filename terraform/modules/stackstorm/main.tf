@@ -87,6 +87,7 @@ resource "aws_spot_instance_request" "stackstorm_instance" {
   subnet_id              = "${aws_subnet.sn_a_vpc_st2.id}"
   vpc_security_group_ids = [ "${aws_security_group.vpc_st2.id}" ]
 
+  instance_interruption_behaviour = "stop"
   monitoring             = true
   user_data              = "${data.template_file.lc_userdata.rendered}"
 

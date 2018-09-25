@@ -69,3 +69,8 @@ cd /opt/st2-docker-umccr
 sudo rm -rf ./data
 sudo ln -s /mnt/stackstorm-data/letsencrypt-data data
 docker-compose up -d
+
+################################################################################
+# tag the instance
+# TODO: configure with stack_name and terraform.workspace
+aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=${stack_name}-${name_suffix}

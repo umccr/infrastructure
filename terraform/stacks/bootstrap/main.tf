@@ -20,8 +20,8 @@ provider "vault" {
 resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
   name           = "terraform-state-lock"
   hash_key       = "LockID"
-  read_capacity  = 20
-  write_capacity = 20
+  read_capacity  = 2
+  write_capacity = 2
 
   attribute {
     name = "LockID"
@@ -137,16 +137,16 @@ resource "aws_s3_bucket" "vault" {
   bucket = "${var.workspace_vault_bucket_name[terraform.workspace]}"
   acl    = "private"
 
+  versioning {
+    enabled = true
+  }
+
   server_side_encryption_configuration {
     rule {
       apply_server_side_encryption_by_default {
         sse_algorithm = "AES256"
       }
     }
-  }
-
-  versioning {
-    enabled = true
   }
 
   tags {
@@ -171,8 +171,9 @@ data "aws_ami" "vault_ami" {
 }
 
 resource "aws_spot_instance_request" "vault" {
-  spot_price           = "${var.vault_instance_spot_price}"
-  wait_for_fulfillment = true
+  spot_price                      = "${var.vault_instance_spot_price}"
+  wait_for_fulfillment            = true
+  instance_interruption_behaviour = "stop"
 
   ami                    = "${data.aws_ami.vault_ami.id}"
   instance_type          = "${var.vault_instance_type}"
@@ -181,15 +182,15 @@ resource "aws_spot_instance_request" "vault" {
   subnet_id              = "${aws_subnet.vault_subnet_a.id}"
   vpc_security_group_ids = ["${aws_security_group.vault.id}"]
 
-  # key_name = "reisingerf"
-
   monitoring = true
   user_data  = "${data.template_file.userdata.rendered}"
+
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 8
     delete_on_termination = true
   }
+
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
@@ -208,15 +209,17 @@ data "template_file" "userdata" {
     vault_env     = "${var.workspace_vault_env[terraform.workspace]}"
     tp_vault_user = "${data.vault_generic_secret.token_provider_user.data["username"]}"
     tp_vault_pass = "${data.vault_generic_secret.token_provider_user.data["password"]}"
+    instance_tags = "${jsonencode(var.workspace_vault_instance_tags[terraform.workspace])}"
   }
 }
 
-# Vault instance policies - instance profile
+# Vault instance profile / role / policies
 resource "aws_iam_instance_profile" "vault" {
   role = "${aws_iam_role.vault.name}"
 }
 
 resource "aws_iam_role" "vault" {
+  name               = "UmccrVaultInstanceProfileRole${var.workspace_name_suffix[terraform.workspace]}"
   path               = "/"
   assume_role_policy = "${data.aws_iam_policy_document.vault_assume_policy.json}"
 }
@@ -245,12 +248,9 @@ resource "aws_iam_policy" "vault_s3_policy" {
   policy = "${data.template_file.vault_s3_policy.rendered}"
 }
 
-resource "aws_iam_policy_attachment" "vault_s3_policy_attachment" {
-  name       = "vault_s3_policy_attachment${var.workspace_name_suffix[terraform.workspace]}"
+resource "aws_iam_role_policy_attachment" "vault_s3_policy_attachment" {
+  role       = "${aws_iam_role.vault.name}"
   policy_arn = "${aws_iam_policy.vault_s3_policy.arn}"
-  groups     = []
-  users      = []
-  roles      = ["${aws_iam_role.vault.name}"]
 }
 
 resource "aws_iam_policy" "vault_ec2_policy" {
@@ -258,12 +258,19 @@ resource "aws_iam_policy" "vault_ec2_policy" {
   policy = "${file("policies/vault_ec2_policy.json")}"
 }
 
-resource "aws_iam_policy_attachment" "vault_ec2_policy_attachment" {
-  name       = "vault_ec2_policy_attachment${var.workspace_name_suffix[terraform.workspace]}"
+resource "aws_iam_role_policy_attachment" "vault_ec2_policy_attachment" {
+  role       = "${aws_iam_role.vault.name}"
   policy_arn = "${aws_iam_policy.vault_ec2_policy.arn}"
-  groups     = []
-  users      = []
-  roles      = ["${aws_iam_role.vault.name}"]
+}
+
+resource "aws_iam_policy" "vault_logs_policy" {
+  path   = "/"
+  policy = "${file("policies/vault-logs-policy.json")}"
+}
+
+resource "aws_iam_role_policy_attachment" "vault_logs_policy_attachment" {
+  role       = "${aws_iam_role.vault.name}"
+  policy_arn = "${aws_iam_policy.vault_logs_policy.arn}"
 }
 
 # Vault network
@@ -313,6 +320,14 @@ resource "aws_security_group" "vault" {
   ingress {
     from_port   = 5000
     to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # allow SSH access
+  ingress {
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -383,7 +398,7 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   count                = "${terraform.workspace == "dev" ? 1 : 0}"
   name                 = "ops_admin_no_mfa"
   path                 = "/"
-  assume_role_policy   = "${file("policies/assume_role_from_bastion.json")}"
+  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
   max_session_duration = "43200"
 }
 

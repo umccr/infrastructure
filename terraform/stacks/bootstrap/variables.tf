@@ -84,3 +84,10 @@ variable "workspace_vault_env" {
     dev  = "DEV"
   }
 }
+
+variable "workspace_vault_instance_tags" {
+  default = {
+    prod = "[{\"Key\": \"Name\", \"Value\": \"vault_prod\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"prod\"}]"
+    dev  = "[{\"Key\": \"Name\", \"Value\": \"vault_dev\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
+  }
+}

@@ -171,8 +171,9 @@ data "aws_ami" "vault_ami" {
 }
 
 resource "aws_spot_instance_request" "vault" {
-  spot_price           = "${var.vault_instance_spot_price}"
-  wait_for_fulfillment = true
+  spot_price                      = "${var.vault_instance_spot_price}"
+  wait_for_fulfillment            = true
+  instance_interruption_behaviour = "stop"
 
   ami                    = "${data.aws_ami.vault_ami.id}"
   instance_type          = "${var.vault_instance_type}"

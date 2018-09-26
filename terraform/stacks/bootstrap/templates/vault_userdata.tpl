@@ -16,8 +16,7 @@ aws ec2 associate-address --instance-id $instance_id --allocation-id ${allocatio
 
 ################################################################################
 # tag the instance
-aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=vault-dev
-
+aws ec2 create-tags --resources $instance_id --tags ${instance_tags}
 
 
 ################################################################################

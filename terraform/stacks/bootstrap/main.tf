@@ -183,11 +183,13 @@ resource "aws_spot_instance_request" "vault" {
 
   monitoring = true
   user_data  = "${data.template_file.userdata.rendered}"
+
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 8
     delete_on_termination = true
   }
+
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
@@ -206,6 +208,7 @@ data "template_file" "userdata" {
     vault_env     = "${var.workspace_vault_env[terraform.workspace]}"
     tp_vault_user = "${data.vault_generic_secret.token_provider_user.data["username"]}"
     tp_vault_pass = "${data.vault_generic_secret.token_provider_user.data["password"]}"
+    instance_tags = "${jsonencode(var.workspace_vault_instance_tags[terraform.workspace])}"
   }
 }
 

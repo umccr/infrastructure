@@ -1,5 +1,7 @@
 # NOTE: AWS profile is hard coded for convenience
 terraform {
+  required_version = "~> 0.11.6"
+
   backend "s3" {
     bucket         = "umccr-terraform-states"
     key            = "agha_incoming/terraform.tfstate"
@@ -14,36 +16,35 @@ provider "aws" {
   profile = "umccr_ops_admin_no_mfa"
 }
 
-
 ################################################################################
 # EC2 instance setup to access data in s3://agha-gdr-staging-dev
 data "template_file" "userdata" {
-    template = "${file("${path.module}/templates/userdata.tpl")}"
-    vars {
-        AGHA_BUCKET   = "${var.workspace_agha_bucket[terraform.workspace]}"
-        INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
-    }
+  template = "${file("${path.module}/templates/userdata.tpl")}"
+
+  vars {
+    AGHA_BUCKET   = "${var.workspace_agha_bucket[terraform.workspace]}"
+    INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
+  }
 }
 
 resource "aws_spot_instance_request" "stackstorm_instance" {
-  spot_price             = "${var.instance_spot_price}"
-  wait_for_fulfillment   = true
+  spot_price           = "${var.instance_spot_price}"
+  wait_for_fulfillment = true
 
-  ami                    = "${var.instance_ami}"
-  instance_type          = "${var.instance_type}"
-  availability_zone      = "${var.availability_zone}"
-  iam_instance_profile   = "${aws_iam_instance_profile.instance_profile.id}"
-#   subnet_id              = "${aws_subnet.sn_a_vpc_st2.id}"
-#   vpc_security_group_ids = [ "${aws_security_group.vpc_st2.id}" ]
+  ami                  = "${var.instance_ami}"
+  instance_type        = "${var.instance_type}"
+  availability_zone    = "${var.availability_zone}"
+  iam_instance_profile = "${aws_iam_instance_profile.instance_profile.id}"
 
-  user_data              = "${data.template_file.userdata.rendered}"
+  #   subnet_id              = "${aws_subnet.sn_a_vpc_st2.id}"
+  #   vpc_security_group_ids = [ "${aws_security_group.vpc_st2.id}" ]
 
+  user_data = "${data.template_file.userdata.rendered}"
   root_block_device {
-      volume_type           = "gp2"
-      volume_size           = 10
-      delete_on_termination = true
+    volume_type           = "gp2"
+    volume_size           = 10
+    delete_on_termination = true
   }
-
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
@@ -52,7 +53,6 @@ resource "aws_spot_instance_request" "stackstorm_instance" {
   }
 }
 
-
 ################################################################################
 # EC2 instance profile
 resource "aws_iam_instance_profile" "instance_profile" {
@@ -60,8 +60,9 @@ resource "aws_iam_instance_profile" "instance_profile" {
 }
 
 resource "aws_iam_role" "instance_profile" {
-  name               = "${var.stack_name}_instance_role_${terraform.workspace}"
-  path               = "/${var.stack_name}/"
+  name = "${var.stack_name}_instance_role_${terraform.workspace}"
+  path = "/${var.stack_name}/"
+
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -98,3 +99,4 @@ resource "aws_iam_role_policy_attachment" "instance_profile" {
 }
 
 ################################################################################
+

@@ -1,4 +1,6 @@
 terraform {
+  required_version = "~> 0.11.6"
+
   backend "s3" {
     # AWS access credentials are retrieved from env variables
     bucket         = "umccr-terraform-states"
@@ -17,8 +19,6 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-
-
 ################################################################################
 # networking
 
@@ -26,50 +26,48 @@ resource "aws_security_group" "batch" {
   name   = "${var.stack_name}_batch_compute_environment_security_group_${terraform.workspace}"
   vpc_id = "${aws_vpc.batch.id}"
 
-      # allow SSH access (during development)
-    ingress {
-      from_port        = 22
-      to_port          = 22
-      protocol         = "tcp"
-      cidr_blocks      = [ "0.0.0.0/0" ]
-      ipv6_cidr_blocks = [ "::/0" ]
-    }
+  # allow SSH access (during development)
+  ingress {
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
 
-    ingress {
-        from_port       = 0
-        to_port         = 0
-        protocol        = "-1"
-        self            = true
-    }
+  ingress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
+  }
 
-
-    egress {
-        from_port       = 0
-        to_port         = 0
-        protocol        = "-1"
-        cidr_blocks     = [ "0.0.0.0/0" ]
-        ipv6_cidr_blocks = [ "::/0" ]
-    }
-
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
 }
 
 resource "aws_vpc" "batch" {
-  cidr_block = "10.1.0.0/16"
+  cidr_block           = "10.1.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
+
   tags {
     Name  = "${var.stack_name}_vpc_${terraform.workspace}"
     stack = "${var.stack_name}"
   }
-
 }
 
 ################################################################################
 # allow SSH access (during development)
 resource "aws_subnet" "batch" {
-  vpc_id            = "${aws_vpc.batch.id}"
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = "${var.availability_zone}"
+  vpc_id                  = "${aws_vpc.batch.id}"
+  cidr_block              = "10.1.1.0/24"
+  availability_zone       = "${var.availability_zone}"
   map_public_ip_on_launch = true
 }
 
@@ -91,10 +89,9 @@ resource "aws_route_table" "batch" {
 }
 
 resource "aws_route_table_association" "batch" {
-  subnet_id = "${aws_subnet.batch.id}"
+  subnet_id      = "${aws_subnet.batch.id}"
   route_table_id = "${aws_route_table.batch.id}"
 }
-
 
 ################################################################################
 # set up the compute environment
@@ -124,11 +121,13 @@ resource "aws_batch_job_queue" "umccr_batch_queue" {
 ## Job definitions
 
 resource "aws_batch_job_definition" "umccrise_standard" {
-  name                 = "${var.stack_name}_job_${terraform.workspace}"
-  type                 = "container"
-  parameters           = {
+  name = "${var.stack_name}_job_${terraform.workspace}"
+  type = "container"
+
+  parameters = {
     vcpus = 1
   }
+
   container_properties = "${file("jobs/umccrise_GRCh37_job.json")}"
 }
 
@@ -137,7 +136,6 @@ resource "aws_batch_job_definition" "sleeper" {
   type                 = "container"
   container_properties = "${file("jobs/sleeper_job.json")}"
 }
-
 
 ################################################################################
 # custom policy for the EC2 instances of the compute env
@@ -156,14 +154,13 @@ resource "aws_iam_policy" "additionalEc2InstancePolicy" {
   policy = "${data.template_file.additionalEc2InstancePolicy.rendered}"
 }
 
-
 ################################################################################
 # AWS lambda 
 
 data "template_file" "lambda" {
-    template = "${file("${path.module}/policies/umccrise-lambda.json")}"
+  template = "${file("${path.module}/policies/umccrise-lambda.json")}"
 
-    vars {
+  vars {
     resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
   }
 }
@@ -176,7 +173,7 @@ resource "aws_iam_policy" "lambda" {
 
 module "lambda" {
   # based on: https://github.com/claranet/terraform-aws-lambda
-  source        = "../../modules/lambda"
+  source = "../../modules/lambda"
 
   function_name = "${var.stack_name}_lambda_${terraform.workspace}"
   description   = "Lambda for UMCRISE"
@@ -184,7 +181,7 @@ module "lambda" {
   runtime       = "python3.6"
   timeout       = 3
 
-  source_path   = "${path.module}/lambdas/umccrise.py"
+  source_path = "${path.module}/lambdas/umccrise.py"
 
   attach_policy = true
   policy        = "${aws_iam_policy.lambda.arn}"
@@ -194,7 +191,7 @@ module "lambda" {
       JOBNAME        = "umccrise"
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
-      DATA_BUCKET   = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+      DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
       REFDATA_BUCKET = "${var.workspace_umccrise_refdata_bucket[terraform.workspace]}"
     }
   }
@@ -213,7 +210,6 @@ resource "aws_api_gateway_rest_api" "lambda_rest_api" {
   name        = "lambda"
   description = "Example API Gateway"
 }
-
 
 resource "aws_api_gateway_resource" "lambda_resource" {
   rest_api_id = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
@@ -240,7 +236,6 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   passthrough_behavior = "WHEN_NO_TEMPLATES"
 }
 
-
 ########## 
 # Unfortunately the proxy resource cannot match an empty path at the root of the API. 
 # To handle that, a similar configuration must be applied to the root resource that 
@@ -261,9 +256,8 @@ resource "aws_api_gateway_integration" "lambda_root" {
   type                    = "AWS_PROXY"
   uri                     = "${module.lambda.function_invoke_arn}"
 }
+
 ##########
-
-
 
 # resource "aws_api_gateway_method_response" "200" {
 #   rest_api_id     = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
@@ -300,3 +294,4 @@ resource "aws_lambda_permission" "lambda" {
 }
 
 ################################################################################
+

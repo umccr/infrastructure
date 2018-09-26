@@ -2,6 +2,8 @@
 # - umccr_ops_admin_no_mfa: admin access to dev account to manage resources
 # - umccr_admin_bastion: access to bastion account to create users/groups/etc 
 terraform {
+  required_version = "~> 0.11.6"
+
   backend "s3" {
     bucket         = "umccr-terraform-states"
     key            = "agha_gdr/terraform.tfstate"

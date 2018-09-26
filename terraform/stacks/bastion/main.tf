@@ -1,4 +1,6 @@
 terraform {
+  required_version = "~> 0.11.6"
+
   backend "s3" {
     bucket         = "umccr-terraform-states"
     key            = "bastion/terraform.tfstate"

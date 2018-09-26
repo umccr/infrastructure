@@ -1,4 +1,6 @@
 terraform {
+  required_version = "~> 0.11.6"
+
   backend "s3" {
     # AWS access credentials are retrieved from env variables
     bucket         = "umccr-terraform-states"

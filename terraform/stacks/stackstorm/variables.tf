@@ -52,3 +52,10 @@ variable "ami_filters" {
     }
   ]
 }
+
+variable "workspace_st2_instance_tags" {
+  default = {
+    prod = "[{\"Key\": \"Name\", \"Value\": \"stackstorm_prod\"},{\"Key\": \"Stack\", \"Value\": \"stackstorm\"},{\"Key\": \"Environment\", \"Value\": \"prod\"}]"
+    dev  = "[{\"Key\": \"Name\", \"Value\": \"stackstorm_dev\"},{\"Key\": \"Stack\", \"Value\": \"stackstorm\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
+  }
+}

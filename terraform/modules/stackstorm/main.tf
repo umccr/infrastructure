@@ -104,8 +104,7 @@ data "template_file" "lc_userdata" {
         allocation_id  = "${aws_eip.stackstorm.id}"
         st2_hostname   = "${var.st2_hostname}"
         datadog_apikey = "${var.datadog_apikey}"
-        stack_name     = "${var.stack_name}"
-        name_suffix    = "${var.name_suffix}"
+        instance_tags = "${jsonencode(var.instance_tags)}"
     }
 }
 

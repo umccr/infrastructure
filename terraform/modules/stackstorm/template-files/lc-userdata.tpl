@@ -72,5 +72,4 @@ docker-compose up -d
 
 ################################################################################
 # tag the instance
-# TODO: configure with stack_name and terraform.workspace
-aws ec2 create-tags --resources $instance_id --tags Key=Name,Value=${stack_name}-${name_suffix}
+aws ec2 create-tags --resources $instance_id --tags ${instance_tags}

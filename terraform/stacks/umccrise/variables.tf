@@ -16,8 +16,8 @@ variable "stack_name" {
 variable "workspace_umccrise_data_bucket" {
   type    = "map"
   default = {
-    prod = "umccr-umccrise-prod"
-    dev  = "umccr-umccrise-dev"
+    prod = "umccr-primary-data-prod"
+    dev  = "umccr-primary-data-dev"
   }
 }
 

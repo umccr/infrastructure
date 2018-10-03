@@ -216,7 +216,7 @@ resource "aws_cloudwatch_event_rule" "batch_failure" {
     "Batch Job State Change"
   ],
   "source": [
-    "foo.com"
+    "aws.batch"
   ],
   "detail": {
     "status": [
@@ -262,7 +262,7 @@ resource "aws_cloudwatch_event_rule" "batch_success" {
     "Batch Job State Change"
   ],
   "source": [
-    "foo.com"
+    "aws.batch"
   ],
   "detail": {
     "status": [

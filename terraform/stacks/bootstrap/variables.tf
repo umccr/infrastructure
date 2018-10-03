@@ -1,3 +1,7 @@
+variable "stack_name" {
+  default = "bootstrap"
+}
+
 variable "vault_instance_type" {
   default = "t2.micro"
 }

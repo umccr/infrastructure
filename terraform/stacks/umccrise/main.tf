@@ -204,6 +204,101 @@ module "lambda" {
 }
 
 ################################################################################
+# CloudWatch Event Rule to match batch events and call Slack lambda
+
+resource "aws_cloudwatch_event_rule" "batch_failure" {
+  name        = "${var.stack_name}_capture_batch_job_failure_${terraform.workspace}"
+  description = "Capture Batch Job Failures"
+
+  event_pattern = <<PATTERN
+{
+  "detail-type": [
+    "Batch Job State Change"
+  ],
+  "source": [
+    "foo.com"
+  ],
+  "detail": {
+    "status": [
+      "FAILED"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "batch_failure" {
+  rule      = "${aws_cloudwatch_event_rule.batch_failure.name}"
+  target_id = "${var.stack_name}_send_batch_failure_to_slack_lambda_${terraform.workspace}"
+  arn       = "${var.slack_lambda_arn}"                                                     # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
+  input_transformer = {
+    input_paths = {
+      job    = "$.detail.jobName"
+      title  = "$.detail-type"
+      status = "$.detail.status"
+    }
+
+    # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
+    input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
+  }
+}
+
+resource "aws_lambda_permission" "batch_failure" {
+  statement_id  = "${var.stack_name}_allow_batch_failure_to_invoke_slack_lambda_${terraform.workspace}"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.slack_lambda_arn}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.batch_failure.arn}"
+}
+
+resource "aws_cloudwatch_event_rule" "batch_success" {
+  name        = "${var.stack_name}_capture_batch_job_success_${terraform.workspace}"
+  description = "Capture Batch Job Failures"
+
+  event_pattern = <<PATTERN
+{
+  "detail-type": [
+    "Batch Job State Change"
+  ],
+  "source": [
+    "foo.com"
+  ],
+  "detail": {
+    "status": [
+      "SUCCEEDED"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "batch_success" {
+  rule      = "${aws_cloudwatch_event_rule.batch_success.name}"
+  target_id = "${var.stack_name}_send_batch_success_to_slack_lambda_${terraform.workspace}"
+  arn       = "${var.slack_lambda_arn}"                                                     # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
+  input_transformer = {
+    input_paths = {
+      job    = "$.detail.jobName"
+      title  = "$.detail-type"
+      status = "$.detail.status"
+    }
+
+    # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
+    input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
+  }
+}
+
+resource "aws_lambda_permission" "batch_success" {
+  statement_id  = "${var.stack_name}_allow_batch_success_to_invoke_slack_lambda_${terraform.workspace}"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.slack_lambda_arn}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
+}
+
+################################################################################
 # AWS API gateway for lambda
 
 resource "aws_api_gateway_rest_api" "lambda_rest_api" {

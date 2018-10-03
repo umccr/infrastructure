@@ -64,7 +64,7 @@ resource "aws_iam_policy_attachment" "fastq_data_uploader" {
   roles      = ["${aws_iam_role.fastq_data_uploader.name}"]
 }
 
-## S3 buckets  #3333############################################################
+## S3 buckets  #################################################################
 
 # S3 bucket for FASTQ data
 # NOTE: is meant to be a temporary solution until full support of primary data is there
@@ -153,6 +153,39 @@ resource "aws_s3_bucket" "vault" {
 
   tags {
     Name        = "vault-data"
+    Environment = "${terraform.workspace}"
+  }
+}
+
+## Slack notify Lambda #########################################################
+
+data "vault_generic_secret" "slack_webhook_id" {
+  path = "kv/slack"
+}
+
+module "notify_slack_lambda" {
+  # based on: https://github.com/claranet/terraform-aws-lambda
+  source = "../../modules/lambda"
+
+  function_name = "${var.stack_name}_slack_lambda_${terraform.workspace}"
+  description   = "Lambda to send messages to Slack"
+  handler       = "notify_slack.lambda_handler"
+  runtime       = "python3.6"
+  timeout       = 3
+
+  source_path = "${path.module}/lambdas/notify_slack.py"
+
+  environment {
+    variables {
+      SLACK_HOST             = "hooks.slack.com"
+      SLACK_WEBHOOK_ENDPOINT = "/services/${data.vault_generic_secret.slack_webhook_id.data["webhook_id"]}"
+    }
+  }
+
+  tags = {
+    Service     = "${var.stack_name}_lambda"
+    Name        = "${var.stack_name}"
+    Stack       = "${var.stack_name}"
     Environment = "${terraform.workspace}"
   }
 }

@@ -13,8 +13,14 @@ variable "stack_name" {
   default = "umccrise"
 }
 
+variable "slack_lambda_arn" {
+  default = "arn:aws:lambda:ap-southeast-2:620123204273:function:bootstrap_slack_lambda_dev"
+}
+
+
 variable "workspace_umccrise_data_bucket" {
-  type    = "map"
+  type = "map"
+
   default = {
     prod = "umccr-primary-data-prod"
     dev  = "umccr-primary-data-dev"
@@ -22,7 +28,8 @@ variable "workspace_umccrise_data_bucket" {
 }
 
 variable "workspace_umccrise_refdata_bucket" {
-  type    = "map"
+  type = "map"
+
   default = {
     prod = "umccr-umccrise-refdata-prod"
     dev  = "umccr-umccrise-refdata-dev"

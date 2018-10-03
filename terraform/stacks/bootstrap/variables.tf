@@ -1,3 +1,7 @@
+variable "stack_name" {
+  default = "bootstrap"
+}
+
 variable "vault_instance_type" {
   default = "t2.micro"
 }
@@ -89,5 +93,12 @@ variable "workspace_vault_instance_tags" {
   default = {
     prod = "[{\"Key\": \"Name\", \"Value\": \"vault_prod\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"prod\"}]"
     dev  = "[{\"Key\": \"Name\", \"Value\": \"vault_dev\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
+  }
+}
+
+variable "workspace_slack_channel" {
+  default = {
+    prod = "#biobots"
+    dev = "#arteria-dev"
   }
 }

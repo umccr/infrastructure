@@ -179,6 +179,7 @@ module "notify_slack_lambda" {
     variables {
       SLACK_HOST             = "hooks.slack.com"
       SLACK_WEBHOOK_ENDPOINT = "/services/${data.vault_generic_secret.slack_webhook_id.data["webhook_id"]}"
+      SLACK_CHANNEL          = "${var.workspace_slack_channel[terraform.workspace]}"
     }
   }
 

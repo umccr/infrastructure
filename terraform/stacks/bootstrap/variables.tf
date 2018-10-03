@@ -95,3 +95,10 @@ variable "workspace_vault_instance_tags" {
     dev  = "[{\"Key\": \"Name\", \"Value\": \"vault_dev\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
   }
 }
+
+variable "workspace_slack_channel" {
+  default = {
+    prod = "#biobots"
+    dev = "#arteria-dev"
+  }
+}

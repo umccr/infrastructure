@@ -4,6 +4,7 @@ import http.client
 
 slack_host = os.environ.get("SLACK_HOST")
 slack_webhook_endpoint = os.environ.get("SLACK_WEBHOOK_ENDPOINT")
+slack_channel = os.environ.get("SLACK_CHANNEL")
 headers = {
     'Content-Type': 'application/json',
 }
@@ -13,7 +14,7 @@ def call_slack_webhook(topic, title, message):
     connection = http.client.HTTPSConnection(slack_host)
 
     post_data = {
-        "channel": "#arteria-dev",
+        "channel": slack_channel,
         "username": "Notice from AWS",
         "text": "*" + topic + "*",
         "icon_emoji": ":aws:",

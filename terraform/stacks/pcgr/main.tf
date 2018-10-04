@@ -1,4 +1,6 @@
 terraform {
+  required_version = "~> 0.11.6"
+
   backend "s3" {
     bucket         = "umccr-terraform-states"
     key            = "pcgr/terraform.tfstate"
@@ -19,7 +21,6 @@ data "vault_generic_secret" "pcgr" {
   path = "kv/pcgr"
 }
 
-
 # setup PCGR instance profile with relevant policies
 resource "aws_iam_instance_profile" "instance_profile" {
   name = "pcgr_instance_profile${var.workspace_name_suffix[terraform.workspace]}"
@@ -36,6 +37,7 @@ data "aws_iam_policy_document" "pcgr_assume_policy" {
     }
   }
 }
+
 resource "aws_iam_role" "pcgr_role" {
   name               = "pcgr_instance_role${var.workspace_name_suffix[terraform.workspace]}"
   path               = "/"
@@ -43,16 +45,19 @@ resource "aws_iam_role" "pcgr_role" {
 }
 
 data "template_file" "s3_pcgr_policy" {
-    template = "${file("${path.module}/policies/s3_bucket_policy.json")}"
-    vars {
-        bucket_name = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
-    }
+  template = "${file("${path.module}/policies/s3_bucket_policy.json")}"
+
+  vars {
+    bucket_name = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+  }
 }
+
 resource "aws_iam_policy" "s3_pcgr_policy" {
   name   = "pcgr_instance_s3${var.workspace_name_suffix[terraform.workspace]}"
   path   = "/"
   policy = "${data.template_file.s3_pcgr_policy.rendered}"
 }
+
 resource "aws_iam_policy_attachment" "s3_policy_to_role_attachment" {
   name       = "s3_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
   policy_arn = "${aws_iam_policy.s3_pcgr_policy.arn}"
@@ -64,6 +69,7 @@ resource "aws_iam_policy" "ec2_pcgr_policy" {
   path   = "/"
   policy = "${file("${path.module}/policies/ec2.json")}"
 }
+
 resource "aws_iam_policy_attachment" "ec2_policy_to_role_attachment" {
   name       = "ec2_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
   policy_arn = "${aws_iam_policy.ec2_pcgr_policy.arn}"
@@ -75,6 +81,7 @@ resource "aws_iam_policy" "sqs_pcgr_policy" {
   path   = "/"
   policy = "${file("${path.module}/policies/sqs.json")}"
 }
+
 resource "aws_iam_policy_attachment" "sqs_policy_to_role_attachment" {
   name       = "sqs_policy_to_role_attachment${var.workspace_name_suffix[terraform.workspace]}"
   policy_arn = "${aws_iam_policy.sqs_pcgr_policy.arn}"
@@ -91,6 +98,7 @@ resource "aws_vpc" "vpc_pcgr" {
     Name = "pcgr_instance_vpc${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
+
 resource "aws_subnet" "vpc_subnet_a_pcgr" {
   vpc_id                  = "${aws_vpc.vpc_pcgr.id}"
   cidr_block              = "172.32.0.0/20"
@@ -101,6 +109,7 @@ resource "aws_subnet" "vpc_subnet_a_pcgr" {
     Name = "vpc_subnet_a_pcgr${var.workspace_name_suffix[terraform.workspace]}"
   }
 }
+
 resource "aws_security_group" "vpc_pcgr" {
   name        = "pcgr_instance_sg${var.workspace_name_suffix[terraform.workspace]}"
   description = "Security group for pcgr VPC"
@@ -130,7 +139,6 @@ resource "aws_security_group" "vpc_pcgr" {
   }
 }
 
-
 # add lambdas
 module "lambda_pcgr_trigger" {
   source = "git::https://github.com/claranet/terraform-aws-lambda"
@@ -155,6 +163,7 @@ module "lambda_pcgr_trigger" {
     }
   }
 }
+
 resource "aws_lambda_permission" "allow_s3_for_pcgr_trigger" {
   statement_id   = "AllowExecutionFromS3"
   action         = "lambda:InvokeFunction"
@@ -187,6 +196,7 @@ module "lambda_pcgr_done" {
     }
   }
 }
+
 resource "aws_lambda_permission" "allow_s3_for_pcgr_done" {
   statement_id   = "AllowExecutionFromS3"
   action         = "lambda:InvokeFunction"
@@ -206,16 +216,19 @@ resource "aws_s3_bucket_notification" "pcgr_notifications" {
     events              = ["s3:ObjectCreated:*"]
     filter_suffix       = "-germline.tar.gz"
   }
+
   lambda_function {
     lambda_function_arn = "${module.lambda_pcgr_trigger.function_arn}"
     events              = ["s3:ObjectCreated:*"]
     filter_suffix       = "-somatic.tar.gz"
   }
+
   lambda_function {
     lambda_function_arn = "${module.lambda_pcgr_trigger.function_arn}"
     events              = ["s3:ObjectCreated:*"]
     filter_suffix       = "-normal.tar.gz"
   }
+
   lambda_function {
     lambda_function_arn = "${module.lambda_pcgr_done.function_arn}"
     events              = ["s3:ObjectCreated:*"]
@@ -224,11 +237,13 @@ resource "aws_s3_bucket_notification" "pcgr_notifications" {
 }
 
 data "template_file" "lambda_policy" {
-    template = "${file("${path.module}/policies/lambda-policies.json")}"
-    vars {
-        bucket_name = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
-    }
+  template = "${file("${path.module}/policies/lambda-policies.json")}"
+
+  vars {
+    bucket_name = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
+  }
 }
+
 resource "aws_iam_policy" "lambda_policy" {
   name   = "pcgr_lambda_policy"
   path   = "/"

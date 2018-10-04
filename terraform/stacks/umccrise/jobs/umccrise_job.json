@@ -1,66 +1,38 @@
 {
-    "image": "umccr/umccrise",
-    "vcpus": 1,
+    "image": "umccr/umccrise:0.8.2",
+    "vcpus": 2,
     "memory": 2048,
     "command": [
-        "umccrise",
-        "/bcbio_project",
-        "-o",
-        "/output_dir",
-        "--bcbio-genomes",
-        "/bcbio_genomes",
-        "--pon",
-        "/panel_of_normals/GRCh37"
+        "/opt/container/umccrise-wrapper.sh",
+        "Ref::vcpus"
     ],
     "volumes": [
         {
             "host": {
-                "sourcePath": "/mnt/genomes"
+                "sourcePath": "/mnt"
             },
-            "name": "genomes"
+            "name": "work"
         },
         {
             "host": {
-                "sourcePath": "/mnt/panel_of_normals"
+                "sourcePath": "/opt/container"
             },
-            "name": "panel_of_normals"
-        },
-        {
-            "host": {
-                "sourcePath": "/mnt/output"
-            },
-            "name": "output"
-        },
-        {
-            "host": {
-                "sourcePath": "/mnt/input"
-            },
-            "name": "input"
+            "name": "container"
         }
     ],
     "mountPoints": [
         {
-            "containerPath": "/bcbio_genomes",
-            "readOnly": true,
-            "sourceVolume": "genomes"
-        },
-        {
-            "containerPath": "/panel_of_normals",
-            "readOnly": true,
-            "sourceVolume": "panel_of_normals"
-        },
-        {
-            "containerPath": "/output_dir",
+            "containerPath": "/work",
             "readOnly": false,
-            "sourceVolume": "output"
+            "sourceVolume": "work"
         },
         {
-            "containerPath": "/bcbio_project",
+            "containerPath": "/opt/container",
             "readOnly": true,
-            "sourceVolume": "input"
+            "sourceVolume": "container"
         }
     ],
-    "readonlyRootFilesystem": true,
+    "readonlyRootFilesystem": false,
     "privileged": true,
     "ulimits": []
 }

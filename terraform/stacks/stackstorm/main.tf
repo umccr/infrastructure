@@ -28,14 +28,16 @@ module "stackstorm" {
   source                        = "git::git@github.com:umccr/infrastructure.git//terraform/modules/stackstorm?ref=0.1.0"
   instance_type                 = "t2.medium"
   instance_spot_price           = "0.018"
-  name_suffix                   = "${var.workspace_name_suffix[terraform.workspace]}"
   availability_zone             = "ap-southeast-2a"
+  name_suffix                   = "${terraform.workspace}"
+  stack_name                    = "${var.stack_name}"
   root_domain                   = "${var.workspace_zone_domain[terraform.workspace]}"
-  stackstorm_sub_domain         = "stackstorm"
-  stackstorm_data_volume_name   = "${var.workspace_st_data_volume[terraform.workspace]}"                                 # NOTE: volume must exist
-  stackstorm_docker_volume_name = "${var.workspace_st_docker_volume[terraform.workspace]}"                               # NOTE: volume must exist
+  stackstorm_sub_domain         = "${var.stack_name}"
+  stackstorm_data_volume_name   = "${var.workspace_st_data_volume[terraform.workspace]}"    # NOTE: volume must exist
+  stackstorm_docker_volume_name = "${var.workspace_st_docker_volume[terraform.workspace]}"  # NOTE: volume must exist
   st2_hostname                  = "${var.workspace_dd_hostname[terraform.workspace]}"
   datadog_apikey                = "${data.vault_generic_secret.datadog.data["api-key"]}"
+  instance_tags                 = "${var.workspace_st2_instance_tags[terraform.workspace]}"
 
   # ami_filters                   = "${var.ami_filters}" # can be used to overwrite the default AMI lookup
 }

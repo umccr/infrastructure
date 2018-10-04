@@ -1,3 +1,8 @@
+variable "stack_name" {
+  default = "stackstorm"
+}
+
+
 # TODO: use 'locals': https://medium.com/@diogok/terraform-workspaces-and-locals-for-environment-separation-a5b88dd516f5
 variable "workspace_name_suffix" {
   default = {
@@ -46,4 +51,11 @@ variable "ami_filters" {
       values = ["ami-f8ae639a"]
     }
   ]
+}
+
+variable "workspace_st2_instance_tags" {
+  default = {
+    prod = "[{\"Key\": \"Name\", \"Value\": \"stackstorm_prod\"},{\"Key\": \"Stack\", \"Value\": \"stackstorm\"},{\"Key\": \"Environment\", \"Value\": \"prod\"}]"
+    dev  = "[{\"Key\": \"Name\", \"Value\": \"stackstorm_dev\"},{\"Key\": \"Stack\", \"Value\": \"stackstorm\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
+  }
 }

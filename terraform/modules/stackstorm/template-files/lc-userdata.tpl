@@ -69,3 +69,7 @@ cd /opt/st2-docker-umccr
 sudo rm -rf ./data
 sudo ln -s /mnt/stackstorm-data/letsencrypt-data data
 docker-compose up -d
+
+################################################################################
+# tag the instance
+aws ec2 create-tags --resources $instance_id --tags ${instance_tags}

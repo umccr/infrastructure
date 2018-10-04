@@ -1,5 +1,10 @@
+variable "stack_name" {
+  description = "Name of the stack. Used to name/tag resources, etc..."
+}
+
+
 variable "name_suffix" {
-  description = "Suffix to be applied to AWS resource names in order to make them unique. This way the module can be deployed several times into the same account without causing name clashes."
+  description = "Suffix to be applied to AWS resource names. This way the module can be deployed several times into the same account without causing name clashes."
 }
 
 variable "instance_type" {

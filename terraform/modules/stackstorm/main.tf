@@ -1,6 +1,6 @@
 resource "aws_iam_role" "stackstorm_role" {
-  # name               = "stackstorm_role${var.name_suffix}" # optional
-  path               = "/"
+  name               = "${var.stack_name}_${var.name_suffix}"
+  path               = "/${var.stack_name}/"
   assume_role_policy = "${data.aws_iam_policy_document.stackstorm_assume_policy.json}"
 }
 data "aws_iam_policy_document" "stackstorm_assume_policy" {
@@ -14,57 +14,50 @@ data "aws_iam_policy_document" "stackstorm_assume_policy" {
   }
 }
 
+resource "aws_iam_instance_profile" "stackstorm_instance_profile" {
+  role = "${aws_iam_role.stackstorm_role.name}"
+}
+
 
 resource "aws_iam_policy" "s3_stackstorm_policy" {
-  name   = "s3_stackstorm_policy${var.name_suffix}"
-  path   = "/"
+  name   = "${var.stack_name}_s3_policy_${var.name_suffix}"
+  path   = "/${var.stack_name}/"
   policy = "${file("${path.module}/policies/s3_stackstorm_policy.json")}"
 }
-resource "aws_iam_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
-    name       = "s3_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
-    policy_arn = "${aws_iam_policy.s3_stackstorm_policy.arn}"
-    groups     = []
-    users      = []
-    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
+resource "aws_iam_role_policy_attachment" "s3_policy_to_stackstorm_role_attachment" {
+  role       = "${aws_iam_role.stackstorm_role.name}"
+  policy_arn = "${aws_iam_policy.s3_stackstorm_policy.arn}"
 }
 
+
 resource "aws_iam_policy" "ec2_stackstorm_policy" {
-  name   = "ec2_stackstorm_policy${var.name_suffix}"
-  path   = "/"
+  name   = "${var.stack_name}_ec2_policy_${var.name_suffix}"
+  path   = "/${var.stack_name}/"
   policy = "${file("${path.module}/policies/ec2_stackstorm_policy.json")}"
 }
-resource "aws_iam_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" {
-    name       = "ec2_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
+resource "aws_iam_role_policy_attachment" "ec2_policy_to_stackstorm_role_attachment" {
+    role       = "${aws_iam_role.stackstorm_role.name}"
     policy_arn = "${aws_iam_policy.ec2_stackstorm_policy.arn}"
-    groups     = []
-    users      = []
-    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
 }
 
 resource "aws_iam_policy" "iam_stackstorm_policy" {
-  name   = "iam_stackstorm_policy${var.name_suffix}"
-  path   = "/"
+  name   = "${var.stack_name}_iam_policy_${var.name_suffix}"
+  path   = "/${var.stack_name}/"
   policy = "${file("${path.module}/policies/iam_stackstorm_policy.json")}"
 }
-resource "aws_iam_policy_attachment" "iam_policy_to_stackstorm_role_attachment" {
-    name       = "iam_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
+resource "aws_iam_role_policy_attachment" "iam_policy_to_stackstorm_role_attachment" {
+    role       = "${aws_iam_role.stackstorm_role.name}"
     policy_arn = "${aws_iam_policy.iam_stackstorm_policy.arn}"
-    groups     = []
-    users      = []
-    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
 }
 
 resource "aws_iam_policy" "spot_stackstorm_policy" {
-  name   = "spot_stackstorm_policy${var.name_suffix}"
-  path   = "/"
+  name   = "${var.stack_name}_spot_policy_${var.name_suffix}"
+  path   = "/${var.stack_name}/"
   policy = "${file("${path.module}/policies/AmazonEC2SpotFleetTaggingRole.json")}"
 }
-resource "aws_iam_policy_attachment" "spot_policy_to_stackstorm_role_attachment" {
-    name       = "spot_policy_to_stackstorm_role_attachment${var.name_suffix}" # required
+resource "aws_iam_role_policy_attachment" "spot_policy_to_stackstorm_role_attachment" {
+    role       = "${aws_iam_role.stackstorm_role.name}"
     policy_arn = "${aws_iam_policy.spot_stackstorm_policy.arn}"
-    groups     = []
-    users      = []
-    roles      = [ "${aws_iam_role.stackstorm_role.name}" ]
 }
 
 
@@ -101,15 +94,17 @@ resource "aws_spot_instance_request" "stackstorm_instance" {
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174
   # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
   tags {
-    Name = "stackstorm${var.name_suffix}"
+    Name = "${var.stack_name}-${var.name_suffix}"
   }
 }
+
 data "template_file" "lc_userdata" {
     template = "${file("${path.module}/template-files/lc-userdata.tpl")}"
     vars {
         allocation_id  = "${aws_eip.stackstorm.id}"
         st2_hostname   = "${var.st2_hostname}"
         datadog_apikey = "${var.datadog_apikey}"
+        instance_tags = "${jsonencode(var.instance_tags)}"
     }
 }
 
@@ -155,11 +150,6 @@ resource "aws_volume_attachment" "ebs_att_st2_docker" {
   skip_destroy = true # needed, since we are using an externally maintained EBS volume
 }
 
-resource "aws_iam_instance_profile" "stackstorm_instance_profile" {
-  # name  = "stackstorm_instance_profile${var.name_suffix}" # optional
-  role = "${aws_iam_role.stackstorm_role.name}"
-}
-
 resource "aws_eip" "stackstorm" {
   vpc         = true
   depends_on  = ["aws_internet_gateway.vpc_st2"]
@@ -185,7 +175,7 @@ resource "aws_vpc" "vpc_st2" {
     instance_tenancy     = "default"
 
     tags {
-      Name = "vpc_st2${var.name_suffix}"
+      Name = "${var.stack_name}_vpc_${var.name_suffix}"
     }
 }
 
@@ -196,7 +186,7 @@ resource "aws_subnet" "sn_a_vpc_st2" {
     availability_zone       = "${var.availability_zone}"
 
     tags {
-      Name = "sn_a_vpc_st2${var.name_suffix}"
+      Name = "${var.stack_name}_subnet_a_${var.name_suffix}"
     }
 }
 
@@ -204,7 +194,7 @@ resource "aws_internet_gateway" "vpc_st2" {
   vpc_id = "${aws_vpc.vpc_st2.id}"
 
   tags {
-    Name = "vpc_st2_igw${var.name_suffix}"
+    Name = "${var.stack_name}_internet_gateway_${var.name_suffix}"
   }
 }
 
@@ -225,7 +215,7 @@ resource "aws_route_table_association" "st2_rt" {
 
 
 resource "aws_security_group" "vpc_st2" {
-    # name        = "sg_vpc_st2${var.name_suffix}" #optional
+    name        = "${var.stack_name}_security_group_${var.name_suffix}"
     description = "Security group for stackstorm VPC"
     vpc_id      = "${aws_vpc.vpc_st2.id}"
 

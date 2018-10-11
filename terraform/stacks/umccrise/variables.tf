@@ -14,7 +14,7 @@ variable "stack_name" {
 }
 
 variable "slack_lambda_arn" {
-  default = "arn:aws:lambda:ap-southeast-2:620123204273:function:bootstrap_slack_lambda_dev"
+  default = "arn:aws:lambda:ap-southeast-2:472057503814:function:bootstrap_slack_lambda_prod"
 }
 
 

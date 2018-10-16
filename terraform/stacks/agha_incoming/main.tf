@@ -22,7 +22,7 @@ data "template_file" "userdata" {
   template = "${file("${path.module}/templates/userdata.tpl")}"
 
   vars {
-    AGHA_BUCKET   = "${var.workspace_agha_bucket[terraform.workspace]}"
+    AGHA_BUCKET   = "${var.workspace_agha_staging_bucket[terraform.workspace]}"
     INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
   }
 }
@@ -84,7 +84,7 @@ data "template_file" "instance_profile" {
   template = "${file("policies/instance-profile.json")}"
 
   vars {
-    bucket_name = "${var.workspace_agha_bucket[terraform.workspace]}"
+    resources = "${jsonencode(var.workspace_agha_buckets[terraform.workspace])}"
   }
 }
 

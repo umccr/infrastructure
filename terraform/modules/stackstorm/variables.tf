@@ -11,6 +11,11 @@ variable "instance_type" {
   description = "The EC2 instance type to use for the stackstorm instance."
 }
 
+variable "instance_tags" {
+  description = "Tags to apply to the EC2 instance, in AWS json format"
+}
+
+
 variable "instance_spot_price" {
   description = "The spot price limit for the EC2 instance requested."
 }

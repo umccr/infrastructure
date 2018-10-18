@@ -69,7 +69,32 @@ data "aws_ami" "stackstorm_ami" {
 }
 
 
+resource "aws_instance" "stackstorm_instance" {
+  count = "${var.use_spot ? 0 : 1}"
+
+  ami                    = "${data.aws_ami.stackstorm_ami.id}"
+  instance_type          = "${var.instance_type}"
+  availability_zone      = "${var.availability_zone}"
+  iam_instance_profile   = "${aws_iam_instance_profile.stackstorm_instance_profile.id}"
+  subnet_id              = "${aws_subnet.sn_a_vpc_st2.id}"
+  vpc_security_group_ids = [ "${aws_security_group.vpc_st2.id}" ]
+  monitoring             = true
+  user_data              = "${data.template_file.lc_userdata.rendered}"
+
+  root_block_device {
+      volume_type           = "gp2"
+      volume_size           = 10
+      delete_on_termination = true
+  }
+
+  tags {
+    Name = "${var.stack_name}-${var.name_suffix}"
+  }
+}
+
 resource "aws_spot_instance_request" "stackstorm_instance" {
+  count = "${var.use_spot ? 1 : 0}"
+
   spot_price             = "${var.instance_spot_price}"
   wait_for_fulfillment   = true
 
@@ -137,13 +162,32 @@ data "aws_ebs_volume" "stackstorm_docker_volume" {
 }
 
 resource "aws_volume_attachment" "ebs_att_st2_data" {
+  count = "${var.use_spot ? 0 : 1}"
+  device_name  = "/dev/sdf"
+  volume_id    = "${data.aws_ebs_volume.stackstorm_data_volume.id}"
+  instance_id  = "${aws_instance.stackstorm_instance.id}"
+  skip_destroy = true # needed, since we are using an externally maintained EBS volume
+}
+
+resource "aws_volume_attachment" "ebs_att_st2_docker" {
+  count = "${var.use_spot ? 0 : 1}"
+  device_name  = "/dev/sdg"
+  volume_id    = "${data.aws_ebs_volume.stackstorm_docker_volume.id}"
+  instance_id  = "${aws_instance.stackstorm_instance.id}"
+  skip_destroy = true # needed, since we are using an externally maintained EBS volume
+}
+
+
+resource "aws_volume_attachment" "ebs_att_st2_data_spot" {
+  count = "${var.use_spot ? 1 : 0}"
   device_name  = "/dev/sdf"
   volume_id    = "${data.aws_ebs_volume.stackstorm_data_volume.id}"
   instance_id  = "${aws_spot_instance_request.stackstorm_instance.spot_instance_id}"
   skip_destroy = true # needed, since we are using an externally maintained EBS volume
 }
 
-resource "aws_volume_attachment" "ebs_att_st2_docker" {
+resource "aws_volume_attachment" "ebs_att_st2_docker_spot" {
+  count = "${var.use_spot ? 1 : 0}"
   device_name  = "/dev/sdg"
   volume_id    = "${data.aws_ebs_volume.stackstorm_docker_volume.id}"
   instance_id  = "${aws_spot_instance_request.stackstorm_instance.spot_instance_id}"

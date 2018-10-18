@@ -2,9 +2,13 @@ variable "stack_name" {
   description = "Name of the stack. Used to name/tag resources, etc..."
 }
 
-
 variable "name_suffix" {
   description = "Suffix to be applied to AWS resource names. This way the module can be deployed several times into the same account without causing name clashes."
+}
+
+variable "use_spot" {
+  description = "Flag whether or not to use a spot or regular on-demand instance. Default: true"
+  default = true
 }
 
 variable "instance_type" {

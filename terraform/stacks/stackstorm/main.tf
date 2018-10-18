@@ -25,9 +25,10 @@ data "vault_generic_secret" "datadog" {
 
 module "stackstorm" {
   # NOTE: the source cannot be interpolated, so we can't use a variable here and have to keep the difference bwtween production and developmment in a branch
-  source                        = "git::git@github.com:umccr/infrastructure.git//terraform/modules/stackstorm?ref=0.1.2"
-  instance_type                 = "t2.medium"
+  source                        = "git::git@github.com:umccr/infrastructure.git//terraform/modules/stackstorm?ref=0.1.3"
+  instance_type                 = "t2.small"
   instance_spot_price           = "0.018"
+  use_spot                      = false
   availability_zone             = "ap-southeast-2a"
   name_suffix                   = "${terraform.workspace}"
   stack_name                    = "${var.stack_name}"

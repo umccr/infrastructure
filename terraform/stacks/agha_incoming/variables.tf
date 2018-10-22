@@ -14,7 +14,7 @@ variable "stack_name" {
 
 variable "instance_type" {
   type    = "string"
-  default = "t3.medium"
+  default = "t3.micro"
 }
 
 variable "instance_ami" {
@@ -42,14 +42,6 @@ variable "workspace_agha_buckets" {
   type = "map"
 
   default = {
-    dev = ["arn:aws:s3:::agha-gdr-staging-dev", "arn:aws:s3:::agha-gdr-staging-dev/*", "arn:aws:s3:::agha-gdr-log-dev", "arn:aws:s3:::agha-gdr-log-dev/*", "arn:aws:s3:::agha-gdr-store-dev", "arn:aws:s3:::agha-gdr-store-dev/*"]
-  }
-}
-
-variable "workspace_agha_staging_bucket" {
-  type = "map"
-
-  default = {
-    dev = "agha-gdr-staging-dev"
+    dev = ["agha-gdr-staging-dev", "agha-gdr-log-dev", "agha-gdr-store-dev"]
   }
 }

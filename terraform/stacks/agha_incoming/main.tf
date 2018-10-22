@@ -17,12 +17,19 @@ provider "aws" {
 }
 
 ################################################################################
+# prepare local variables
+
+locals {
+    bucket_arns = "${concat(formatlist("arn:aws:s3:::%s", var.workspace_agha_buckets[terraform.workspace]), formatlist("arn:aws:s3:::%s/*", var.workspace_agha_buckets[terraform.workspace]))}"
+}
+
+################################################################################
 # EC2 instance setup to access data in s3://agha-gdr-staging-dev
 data "template_file" "userdata" {
   template = "${file("${path.module}/templates/userdata.tpl")}"
 
   vars {
-    AGHA_BUCKET   = "${var.workspace_agha_staging_bucket[terraform.workspace]}"
+    AGHA_BUCKETS  = "${join(" ", var.workspace_agha_buckets[terraform.workspace])}"
     INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
   }
 }
@@ -84,7 +91,7 @@ data "template_file" "instance_profile" {
   template = "${file("policies/instance-profile.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_agha_buckets[terraform.workspace])}"
+    resources = "${jsonencode(local.bucket_arns)}"
   }
 }
 

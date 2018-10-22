@@ -7,9 +7,9 @@ set -euxo pipefail # make sure any failling command will fail the whole script
 
 echo "--------------------------------------------------------------------------------"
 echo "Provided variables"
-echo "${AGHA_BUCKET}"
+echo "${AGHA_BUCKETS}"
 echo "${INSTANCE_TAGS}"
-if test -z "${AGHA_BUCKET}" || test -z "${INSTANCE_TAGS}"; then
+if test -z "${AGHA_BUCKETS}" || test -z "${INSTANCE_TAGS}"; then
   echo "ERROR: Expected variable missing!"
   exit 1
 fi
@@ -68,9 +68,12 @@ echo "user_allow_other" | sudo tee -a /etc/fuse.conf
 
 
 echo "--------------------------------------------------------------------------------"
-echo "Mounting bucket with s3fs"
-mkdir /mnt/agha_data
-s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 ${AGHA_BUCKET} /mnt/agha_data
+echo "Mounting buckets with s3fs"
+for bucket in ${AGHA_BUCKETS}
+do
+  mkdir /mnt/$bucket
+  s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
+done
 
 
 

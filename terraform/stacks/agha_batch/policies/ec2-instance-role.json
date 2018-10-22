@@ -1,0 +1,37 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "CustomAdditionsEc2",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AttachVolume",
+                "ec2:CreateVolume",
+                "ec2:Describe*",
+                "ec2:ModifyInstanceAttribute"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CustomAdditionsEcs",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:ListClusters"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CustomAdditionsS3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:ListObjects",
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts"
+            ],
+            "Resource": ${resources}
+        }
+    ]
+}

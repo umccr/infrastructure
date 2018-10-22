@@ -1,0 +1,38 @@
+{
+    "image": "umccr/agha-validator:0.0.1",
+    "vcpus": 2,
+    "memory": 2048,
+    "command": [
+        "/opt/container/agha-wrapper.sh",
+        "Ref::vcpus"
+    ],
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "/mnt"
+            },
+            "name": "work"
+        },
+        {
+            "host": {
+                "sourcePath": "/opt/container"
+            },
+            "name": "container"
+        }
+    ],
+    "mountPoints": [
+        {
+            "containerPath": "/work",
+            "readOnly": false,
+            "sourceVolume": "work"
+        },
+        {
+            "containerPath": "/opt/container",
+            "readOnly": true,
+            "sourceVolume": "container"
+        }
+    ],
+    "readonlyRootFilesystem": false,
+    "privileged": true,
+    "ulimits": []
+}

@@ -125,3 +125,16 @@ output "terraform_access_key" {
 output "terraform_secret_access_key" {
   value = "${module.terraform_user.encrypted_secret_access_key}"
 }
+
+# output for serivce: sample_monitor
+output "sample_monitor_username" {
+  value = "${module.sample_monitor_user.username}"
+}
+
+output "sample_monitor_access_key" {
+  value = "${module.sample_monitor_user.access_key}"
+}
+
+output "sample_monitor_secret_access_key" {
+  value = "${module.sample_monitor_user.encrypted_secret_access_key}"
+}

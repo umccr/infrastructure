@@ -1,4 +1,9 @@
 ################################################################################
+# NOTE: this is currently NOT used. This showe the config if the "secure_users"
+#        module would be used.
+################################################################################
+
+################################################################################
 # define users with console login
 variable "console_users" {
   type        = "map"
@@ -19,8 +24,9 @@ variable "service_users" {
 
   # TODO: replace personal keybase ID with umccr account that multiple people have access to
   default = {
-    packer    = "keybase:freisinger"
-    terraform = "keybase:freisinger"
+    packer         = "keybase:freisinger"
+    terraform      = "keybase:freisinger"
+    sample_monitor = "keybase:freisinger"
   }
 }
 

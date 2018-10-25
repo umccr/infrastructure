@@ -15,6 +15,9 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
+provider "vault" {
+}
+
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
@@ -70,15 +73,20 @@ resource "aws_route53_record" "static_houston_umccr_org" {
 # ---------------------------------------------------------------------------------------------------------------------
 # CREATE THE HOUSTON DEPLOYMENT
 # ---------------------------------------------------------------------------------------------------------------------
+
+data "vault_generic_secret" "houston" {
+  path = "kv/houston"
+}
+
 module "houston" {
   # source = "../../modules/houston"
   source = "git@github.com:gruntwork-io/houston.git//modules/houston?ref=v0.0.12"
 
   # LICENSING INFORMATION
   # Obtain these values from Gruntwork. Email support@gruntwork.io if you do not have your organization's values
-  houston_space_center_api_key = "00000000-0000-0000-0000-000000000000"
+  houston_space_center_api_key = "${data.vault_generic_secret.houston.data["api-key"]}"
 
-  installation_id = "00000000-0000-0000-0000-000000000000"
+  installation_id = "${data.vault_generic_secret.houston.data["installation-id"]}"
 
   # VPC SETTINGS
   # If you wish to run Houston in a different VPC other than the default VPC, update this code. We recommend that you

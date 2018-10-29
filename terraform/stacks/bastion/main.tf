@@ -368,3 +368,26 @@ resource "aws_iam_policy_attachment" "assume_sample_monitor_dev_role_attachment"
   users      = ["${module.sample_monitor_user.username}"]
   roles      = []
 }
+
+# sample_monitor (prod)
+data "template_file" "assume_sample_monitor_prod_policy" {
+  template = "${file("policies/assume_role_no_mfa.json")}"
+
+  vars {
+    role_arn = "arn:aws:iam::472057503814:role/sample_monitor"
+  }
+}
+
+resource "aws_iam_policy" "assume_sample_monitor_prod_policy" {
+  name   = "assume_sample_monitor_prod_policy"
+  path   = "/"
+  policy = "${data.template_file.assume_sample_monitor_prod_policy.rendered}"
+}
+
+resource "aws_iam_policy_attachment" "assume_sample_monitor_prod_role_attachment" {
+  name       = "assume_sample_monitor_prod_role_attachment"
+  policy_arn = "${aws_iam_policy.assume_sample_monitor_prod_policy.arn}"
+  groups     = []
+  users      = ["${module.sample_monitor_user.username}"]
+  roles      = []
+}

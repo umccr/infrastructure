@@ -35,6 +35,9 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
   }
 }
 
+## Roles #######################################################################
+
+##### fastq_data_uploader
 resource "aws_iam_role" "fastq_data_uploader" {
   name                 = "fastq_data_uploader"
   path                 = "/"
@@ -56,12 +59,36 @@ resource "aws_iam_policy" "fastq_data_uploader" {
   policy = "${data.template_file.fastq_data_uploader.rendered}"
 }
 
-resource "aws_iam_policy_attachment" "fastq_data_uploader" {
-  name       = "fastq_data_uploader"
+resource "aws_iam_role_policy_attachment" "fastq_data_uploader" {
+  role       = "${aws_iam_role.fastq_data_uploader.name}"
   policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
-  groups     = []
-  users      = []
-  roles      = ["${aws_iam_role.fastq_data_uploader.name}"]
+}
+
+##### sample_monitor
+resource "aws_iam_role" "sample_monitor" {
+  name                 = "sample_monitor"
+  path                 = "/"
+  assume_role_policy   = "${file("policies/assume_role_from_bastion.json")}"
+  max_session_duration = "43200"
+}
+
+data "template_file" "sample_monitor" {
+  template = "${file("policies/sample_monitor.json")}"
+
+  vars {
+    lambda_arn = "${module.notify_slack_lambda.function_arn}"
+  }
+}
+
+resource "aws_iam_policy" "sample_monitor" {
+  name   = "sample_monitor${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.sample_monitor.rendered}"
+}
+
+resource "aws_iam_role_policy_attachment" "sample_monitor" {
+  role       = "${aws_iam_role.sample_monitor.name}"
+  policy_arn = "${aws_iam_policy.sample_monitor.arn}"
 }
 
 ## S3 buckets  #################################################################
@@ -443,11 +470,8 @@ resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
   policy = "${file("policies/ops_admin_no_mfa_policy.json")}"
 }
 
-resource "aws_iam_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
+resource "aws_iam_role_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
   count      = "${terraform.workspace == "dev" ? 1 : 0}"
-  name       = "admin_access_to_ops_admin_no_mfa_role_attachment"
+  role       = "${aws_iam_role.ops_admin_no_mfa_role.name}"
   policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
-  groups     = []
-  users      = []
-  roles      = ["${aws_iam_role.ops_admin_no_mfa_role.name}"]
 }

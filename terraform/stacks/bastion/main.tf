@@ -104,6 +104,13 @@ module "terraform_user" {
   pgp_key  = "keybase:freisinger"
 }
 
+# sample_monitor
+module "sample_monitor_user" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "sample_monitor"
+  pgp_key  = "keybase:freisinger"
+}
+
 ################################################################################
 ##### define user groups
 
@@ -336,5 +343,51 @@ resource "aws_iam_policy_attachment" "assume_fastq_data_uploader_dev_role_attach
   policy_arn = "${aws_iam_policy.assume_fastq_data_uploader_dev_policy.arn}"
   groups     = ["${aws_iam_group.fastq_data_uploaders.name}"]
   users      = []
+  roles      = []
+}
+
+# sample_monitor (dev)
+data "template_file" "assume_sample_monitor_dev_policy" {
+  template = "${file("policies/assume_role_no_mfa.json")}"
+
+  vars {
+    role_arn = "arn:aws:iam::620123204273:role/sample_monitor"
+  }
+}
+
+resource "aws_iam_policy" "assume_sample_monitor_dev_policy" {
+  name   = "assume_sample_monitor_dev_policy"
+  path   = "/"
+  policy = "${data.template_file.assume_sample_monitor_dev_policy.rendered}"
+}
+
+resource "aws_iam_policy_attachment" "assume_sample_monitor_dev_role_attachment" {
+  name       = "assume_sample_monitor_dev_role_attachment"
+  policy_arn = "${aws_iam_policy.assume_sample_monitor_dev_policy.arn}"
+  groups     = []
+  users      = ["${module.sample_monitor_user.username}"]
+  roles      = []
+}
+
+# sample_monitor (prod)
+data "template_file" "assume_sample_monitor_prod_policy" {
+  template = "${file("policies/assume_role_no_mfa.json")}"
+
+  vars {
+    role_arn = "arn:aws:iam::472057503814:role/sample_monitor"
+  }
+}
+
+resource "aws_iam_policy" "assume_sample_monitor_prod_policy" {
+  name   = "assume_sample_monitor_prod_policy"
+  path   = "/"
+  policy = "${data.template_file.assume_sample_monitor_prod_policy.rendered}"
+}
+
+resource "aws_iam_policy_attachment" "assume_sample_monitor_prod_role_attachment" {
+  name       = "assume_sample_monitor_prod_role_attachment"
+  policy_arn = "${aws_iam_policy.assume_sample_monitor_prod_policy.arn}"
+  groups     = []
+  users      = ["${module.sample_monitor_user.username}"]
   roles      = []
 }

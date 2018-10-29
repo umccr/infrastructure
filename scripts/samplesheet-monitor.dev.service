@@ -1,0 +1,16 @@
+[Unit]
+Description=Monitor new samplesheets in dev env
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User=limsadmin
+Restart=on-failure
+RestartSec=10
+Environment="DEPLOY_ENV=dev"
+ExecStart=/opt/Pipeline/dev/scripts/samplesheet-monitor.sh
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

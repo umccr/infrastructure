@@ -230,7 +230,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "batch_failure" {
   rule      = "${aws_cloudwatch_event_rule.batch_failure.name}"
   target_id = "${var.stack_name}_send_batch_failure_to_slack_lambda_${terraform.workspace}"
-  arn       = "${var.slack_lambda_arn}"                                                     # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                      # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
 
   input_transformer = {
     input_paths = {
@@ -247,7 +247,7 @@ resource "aws_cloudwatch_event_target" "batch_failure" {
 resource "aws_lambda_permission" "batch_failure" {
   statement_id  = "${var.stack_name}_allow_batch_failure_to_invoke_slack_lambda_${terraform.workspace}"
   action        = "lambda:InvokeFunction"
-  function_name = "${var.slack_lambda_arn}"
+  function_name = "${var.workspace_slack_lambda_arn[terraform.workspace]}"
   principal     = "events.amazonaws.com"
   source_arn    = "${aws_cloudwatch_event_rule.batch_failure.arn}"
 }
@@ -276,7 +276,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "batch_success" {
   rule      = "${aws_cloudwatch_event_rule.batch_success.name}"
   target_id = "${var.stack_name}_send_batch_success_to_slack_lambda_${terraform.workspace}"
-  arn       = "${var.slack_lambda_arn}"                                                     # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                      # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
 
   input_transformer = {
     input_paths = {
@@ -293,7 +293,7 @@ resource "aws_cloudwatch_event_target" "batch_success" {
 resource "aws_lambda_permission" "batch_success" {
   statement_id  = "${var.stack_name}_allow_batch_success_to_invoke_slack_lambda_${terraform.workspace}"
   action        = "lambda:InvokeFunction"
-  function_name = "${var.slack_lambda_arn}"
+  function_name = "${var.workspace_slack_lambda_arn[terraform.workspace]}"
   principal     = "events.amazonaws.com"
   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
 }

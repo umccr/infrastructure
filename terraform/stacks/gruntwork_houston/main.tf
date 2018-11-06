@@ -15,8 +15,7 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
-provider "vault" {
-}
+provider "vault" {}
 
 data "aws_caller_identity" "current" {}
 
@@ -40,7 +39,7 @@ resource "aws_route53_zone" "static_houston_umccr_org" {
 
 resource "aws_route53_record" "houston_umccr_org" {
   zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
-  name = "${var.api_gateway_domain_name}"
+  name    = "${var.api_gateway_domain_name}"
   type    = "NS"
   ttl     = "30"
 
@@ -54,7 +53,7 @@ resource "aws_route53_record" "houston_umccr_org" {
 
 resource "aws_route53_record" "static_houston_umccr_org" {
   zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
-  name = "${var.static_content_domain_name}"
+  name    = "${var.static_content_domain_name}"
   type    = "NS"
   ttl     = "30"
 
@@ -155,15 +154,15 @@ module "houston" {
   # Houston cli (houstoncli_public_cert, houstoncli_entrypoint, etc.). See the vars.tf definitions for additional details.
 
   # AWS Console SAML Service Provider values
-  awsconsole_saml_entrypoint = "${var.awsconsole_saml_entrypoint}"
+  awsconsole_saml_entrypoint = "${data.vault_generic_secret.houston.data["awsconsole_saml_entrypoint"]}"
   # Houston SAML Service Provider values
-  saml_public_cert   = "${var.saml_public_cert}"
-  saml_entrypoint    = "${var.saml_entrypoint}"
+  saml_public_cert   = "${data.vault_generic_secret.houston.data["saml_public_cert"]}"
+  saml_entrypoint    = "${data.vault_generic_secret.houston.data["saml_entrypoint"]}"
   saml_friendly_name = "${var.saml_friendly_name}"
   saml_issuer        = "${var.saml_issuer}"
   # Houston CLI SAML Service Provider values
-  houstoncli_public_cert        = "${var.houstoncli_public_cert}"
-  houstoncli_entrypoint         = "${var.houstoncli_entrypoint}"
+  houstoncli_public_cert        = "${data.vault_generic_secret.houston.data["houstoncli_public_cert"]}"
+  houstoncli_entrypoint         = "${data.vault_generic_secret.houston.data["houstoncli_entrypoint"]}"
   houstoncli_friendly_name      = "${var.saml_friendly_name}"
   houstoncli_issuer             = "${var.houstoncli_issuer}"
   houstoncli_aws_session_length = "${var.houstoncli_aws_session_length}"

@@ -3,11 +3,6 @@
 # These variables must be passed in by the operator.
 # ---------------------------------------------------------------------------------------------------------------------
 
-variable "aws_region" {
-  description = "The AWS region in which all resources will be created"
-  default     = "ap-southeast-2"
-}
-
 variable "api_gateway_domain_name" {
   description = "The dns name of the houston api gateway domain. E.g., houston.grnt.io"
   default = "houston.umccr.org"
@@ -18,34 +13,9 @@ variable "static_content_domain_name" {
   default = "static.houston.umccr.org"
 }
 
-variable "saml_public_cert" {
-  description = "The public certificate for the IdP used to authorize Houston logins. Specify a string like 'MIIDdDCCAlygAwIBAgIGAWBVpdDUMA...' here."
-  default = "MIICnTCCAYUCBgFmntIfXzANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdob3VzdG9uMB4XDTE4MTAyMzAyNDYwMloXDTI4MTAyMzAyNDc0MlowEjEQMA4GA1UEAwwHaG91c3RvbjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALkzoX5iRrToSTU98z03Ej1Cr4JNRNJ27kj5UuAP1EqjNeqnSSODxbxy1WNipi+p+oVCmq3HvbsfSxG9oQL4dNPPmsdmdFO/NDVySlyIL9s3ZncT+ij4jxsF7hxDcAGIFgRZFlgo1w0yjuwF8Q2vvXJd7W1Ltq2QmajChbR1/yTXttTlEw3XFgH3Pp91tzz30AiMId6C+FpUKIWw/gPnegYwbQM7XUjUetmeMfDFkxBvZHBwCqFsWoStOoOSLYi7Bjq6SKPkjwq8mNzW0DyC97q18oYOsnbsZSF1nP9VI7dR9Eeq118/g3I2XKJEY4oJbox0E3nXD43OesCC3zCDafsCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAGBdXksQv4Ip54YLRDCVHnwV5Ylnn04ICofboEERh7Xt54BSawsryM92nEhJIEA+udpCeiELJ04BJWClCqoWIB7sDTaALAScmMq0oDcuXlha6fQ+mvSPb0ZaLZGmHwTW9IZslTOf+4qDH+hkQE0SIR4jsx9r6/o1x6CkTn1JScbHOjIE7QCcaxZGgUNll3Lkuw7641jX3L+DUM+lyCSXYdl40YRng3Dfc6xsMyHwwzpdU6Ze8iK93OEWQc8GbH09oT9p/X+ZRHtyGgwA4dORn4ztJuIgn4t6TM4eSTxuuMst4GbuYorsFFhdPBDPUdDmWSbG3AR8YFTs+X38VzroTKg=="
-}
-
-variable "saml_entrypoint" {
-  description = "The IdP entrypoint for the IdP used to authorize Houston logins. This is a URL that points to your IdP."
-  default = "https://cbio.mdhs.unimelb.edu.au:8443/auth/realms/AWS/houston"
-}
-
 variable "saml_friendly_name" {
   description = "The friendly name for the SAML Identity Provider (e.g. 'Okta', or 'Active Directory')"
-  default = "KeyCloak"
-}
-
-variable "houstoncli_entrypoint" {
-  description = "The IdP entrypoint for the IdP used to authorize houstoncli logins"
-  default = "https://cbio.mdhs.unimelb.edu.au:8443/auth/realms/AWS/houston_cli"
-}
-
-variable "houstoncli_public_cert" {
-  description = "The public certificate for the IdP used to authorize houstoncli logins"
-  default = "MIICpTCCAY0CBgFmntRmdzANBgkqhkiG9w0BAQsFADAWMRQwEgYDVQQDDAtob3VzdG9uX2NsaTAeFw0xODEwMjMwMjQ4MzFaFw0yODEwMjMwMjUwMTFaMBYxFDASBgNVBAMMC2hvdXN0b25fY2xpMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAi/BQIpKPgU/tQY0IKZf9APBg+RbTydRBs+HGaRsXFHxYmy0zEhii+s5KGgMWMGe/SdtsU8MjkokfdEySdaeN0gZ4etTKpwN0WQ/546qaPSpFL7JOsQeuL75G4e/k6mH2+rb9rbalL9zcF/efGRKVxCKBfJ720qQUQ52xm4mhZfQKS7uI8/A4FF3qwYa4rd3bO8AaNc5LJyiFXf5AVQdo9/vWTBWywBCXlDrt/FbCgZ4TSSrCvyD2BXhfG9deQnGz5S9K+TQ23fC4m2Xmj/VYUrCa8q59U1c8pVEEHW2luO1PL9dl/8wCuYwdOGQaSMNb6+TrmamqLlqrSp7HgobYlQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBi3AOSJmcE831JoTH4NXbSMzC6jpFMDmUYBRl8Ma/wSJvCTGztyZsPabs0eXKHTUICkidZQHEA/0B6BePg2GKwQcZxRyThdd3HjDfkit3pG6qvfm/OVn3gEsJCWgxFzQsqQZ3hqR5+VK0OumTr32BpTpvSTj3k1jTTIXg/GK9IzYHwBlOUrNRM6yBG+7OMxtj3H+HrotdtqyPpAFl7j7rxw55S9qzIlnkO5VV9nzWlg8EZeEI5CSlxoQz0QgAsM/WL7ydQ4e2XBhSY6T1QTTGLTu2O4w8Q8Ca2u7n1Y/j1JJVuoziRxKMDAdkpbuO+84w+83uXTySvrjYq0jBeEf4K"
-}
-
-variable "awsconsole_saml_entrypoint" {
-  description = "The IdP entrypoint for the IdP used to authorize AWS Console logins"
-  default = "https://cbio.mdhs.unimelb.edu.au:8443/auth/realms/AWS/protocol/saml/clients/amazon-aws"
+  default = "UmccrIdP"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

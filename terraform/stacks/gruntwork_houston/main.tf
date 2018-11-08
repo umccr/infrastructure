@@ -129,10 +129,10 @@ module "houston" {
   #
   # ...or for whatever domain names you've chosen, and enter the ARNs of those certs below.
 
-  api_gateway_hosted_zone_id    = "${aws_route53_record.houston_umccr_org.zone_id}"
+  api_gateway_hosted_zone_id    = "${aws_route53_zone.houston_umccr_org.zone_id}"
   api_gateway_domain_name       = "${var.api_gateway_domain_name}"
   api_gateway_certificate       = "${data.aws_acm_certificate.houston_cert.arn}"
-  static_content_hosted_zone_id = "${aws_route53_record.static_houston_umccr_org.zone_id}"
+  static_content_hosted_zone_id = "${aws_route53_zone.static_houston_umccr_org.zone_id}"
   static_content_domain_name    = "${var.static_content_domain_name}"
   static_content_certificate    = "${data.aws_acm_certificate.static_houston_cert.arn}"
   # This module will create all the necessary AWS resources, but gives you the option to name these resources.

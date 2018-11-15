@@ -413,11 +413,6 @@ resource "aws_security_group" "vault" {
   }
 }
 
-resource "aws_eip" "vault" {
-  vpc        = true
-  depends_on = ["aws_internet_gateway.vault"]
-}
-
 resource "aws_internet_gateway" "vault" {
   vpc_id = "${aws_vpc.vault.id}"
 
@@ -451,6 +446,26 @@ resource "aws_route53_record" "vault" {
   ttl     = "300"
   records = ["${aws_eip.vault.public_ip}"]
 }
+
+################################################################################
+# Set up a pool of EIPs
+
+resource "aws_eip" "vault" {
+  vpc        = true
+  depends_on = ["aws_internet_gateway.vault"]
+  tags {
+    Name       = "vault_${terraform.workspace}"
+    deploy_env = "dev"
+  }
+}
+
+resource "aws_eip" "basespace_playground" {
+  tags {
+    Name       = "basespace_playground_${terraform.workspace}"
+    deploy_env = "dev"
+  }
+}
+
 
 ################################################################################
 ##     dev only resources                                                     ##

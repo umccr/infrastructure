@@ -1,3 +1,8 @@
+variable "vpc_name_prefix" {
+  default = "houston"
+}
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # REQUIRED MODULE PARAMETERS
 # These variables must be passed in by the operator.
@@ -10,7 +15,7 @@ variable "api_gateway_domain_name" {
 
 variable "static_content_domain_name" {
   description = "The dns name of the static content domain. E.g., houston-static.grnt.io"
-  default = "static.houston.umccr.org"
+  default = "houston-static.umccr.org"
 }
 
 variable "saml_friendly_name" {

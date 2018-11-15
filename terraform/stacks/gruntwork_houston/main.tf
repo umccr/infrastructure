@@ -29,42 +29,6 @@ data "aws_route53_zone" "umccr_org" {
   name = "umccr.org."
 }
 
-resource "aws_route53_zone" "houston_umccr_org" {
-  name = "${var.api_gateway_domain_name}"
-}
-
-resource "aws_route53_zone" "static_houston_umccr_org" {
-  name = "${var.static_content_domain_name}"
-}
-
-resource "aws_route53_record" "houston_umccr_org" {
-  zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
-  name    = "${var.api_gateway_domain_name}"
-  type    = "NS"
-  ttl     = "30"
-
-  records = [
-    "${aws_route53_zone.houston_umccr_org.name_servers.0}",
-    "${aws_route53_zone.houston_umccr_org.name_servers.1}",
-    "${aws_route53_zone.houston_umccr_org.name_servers.2}",
-    "${aws_route53_zone.houston_umccr_org.name_servers.3}",
-  ]
-}
-
-resource "aws_route53_record" "static_houston_umccr_org" {
-  zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
-  name    = "${var.static_content_domain_name}"
-  type    = "NS"
-  ttl     = "30"
-
-  records = [
-    "${aws_route53_zone.static_houston_umccr_org.name_servers.0}",
-    "${aws_route53_zone.static_houston_umccr_org.name_servers.1}",
-    "${aws_route53_zone.static_houston_umccr_org.name_servers.2}",
-    "${aws_route53_zone.static_houston_umccr_org.name_servers.3}",
-  ]
-}
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DEPLOY HOUSTON
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,8 +42,10 @@ data "vault_generic_secret" "houston" {
 }
 
 module "houston" {
-  # source = "../../modules/houston"
-  source = "git@github.com:gruntwork-io/houston.git//modules/houston?ref=v0.0.12"
+  source = "git@github.com:gruntwork-io/houston.git//modules/houston?ref=v0.0.13"
+
+  # overwrite default security key ID to work around AWS Secrets Manager deletion delay issue
+  houstonJwtSecretKeyId = "GruntworkHoustonJwtSecretKey2"
 
   # LICENSING INFORMATION
   # Obtain these values from Gruntwork. Email support@gruntwork.io if you do not have your organization's values
@@ -90,11 +56,11 @@ module "houston" {
   # VPC SETTINGS
   # If you wish to run Houston in a different VPC other than the default VPC, update this code. We recommend that you
   # run Houston in a production-grade VPC, such as the one created by https://github.com/gruntwork-io/module-vpc/tree/master/modules/vpc-app
-  vpc_id = "${data.aws_vpc.default.id}"
+  vpc_id = "${module.app_vpc.vpc_id}"
 
   # If you wish to run Houston in a different set of subnets other than the defaults, customize them here.
   subnet_ids = [
-    "${data.aws_subnet_ids.default.ids}",
+    "${module.app_vpc.private_app_subnet_ids}",
   ]
 
   # API GATEWAY SETTINGS
@@ -129,10 +95,10 @@ module "houston" {
   #
   # ...or for whatever domain names you've chosen, and enter the ARNs of those certs below.
 
-  api_gateway_hosted_zone_id    = "${aws_route53_zone.houston_umccr_org.zone_id}"
+  api_gateway_hosted_zone_id    = "${data.aws_route53_zone.umccr_org.zone_id}"
   api_gateway_domain_name       = "${var.api_gateway_domain_name}"
   api_gateway_certificate       = "${data.aws_acm_certificate.houston_cert.arn}"
-  static_content_hosted_zone_id = "${aws_route53_zone.static_houston_umccr_org.zone_id}"
+  static_content_hosted_zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
   static_content_domain_name    = "${var.static_content_domain_name}"
   static_content_certificate    = "${data.aws_acm_certificate.static_houston_cert.arn}"
   # This module will create all the necessary AWS resources, but gives you the option to name these resources.
@@ -186,12 +152,17 @@ module "houston" {
 # store their state in S3 buckets.
 # ---------------------------------------------------------------------------------------------------------------------
 
-data "aws_vpc" "default" {
-  default = true
-}
 
-data "aws_subnet_ids" "default" {
-  vpc_id = "${data.aws_vpc.default.id}"
+
+module "app_vpc" {
+  source = "git::git@github.com:gruntwork-io/module-vpc.git//modules/vpc-app?ref=v0.5.1"
+
+  vpc_name   = "${var.vpc_name_prefix}-app"
+  aws_region = "ap-southeast-2"
+
+  cidr_block = "10.2.0.0/18"
+
+  num_nat_gateways = 1
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

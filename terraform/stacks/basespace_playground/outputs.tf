@@ -2,14 +2,6 @@ output "environment" {
   value = "${var.deploy_env}"
 }
 
-output "instance_tags" {
-  value = "${jsonencode(var.instance_tags)}"
-}
-
-output "instance_public_dns" {
-  value = "${aws_spot_instance_request.stackstorm_instance.public_dns}"
-}
-
-output "instance_public_ip" {
-  value = "${aws_spot_instance_request.stackstorm_instance.public_ip}"
+output "instance_static_IP" {
+  value = "${data.aws_eip.eip_by_tag.public_ip}"
 }

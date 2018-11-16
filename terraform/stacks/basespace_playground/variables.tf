@@ -37,7 +37,7 @@ variable "instance_spot_price" {
 variable "eip_name_tag" {
   type        = "string"
   description = "The Name tag by which to find an Elastic IP to assign to the instance."
-  default     = "basespace_playground_eip"
+  default     = "basespace_playground_dev"
 }
 
 variable "instance_tags" {
@@ -46,8 +46,8 @@ variable "instance_tags" {
   default     = "[{\"Key\": \"Name\", \"Value\": \"basespace_playground_dev\"},{\"Key\": \"Stack\", \"Value\": \"basespace_playground\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
 }
 
-variable "workspace_buckets" {
-  type        = "string"
+variable "buckets" {
+  type        = "list"
   description = "The S3 buckets to mount to"
   default     = ["umccr-primary-data-dev"]
 }

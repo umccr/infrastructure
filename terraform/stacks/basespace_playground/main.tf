@@ -39,7 +39,7 @@ data "template_file" "userdata" {
   }
 }
 
-resource "aws_spot_instance_request" "stackstorm_instance" {
+resource "aws_spot_instance_request" "instance" {
   spot_price           = "${var.instance_spot_price}"
   wait_for_fulfillment = true
 
@@ -111,4 +111,15 @@ resource "aws_iam_role_policy_attachment" "instance_profile" {
 }
 
 ################################################################################
+# assing an Elastic IP
 
+data "aws_eip" "eip_by_tag" {
+  tags {
+    Name = "${var.eip_name_tag}"
+  }
+}
+
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = "${aws_spot_instance_request.instance.spot_instance_id}"
+  allocation_id = "${data.aws_eip.eip_by_tag.id}"
+}

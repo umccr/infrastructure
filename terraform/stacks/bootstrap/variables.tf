@@ -28,6 +28,13 @@ variable "workspace_name_suffix" {
   }
 }
 
+variable "workspace_deploy_env" {
+  default = {
+    prod = "prod"
+    dev  = "dev"
+  }
+}
+
 # due to a restriction in Terraform, we cannot dynamically define bucket configurations
 # see: https://github.com/terraform-providers/terraform-provider-aws/issues/4418
 # Therefore we need to manually configure each bucket and for that we need the individual names

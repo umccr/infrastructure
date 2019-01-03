@@ -466,6 +466,38 @@ resource "aws_eip" "basespace_playground" {
   }
 }
 
+################################################################################
+# Set up a main VPC for resources to use
+# It'll have with private and public subnets, internet and NAT gateways, etc
+
+module "app_vpc" {
+  source = "git::git@github.com:gruntwork-io/module-vpc.git//modules/vpc-app?ref=v0.5.1"
+
+  vpc_name   = "vpc-${var.stack_name}-main"
+  aws_region = "ap-southeast-2"
+
+  cidr_block = "10.2.0.0/18"
+
+  num_nat_gateways = 1
+
+  custom_tags = {
+    Environment = "${var.workspace_deploy_env[terraform.workspace]}"
+    Stack       = "${var.stack_name}"
+  }
+
+  public_subnet_custom_tags = {
+    SubnetType = "public"
+  }
+
+  private_app_subnet_custom_tags = {
+    SubnetType = "private_app"
+  }
+
+  private_persistence_subnet_custom_tags = {
+    SubnetType = "private_persistence"
+  }
+}
+
 
 ################################################################################
 ##     dev only resources                                                     ##

@@ -80,7 +80,7 @@ data "template_file" "sample_monitor" {
   template = "${file("policies/sample_monitor.json")}"
 
   vars {
-    lambda_arn = "${module.notify_slack_lambda.function_arn}"
+    lambda_arn = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:aws_pipeline_*"
   }
 }
 

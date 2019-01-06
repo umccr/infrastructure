@@ -16,6 +16,10 @@ provider "vault" {
   # Vault server address and access token are retrieved from env variables (VAULT_ADDR and VAULT_TOKEN)
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 ## Terraform resources #########################################################
 
 # DynamoDB table for Terraform state locking
@@ -81,7 +85,7 @@ data "template_file" "sample_monitor" {
 }
 
 resource "aws_iam_policy" "sample_monitor" {
-  name   = "sample_monitor${var.workspace_name_suffix[terraform.workspace]}"
+  name   = "sample_monitor"
   path   = "/"
   policy = "${data.template_file.sample_monitor.rendered}"
 }
@@ -449,13 +453,29 @@ resource "aws_route53_record" "vault" {
 
 ################################################################################
 # Set up a pool of EIPs
+# TODO: to enable re-purposing of EIPs, perhaps a generic resource with 'count'
+# could be used. Different tags could be used to differenciate the pooled EIPs.
+# Terraform v0.12 will facilitate this, as lists/maps can be merged, making it
+# easier to combine common with custom tags
+
 
 resource "aws_eip" "vault" {
   vpc        = true
   depends_on = ["aws_internet_gateway.vault"]
+
   tags {
     Name       = "vault_${terraform.workspace}"
     deploy_env = "dev"
+  }
+}
+
+resource "aws_eip" "main_vpc_nat_gateway" {
+  vpc = true
+
+  tags {
+    Environment = "${terraform.workspace}"
+    Stack       = "${var.stack_name}"
+    Name        = "main_vpc_nat_gateway_1_${terraform.workspace}"
   }
 }
 
@@ -471,7 +491,7 @@ resource "aws_eip" "basespace_playground" {
 # It'll have with private and public subnets, internet and NAT gateways, etc
 
 module "app_vpc" {
-  source = "git::git@github.com:gruntwork-io/module-vpc.git//modules/vpc-app?ref=v0.5.1"
+  source = "git::git@github.com:gruntwork-io/module-vpc.git//modules/vpc-app?ref=v0.5.2"
 
   vpc_name   = "vpc-${var.stack_name}-main"
   aws_region = "ap-southeast-2"
@@ -480,8 +500,11 @@ module "app_vpc" {
 
   num_nat_gateways = 1
 
+  use_custom_nat_eips = true
+  custom_nat_eips = ["${aws_eip.main_vpc_nat_gateway.id}"]
+
   custom_tags = {
-    Environment = "${var.workspace_deploy_env[terraform.workspace]}"
+    Environment = "${terraform.workspace}"
     Stack       = "${var.stack_name}"
   }
 
@@ -497,7 +520,6 @@ module "app_vpc" {
     SubnetType = "private_persistence"
   }
 }
-
 
 ################################################################################
 ##     dev only resources                                                     ##

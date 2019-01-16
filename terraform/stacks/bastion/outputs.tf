@@ -126,15 +126,15 @@ output "terraform_secret_access_key" {
   value = "${module.terraform_user.encrypted_secret_access_key}"
 }
 
-# output for serivce: sample_monitor
-output "sample_monitor_username" {
-  value = "${module.sample_monitor_user.username}"
+# output for serivce: umccr_pipeline
+output "umccr_pipeline_username" {
+  value = "${module.umccr_pipeline_user.username}"
 }
 
-output "sample_monitor_access_key" {
-  value = "${module.sample_monitor_user.access_key}"
+output "umccr_pipeline_access_key" {
+  value = "${module.umccr_pipeline_user.access_key}"
 }
 
-output "sample_monitor_secret_access_key" {
-  value = "${module.sample_monitor_user.encrypted_secret_access_key}"
+output "umccr_pipeline_secret_access_key" {
+  value = "${module.umccr_pipeline_user.encrypted_secret_access_key}"
 }

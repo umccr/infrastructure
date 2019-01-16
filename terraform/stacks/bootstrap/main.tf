@@ -68,31 +68,34 @@ resource "aws_iam_role_policy_attachment" "fastq_data_uploader" {
   policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
 }
 
-##### sample_monitor
-resource "aws_iam_role" "sample_monitor" {
-  name                 = "sample_monitor"
+##### umccr_pipeline
+resource "aws_iam_role" "umccr_pipeline" {
+  name                 = "umccr_pipeline"
   path                 = "/"
   assume_role_policy   = "${file("policies/assume_role_from_bastion.json")}"
   max_session_duration = "43200"
 }
 
-data "template_file" "sample_monitor" {
-  template = "${file("policies/sample_monitor.json")}"
+data "template_file" "umccr_pipeline" {
+  template = "${file("policies/umccr_pipeline.json")}"
 
   vars {
-    lambda_arn = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:aws_pipeline_*"
+    aws_account   = "${data.aws_caller_identity.current.account_id}"
+    aws_region    = "${data.aws_region.current.name}"
+    s3_buckets    = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
+    activity_name = "${var.workspace_pipeline_activity_name[terraform.workspace]}"
   }
 }
 
-resource "aws_iam_policy" "sample_monitor" {
-  name   = "sample_monitor"
+resource "aws_iam_policy" "umccr_pipeline" {
+  name   = "umccr_pipeline"
   path   = "/"
-  policy = "${data.template_file.sample_monitor.rendered}"
+  policy = "${data.template_file.umccr_pipeline.rendered}"
 }
 
-resource "aws_iam_role_policy_attachment" "sample_monitor" {
-  role       = "${aws_iam_role.sample_monitor.name}"
-  policy_arn = "${aws_iam_policy.sample_monitor.arn}"
+resource "aws_iam_role_policy_attachment" "umccr_pipeline" {
+  role       = "${aws_iam_role.umccr_pipeline.name}"
+  policy_arn = "${aws_iam_policy.umccr_pipeline.arn}"
 }
 
 ## S3 buckets  #################################################################
@@ -458,7 +461,6 @@ resource "aws_route53_record" "vault" {
 # Terraform v0.12 will facilitate this, as lists/maps can be merged, making it
 # easier to combine common with custom tags
 
-
 resource "aws_eip" "vault" {
   vpc        = true
   depends_on = ["aws_internet_gateway.vault"]
@@ -501,7 +503,7 @@ module "app_vpc" {
   num_nat_gateways = 1
 
   use_custom_nat_eips = true
-  custom_nat_eips = ["${aws_eip.main_vpc_nat_gateway.id}"]
+  custom_nat_eips     = ["${aws_eip.main_vpc_nat_gateway.id}"]
 
   custom_tags = {
     Environment = "${terraform.workspace}"

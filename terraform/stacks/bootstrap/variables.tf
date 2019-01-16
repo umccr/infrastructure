@@ -106,6 +106,13 @@ variable "workspace_vault_instance_tags" {
 variable "workspace_slack_channel" {
   default = {
     prod = "#biobots"
-    dev = "#arteria-dev"
+    dev  = "#arteria-dev"
+  }
+}
+
+variable "workspace_pipeline_activity_name" {
+  default = {
+    prod = "umccr_pipeline_wait_for_async_action_prod"
+    dev  = "umccr_pipeline_wait_for_async_action_dev"
   }
 }

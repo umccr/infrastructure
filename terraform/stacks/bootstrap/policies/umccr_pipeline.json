@@ -1,0 +1,24 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "",
+        "Effect": "Allow",
+        "Action": [
+          "states:SendTaskSuccess"
+        ],
+        "Resource": "arn:aws:states:${aws_region}:${aws_account}:activity:${activity_name}"
+      },
+      {
+        "Sid": "",
+        "Effect": "Allow",
+        "Action": [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ],
+        "Resource": ${s3_buckets}
+      }
+    ]
+  }

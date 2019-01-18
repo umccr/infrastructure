@@ -116,3 +116,10 @@ variable "workspace_pipeline_activity_name" {
     dev  = "umccr_pipeline_wait_for_async_action_dev"
   }
 }
+
+variable "workspace_slack_lambda_name" {
+  default = {
+    prod = "bootstrap_slack_lambda_prod"
+    dev = "bootstrap_slack_lambda_dev"
+  }
+}

@@ -13,6 +13,14 @@
         "Sid": "",
         "Effect": "Allow",
         "Action": [
+          "lambda:InvokeFunction"
+        ],
+        "Resource": "arn:aws:lambda:${aws_region}:${aws_account}:function:${slack_lambda_name}"
+      },
+      {
+        "Sid": "",
+        "Effect": "Allow",
+        "Action": [
           "s3:PutObject",
           "s3:GetObject",
           "s3:ListBucket",

@@ -84,6 +84,7 @@ data "template_file" "umccr_pipeline" {
     aws_region    = "${data.aws_region.current.name}"
     s3_buckets    = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
     activity_name = "${var.workspace_pipeline_activity_name[terraform.workspace]}"
+    slack_lambda_name = "${var.workspace_slack_lambda_name[terraform.workspace]}"
   }
 }
 
@@ -140,31 +141,6 @@ resource "aws_s3_bucket" "primary_data" {
   tags {
     Name        = "primary-data"
     Environment = "${terraform.workspace}"
-  }
-}
-
-# S3 bucket for PCGR
-# NOTE: this could possibly be removed if instead data is directly retrieved from the primary-data bucket
-#       (but that requires major refactoring of the PCGR workflow)
-resource "aws_s3_bucket" "pcgr_s3_bucket" {
-  bucket = "${var.workspace_pcgr_bucket_name[terraform.workspace]}"
-
-  lifecycle_rule {
-    id      = "pcgr_expire_uploads"
-    enabled = true
-
-    transition {
-      days          = 30
-      storage_class = "ONEZONE_IA"
-    }
-
-    expiration {
-      days = 31
-    }
-
-    noncurrent_version_expiration {
-      days = 31
-    }
   }
 }
 

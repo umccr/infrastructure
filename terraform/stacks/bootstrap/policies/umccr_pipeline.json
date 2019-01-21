@@ -13,6 +13,14 @@
         "Sid": "",
         "Effect": "Allow",
         "Action": [
+          "states:StartExecution"
+        ],
+        "Resource": "arn:aws:states:${aws_region}:${aws_account}:stateMachine:${state_machine_name}"
+      },
+      {
+        "Sid": "",
+        "Effect": "Allow",
+        "Action": [
           "lambda:InvokeFunction"
         ],
         "Resource": "arn:aws:lambda:${aws_region}:${aws_account}:function:${slack_lambda_name}"

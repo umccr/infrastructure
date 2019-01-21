@@ -123,3 +123,10 @@ variable "workspace_slack_lambda_name" {
     dev = "bootstrap_slack_lambda_dev"
   }
 }
+
+variable "workspace_state_machine_name" {
+  default = {
+    prod = "umccr_pipeline_state_machine_prod"
+    dev = "umccr_pipeline_state_machine_dev"
+  }
+}

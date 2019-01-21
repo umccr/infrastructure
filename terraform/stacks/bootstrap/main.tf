@@ -85,6 +85,7 @@ data "template_file" "umccr_pipeline" {
     s3_buckets    = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
     activity_name = "${var.workspace_pipeline_activity_name[terraform.workspace]}"
     slack_lambda_name = "${var.workspace_slack_lambda_name[terraform.workspace]}"
+    state_machine_name = "${var.workspace_state_machine_name[terraform.workspace]}" 
   }
 }
 

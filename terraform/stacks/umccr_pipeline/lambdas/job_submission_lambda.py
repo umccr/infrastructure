@@ -6,7 +6,7 @@ import json
 DEPLOY_ENV = os.environ.get("DEPLOY_ENV")
 SSM_INSTANCE_ID = os.environ.get("SSM_INSTANCE_ID")
 WAIT_FOR_ACTIVITY_ARN = os.environ.get("WAIT_FOR_ASYNC_ACTION_ACTIVITY_ARN")
-SSM_PARAM_PREFIX = "/umccr_pipeline/novastor/"
+SSM_PARAM_PREFIX = os.environ.get("SSM_PARAM_PREFIX")
 
 ssm_client = boto3.client('ssm')
 states_client = boto3.client('stepfunctions')
@@ -19,18 +19,18 @@ def getSSMParam(name):
            )['Parameter']['Value']
 
 
-runfolder_base_path = getSSMParam(SSM_PARAM_PREFIX + "runfolder_base_path")
-bcl2fastq_base_path = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_base_path")
-hpc_dest_base_path = getSSMParam(SSM_PARAM_PREFIX + "hpc_dest_base_path")
-samplesheet_check_script = getSSMParam(SSM_PARAM_PREFIX + "samplesheet_check_script")
-bcl2fastq_script = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_script")
-checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")
-hpc_sync_script = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_script")
-s3_sync_script = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_script")
-hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host")
-HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")
-aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")
-s3_sync_dest_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_dest_bucket")
+runfolder_base_path = getSSMParam(SSM_PARAM_PREFIX + "runfolder_base_path")             # {{{{ssm:{SSM_PARAM_PREFIX}runfolder_base_path}}}}
+bcl2fastq_base_path = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_base_path")             # {{{{ssm:{SSM_PARAM_PREFIX}bcl2fastq_base_path}}}}
+hpc_dest_base_path = getSSMParam(SSM_PARAM_PREFIX + "hpc_dest_base_path")               # {{{{ssm:{SSM_PARAM_PREFIX}hpc_dest_base_path}}}}
+samplesheet_check_script = getSSMParam(SSM_PARAM_PREFIX + "samplesheet_check_script")   # {{{{ssm:{SSM_PARAM_PREFIX}samplesheet_check_script}}}}
+bcl2fastq_script = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_script")                   # {{{{ssm:{SSM_PARAM_PREFIX}bcl2fastq_script}}}}
+checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")                     # {{{{ssm:{SSM_PARAM_PREFIX}checksum_script}}}}
+hpc_sync_script = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_script")                     # {{{{ssm:{SSM_PARAM_PREFIX}hpc_sync_script}}}}
+s3_sync_script = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_script")                       # {{{{ssm:{SSM_PARAM_PREFIX}s3_sync_script}}}}
+hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host")               # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
+HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")                      # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
+aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")                             # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
+s3_sync_dest_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_dest_bucket")             # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
 
 
 def build_command(script_case, input_data, task_token):
@@ -41,8 +41,8 @@ def build_command(script_case, input_data, task_token):
     else:
         raise ValueError('A runfolder parameter is mandatory!')
 
-    runfolder_path = os.path.join(runfolder_base_path, runfolder)
-    bcl2fastq_out_path = os.path.join(bcl2fastq_base_path, runfolder)
+    runfolder_path = os.path.join(runfolder_base_path, runfolder)  # {{{{ssm:{SSM_PARAM_PREFIX}runfolder_base_path}}}}/{runfolder}
+    bcl2fastq_out_path = os.path.join(bcl2fastq_base_path, runfolder)  # {{{{ssm:{SSM_PARAM_PREFIX}bcl2fastq_base_path}}}}/{runfolder}
 
     # the time (in sec) an script has to execute before it's declared as failed
     execution_timneout = '600'
@@ -52,6 +52,7 @@ def build_command(script_case, input_data, task_token):
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" python {samplesheet_check_script} {samplesheet_path} {runfolder} {task_token}"
+        # command += f" python {{{{ssm:{SSM_PARAM_PREFIX}samplesheet_check_script_plain}}}} {samplesheet_path} {runfolder} {task_token}"
     elif script_case == "bcl2fastq":
         execution_timneout = '36000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
@@ -89,6 +90,8 @@ def build_command(script_case, input_data, task_token):
         print("Unsupported script_case! Should do something sensible here....")
         raise ValueError("No valid execution scritp!")
     command += "'"
+
+    print(f"Script command; {command}")
 
     return command, execution_timneout
 
@@ -128,13 +131,12 @@ def lambda_handler(event, context):
     script_command, script_timeout = build_command(script_case=script_execution,
                                                    input_data=event['input'],
                                                    task_token=task_token)
-    # TODO: find better way to not print the entire token
-    print(f"Script command; {script_command[:-300]}")
 
     response = ssm_client.send_command(
         InstanceIds=[SSM_INSTANCE_ID],
         DocumentName="AWS-RunShellScript",
-        Parameters={"commands": [script_command], "executionTimeout": [script_timeout]}, )
+        Parameters={"commands": [script_command], "executionTimeout": [script_timeout]},
+        CloudWatchOutputConfig={'CloudWatchOutputEnabled': True}, )
 
     command_id = response['Command']['CommandId']
     print(f"Command ID: {command_id}")

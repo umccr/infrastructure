@@ -28,7 +28,7 @@
         "ssm:GetParametersByPath"
       ],
       "Resource": [
-        "arn:aws:ssm:${region}:${account_id}:parameter/umccr_pipeline/*"
+        "arn:aws:ssm:${region}:${account_id}:parameter${ssm_param_prefix}*"
       ]
     },
     {

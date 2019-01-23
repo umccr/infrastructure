@@ -38,6 +38,7 @@ data "template_file" "job_submission_lambda" {
     region                             = "${data.aws_region.current.name}"
     account_id                         = "${data.aws_caller_identity.current.account_id}"
     wait_for_async_action_activity_arn = "${aws_sfn_activity.wait_for_async_action.id}"
+    ssm_param_prefix                   = "${var.ssm_param_prefix}"
   }
 }
 
@@ -76,6 +77,7 @@ module "job_submission_lambda" {
       DEPLOY_ENV                         = "${var.deploy_env}"
       SSM_INSTANCE_ID                    = "${data.external.getManagedInstanceId.result.instance_id}"
       WAIT_FOR_ASYNC_ACTION_ACTIVITY_ARN = "${aws_sfn_activity.wait_for_async_action.id}"
+      SSM_PARAM_PREFIX                   = "${var.ssm_param_prefix}"
     }
   }
 

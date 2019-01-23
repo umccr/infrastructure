@@ -1,0 +1,44 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:SendCommand"
+      ],
+      "Resource": [
+        "arn:aws:ssm:${region}::document/AWS-RunShellScript",
+        "arn:aws:ssm:${region}:${account_id}:managed-instance/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetCommandInvocation"
+      ],
+      "Resource": [
+        "arn:aws:ssm:${region}:${account_id}:*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath"
+      ],
+      "Resource": [
+        "arn:aws:ssm:${region}:${account_id}:parameter/umccr_pipeline/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "states:GetActivityTask"
+      ],
+      "Resource": [
+        "${wait_for_async_action_activity_arn}"
+      ]
+    }
+  ]
+}

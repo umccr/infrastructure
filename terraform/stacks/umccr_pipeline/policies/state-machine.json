@@ -1,0 +1,15 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "lambda:InvokeFunction"
+            ],
+            "Resource": [
+                "${pipeline_lambda_arn}",
+                "${slack_notify_lambda_arn}"
+            ]
+        }
+    ]
+}

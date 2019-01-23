@@ -88,6 +88,18 @@ resource "aws_iam_user_login_profile" "pdiakumis_console_login" {
   pgp_key = "keybase:pdiakumis"
 }
 
+# sehrishk
+module "sehrishk_user" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "sehrishk"
+  pgp_key  = "keybase:sehrishk"
+}
+
+resource "aws_iam_user_login_profile" "sehrishk_console_login" {
+  user    = "${module.sehrishk_user.username}"
+  pgp_key = "keybase:sehrishk"
+}
+
 ##### create service users
 
 # packer
@@ -180,6 +192,7 @@ resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
     "${module.terraform_user.username}",
     "${module.lavinia_user.username}",
     "${module.pdiakumis_user.username}",
+    "${module.sehrishk_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"

@@ -1,6 +1,6 @@
 .DS_Store
 terraform/stacks/stackstorm/keys
 **/.terraform
-**/terraform.tfstate
-**/terraform.tfstate.backup
+**/*.tfstate
+**/*.tfstate.backup
 .env

@@ -43,7 +43,7 @@ data "template_file" "job_submission_lambda" {
 }
 
 resource "aws_iam_policy" "job_submission_lambda" {
-  name   = "${var.stack_name}_job_submission_lambda_${var.deploy_env}"
+  name   = "${var.stack_name}_job_submission_lambda_${terraform.workspace}"
   path   = "/${var.stack_name}/"
   policy = "${data.template_file.job_submission_lambda.rendered}"
 }
@@ -52,14 +52,14 @@ resource "aws_iam_policy" "job_submission_lambda" {
 # Setup Lambdas
 
 data "aws_lambda_function" "slack_lambda" {
-  function_name = "${var.notify_slack_lambda_function_name}"
+  function_name = "${var.workspace_notify_slack_lambda_function_name[terraform.workspace]}"
 }
 
 module "job_submission_lambda" {
   # based on: https://github.com/claranet/terraform-aws-lambda
   source = "../../modules/lambda"
 
-  function_name = "${var.stack_name}_job_submission_lambda_${var.deploy_env}"
+  function_name = "${var.stack_name}_job_submission_lambda_${terraform.workspace}"
   description   = "Lambda to kick off UMCCR pipeline steps."
   handler       = "job_submission_lambda.lambda_handler"
   runtime       = "python3.6"
@@ -74,7 +74,7 @@ module "job_submission_lambda" {
 
   environment {
     variables {
-      DEPLOY_ENV                         = "${var.deploy_env}"
+      DEPLOY_ENV                         = "${terraform.workspace}"
       SSM_INSTANCE_ID                    = "${data.external.getManagedInstanceId.result.instance_id}"
       WAIT_FOR_ASYNC_ACTION_ACTIVITY_ARN = "${aws_sfn_activity.wait_for_async_action.id}"
       SSM_PARAM_PREFIX                   = "${var.ssm_param_prefix}"
@@ -82,7 +82,7 @@ module "job_submission_lambda" {
   }
 
   tags = {
-    Environment = "${var.deploy_env}"
+    Environment = "${terraform.workspace}"
     Stack       = "${var.stack_name}"
     Service     = "${var.stack_name}_lambda"
   }
@@ -103,13 +103,13 @@ data "template_file" "state_machine_policy" {
 
 resource "aws_iam_policy" "state_machine" {
   # turn permission json into policy
-  name   = "${var.stack_name}_state_machine_${var.deploy_env}"
+  name   = "${var.stack_name}_state_machine_${terraform.workspace}"
   path   = "/${var.stack_name}/"
   policy = "${data.template_file.state_machine_policy.rendered}"
 }
 
 resource "aws_iam_role" "state_machine" {
-  name = "${var.stack_name}_state_machine_${var.deploy_env}"
+  name = "${var.stack_name}_state_machine_${terraform.workspace}"
 
   assume_role_policy = <<EOF
 {
@@ -128,7 +128,7 @@ resource "aws_iam_role" "state_machine" {
 EOF
 
   tags = {
-    Environment = "${var.deploy_env}"
+    Environment = "${terraform.workspace}"
     Stack       = "${var.stack_name}"
   }
 }
@@ -141,14 +141,14 @@ resource "aws_iam_role_policy_attachment" "state_machine" {
 
 resource "aws_sfn_state_machine" "umccr_pipeline" {
   # turn state machine definition into state machine
-  name       = "${var.stack_name}_state_machine_${var.deploy_env}"
+  name       = "${var.stack_name}_state_machine_${terraform.workspace}"
   role_arn   = "${aws_iam_role.state_machine.arn}"
   definition = "${data.template_file.umccr_pipeline_definition.rendered}"
 }
 
 resource "aws_sfn_activity" "wait_for_async_action" {
   # create an activity that's used to block until the async task calls back
-  name = "${var.stack_name}_wait_for_async_action_${var.deploy_env}"
+  name = "${var.stack_name}_wait_for_async_action_${terraform.workspace}"
 }
 
 data "template_file" "umccr_pipeline_definition" {

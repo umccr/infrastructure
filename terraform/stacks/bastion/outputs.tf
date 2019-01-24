@@ -100,6 +100,23 @@ output "pdiakumis_console_login" {
   value = "${aws_iam_user_login_profile.pdiakumis_console_login.encrypted_password}"
 }
 
+# output for user: sehrishk
+output "sehrishk_username" {
+  value = "${module.sehrishk_user.username}"
+}
+
+output "sehrishk_access_key" {
+  value = "${module.sehrishk_user.access_key}"
+}
+
+output "sehrishk_secret_access_key" {
+  value = "${module.sehrishk_user.encrypted_secret_access_key}"
+}
+
+output "sehrishk_console_login" {
+  value = "${aws_iam_user_login_profile.sehrishk_console_login.encrypted_password}"
+}
+
 # output for serivce: packer
 output "packer_username" {
   value = "${module.packer_user.username}"

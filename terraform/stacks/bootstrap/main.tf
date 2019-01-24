@@ -80,12 +80,12 @@ data "template_file" "umccr_pipeline" {
   template = "${file("policies/umccr_pipeline.json")}"
 
   vars {
-    aws_account   = "${data.aws_caller_identity.current.account_id}"
-    aws_region    = "${data.aws_region.current.name}"
-    s3_buckets    = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
-    activity_name = "${var.workspace_pipeline_activity_name[terraform.workspace]}"
-    slack_lambda_name = "${var.workspace_slack_lambda_name[terraform.workspace]}"
-    state_machine_name = "${var.workspace_state_machine_name[terraform.workspace]}" 
+    aws_account        = "${data.aws_caller_identity.current.account_id}"
+    aws_region         = "${data.aws_region.current.name}"
+    s3_buckets         = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
+    activity_name      = "${var.workspace_pipeline_activity_name[terraform.workspace]}"
+    slack_lambda_name  = "${var.workspace_slack_lambda_name[terraform.workspace]}"
+    state_machine_name = "${var.workspace_state_machine_name[terraform.workspace]}"
   }
 }
 
@@ -444,11 +444,36 @@ resource "aws_eip" "vault" {
 
   tags {
     Name       = "vault_${terraform.workspace}"
-    deploy_env = "dev"
+    deploy_env = "${terraform.workspace}"
   }
 }
 
+################################################################################
+##     dev only resources                                                     ##
+################################################################################
+
+# Add a ops-admin rold that can be assumed without MFA (used for build agents)
+resource "aws_iam_role" "ops_admin_no_mfa_role" {
+  count                = "${terraform.workspace == "dev" ? 1 : 0}"
+  name                 = "ops_admin_no_mfa"
+  path                 = "/"
+  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
+  max_session_duration = "43200"
+}
+
+resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
+  path   = "/"
+  policy = "${file("policies/ops_admin_no_mfa_policy.json")}"
+}
+
+resource "aws_iam_role_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
+  count      = "${terraform.workspace == "dev" ? 1 : 0}"
+  role       = "${aws_iam_role.ops_admin_no_mfa_role.name}"
+  policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
+}
+
 resource "aws_eip" "main_vpc_nat_gateway" {
+  count = "${terraform.workspace == "dev" ? 1 : 0}"
   vpc = true
 
   tags {
@@ -459,17 +484,21 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 }
 
 resource "aws_eip" "basespace_playground" {
+  count = "${terraform.workspace == "dev" ? 1 : 0}"
+
   tags {
     Name       = "basespace_playground_${terraform.workspace}"
-    deploy_env = "dev"
+    deploy_env = "${terraform.workspace}"
   }
 }
+
 
 ################################################################################
 # Set up a main VPC for resources to use
 # It'll have with private and public subnets, internet and NAT gateways, etc
 
 module "app_vpc" {
+  count = "${terraform.workspace == "dev" ? 1 : 0}"
   source = "git::git@github.com:gruntwork-io/module-vpc.git//modules/vpc-app?ref=v0.5.2"
 
   vpc_name   = "vpc-${var.stack_name}-main"
@@ -498,28 +527,4 @@ module "app_vpc" {
   private_persistence_subnet_custom_tags = {
     SubnetType = "private_persistence"
   }
-}
-
-################################################################################
-##     dev only resources                                                     ##
-################################################################################
-
-# Add a ops-admin rold that can be assumed without MFA (used for build agents)
-resource "aws_iam_role" "ops_admin_no_mfa_role" {
-  count                = "${terraform.workspace == "dev" ? 1 : 0}"
-  name                 = "ops_admin_no_mfa"
-  path                 = "/"
-  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
-  max_session_duration = "43200"
-}
-
-resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
-  path   = "/"
-  policy = "${file("policies/ops_admin_no_mfa_policy.json")}"
-}
-
-resource "aws_iam_role_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
-  count      = "${terraform.workspace == "dev" ? 1 : 0}"
-  role       = "${aws_iam_role.ops_admin_no_mfa_role.name}"
-  policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
 }

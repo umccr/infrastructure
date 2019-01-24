@@ -120,13 +120,13 @@ variable "workspace_pipeline_activity_name" {
 variable "workspace_slack_lambda_name" {
   default = {
     prod = "bootstrap_slack_lambda_prod"
-    dev = "bootstrap_slack_lambda_dev"
+    dev  = "bootstrap_slack_lambda_dev"
   }
 }
 
 variable "workspace_state_machine_name" {
   default = {
     prod = "umccr_pipeline_state_machine_prod"
-    dev = "umccr_pipeline_state_machine_dev"
+    dev  = "umccr_pipeline_state_machine_dev"
   }
 }

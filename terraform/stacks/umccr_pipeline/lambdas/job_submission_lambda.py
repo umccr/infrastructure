@@ -27,10 +27,10 @@ bcl2fastq_script = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_script")           
 checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")                     # {{{{ssm:{SSM_PARAM_PREFIX}checksum_script}}}}
 hpc_sync_script = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_script")                     # {{{{ssm:{SSM_PARAM_PREFIX}hpc_sync_script}}}}
 s3_sync_script = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_script")                       # {{{{ssm:{SSM_PARAM_PREFIX}s3_sync_script}}}}
-hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host")               # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
-HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")                      # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
-aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")                             # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
-s3_sync_dest_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_dest_bucket")             # {{{{ssm:{SSM_PARAM_PREFIX}foo}}}}
+hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host")               # {{{{ssm:{SSM_PARAM_PREFIX}hpc_sync_dest_host}}}}
+HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")                      # {{{{ssm:{SSM_PARAM_PREFIX}hpc_sync_ssh_user}}}}
+aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")                             # {{{{ssm:{SSM_PARAM_PREFIX}aws_profile}}}}
+s3_sync_dest_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_dest_bucket")             # {{{{ssm:{SSM_PARAM_PREFIX}s3_sync_dest_bucket}}}}
 
 
 def build_command(script_case, input_data, task_token):

@@ -11,10 +11,11 @@ variable "ssm_param_prefix" {
 ################################################################################
 # Variables depending on the deployment environment
 
-variable "deploy_env" {
-  description = "The deployment environment against which to deploy this stack. Select either 'dev' or 'prod'."
-}
-
-variable "notify_slack_lambda_function_name" {
+variable "workspace_notify_slack_lambda_function_name" {
   description = "Name of the Slack notification Lambda."
+  type = "map"
+  default = {
+    prod = "bootstrap_slack_lambda_prod"
+    dev  = "bootstrap_slack_lambda_dev"
+  }
 }

@@ -16,7 +16,10 @@ warnings.simplefilter("ignore")
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+if DEPLOY_ENV == 'prod':
+    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+else:
+    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
 UDP_IP = "127.0.0.1"
 UDP_PORT = 9999
 LOG_FILE = open(LOG_FILE_NAME, "a+")

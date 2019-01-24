@@ -24,10 +24,11 @@ FLAG_10X="--no-lane-splitting --minimum-trimmed-read-length=8 --mask-short-adapt
 
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name: $1"
-  echo "$msg" >> $DIR/${script_name}.log
   if test "$DEPLOY_ENV" = "prod"; then
+    echo "$msg" >> $DIR/${script_name}.log
     echo "$msg" > /dev/udp/localhost/9999
   else
+    echo "$msg" >> $DIR/${script_name}.dev.log
     echo "$msg"
   fi
 }

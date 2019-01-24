@@ -15,10 +15,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
-  echo "$msg" >> $DIR/${script}.log
   if test "$DEPLOY_ENV" = "prod"; then
+    echo "$msg" >> $DIR/${script}.log
     echo "$msg" > /dev/udp/localhost/9999
   else
+    echo "$msg" >> $DIR/${script}.dev.log
     echo "$msg"
   fi
 }
@@ -161,6 +162,7 @@ log_file_name=$(echo "$dest_path" | tr \/ _)
 if test "$DEPLOY_ENV" = "prod"; then
   cmd="aws s3 sync --no-progress"
 else
+  log_file_name+=".dev" # add dev extension to separate from prod log files
   cmd="aws s3 sync --no-progress --dryrun"
 fi
 for i in "${excludes[@]}"

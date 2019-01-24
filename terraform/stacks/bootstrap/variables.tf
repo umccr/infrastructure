@@ -28,6 +28,13 @@ variable "workspace_name_suffix" {
   }
 }
 
+variable "workspace_deploy_env" {
+  default = {
+    prod = "prod"
+    dev  = "dev"
+  }
+}
+
 # due to a restriction in Terraform, we cannot dynamically define bucket configurations
 # see: https://github.com/terraform-providers/terraform-provider-aws/issues/4418
 # Therefore we need to manually configure each bucket and for that we need the individual names
@@ -99,6 +106,27 @@ variable "workspace_vault_instance_tags" {
 variable "workspace_slack_channel" {
   default = {
     prod = "#biobots"
-    dev = "#arteria-dev"
+    dev  = "#arteria-dev"
+  }
+}
+
+variable "workspace_pipeline_activity_name" {
+  default = {
+    prod = "umccr_pipeline_wait_for_async_action_prod"
+    dev  = "umccr_pipeline_wait_for_async_action_dev"
+  }
+}
+
+variable "workspace_slack_lambda_name" {
+  default = {
+    prod = "bootstrap_slack_lambda_prod"
+    dev  = "bootstrap_slack_lambda_dev"
+  }
+}
+
+variable "workspace_state_machine_name" {
+  default = {
+    prod = "umccr_pipeline_state_machine_prod"
+    dev  = "umccr_pipeline_state_machine_dev"
   }
 }

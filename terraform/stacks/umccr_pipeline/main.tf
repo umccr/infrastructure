@@ -39,6 +39,7 @@ data "template_file" "job_submission_lambda" {
     account_id                         = "${data.aws_caller_identity.current.account_id}"
     wait_for_async_action_activity_arn = "${aws_sfn_activity.wait_for_async_action.id}"
     ssm_param_prefix                   = "${var.ssm_param_prefix}"
+    ssm_role_to_assume_arn             = "${var.ssm_role_to_assume_arn}"
   }
 }
 
@@ -63,7 +64,7 @@ module "job_submission_lambda" {
   description   = "Lambda to kick off UMCCR pipeline steps."
   handler       = "job_submission_lambda.lambda_handler"
   runtime       = "python3.6"
-  timeout       = 3
+  timeout       = 10
   memory_size   = 128
 
   handler     = "job_submission_lambda.lambda_handler"
@@ -75,9 +76,9 @@ module "job_submission_lambda" {
   environment {
     variables {
       DEPLOY_ENV                         = "${terraform.workspace}"
-      SSM_INSTANCE_ID                    = "${data.external.getManagedInstanceId.result.instance_id}"
       WAIT_FOR_ASYNC_ACTION_ACTIVITY_ARN = "${aws_sfn_activity.wait_for_async_action.id}"
       SSM_PARAM_PREFIX                   = "${var.ssm_param_prefix}"
+      BASTION_SSM_ROLE_ARN               = "${var.ssm_role_to_assume_arn}"
     }
   }
 

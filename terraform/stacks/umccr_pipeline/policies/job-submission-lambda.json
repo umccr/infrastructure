@@ -39,6 +39,15 @@
       "Resource": [
         "${wait_for_async_action_activity_arn}"
       ]
+    },
+    {
+        "Effect": "Allow",
+        "Action": [
+            "sts:AssumeRole"
+        ],
+        "Resource": [
+            "${ssm_role_to_assume_arn}"
+        ]
     }
   ]
 }

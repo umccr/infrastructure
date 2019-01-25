@@ -4,9 +4,9 @@ import json
 
 
 DEPLOY_ENV = os.environ.get("DEPLOY_ENV")
-SSM_INSTANCE_ID = os.environ.get("SSM_INSTANCE_ID")
 WAIT_FOR_ACTIVITY_ARN = os.environ.get("WAIT_FOR_ASYNC_ACTION_ACTIVITY_ARN")
 SSM_PARAM_PREFIX = os.environ.get("SSM_PARAM_PREFIX")
+BASTION_SSM_ROLE_ARN = os.environ.get("BASTION_SSM_ROLE_ARN")
 
 ssm_client = boto3.client('ssm')
 states_client = boto3.client('stepfunctions')
@@ -19,6 +19,7 @@ def getSSMParam(name):
            )['Parameter']['Value']
 
 
+ssm_instance_id = getSSMParam(SSM_PARAM_PREFIX + "ssm_instance_id")
 runfolder_base_path = getSSMParam(SSM_PARAM_PREFIX + "runfolder_base_path")             # {{{{ssm:{SSM_PARAM_PREFIX}runfolder_base_path}}}}
 bcl2fastq_base_path = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_base_path")             # {{{{ssm:{SSM_PARAM_PREFIX}bcl2fastq_base_path}}}}
 hpc_dest_base_path = getSSMParam(SSM_PARAM_PREFIX + "hpc_dest_base_path")               # {{{{ssm:{SSM_PARAM_PREFIX}hpc_dest_base_path}}}}
@@ -96,6 +97,23 @@ def build_command(script_case, input_data, task_token):
     return command, execution_timneout
 
 
+def aws_session(role_arn=None, session_name='my_session'):
+    """
+    If role_arn is given assumes a role and returns boto3 session
+    otherwise return a regular session with the current IAM user/role
+    """
+    if role_arn:
+        client = boto3.client('sts')
+        response = client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)
+        session = boto3.Session(
+            aws_access_key_id=response['Credentials']['AccessKeyId'],
+            aws_secret_access_key=response['Credentials']['SecretAccessKey'],
+            aws_session_token=response['Credentials']['SessionToken'])
+        return session
+    else:
+        return boto3.Session()
+
+
 def lambda_handler(event, context):
 
     print("Received event: " + json.dumps(event, indent=2))
@@ -132,8 +150,9 @@ def lambda_handler(event, context):
                                                    input_data=event['input'],
                                                    task_token=task_token)
 
-    response = ssm_client.send_command(
-        InstanceIds=[SSM_INSTANCE_ID],
+    session_assumed = aws_session(role_arn=BASTION_SSM_ROLE_ARN, session_name='my_lambda')
+    response = session_assumed.client('ssm').send_command(
+        InstanceIds=[ssm_instance_id],
         DocumentName="AWS-RunShellScript",
         Parameters={"commands": [script_command], "executionTimeout": [script_timeout]},
         CloudWatchOutputConfig={'CloudWatchOutputEnabled': True}, )

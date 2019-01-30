@@ -33,7 +33,7 @@ resource "aws_instance" "web" {
 data "template_file" "userdata" {
   template = "${file("${path.module}/templates/userdata.tpl")}"
 
-  vars {
+  /*vars {
     INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
-  }
+  }*/
 }

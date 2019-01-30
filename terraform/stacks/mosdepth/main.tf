@@ -29,3 +29,11 @@ resource "aws_instance" "web" {
     Name = "mosdepth-skanwal"
   }
 }
+
+data "template_file" "userdata" {
+  template = "${file("${path.module}/templates/userdata.tpl")}"
+
+  vars {
+    INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
+  }
+}

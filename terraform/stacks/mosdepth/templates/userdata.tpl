@@ -47,17 +47,3 @@ apt-get install -y s3fs
 
 echo "Configuring s3fs"
 echo "user_allow_other" | sudo tee -a /etc/fuse.conf
-
-#echo "--------------------------------------------------------------------------------"
-#echo "Mounting buckets with s3fs"
-#for bucket in ${AGHA_BUCKETS}
-#do
-#  mkdir /mnt/$bucket
-#  s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
-#done
-
-#echo "--------------------------------------------------------------------------------"
-#echo "Tagging the instance"
-#export AWS_DEFAULT_REGION=ap-southeast-2
-#instance_id=`cat /var/lib/cloud/data/instance-id`
-#aws ec2 create-tags --resources $instance_id --tags ${INSTANCE_TAGS}

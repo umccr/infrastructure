@@ -24,6 +24,13 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+locals {
+  common_tags = "${map(
+    "Environment", "${terraform.workspace}",
+    "Stack", "${var.stack_name}"
+  )}"
+}
+
 ################################################################################
 # Setup Lambda requirements
 
@@ -82,11 +89,12 @@ module "job_submission_lambda" {
     }
   }
 
-  tags = {
-    Environment = "${terraform.workspace}"
-    Stack       = "${var.stack_name}"
-    Service     = "${var.stack_name}_lambda"
-  }
+  tags = "${merge(
+    local.common_tags,
+    map(
+      "Service", "${var.stack_name}_lambda"
+    )
+  )}"
 }
 
 ################################################################################
@@ -128,10 +136,7 @@ resource "aws_iam_role" "state_machine" {
 }
 EOF
 
-  tags = {
-    Environment = "${terraform.workspace}"
-    Stack       = "${var.stack_name}"
-  }
+  tags = "${local.common_tags}"
 }
 
 resource "aws_iam_role_policy_attachment" "state_machine" {
@@ -145,11 +150,15 @@ resource "aws_sfn_state_machine" "umccr_pipeline" {
   name       = "${var.stack_name}_state_machine_${terraform.workspace}"
   role_arn   = "${aws_iam_role.state_machine.arn}"
   definition = "${data.template_file.umccr_pipeline_definition.rendered}"
+
+  tags = "${local.common_tags}"
 }
 
 resource "aws_sfn_activity" "wait_for_async_action" {
   # create an activity that's used to block until the async task calls back
   name = "${var.stack_name}_wait_for_async_action_${terraform.workspace}"
+
+  tags = "${local.common_tags}"
 }
 
 data "template_file" "umccr_pipeline_definition" {

@@ -7,6 +7,12 @@
             "Action": [
                 "iam:GetUser",
                 "iam:ListMFADevices",
+                "iam:ListVirtualMFADevices",
+                "iam:CreateVirtualMFADevice",
+                "iam:DeactivateMFADevice",
+                "iam:DeleteVirtualMFADevice",
+                "iam:EnableMFADevice",
+                "iam:ResyncMFADevice",
                 "iam:ChangePassword"
             ],
             "Resource": "${user_arn}"

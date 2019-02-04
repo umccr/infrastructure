@@ -117,6 +117,26 @@ output "sehrishk_console_login" {
   value = "${aws_iam_user_login_profile.sehrishk_console_login.encrypted_password}"
 }
 
+#output for user: nrclark
+
+output "nrclark_username" {
+  value = "${module.nrclark_user.username}"
+}
+
+output "nrclark_access_key" {
+  value = "${module.nrclark_user.access_key}"
+}
+
+output "nrclark_secret_access_key" {
+  value = "${module.nrclark_user.encrypted_secret_access_key}"
+}
+
+output "nrclark_console_login" {
+  value = "${aws_iam_user_login_profile.nrclark_console_login.encrypted_password}"
+}
+
+### Service Users
+
 # output for serivce: packer
 output "packer_username" {
   value = "${module.packer_user.username}"

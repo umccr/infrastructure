@@ -8,6 +8,11 @@ variable "ssm_param_prefix" {
   default = "/umccr_pipeline/novastor/"
 }
 
+variable "ssm_role_to_assume_arn" {
+  description = ""
+  default = "arn:aws:iam::383856791668:role/service-role/AmazonEC2RunCommandRoleForManagedInstances"
+}
+
 ################################################################################
 # Variables depending on the deployment environment
 

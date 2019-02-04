@@ -8,7 +8,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous samplesheet check",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -43,7 +43,7 @@
                   "script_execution": "samplesheet_check",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -74,7 +74,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous bcl2fastq",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -98,7 +98,7 @@
                   "script_execution": "bcl2fastq",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -129,7 +129,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous create checksums for runfolder",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -153,7 +153,7 @@
                   "script_execution": "create_runfolder_checksums",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -184,7 +184,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous create checksums for fastqs",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -208,7 +208,7 @@
                   "script_execution": "create_fastq_checksums",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -239,7 +239,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous sync runfolder to hpc",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -263,7 +263,7 @@
                   "script_execution": "sync_runfolder_to_hpc",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -294,7 +294,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous sync fastqs to hpc",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -318,7 +318,7 @@
                   "script_execution": "sync_fastqs_to_hpc",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -349,7 +349,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous sync runfolder to S3",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -373,7 +373,7 @@
                   "script_execution": "sync_runfolder_to_s3",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -404,7 +404,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "Next": "Asynchronous sync fastqs to S3",
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",
@@ -428,7 +428,7 @@
                   "script_execution": "sync_fastqs_to_s3",
                   "input.$": "$"
                 },
-                "TimeoutSeconds": 3,
+                "TimeoutSeconds": 12,
                 "End": true,
                 "Retry": [
                   {
@@ -459,7 +459,7 @@
         "Type": "Task",
         "Resource": "${slack_notify_lambda_arn}",
         "End": true,
-        "TimeoutSeconds": 3,
+        "TimeoutSeconds": 12,
         "Parameters": {
           "topic": "UMCCR pipeline",
           "title.$": "$.runfolder",

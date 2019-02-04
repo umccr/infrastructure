@@ -150,6 +150,7 @@ resource "aws_iam_group_membership" "ops_admins_prod" {
   users = [
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_prod.name}"
@@ -167,6 +168,7 @@ resource "aws_iam_group_membership" "ops_admins_dev" {
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
     "${module.vlad_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_dev.name}"
@@ -184,6 +186,7 @@ resource "aws_iam_group_membership" "packer_users" {
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
     "${module.packer_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.packer_users.name}"
@@ -227,6 +230,7 @@ resource "aws_iam_group_membership" "fastq_data_uploaders" {
     "${module.oliver_user.username}",
     "${module.vlad_user.username}",
     "${module.terraform_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.fastq_data_uploaders.name}"

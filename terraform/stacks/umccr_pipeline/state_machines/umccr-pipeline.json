@@ -1,472 +1,556 @@
 {
-    "Comment": "State Machine that asynchronously runs UMCCR pipoline commands",
-    "StartAt": "Notify new runfolder ready",
-    "States": {
+  "Comment": "State Machine that asynchronously runs UMCCR pipoline commands",
+  "StartAt": "Notify new runfolder ready",
+  "States": {
 
 
-      "Notify new runfolder ready": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous samplesheet check",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Runfolder ready. Starting pipeline..."
+
+    "Notify Failure": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Pipeline failure..."
+      },
+      "Next": "FailState"
+    },
+    "FailState": {
+      "Type": "Fail"
+    },
+
+
+    "Notify new runfolder ready": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous samplesheet check",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Runfolder ready. Starting pipeline..."
+      },
+      "ResultPath": "$.lambda_result",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Asynchronous samplesheet check": {
+      "Type": "Parallel",
+      "Next": "Notify sample sheet check complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start samplesheet check",
+          "States": {
+            "Start samplesheet check": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "samplesheet_check",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
         },
-        "ResultPath": "$.lambda_result",
-        "Retry": [
-          {
-            "ErrorEquals": [ "States.ALL" ],
-            "IntervalSeconds": 5
-          }
-        ],
-        "Catch": [
-          {
-            "ErrorEquals": [ "States.ALL" ],
-            "Next": "Asynchronous samplesheet check"
-          }
-        ]
-      },
-      "Asynchronous samplesheet check": {
-        "Type": "Parallel",
-        "Next": "Notify sample sheet check complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start samplesheet check",
-            "States": {
-              "Start samplesheet check": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "samplesheet_check",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for samplesheet check",
-            "States": {
-              "Wait for samplesheet check": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 600,
-                "End": true
-              }
+        {
+          "StartAt": "Wait for samplesheet check",
+          "States": {
+            "Wait for samplesheet check": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 600,
+              "End": true
             }
           }
-        ]
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify sample sheet check complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous bcl2fastq",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "SampleSheet check complete. Starting conversion..."
       },
-
-      "Notify sample sheet check complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous bcl2fastq",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "SampleSheet check complete. Starting conversion..."
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous bcl2fastq": {
+      "Type": "Parallel",
+      "Next": "Notify bcl2fastq complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start bcl2fastq",
+          "States": {
+            "Start bcl2fastq": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "bcl2fastq",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
         },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous bcl2fastq": {
-        "Type": "Parallel",
-        "Next": "Notify bcl2fastq complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start bcl2fastq",
-            "States": {
-              "Start bcl2fastq": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "bcl2fastq",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for bcl2fastq",
-            "States": {
-              "Wait for bcl2fastq": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 36000,
-                "End": true
-              }
+        {
+          "StartAt": "Wait for bcl2fastq",
+          "States": {
+            "Wait for bcl2fastq": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 36000,
+              "End": true
             }
           }
-        ]
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify bcl2fastq complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous create checksums for runfolder",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Bcl2fastq conversion complete. Starting runfolder checksums..."
       },
-
-      "Notify bcl2fastq complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous create checksums for runfolder",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Bcl2fastq conversion complete. Starting runfolder checksums..."
-        },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous create checksums for runfolder": {
-        "Type": "Parallel",
-        "Next": "Notify checksums for runfolderr complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start create runfolder checksums",
-            "States": {
-              "Start create runfolder checksums": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "create_runfolder_checksums",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for create runfolder checksums",
-            "States": {
-              "Wait for create runfolder checksums": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 36000,
-                "End": true
-              }
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous create checksums for runfolder": {
+      "Type": "Parallel",
+      "Next": "Notify checksums for runfolderr complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start create runfolder checksums",
+          "States": {
+            "Start create runfolder checksums": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "create_runfolder_checksums",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
             }
           }
-        ]
-      },
-
-      "Notify checksums for runfolderr complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous create checksums for fastqs",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Runfolder checksums complete. Starting fastq checksums..."
         },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous create checksums for fastqs": {
-        "Type": "Parallel",
-        "Next": "Notify checksums for fastqs complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start create fastq checksums",
-            "States": {
-              "Start create fastq checksums": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "create_fastq_checksums",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for create fastq checksums",
-            "States": {
-              "Wait for create fastq checksums": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 36000,
-                "End": true
-              }
+        {
+          "StartAt": "Wait for create runfolder checksums",
+          "States": {
+            "Wait for create runfolder checksums": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 36000,
+              "End": true
             }
           }
-        ]
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify checksums for runfolderr complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous create checksums for fastqs",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Runfolder checksums complete. Starting fastq checksums..."
       },
-
-      "Notify checksums for fastqs complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous sync runfolder to hpc",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Fastq checksums complete. Starting runfolder sync to HPC..."
-        },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous sync runfolder to hpc": {
-        "Type": "Parallel",
-        "Next": "Notify runfolder sync to HPC complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start runfolder sync to hpc",
-            "States": {
-              "Start runfolder sync to hpc": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "sync_runfolder_to_hpc",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for runfolder sync to hpc",
-            "States": {
-              "Wait for runfolder sync to hpc": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 10800,
-                "End": true
-              }
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous create checksums for fastqs": {
+      "Type": "Parallel",
+      "Next": "Notify checksums for fastqs complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start create fastq checksums",
+          "States": {
+            "Start create fastq checksums": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "create_fastq_checksums",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
             }
           }
-        ]
-      },
-
-      "Notify runfolder sync to HPC complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous sync fastqs to hpc",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Runfolder sync to HPC complete. Starting fastq sync to HPC..."
         },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous sync fastqs to hpc": {
-        "Type": "Parallel",
-        "Next": "Notify fastq sync to HPC complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start fastq sync to hpc",
-            "States": {
-              "Start fastq sync to hpc": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "sync_fastqs_to_hpc",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for fastq sync to hpc",
-            "States": {
-              "Wait for fastq sync to hpc": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 36000,
-                "End": true
-              }
+        {
+          "StartAt": "Wait for create fastq checksums",
+          "States": {
+            "Wait for create fastq checksums": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 36000,
+              "End": true
             }
           }
-        ]
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify checksums for fastqs complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous sync runfolder to hpc",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Fastq checksums complete. Starting runfolder sync to HPC..."
       },
-
-      "Notify fastq sync to HPC complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous sync runfolder to S3",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Fastq sync to HPC complete. Starting runfolder sync to S3..."
-        },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous sync runfolder to S3": {
-        "Type": "Parallel",
-        "Next": "Notify runfolder sync to S3 complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start runfolder sync to S3",
-            "States": {
-              "Start runfolder sync to S3": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "sync_runfolder_to_s3",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for runfolder sync to S3",
-            "States": {
-              "Wait for runfolder sync to S3": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 10800,
-                "End": true
-              }
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous sync runfolder to hpc": {
+      "Type": "Parallel",
+      "Next": "Notify runfolder sync to HPC complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start runfolder sync to hpc",
+          "States": {
+            "Start runfolder sync to hpc": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "sync_runfolder_to_hpc",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
             }
           }
-        ]
-      },
-
-      "Notify runfolder sync to S3 complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "Next": "Asynchronous sync fastqs to S3",
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Runfolder sync to S3 complete. Starting fastq sync to S3..."
         },
-        "ResultPath": "$.lambda_result"
-      },
-
-      "Asynchronous sync fastqs to S3": {
-        "Type": "Parallel",
-        "Next": "Notify fastq sync to S3 complete",
-        "OutputPath": "$[1]",
-        "Branches": [
-          {
-            "StartAt": "Start fastq sync to S3",
-            "States": {
-              "Start fastq sync to S3": {
-                "Type": "Task",
-                "Resource": "${pipeline_lambda_arn}",
-                "Parameters": {
-                  "script_execution": "sync_fastqs_to_s3",
-                  "input.$": "$"
-                },
-                "TimeoutSeconds": 12,
-                "End": true,
-                "Retry": [
-                  {
-                    "ErrorEquals": ["States.ALL"],
-                    "IntervalSeconds": 3,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 1.5
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "StartAt": "Wait for fastq sync to S3",
-            "States": {
-              "Wait for fastq sync to S3": {
-                "Type": "Task",
-                "Resource": "${wait_for_async_action_activity_arn}",
-                "TimeoutSeconds": 36000,
-                "End": true
-              }
+        {
+          "StartAt": "Wait for runfolder sync to hpc",
+          "States": {
+            "Wait for runfolder sync to hpc": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 10800,
+              "End": true
             }
           }
-        ]
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify runfolder sync to HPC complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous sync fastqs to hpc",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Runfolder sync to HPC complete. Starting fastq sync to HPC..."
       },
-
-      "Notify fastq sync to S3 complete": {
-        "Type": "Task",
-        "Resource": "${slack_notify_lambda_arn}",
-        "End": true,
-        "TimeoutSeconds": 12,
-        "Parameters": {
-          "topic": "UMCCR pipeline",
-          "title.$": "$.runfolder",
-          "message": "Fastq sync to S3 complete. Pipeline complete!"
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous sync fastqs to hpc": {
+      "Type": "Parallel",
+      "Next": "Notify fastq sync to HPC complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start fastq sync to hpc",
+          "States": {
+            "Start fastq sync to hpc": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "sync_fastqs_to_hpc",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
         },
-        "ResultPath": "$.lambda_result"
-      }
-
+        {
+          "StartAt": "Wait for fastq sync to hpc",
+          "States": {
+            "Wait for fastq sync to hpc": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 36000,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify fastq sync to HPC complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous sync runfolder to S3",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Fastq sync to HPC complete. Starting runfolder sync to S3..."
+      },
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous sync runfolder to S3": {
+      "Type": "Parallel",
+      "Next": "Notify runfolder sync to S3 complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start runfolder sync to S3",
+          "States": {
+            "Start runfolder sync to S3": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "sync_runfolder_to_s3",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Wait for runfolder sync to S3",
+          "States": {
+            "Wait for runfolder sync to S3": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 10800,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify runfolder sync to S3 complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous sync fastqs to S3",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Runfolder sync to S3 complete. Starting fastq sync to S3..."
+      },
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous sync fastqs to S3": {
+      "Type": "Parallel",
+      "Next": "Notify fastq sync to S3 complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start fastq sync to S3",
+          "States": {
+            "Start fastq sync to S3": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "sync_fastqs_to_s3",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Wait for fastq sync to S3",
+          "States": {
+            "Wait for fastq sync to S3": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "TimeoutSeconds": 36000,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify fastq sync to S3 complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "End": true,
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Fastq sync to S3 complete. Pipeline complete!"
+      },
+      "ResultPath": "$.lambda_result"
     }
   }
+}

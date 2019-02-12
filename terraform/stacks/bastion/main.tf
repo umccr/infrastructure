@@ -100,6 +100,19 @@ resource "aws_iam_user_login_profile" "sehrishk_console_login" {
   pgp_key = "keybase:sehrishk"
 }
 
+# nrclark 
+module "nrclark_user" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "nrclark"
+  pgp_key  = "keybase:nrclark"
+}
+
+resource "aws_iam_user_login_profile" "nrclark_console_login" {
+  user    = "${module.nrclark_user.username}"
+  pgp_key = "keybase:nrclark"
+}
+
+
 ##### create service users
 
 # packer
@@ -137,6 +150,7 @@ resource "aws_iam_group_membership" "ops_admins_prod" {
   users = [
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_prod.name}"
@@ -154,6 +168,7 @@ resource "aws_iam_group_membership" "ops_admins_dev" {
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
     "${module.vlad_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_dev.name}"
@@ -171,6 +186,7 @@ resource "aws_iam_group_membership" "packer_users" {
     "${module.florian_user.username}",
     "${module.brainstorm_user.username}",
     "${module.packer_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.packer_users.name}"
@@ -193,6 +209,7 @@ resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
     "${module.lavinia_user.username}",
     "${module.pdiakumis_user.username}",
     "${module.sehrishk_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"
@@ -213,6 +230,7 @@ resource "aws_iam_group_membership" "fastq_data_uploaders" {
     "${module.oliver_user.username}",
     "${module.vlad_user.username}",
     "${module.terraform_user.username}",
+    "${module.nrclark_user.username}",
   ]
 
   group = "${aws_iam_group.fastq_data_uploaders.name}"

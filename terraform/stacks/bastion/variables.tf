@@ -36,11 +36,11 @@ variable "group_memberships" {
   type = "map"
 
   default = {
-    ops_admins_prod             = ["florian", "brainstorm"]
-    ops_admins_dev              = ["florian", "brainstorm", "vlad"]
-    packer_users                = ["florian", "brainstorm", "packer"]
-    ops_admins_dev_no_mfa_users = ["florian", "brainstorm", "vlad", "oliver", "terraform"]
-    fastq_data_uploaders        = ["florian", "brainstorm", "vlad", "oliver", "terraform"]
+    ops_admins_prod             = ["florian", "brainstorm", "nrclark"]
+    ops_admins_dev              = ["florian", "brainstorm", "vlad", "nrclark"]
+    packer_users                = ["florian", "brainstorm", "nrclark", "packer"]
+    ops_admins_dev_no_mfa_users = ["florian", "brainstorm", "nrclark", "vlad", "oliver", "terraform"]
+    fastq_data_uploaders        = ["florian", "brainstorm", "nrclark", "vlad", "oliver", "terraform"]
   }
 }
 

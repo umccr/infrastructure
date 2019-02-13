@@ -18,7 +18,7 @@ else:
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
 
 
-WATCH_FLAGS = flags.CREATE  # Only interested in creation events
+WATCH_FLAGS = flags.CREATE | flags.MOVED_TO  # creattion (and possibly renaming) events
 SLACK_TOPIC = "UMCCR runfolder monitor"
 FLAG_FILE_NAME = "SequenceComplete.txt"
 
@@ -99,7 +99,7 @@ def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
             reported_flags = flags.from_mask(event.mask)
 
             # we're only interested in creation events
-            if flags.CREATE in reported_flags:
+            if flags.CREATE in reported_flags or flags.MOVED_TO in reported_flags:
                 parent_path = wd_dir_map[event.wd]  # map the current watch descriptor to the watched folder
                 current_path = os.path.join(parent_path, event.name)  # the full path of the event
                 # and only directory creations in the root folder (direct sub-directories)
@@ -132,7 +132,7 @@ def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
                                    runfolder=runfolder)
                     # Could remove watch for this run, instead of watching it until the directory is removed
                 else:  # Ignore other events
-                    logger.debug(f"Ignored CREATE event for {event.name}")
+                    logger.debug(f"Ignored CREATE/MOVE_TO event for {event.name}")
             else:  # Ignore event types we haven't signed up for (e.g. DELETE_SELF)
                 logger.debug(f"Ignored event with flags {reported_flags} for {event.name}")
 

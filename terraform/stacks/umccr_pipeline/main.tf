@@ -18,8 +18,6 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
-provider "vault" {}
-
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
@@ -34,10 +32,6 @@ locals {
 ################################################################################
 # Setup Lambda requirements
 
-data "external" "getManagedInstanceId" {
-  program = ["${path.module}/scripts/get-managed-instance-id.sh"]
-}
-
 data "template_file" "job_submission_lambda" {
   template = "${file("${path.module}/policies/job-submission-lambda.json")}"
 
@@ -47,6 +41,7 @@ data "template_file" "job_submission_lambda" {
     wait_for_async_action_activity_arn = "${aws_sfn_activity.wait_for_async_action.id}"
     ssm_param_prefix                   = "${var.ssm_param_prefix}"
     ssm_role_to_assume_arn             = "${var.ssm_role_to_assume_arn}"
+    ssm_run_document_name              = "${var.ssm_run_document_name}"
   }
 }
 
@@ -69,7 +64,6 @@ module "job_submission_lambda" {
 
   function_name = "${var.stack_name}_job_submission_lambda_${terraform.workspace}"
   description   = "Lambda to kick off UMCCR pipeline steps."
-  handler       = "job_submission_lambda.lambda_handler"
   runtime       = "python3.6"
   timeout       = 10
   memory_size   = 128
@@ -86,6 +80,7 @@ module "job_submission_lambda" {
       WAIT_FOR_ASYNC_ACTION_ACTIVITY_ARN = "${aws_sfn_activity.wait_for_async_action.id}"
       SSM_PARAM_PREFIX                   = "${var.ssm_param_prefix}"
       BASTION_SSM_ROLE_ARN               = "${var.ssm_role_to_assume_arn}"
+      SSM_DOC_NAME                       = "${var.ssm_run_document_name}"
     }
   }
 
@@ -105,8 +100,9 @@ data "template_file" "state_machine_policy" {
   template = "${file("${path.module}/policies/state-machine.json")}"
 
   vars {
-    pipeline_lambda_arn     = "${module.job_submission_lambda.function_arn}"
-    slack_notify_lambda_arn = "${data.aws_lambda_function.slack_lambda.arn}"
+    pipeline_lambda_arn                = "${module.job_submission_lambda.function_arn}"
+    slack_notify_lambda_arn            = "${data.aws_lambda_function.slack_lambda.arn}"
+    wait_for_async_action_activity_arn = "${aws_sfn_activity.wait_for_async_action.id}"
   }
 }
 
@@ -125,12 +121,18 @@ resource "aws_iam_role" "state_machine" {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Effect": "Allow",
       "Action": "sts:AssumeRole",
       "Principal": {
         "Service": "states.${data.aws_region.current.id}.amazonaws.com"
-      },
+      }
+    },
+    {
       "Effect": "Allow",
-      "Sid": ""
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "AWS":"arn:aws:iam::383856791668:root"
+      }
     }
   ]
 }

@@ -2,11 +2,9 @@ from __future__ import print_function
 
 import sys
 import os
-import json
 import socket
 import datetime
 import collections
-import boto3
 from sample_sheet import SampleSheet
 # Sample sheet library: https://github.com/clintval/sample-sheet
 
@@ -35,26 +33,6 @@ def write_log(msg):
     else:
         print(msg)
     print(msg, file=LOG_FILE)
-
-
-def aws_callback(task_token, status, runfolder_name, error_message=None):
-    """ Call back to the AWS Step Function State Machine (workflow)
-    """
-    states_client = boto3.client('stepfunctions')
-
-    payload = {
-        "runfolder": runfolder_name,
-        "status": status
-    }
-    if error_message:
-        payload['error_message'] = error_message
-
-    response = states_client.send_task_success(
-        taskToken=task_token,
-        output=json.dumps(payload)
-    )
-
-    return response
 
 
 def getSortedSamples(samplesheet):
@@ -115,10 +93,8 @@ def writeSammpleSheets(sample_list, sheet_path, template_sheet):
     return exit_status
 
 
-def main(samplesheet_file_path, runfolder_name, task_token):
-    write_log(f"Invocation with: samplesheet_path:{samplesheet_file_path} "
-              f"runfolder_name:{runfolder_name} "
-              f"task_token:{task_token[:10]}...")
+def main(samplesheet_file_path, runfolder_name):
+    write_log(f"Invocation with: samplesheet_path:{samplesheet_file_path} runfolder_name:{runfolder_name}")
 
     write_log(f"INFO: Checking SampleSheet {samplesheet_file_path}")
     original_sample_sheet = SampleSheet(samplesheet_file_path)
@@ -130,16 +106,9 @@ def main(samplesheet_file_path, runfolder_name, task_token):
     # Now that the samples have been sorted, we can write one or more custom sample sheets
     # (which may be the same as the original if no processing was necessary)
     write_log(f"INFO: Writing {len(sorted_samples)} sample sheets.")
-    write_status = writeSammpleSheets(sample_list=sorted_samples,
-                                      sheet_path=samplesheet_file_path,
-                                      template_sheet=original_sample_sheet)
-
-    # Finally call back the AWS pipeline to it can continue
-    write_log("INFO: Callback to AWS...")
-    callback_response = aws_callback(task_token=task_token,
-                                     status=write_status,
-                                     runfolder_name=runfolder_name)
-    write_log(f"DEBUG: AWS callback response: {callback_response}")
+    writeSammpleSheets(sample_list=sorted_samples,
+                       sheet_path=samplesheet_file_path,
+                       template_sheet=original_sample_sheet)
 
     write_log("INFO: All done.")
 
@@ -156,11 +125,9 @@ if __name__ == "__main__":
     # TODO: validate input parameters
     samplesheet_file_path = sys.argv[1]
     runfolder_name = sys.argv[2]
-    task_token = sys.argv[3]
 
     main(samplesheet_file_path=samplesheet_file_path,
-         runfolder_name=runfolder_name,
-         task_token=task_token)
+         runfolder_name=runfolder_name)
 
     LOG_FILE.close()
     SOCK.close()

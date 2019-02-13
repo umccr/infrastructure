@@ -1,0 +1,24 @@
+{
+    "source": [
+      "aws.ssm"
+    ],
+    "detail-type": [
+      "EC2 Command Status-change Notification"
+    ],
+    "detail": {
+      "document-name": [
+        "${ssm_doc_name}"
+      ],
+      "status": [
+        "Success",
+        "Failed",
+        "Canceled",
+        "Cancelled",
+        "TimedOut",
+        "Delivery Timed Out",
+        "Execution Timed Out",
+        "Undeliverable",
+        "Terminated"
+      ]
+    }
+  }

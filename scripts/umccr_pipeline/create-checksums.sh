@@ -50,12 +50,11 @@ if test "$DEPLOY_ENV" = "dev"; then
   sleep 5
 fi
 
-write_log "INFO: Invocation with parameters: $1 $2 $3 ${4:0:10}"
+write_log "INFO: Invocation with parameters: $*"
 
 use_case="$1"
 directory="$2"
 runfolder_name="$3"
-task_token="$4"
 
 
 if test "$directory" && test -d "$directory"
@@ -104,21 +103,4 @@ else
   status="success"
 fi
 
-# Finally complete the AWS Step Function pipeline task
-# I.e. send a notification of compoletion (success/failure) to AWS
-
-callback_cmd="aws stepfunctions"
-if test "$status" == "success"; then 
-  write_log "INFO: Reporting success to AWS pipeline..."
-  callback_cmd+=" send-task-success --task-output '{\"runfolder\": \"$runfolder_name\"}'"
-else 
-  write_log "INFO: Reporting failure to AWS pipeline..."
-  callback_cmd+="send-task-failure --error '$error_msg'"
-fi
-callback_cmd+=" --task-token $task_token"
-
-write_log "INFO: AWS command $callback_cmd"
-eval "$callback_cmd"
-
 write_log "INFO: All done."
-

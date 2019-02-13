@@ -84,6 +84,7 @@
             "Wait for samplesheet check": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 600,
               "End": true
             }
@@ -95,6 +96,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -147,6 +149,7 @@
             "Wait for bcl2fastq": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 36000,
               "End": true
             }
@@ -158,6 +161,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -210,6 +214,7 @@
             "Wait for create runfolder checksums": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 36000,
               "End": true
             }
@@ -221,6 +226,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -273,6 +279,7 @@
             "Wait for create fastq checksums": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 36000,
               "End": true
             }
@@ -284,6 +291,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -336,6 +344,7 @@
             "Wait for runfolder sync to hpc": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 10800,
               "End": true
             }
@@ -347,6 +356,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -399,6 +409,7 @@
             "Wait for fastq sync to hpc": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 36000,
               "End": true
             }
@@ -410,6 +421,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -462,6 +474,7 @@
             "Wait for runfolder sync to S3": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 10800,
               "End": true
             }
@@ -473,6 +486,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -525,6 +539,7 @@
             "Wait for fastq sync to S3": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
               "TimeoutSeconds": 36000,
               "End": true
             }
@@ -536,6 +551,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]

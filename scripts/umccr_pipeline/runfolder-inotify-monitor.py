@@ -20,7 +20,7 @@ else:
 
 WATCH_FLAGS = flags.CREATE | flags.MOVED_TO  # creattion (and possibly renaming) events
 SLACK_TOPIC = "UMCCR runfolder monitor"
-FLAG_FILE_NAME = "SequenceComplete.txt"
+FLAG_FILE_NAME = "CopyComplete.txt"
 
 lambda_client = boto3.client('lambda')
 pipeline_client = client = boto3.client('stepfunctions')

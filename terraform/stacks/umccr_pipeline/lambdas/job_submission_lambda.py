@@ -32,6 +32,7 @@ ssm_instance_id = getSSMParam(SSM_PARAM_PREFIX + "ssm_instance_id")
 runfolder_base_path = getSSMParam(SSM_PARAM_PREFIX + "runfolder_base_path")
 bcl2fastq_base_path = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_base_path")
 hpc_dest_base_path = getSSMParam(SSM_PARAM_PREFIX + "hpc_dest_base_path")
+runfolder_check_script = getSSMParam(SSM_PARAM_PREFIX + "runfolder_check_script")
 samplesheet_check_script = getSSMParam(SSM_PARAM_PREFIX + "samplesheet_check_script")
 bcl2fastq_script = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_script")
 checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")
@@ -60,7 +61,12 @@ def build_command(script_case, input_data):
 
     execution_timneout = '600'  # time (sec) before the command is timed out
     command = f"su - limsadmin -c '"
-    if script_case == "samplesheet_check":
+
+    if script_case == "runfolder_check":
+        execution_timneout = '60'
+        command += f" DEPLOY_ENV={DEPLOY_ENV}"
+        command += f" {runfolder_check_script} {runfolder_path}"
+    elif script_case == "samplesheet_check":
         samplesheet_path = os.path.join(runfolder_base_path, runfolder, "SampleSheet.csv")
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"

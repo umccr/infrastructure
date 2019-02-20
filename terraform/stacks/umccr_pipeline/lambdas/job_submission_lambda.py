@@ -38,6 +38,7 @@ bcl2fastq_script = getSSMParam(SSM_PARAM_PREFIX + "bcl2fastq_script")
 checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")
 hpc_sync_script = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_script")
 s3_sync_script = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_script")
+lims_update_script = getSSMParam(SSM_PARAM_PREFIX + "lims_update_script")
 hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host") 
 HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")
 aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")
@@ -104,9 +105,14 @@ def build_command(script_case, input_data):
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" {s3_sync_script} -b {s3_sync_dest_bucket} -n {runfolder}"
         command += f" -d {runfolder}/{runfolder} -s {bcl2fastq_out_path} -f"
+    elif script_case == "google_lims_update":
+        execution_timneout = '600'
+        command += f" conda activate pipeline &&"
+        command += f" DEPLOY_ENV={DEPLOY_ENV}"
+        command += f" python {lims_update_script} {runfolder}"
     else:
         print("Unsupported script_case! Should do something sensible here....")
-        raise ValueError("No valid execution scritp!")
+        raise ValueError("No valid execution script!")
     command += "'"
 
     print(f"Script command; {command}")

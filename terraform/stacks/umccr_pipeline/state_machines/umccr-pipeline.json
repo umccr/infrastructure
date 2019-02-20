@@ -109,7 +109,7 @@
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Runfolder check complete. Starting conversion..."
+        "message": "Runfolder check complete. Starting samplesheet check..."
       },
       "ResultPath": "$.lambda_result"
     },
@@ -624,12 +624,77 @@
     "Notify fastq sync to S3 complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous Google LIMS update",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Fastq sync to S3 complete. Starting Google LIMS update..."
+      },
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous Google LIMS update": {
+      "Type": "Parallel",
+      "Next": "Notify Google LIMS update",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start Google LIMS update",
+          "States": {
+            "Start Google LIMS update": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "google_lims_update",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Wait for Google LIMS update",
+          "States": {
+            "Wait for Google LIMS update": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 605,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify Google LIMS update": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
       "End": true,
       "TimeoutSeconds": 12,
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Fastq sync to S3 complete. Pipeline complete!"
+        "message": "Google LIMS updated. Pipeline complete!"
       },
       "ResultPath": "$.lambda_result"
     }

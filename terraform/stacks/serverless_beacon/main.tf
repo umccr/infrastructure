@@ -22,7 +22,7 @@ provider "aws" {
 
 module "serverless_beacon" {
   source  = "aehrc/serverless-beacon/aws"
-  version = "1.0.0"
+  version = "1.1.0"
 
   beacon-id         = "org.umccr.beacon"
   beacon-name       = "UMCCR beacon"

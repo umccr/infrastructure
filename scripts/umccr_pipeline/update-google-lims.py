@@ -19,6 +19,8 @@ warnings.simplefilter("ignore")
 # CONSTANTS
 
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
+if not DEPLOY_ENV:
+    raise ValueError("DEPLOY_ENV needs to be set!")
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -213,12 +215,14 @@ if __name__ == "__main__":
     samplesheet_paths = glob(samplesheet_path_pattern)
     if len(samplesheet_paths) < 1:
         raise ValueError("No sample sheets found!")
+    logger.info(f"Using {len(samplesheet_paths)} sample sheet(s).")
 
     for samplesheet in samplesheet_paths:
-        logger.debug(f"Processing samplesheet {samplesheet}")
+        logger.info(f"Processing samplesheet {samplesheet}")
         name, extension = os.path.splitext(samplesheet)
-        ss = SampleSheet(samplesheet)
-        for sample in ss.samples:
+        samples = SampleSheet(samplesheet).samples
+        logger.info(f"Found {len(samples)} samples.")
+        for sample in samples:
             if extension == ".10X":
                 sample_type = "10X"  # no better way to determine this atm
                 fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,

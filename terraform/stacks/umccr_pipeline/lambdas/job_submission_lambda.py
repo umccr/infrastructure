@@ -39,7 +39,8 @@ checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")
 hpc_sync_script = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_script")
 s3_sync_script = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_script")
 lims_update_script = getSSMParam(SSM_PARAM_PREFIX + "lims_update_script")
-hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host") 
+stats_update_script = getSSMParam(SSM_PARAM_PREFIX + "stats_update_script")
+hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host")
 HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")
 aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")
 s3_sync_dest_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_dest_bucket")
@@ -60,7 +61,7 @@ def build_command(script_case, input_data):
     runfolder_path = os.path.join(runfolder_base_path, runfolder)
     bcl2fastq_out_path = os.path.join(bcl2fastq_base_path, runfolder)
 
-    execution_timneout = '600'  # time (sec) before the command is timed out
+    execution_timneout = '600'  # the (default) time (in sec) before the command is timed out
     command = f"su - limsadmin -c '"
 
     if script_case == "runfolder_check":
@@ -106,10 +107,13 @@ def build_command(script_case, input_data):
         command += f" {s3_sync_script} -b {s3_sync_dest_bucket} -n {runfolder}"
         command += f" -d {runfolder}/{runfolder} -s {bcl2fastq_out_path} -f"
     elif script_case == "google_lims_update":
-        execution_timneout = '600'
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV}"
         command += f" python {lims_update_script} {runfolder}"
+    elif script_case == "stats_sheet_update":
+        command += f" conda activate pipeline &&"
+        command += f" DEPLOY_ENV={DEPLOY_ENV}"
+        command += f" python {stats_update_script} {bcl2fastq_out_path}/Stats_custom.*.truseq/Stats.json"
     else:
         print("Unsupported script_case! Should do something sensible here....")
         raise ValueError("No valid execution script!")

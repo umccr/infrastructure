@@ -145,8 +145,15 @@ if test "$num_custom_samplesheets" -gt 0; then
   if [ -d "$output_dir" ]; then
     write_log "ERROR: Directory $output_dir already exists! We may corrupt data if we continue, please move existing data out of the way."
     write_log "INFO: releasing lock"
-    rm -rf $lock_dir
-    exit 1
+    if test "$DEPLOY_ENV" = "prod"; then
+      write_log "INFO: releasing lock"
+      rm -rf $lock_dir
+      exit 1
+    else
+      # In 'dev' mode no actual data is generated, so the 'dev' workflow relies on pre-existing data,
+      # Hence, we can't just stop here like a 'prod' workflow should do
+      write_log "INFO: Continuing, as we're not in 'prod' mode"
+    fi
   fi
   mkdir_command="mkdir -p \"$output_dir\""
   write_log "INFO: creating output dir: $mkdir_command"

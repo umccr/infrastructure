@@ -36,14 +36,15 @@ if DEPLOY_ENV == 'prod':
     raw_data_base_dir = '/storage/shared/raw/Baymax'
     bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+    spreadsheet_name = "Google LIMS"
 else:
     raw_data_base_dir = '/storage/shared/dev/Baymax'
     bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
+    spreadsheet_name = "Google LIMS dev"
 fastq_hpc_base_dir = '/data/cephfs/punim0010/data/Pipeline/prod/Fastq'
 csv_outdir = '/tmp'
 write_csv = False
-spreadsheet_name = "Google LIMS"
 creds_file = "/home/limsadmin/.google/google-lims-updater-b50921f70155.json"
 skip_lims_update = False
 failed_run = False

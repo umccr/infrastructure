@@ -10,6 +10,16 @@
                 "${pipeline_lambda_arn}",
                 "${slack_notify_lambda_arn}"
             ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "states:SendTaskSuccess",
+            "states:SendTaskFailure"
+          ],
+          "Resource": [
+            "${wait_for_async_action_activity_arn}"
+          ]
         }
     ]
 }

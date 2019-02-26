@@ -23,7 +23,7 @@
     "Notify new runfolder ready": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
-      "Next": "Asynchronous samplesheet check",
+      "Next": "Asynchronous runfolder check",
       "TimeoutSeconds": 12,
       "Parameters": {
         "topic": "UMCCR pipeline",
@@ -47,6 +47,71 @@
           "Next": "Notify Failure"
         }
       ]
+    },
+    "Asynchronous runfolder check": {
+      "Type": "Parallel",
+      "Next": "Notify runfolder check complete",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start runfolder check",
+          "States": {
+            "Start runfolder check": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "runfolder_check",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Wait for runfolder check",
+          "States": {
+            "Wait for runfolder check": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 65,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify runfolder check complete": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous samplesheet check",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Runfolder check complete. Starting samplesheet check..."
+      },
+      "ResultPath": "$.lambda_result"
     },
     "Asynchronous samplesheet check": {
       "Type": "Parallel",
@@ -84,7 +149,8 @@
             "Wait for samplesheet check": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 600,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 605,
               "End": true
             }
           }
@@ -95,6 +161,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -147,7 +214,8 @@
             "Wait for bcl2fastq": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 36000,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 36005,
               "End": true
             }
           }
@@ -158,6 +226,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -210,7 +279,8 @@
             "Wait for create runfolder checksums": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 36000,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 36005,
               "End": true
             }
           }
@@ -221,6 +291,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -273,7 +344,8 @@
             "Wait for create fastq checksums": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 36000,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 36005,
               "End": true
             }
           }
@@ -284,6 +356,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -336,7 +409,8 @@
             "Wait for runfolder sync to hpc": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 10800,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 10805,
               "End": true
             }
           }
@@ -347,6 +421,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -399,7 +474,8 @@
             "Wait for fastq sync to hpc": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 36000,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 36005,
               "End": true
             }
           }
@@ -410,6 +486,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -462,7 +539,8 @@
             "Wait for runfolder sync to S3": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 10800,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 10805,
               "End": true
             }
           }
@@ -473,6 +551,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -525,7 +604,8 @@
             "Wait for fastq sync to S3": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
-              "TimeoutSeconds": 36000,
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 36005,
               "End": true
             }
           }
@@ -536,6 +616,7 @@
           "ErrorEquals": [
             "States.ALL"
           ],
+          "ResultPath": "$.error_info",
           "Next": "Notify Failure"
         }
       ]
@@ -543,14 +624,145 @@
     "Notify fastq sync to S3 complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous Google LIMS update",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Fastq sync to S3 complete. Starting Google LIMS update..."
+      },
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous Google LIMS update": {
+      "Type": "Parallel",
+      "Next": "Notify Google LIMS update",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start Google LIMS update",
+          "States": {
+            "Start Google LIMS update": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "google_lims_update",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Wait for Google LIMS update",
+          "States": {
+            "Wait for Google LIMS update": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 605,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify Google LIMS update": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
+      "Next": "Asynchronous Stats sheet update",
+      "TimeoutSeconds": 12,
+      "Parameters": {
+        "topic": "UMCCR pipeline",
+        "title.$": "$.runfolder",
+        "message": "Google LIMS updated. Updating stats sheet..."
+      },
+      "ResultPath": "$.lambda_result"
+    },
+    "Asynchronous Stats sheet update": {
+      "Type": "Parallel",
+      "Next": "Notify Stats sheet update",
+      "OutputPath": "$[1]",
+      "Branches": [
+        {
+          "StartAt": "Start Stats sheet update",
+          "States": {
+            "Start Stats sheet update": {
+              "Type": "Task",
+              "Resource": "${pipeline_lambda_arn}",
+              "Parameters": {
+                "script_execution": "stats_sheet_update",
+                "input.$": "$"
+              },
+              "TimeoutSeconds": 12,
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 3,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1.5
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "Wait for Stats sheet update",
+          "States": {
+            "Wait for Stats sheet update": {
+              "Type": "Task",
+              "Resource": "${wait_for_async_action_activity_arn}",
+              "ResultPath": "$.script_result",
+              "TimeoutSeconds": 605,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error_info",
+          "Next": "Notify Failure"
+        }
+      ]
+    },
+    "Notify Stats sheet update": {
+      "Type": "Task",
+      "Resource": "${slack_notify_lambda_arn}",
       "End": true,
       "TimeoutSeconds": 12,
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Fastq sync to S3 complete. Pipeline complete!"
+        "message": "Stats sheet updated. Pipeline complete!"
       },
       "ResultPath": "$.lambda_result"
     }
+
   }
 }

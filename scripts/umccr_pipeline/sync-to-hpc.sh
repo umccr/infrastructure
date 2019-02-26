@@ -32,12 +32,9 @@ if test "$DEPLOY_ENV" = "dev"; then
   sleep 5
 fi
 
+write_log "INFO: Invocation with parameters: $*"
 
-# Apply regex to truncate the AWS SFN task token, to prevent it from being stored in logs
-paramstring=$(echo "$*" | perl -pe  's/(-k|--task-token) ([a-zA-Z0-9]{10})[a-zA-Z0-9]+/$1 $2.../g')
-write_log "INFO: Invocation with parameters: $paramstring"
-
-if test "$#" -lt 12; then
+if test "$#" -lt 10; then
   write_log "ERROR: Insufficient parameters"
   echo "A minimum of 4 arguments are required!"
   echo "  - The destination host [-d|--dest_host]"
@@ -45,7 +42,6 @@ if test "$#" -lt 12; then
   echo "  - The destination path [-p|--dest_path]"
   echo "  - The source paths [-s|--source_path]"
   echo "  - The runfolder name [-n|--runfolder-name]"
-  echo "  - An AWS SFN task token [-k|--task-token]"
   echo "  - (optional) The rsync exclusions [-x|--exclude]"
   exit 1
 fi
@@ -83,11 +79,6 @@ while test "$#" -gt 0; do
       ;;
     -n|--runfolder-name)
       runfolder_name="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -k|--task-token)
-      task_token="$2"
       shift # past argument
       shift # past value
       ;;
@@ -137,12 +128,6 @@ if [[ "$(basename $source_path)" != "$runfolder_name" ]]; then
   exit 1
 fi
 
-if [[ -z "$task_token" ]]; then
-  write_log "ERROR: Parameter 'task_token' missing"
-  echo "You have to provide an AWS SFN task token!"
-  exit 1
-fi
-
 cmd="rsync -avh --chmod=o-rwx,g-w,Fg-x"
 for i in "${excludes[@]}"; do
   cmd+=" --exclude $i"
@@ -167,22 +152,5 @@ else
   status="success"
   write_log "INFO: sync command succeeded."
 fi
-
-# Finally complete the AWS Step Function pipeline task
-# I.e. send a notification of compoletion (success/failure) to AWS
-
-callback_cmd="aws stepfunctions"
-if test "$status" == "success"; then 
-  write_log "INFO: Reporting success to AWS pipeline..."
-  callback_cmd+=" send-task-success --task-output '{\"runfolder\": \"$runfolder_name\"}'"
-else 
-  write_log "INFO: Reporting failure to AWS pipeline..."
-  callback_cmd+="send-task-failure --error '$error_msg'"
-fi
-callback_cmd+=" --task-token $task_token"
-
-write_log "INFO: AWS command $callback_cmd"
-eval "$callback_cmd"
-
 
 write_log "INFO: All done."

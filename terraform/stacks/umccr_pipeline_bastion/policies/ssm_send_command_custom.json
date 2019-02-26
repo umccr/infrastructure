@@ -1,0 +1,15 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:SendCommand"
+            ],
+            "Resource": [
+                "arn:aws:ssm:ap-southeast-2:383856791668:document/${ssm_doc_name}",
+                "arn:aws:ssm:ap-southeast-2:383856791668:managed-instance/${managed_instance_id}"
+            ]
+        }
+    ]
+}

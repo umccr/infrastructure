@@ -7,7 +7,7 @@
         "ssm:SendCommand"
       ],
       "Resource": [
-        "arn:aws:ssm:${region}::document/AWS-RunShellScript",
+        "arn:aws:ssm:${region}::document/${ssm_run_document_name}",
         "arn:aws:ssm:${region}:${account_id}:managed-instance/*"
       ]
     },

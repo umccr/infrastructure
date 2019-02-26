@@ -48,17 +48,14 @@ if test "$DEPLOY_ENV" = "dev"; then
   sleep 5
 fi
 
-# Apply regex to truncate the ST2 API key, to prevent it from being stored in logs
-paramstring=$(echo "$*" | perl -pe  's/(-k|--task-token) ([a-zA-Z0-9]{10})[a-zA-Z0-9]+/$1 $2.../g')
-write_log "INFO: Invocation with parameters: $paramstring"
+write_log "INFO: Invocation with parameters: $*"
 
-if [[ $# -lt 8 ]]; then
+if [[ $# -lt 6 ]]; then
   write_log "ERROR: Insufficient parameters"
   echo "A minimum of 4 arguments are required!"
   echo "  1) The runfolder directory [-R|--runfolder-dir]"
   echo "  2) The runfolder name [-n|--runfolder-name]"
   echo "  3) The output directory [-o|--output-dir]"
-  echo "  4) The AWS Step Function Task Token of the task to complete [-k|--task-token]"
   exit 1
 fi
 
@@ -86,11 +83,6 @@ do
       ;;
     -n|--runfolder-name)
       runfolder_name="$2"
-      shift # past argument
-      shift # past value
-      ;;
-    -k|--task-token)
-      task_token="$2"
       shift # past argument
       shift # past value
       ;;
@@ -128,12 +120,6 @@ if [[ "$(basename $runfolder_dir)" != "$runfolder_name" ]]; then
   exit 1
 fi
 
-if [[ -z "$task_token" ]]; then
-  write_log "ERROR: Parameter 'task_token' missing"
-  echo "You have to provide an AWS Step Function Task Token!"
-  exit 1
-fi
-
 
 # Input parameters are all OK, we can start the actual process
 
@@ -155,15 +141,28 @@ if test "$num_custom_samplesheets" -gt 0; then
 
   write_log "INFO: Custom sample sheets detected. Starting conversion."
 
+  # make sure the output directory does not yet exists, otherwise we may corrupt data
+  if [ -d "$output_dir" ]; then
+    write_log "ERROR: Directory $output_dir already exists! We may corrupt data if we continue, please move existing data out of the way."
+    write_log "INFO: releasing lock"
+    if test "$DEPLOY_ENV" = "prod"; then
+      write_log "INFO: releasing lock"
+      rm -rf $lock_dir
+      exit 1
+    else
+      # In 'dev' mode no actual data is generated, so the 'dev' workflow relies on pre-existing data,
+      # Hence, we can't just stop here like a 'prod' workflow should do
+      write_log "INFO: Continuing, as we're not in 'prod' mode"
+    fi
+  fi
+  mkdir_command="mkdir -p \"$output_dir\""
+  write_log "INFO: creating output dir: $mkdir_command"
+  eval "$mkdir_command"
+
   for samplesheet in "${custom_samplesheets[@]}"; do
     write_log "INFO: Processing sample sheet: $samplesheet"
     custom_tag=${samplesheet#*SampleSheet.csv.}
     write_log "DEBUG: Extracted sample sheet tag: $custom_tag"
-
-    # make sure the output directory exists
-    mkdir_command="mkdir -p \"$output_dir\""
-    write_log "INFO: creating output dir: $mkdir_command"
-    eval "$mkdir_command"
 
     if [[ $custom_tag = *"10X"* ]]; then
       write_log "INFO: 10X dataset detected."
@@ -219,22 +218,5 @@ fi
 # not that the conversion is finished we can release the resources
 write_log "INFO: releasing lock"
 rm -rf $lock_dir
-
-
-# Finally complete the AWS Step Function pipeline task
-# I.e. send a notification of compoletion (success/failure) to AWS
-
-callback_cmd="aws stepfunctions"
-if test "$status" == "success"; then 
-  write_log "INFO: Reporting success to AWS pipeline..."
-  callback_cmd+=" send-task-success --task-output '{\"runfolder\": \"$runfolder_name\"}'"
-else 
-  write_log "INFO: Reporting failure to AWS pipeline..."
-  callback_cmd+="send-task-failure --error '$error_msg'"
-fi
-callback_cmd+=" --task-token $task_token"
-
-write_log "INFO: AWS command $callback_cmd"
-eval "$callback_cmd"
 
 write_log "INFO: All done."

@@ -4,11 +4,23 @@ import atexit
 import boto3
 import json
 import time
+import logging
+from logging.handlers import RotatingFileHandler
 from inotify_simple import INotify, flags
 
-WATCH_FLAGS = flags.CREATE  # Only interested in creation events
+DEPLOY_ENV = os.getenv('DEPLOY_ENV')
+SCRIPT = os.path.basename(__file__)
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+if DEPLOY_ENV == 'prod':
+    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+else:
+    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
+
+
+WATCH_FLAGS = flags.CREATE | flags.MOVED_TO  # creattion (and possibly renaming) events
 SLACK_TOPIC = "UMCCR runfolder monitor"
-FLAG_FILE_NAME = "SequenceComplete.txt"
+FLAG_FILE_NAME = "CopyComplete.txt"
 
 lambda_client = boto3.client('lambda')
 pipeline_client = client = boto3.client('stepfunctions')
@@ -18,12 +30,31 @@ inotify_service = INotify()
 # shutdown hook
 @atexit.register
 def cleanup():
-    print("Shutting down...")
+    logger.warn("Shutting down...")
     inotify_service.close()
-    print("Shutdown complete.")
+    logger.warn("Shutdown complete.")
+
+
+def getLogger():
+    new_logger = logging.getLogger(__name__)
+    new_logger.setLevel(logging.DEBUG)
+
+    # create a file handler
+    handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
+    handler.setLevel(logging.DEBUG)
+
+    # create a logging format
+    formatter = logging.Formatter('%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s')
+    handler.setFormatter(formatter)
+
+    # add the handlers to the logger
+    new_logger.addHandler(handler)
+
+    return new_logger
 
 
 def notify_slack(topic, title, message, lambda_name):
+    logger.debug(f"Sending slack message: {message} with title: {title}")
     payload = {
         "topic": topic,
         "title": title,
@@ -40,6 +71,7 @@ def notify_slack(topic, title, message, lambda_name):
 
 
 def start_pipeline(state_machine_arn, runfolder):
+    logger.info(f"Starting pipeline for {runfolder}")
     payload = {
         "runfolder": runfolder
     }
@@ -67,12 +99,12 @@ def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
             reported_flags = flags.from_mask(event.mask)
 
             # we're only interested in creation events
-            if flags.CREATE in reported_flags:
+            if flags.CREATE in reported_flags or flags.MOVED_TO in reported_flags:
                 parent_path = wd_dir_map[event.wd]  # map the current watch descriptor to the watched folder
                 current_path = os.path.join(parent_path, event.name)  # the full path of the event
                 # and only directory creations in the root folder (direct sub-directories)
                 if flags.ISDIR in reported_flags and event.wd is root_wd:
-                    print(f"New runfolder detected: {current_path}")
+                    logger.info(f"New runfolder detected: {current_path}")
                     try:
                         # try add a watch for the newly created directory (runfolder)
                         # these watches are automatically removed when the directory is deleted
@@ -89,7 +121,7 @@ def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
                                  lambda_name=slack_lambda_name)
                 # or the creation of the ready flag file
                 elif event.name == FLAG_FILE_NAME:
-                    print(f"New flag file detected: {current_path}")
+                    logger.info(f"New flag file detected: {current_path}")
                     # found a flag file, so the directory linked to the watch descriptor is the runfolder
                     runfolder = os.path.basename(parent_path)
                     notify_slack(topic=SLACK_TOPIC,
@@ -99,17 +131,21 @@ def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
                     start_pipeline(state_machine_arn=state_machine_arn,
                                    runfolder=runfolder)
                     # Could remove watch for this run, instead of watching it until the directory is removed
-                # else:  ## Ignore other events
-                    # print("IGNORED create event")
-            # else: # Ignore event types we haven't signed up for (e.g. DELETE_SELF)
-            #     print("Ups! Event happened that we didn't want to monitor...")
+                else:  # Ignore other events
+                    logger.debug(f"Ignored CREATE/MOVE_TO event for {event.name}")
+            else:  # Ignore event types we haven't signed up for (e.g. DELETE_SELF)
+                logger.debug(f"Ignored event with flags {reported_flags} for {event.name}")
 
 
 if __name__ == "__main__":
+    logger = getLogger()
+
     # TODO: validate input
     path_to_monitor = sys.argv[1]
     slack_lambda_name = sys.argv[2]
     state_machine_arn = sys.argv[3]
+
+    logger.warn(f"Starting runfolder monitor on path: {path_to_monitor}")
 
     run_monitor(monitored_path=path_to_monitor, 
                 slack_lambda_name=slack_lambda_name, 

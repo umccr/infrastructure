@@ -14,105 +14,6 @@ provider "aws" {
 }
 
 ################################################################################
-##### create AWS users
-
-# florian
-module "florian_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "florian"
-  pgp_key  = "keybase:freisinger"
-}
-
-resource "aws_iam_user_login_profile" "florian_console_login" {
-  user    = "${module.florian_user.username}"
-  pgp_key = "keybase:freisinger"
-}
-
-# brainstorm
-module "brainstorm_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "brainstorm"
-  pgp_key  = "keybase:brainstorm"
-}
-
-resource "aws_iam_user_login_profile" "brainstorm_console_login" {
-  user    = "${module.brainstorm_user.username}"
-  pgp_key = "keybase:brainstorm"
-}
-
-# oliver
-module "oliver_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "oliver"
-  pgp_key  = "keybase:ohofmann"
-}
-
-resource "aws_iam_user_login_profile" "oliver_console_login" {
-  user    = "${module.oliver_user.username}"
-  pgp_key = "keybase:ohofmann"
-}
-
-# vlad
-module "vlad_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "vlad"
-  pgp_key  = "keybase:vladsaveliev"
-}
-
-resource "aws_iam_user_login_profile" "vlad_console_login" {
-  user    = "${module.vlad_user.username}"
-  pgp_key = "keybase:vladsaveliev"
-}
-
-# lavinia
-module "lavinia_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "lavinia"
-  pgp_key  = "keybase:lavinia"
-}
-
-resource "aws_iam_user_login_profile" "lavinia_console_login" {
-  user    = "${module.lavinia_user.username}"
-  pgp_key = "keybase:lavinia"
-}
-
-# pdiakumis
-module "pdiakumis_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "pdiakumis"
-  pgp_key  = "keybase:pdiakumis"
-}
-
-resource "aws_iam_user_login_profile" "pdiakumis_console_login" {
-  user    = "${module.pdiakumis_user.username}"
-  pgp_key = "keybase:pdiakumis"
-}
-
-# sehrishk
-module "sehrishk_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "sehrishk"
-  pgp_key  = "keybase:sehrishk"
-}
-
-resource "aws_iam_user_login_profile" "sehrishk_console_login" {
-  user    = "${module.sehrishk_user.username}"
-  pgp_key = "keybase:sehrishk"
-}
-
-# nrclark 
-module "nrclark_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "nrclark"
-  pgp_key  = "keybase:nrclark"
-}
-
-resource "aws_iam_user_login_profile" "nrclark_console_login" {
-  user    = "${module.nrclark_user.username}"
-  pgp_key = "keybase:nrclark"
-}
-
-
 ##### create service users
 
 # packer
@@ -137,153 +38,7 @@ module "umccr_pipeline_user" {
 }
 
 ################################################################################
-##### define user groups
-
-# ops_admins_prod: admin access to the AWS prod account
-resource "aws_iam_group" "ops_admins_prod" {
-  name = "ops_admins_prod"
-}
-
-resource "aws_iam_group_membership" "ops_admins_prod" {
-  name = "ops_admins_prod_group_membership"
-
-  users = [
-    "${module.florian_user.username}",
-    "${module.brainstorm_user.username}",
-    "${module.nrclark_user.username}",
-  ]
-
-  group = "${aws_iam_group.ops_admins_prod.name}"
-}
-
-# ops_admins_dev: admin access to the AWS dev account
-resource "aws_iam_group" "ops_admins_dev" {
-  name = "ops_admins_dev"
-}
-
-resource "aws_iam_group_membership" "ops_admins_dev" {
-  name = "ops_admins_dev_group_membership"
-
-  users = [
-    "${module.florian_user.username}",
-    "${module.brainstorm_user.username}",
-    "${module.vlad_user.username}",
-    "${module.nrclark_user.username}",
-  ]
-
-  group = "${aws_iam_group.ops_admins_dev.name}"
-}
-
-# packer_users: users allowed to assume the packer role
-resource "aws_iam_group" "packer_users" {
-  name = "packer_users"
-}
-
-resource "aws_iam_group_membership" "packer_users" {
-  name = "packer_users_group_membership"
-
-  users = [
-    "${module.florian_user.username}",
-    "${module.brainstorm_user.username}",
-    "${module.packer_user.username}",
-    "${module.nrclark_user.username}",
-  ]
-
-  group = "${aws_iam_group.packer_users.name}"
-}
-
-# ops_admins_dev_no_mfa_users: admin access to the AWS dev account without requiring MFA
-resource "aws_iam_group" "ops_admins_dev_no_mfa_users" {
-  name = "ops_admins_dev_no_mfa_users"
-}
-
-resource "aws_iam_group_membership" "ops_admins_dev_no_mfa_users" {
-  name = "ops_admins_dev_no_mfa_users_group_membership"
-
-  users = [
-    "${module.florian_user.username}",
-    "${module.brainstorm_user.username}",
-    "${module.vlad_user.username}",
-    "${module.oliver_user.username}",
-    "${module.terraform_user.username}",
-    "${module.lavinia_user.username}",
-    "${module.pdiakumis_user.username}",
-    "${module.sehrishk_user.username}",
-    "${module.nrclark_user.username}",
-  ]
-
-  group = "${aws_iam_group.ops_admins_dev_no_mfa_users.name}"
-}
-
-# fastq_data_uploaders: users allowed to assume the fastq_uploader role, 
-# which gives access to selected S3 buckets on prod without requiring MFA
-resource "aws_iam_group" "fastq_data_uploaders" {
-  name = "fastq_data_uploaders"
-}
-
-resource "aws_iam_group_membership" "fastq_data_uploaders" {
-  name = "ops_admins_dev_no_mfa_users_group_membership"
-
-  users = [
-    "${module.florian_user.username}",
-    "${module.brainstorm_user.username}",
-    "${module.oliver_user.username}",
-    "${module.vlad_user.username}",
-    "${module.terraform_user.username}",
-    "${module.nrclark_user.username}",
-  ]
-
-  group = "${aws_iam_group.fastq_data_uploaders.name}"
-}
-
-################################################################################
 # define the assume role policies and who can use them
-
-# ops-admin role (on prod)
-data "template_file" "assume_ops_admin_prod_role_policy" {
-  template = "${file("policies/assume_role.json")}"
-
-  vars {
-    role_arn = "arn:aws:iam::472057503814:role/ops-admin"
-  }
-}
-
-resource "aws_iam_policy" "assume_ops_admin_prod_role_policy" {
-  name   = "assume_ops_admin_prod_role_policy"
-  path   = "/"
-  policy = "${data.template_file.assume_ops_admin_prod_role_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "ops_admins_prod_assume_ops_admin_prod_role_attachment" {
-  name       = "ops_admins_prod_assume_ops_admin_prod_role_attachment"
-  policy_arn = "${aws_iam_policy.assume_ops_admin_prod_role_policy.arn}"
-  groups     = ["${aws_iam_group.ops_admins_prod.name}"]
-  users      = []
-  roles      = []
-}
-
-# ops-admin role (on dev)
-data "template_file" "assume_ops_admin_dev_role_policy" {
-  template = "${file("policies/assume_role.json")}"
-
-  vars {
-    role_arn = "arn:aws:iam::620123204273:role/ops-admin"
-  }
-}
-
-resource "aws_iam_policy" "assume_ops_admin_dev_role_policy" {
-  name   = "assume_ops_admin_dev_role_policy"
-  path   = "/"
-  policy = "${data.template_file.assume_ops_admin_dev_role_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "ops_admins_dev_assume_ops_admin_dev_role_attachment" {
-  name       = "ops_admins_dev_assume_ops_admin_dev_role_attachment"
-  policy_arn = "${aws_iam_policy.assume_ops_admin_dev_role_policy.arn}"
-  groups     = ["${aws_iam_group.ops_admins_dev.name}"]
-  users      = []
-  roles      = []
-}
 
 # packer_role (on dev)
 data "template_file" "assume_packer_role_policy" {
@@ -303,8 +58,8 @@ resource "aws_iam_policy" "assume_packer_role_policy" {
 resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
   name       = "packer_assume_packer_role_attachment"
   policy_arn = "${aws_iam_policy.assume_packer_role_policy.arn}"
-  groups     = ["${aws_iam_group.packer_users.name}"]
-  users      = []
+  groups     = []
+  users      = ["${module.packer_user.username}"]
   roles      = []
 }
 
@@ -326,8 +81,8 @@ resource "aws_iam_policy" "assume_ops_admin_dev_no_mfa_role_policy" {
 resource "aws_iam_policy_attachment" "terraform_assume_terraform_role_attachment" {
   name       = "terraform_assume_terraform_role_attachment"
   policy_arn = "${aws_iam_policy.assume_ops_admin_dev_no_mfa_role_policy.arn}"
-  groups     = ["${aws_iam_group.ops_admins_dev_no_mfa_users.name}"]
-  users      = []
+  groups     = []
+  users      = ["${module.terraform_user.username}"]
   roles      = []
 }
 
@@ -349,8 +104,8 @@ resource "aws_iam_policy" "assume_fastq_data_uploader_prod_policy" {
 resource "aws_iam_policy_attachment" "assume_fastq_data_uploader_prod_role_attachment" {
   name       = "assume_fastq_data_uploader_prod_role_attachment"
   policy_arn = "${aws_iam_policy.assume_fastq_data_uploader_prod_policy.arn}"
-  groups     = ["${aws_iam_group.fastq_data_uploaders.name}"]
-  users      = []
+  groups     = []
+  users      = ["${module.terraform_user.username}"]
   roles      = []
 }
 
@@ -372,8 +127,8 @@ resource "aws_iam_policy" "assume_fastq_data_uploader_dev_policy" {
 resource "aws_iam_policy_attachment" "assume_fastq_data_uploader_dev_role_attachment" {
   name       = "assume_fastq_data_uploader_dev_role_attachment"
   policy_arn = "${aws_iam_policy.assume_fastq_data_uploader_dev_policy.arn}"
-  groups     = ["${aws_iam_group.fastq_data_uploaders.name}"]
-  users      = []
+  groups     = []
+  users      = ["${module.terraform_user.username}"]
   roles      = []
 }
 

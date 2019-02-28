@@ -21,8 +21,10 @@ provider "aws" {
 ################################################################################
 
 module "serverless_beacon" {
-  source  = "aehrc/serverless-beacon/aws"
-  version = "1.1.0"
+  # there are issues with getting the module from the registry => fall back to GitHub
+  # source  = "aehrc/serverless-beacon/aws"
+  # version = "1.1.0"
+  source = "git@github.com:aehrc/terraform-aws-serverless-beacon.git"
 
   beacon-id         = "org.umccr.beacon"
   beacon-name       = "UMCCR beacon"

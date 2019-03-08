@@ -36,12 +36,13 @@ if DEPLOY_ENV == 'prod':
     raw_data_base_dir = '/storage/shared/raw/Baymax'
     bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-    spreadsheet_name = "Google LIMS"
+    spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
 else:
     raw_data_base_dir = '/storage/shared/dev/Baymax'
     bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
-    spreadsheet_name = "Google LIMS dev"
+    spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
+runfolder_name_expected_length = 29
 fastq_hpc_base_dir = '/data/cephfs/punim0010/data/Pipeline/prod/Fastq'
 csv_outdir = '/tmp'
 write_csv = False
@@ -111,16 +112,16 @@ def write_csv_file(output_file, column_headers, data_rows):
             sheetwriter.writerow(row)
 
 
-def write_to_google_lims(keyfile, spreadsheet_name, data_rows, failed_run):
+def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
     # follow example from: https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
     scope = ['https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
     client = gspread.authorize(creds)
 
     if failed_run:
-        sheet = client.open(spreadsheet_name).worksheet('Failed Runs')
+        sheet = client.open_by_key(spreadsheet_id).worksheet('Failed Runs')
     else:
-        sheet = client.open(spreadsheet_name).sheet1
+        sheet = client.open_by_key(spreadsheet_id).sheet1
 
     for row in data_rows:
         sheet.append_row(values=row, value_input_option='USER_ENTERED')
@@ -151,9 +152,9 @@ if __name__ == "__main__":
                         default=csv_outdir)
     parser.add_argument('--write-csv', action='store_true',
                         help="Use this flag to write a CSV file.")
-    parser.add_argument('--spreadsheet-name',
+    parser.add_argument('--spreadsheet-id',
                         help="The name of the Google LIMS spreadsheet.",
-                        default=spreadsheet_name)
+                        default=spreadsheet_id)
     parser.add_argument('--creds-file',
                         help="The Google credentials file to grant access to the spreadsheet.",
                         default=creds_file)
@@ -174,8 +175,8 @@ if __name__ == "__main__":
         csv_outdir = args.csv_outdir
     if args.write_csv:
         write_csv = True
-    if args.spreadsheet_name:
-        spreadsheet_name = args.spreadsheet_name
+    if args.spreadsheet_id:
+        spreadsheet_id = args.spreadsheet_id
     if args.creds_file:
         creds_file = args.creds_file
     if args.skip_lims_update:
@@ -186,6 +187,10 @@ if __name__ == "__main__":
 
     # extract date and run number from runfolder name
     logger.debug("Parsing runfolder name.")
+    if len(runfolder) != runfolder_name_expected_length:
+        raise ValueError(f"Runfolder name {runfolder} did not match the expected \
+                          length of {runfolder_name_expected_length} characters!")
+    # TODO: perhaps include other runfolder name syntax checks
     try:
         run_date = re.search(runfolder_pattern, runfolder).group(1)
         run_no = re.search(runfolder_pattern, runfolder).group(2)
@@ -259,8 +264,8 @@ if __name__ == "__main__":
     if skip_lims_update:
         logger.warn("Skipping Google LIMS update!")
     else:
-        logger.info(f"Writing to Google LIMS {spreadsheet_name}")
-        write_to_google_lims(keyfile=creds_file, spreadsheet_name=spreadsheet_name,
+        logger.info(f"Writing to Google LIMS {spreadsheet_id}")
+        write_to_google_lims(keyfile=creds_file, spreadsheet_id=spreadsheet_id,
                              data_rows=lims_data_rows, failed_run=failed_run)
 
     logger.info("All done.")

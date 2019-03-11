@@ -2,7 +2,6 @@
 # t2.micro node with an AWS Tag naming it "bioinf-tools"
 provider "aws" {
   region = "ap-southeast-2"
-  profile = "umccr_ops_admin_dev"
 }
 
 data "aws_ami" "ubuntu" {
@@ -33,7 +32,4 @@ resource "aws_instance" "web" {
 data "template_file" "userdata" {
   template = "${file("${path.module}/templates/userdata.tpl")}"
 
-  /*vars {
-    INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
-  }*/
 }

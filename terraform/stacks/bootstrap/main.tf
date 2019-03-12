@@ -155,6 +155,29 @@ resource "aws_s3_bucket" "fastq-data" {
   }
 }
 
+# S3 bucket for raw sequencing data
+resource "aws_s3_bucket" "raw-sequencing-data" {
+  bucket = "${var.workspace_seq_data_bucket_name[terraform.workspace]}"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  lifecycle_rule {
+    id      = "move_to_glacier"
+    enabled = "${var.workspace_enable_bucket_lifecycle_rule[terraform.workspace]}"
+
+    transition {
+      days          = 0
+      storage_class = "GLACIER"
+    }
+  }
+}
+
 # S3 bucket to hold primary data
 resource "aws_s3_bucket" "primary_data" {
   bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"

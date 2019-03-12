@@ -45,6 +45,13 @@ variable "workspace_fastq_data_bucket_name" {
   }
 }
 
+variable "workspace_seq_data_bucket_name" {
+  default = {
+    prod = "umccr-raw-sequence-data-prod"
+    dev  = "umccr-raw-sequence-data-dev"
+  }
+}
+
 variable "workspace_fastq_data_uploader_buckets" {
   type = "map"
 

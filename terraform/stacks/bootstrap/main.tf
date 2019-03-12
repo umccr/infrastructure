@@ -12,10 +12,6 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
-provider "vault" {
-  # Vault server address and access token are retrieved from env variables (VAULT_ADDR and VAULT_TOKEN)
-}
-
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
@@ -37,6 +33,39 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
   tags {
     Name = "Terraform Lock Table"
   }
+}
+
+## Instance profile for SSM managed instances ##################################
+
+
+resource "aws_iam_instance_profile" "AmazonEC2InstanceProfileforSSM" {
+  name = "AmazonEC2InstanceProfileforSSM"
+  role = "${aws_iam_role.AmazonEC2InstanceProfileforSSM.name}"
+}
+
+resource "aws_iam_role" "AmazonEC2InstanceProfileforSSM" {
+  name                 = "AmazonEC2InstanceProfileforSSM"
+  path                 = "/"
+  assume_role_policy   = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      }
+    }
+  ]
+}
+EOF
+  max_session_duration = "43200"
+}
+
+resource "aws_iam_role_policy_attachment" "AmazonEC2InstanceProfileforSSM" {
+  role       = "${aws_iam_role.AmazonEC2InstanceProfileforSSM.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
 }
 
 ## Roles #######################################################################
@@ -193,9 +222,14 @@ resource "aws_s3_bucket" "vault" {
 
 ## Slack notify Lambda #########################################################
 
-data "vault_generic_secret" "slack_webhook_id" {
-  path = "kv/slack"
+data "aws_secretsmanager_secret" "slack_webhook_id" {
+  name = "slack/webhook/id"
 }
+
+data "aws_secretsmanager_secret_version" "slack_webhook_id" {
+  secret_id = "${data.aws_secretsmanager_secret.slack_webhook_id.id}"
+}
+
 
 module "notify_slack_lambda" {
   # based on: https://github.com/claranet/terraform-aws-lambda
@@ -212,7 +246,7 @@ module "notify_slack_lambda" {
   environment {
     variables {
       SLACK_HOST             = "hooks.slack.com"
-      SLACK_WEBHOOK_ENDPOINT = "/services/${data.vault_generic_secret.slack_webhook_id.data["webhook_id"]}"
+      SLACK_WEBHOOK_ENDPOINT = "/services/${data.aws_secretsmanager_secret_version.slack_webhook_id.secret_string}"
       SLACK_CHANNEL          = "${var.workspace_slack_channel[terraform.workspace]}"
     }
   }
@@ -226,11 +260,6 @@ module "notify_slack_lambda" {
 }
 
 ## Vault resources #############################################################
-
-## Retrieve secrets from Vault
-data "vault_generic_secret" "token_provider_user" {
-  path = "kv/token_provider"
-}
 
 # EC2 instance to run Vault server
 data "aws_ami" "vault_ami" {
@@ -269,6 +298,22 @@ resource "aws_spot_instance_request" "vault" {
   }
 }
 
+data "aws_secretsmanager_secret" "token_provider_user" {
+  name = "token_provider/username"
+}
+
+data "aws_secretsmanager_secret_version" "token_provider_user" {
+  secret_id = "${data.aws_secretsmanager_secret.token_provider_user.id}"
+}
+
+data "aws_secretsmanager_secret" "token_provider_pass" {
+  name = "token_provider/password"
+}
+
+data "aws_secretsmanager_secret_version" "token_provider_pass" {
+  secret_id = "${data.aws_secretsmanager_secret.token_provider_pass.id}"
+}
+
 data "template_file" "userdata" {
   template = "${file("${path.module}/templates/vault_userdata.tpl")}"
 
@@ -277,8 +322,8 @@ data "template_file" "userdata" {
     bucket_name   = "${aws_s3_bucket.vault.id}"
     vault_domain  = "${aws_route53_record.vault.fqdn}"
     vault_env     = "${var.workspace_vault_env[terraform.workspace]}"
-    tp_vault_user = "${data.vault_generic_secret.token_provider_user.data["username"]}"
-    tp_vault_pass = "${data.vault_generic_secret.token_provider_user.data["password"]}"
+    tp_vault_user = "${data.aws_secretsmanager_secret_version.token_provider_user.secret_string}"
+    tp_vault_pass = "${data.aws_secretsmanager_secret_version.token_provider_pass.secret_string}"
     instance_tags = "${jsonencode(var.workspace_vault_instance_tags[terraform.workspace])}"
   }
 }

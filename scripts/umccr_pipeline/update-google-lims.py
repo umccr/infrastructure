@@ -25,10 +25,16 @@ SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
+assay_column_name = 'Assay'
+phenotype_column_name = 'Phenotype (Tumour/ Normal)'
+quality_column_name = 'Quality: 1Good 2Poor 3Borderline'
+subject_column_name = 'Subject ID (Common for matched sample) '
+source_column_name = 'Source (FFPE/Tissue/FNA/Blood-Normal)'
+column_names = (subject_column_name, assay_column_name, phenotype_column_name, source_column_name, quality_column_name)
 
 # column headers of the LIMS spreadsheet
 sheet_column_headers = ("IlluminaID", "Run", "Timestamp", "SampleID", "SampleName",
-                        "Project", "SubjectID", "Type", "Phenotype", "Secondary Analysis",
+                        "Project", "SubjectID", "Type", "Phenotype", "Source", "Quality", "Secondary Analysis",
                         "FASTQ", "Number FASTQs", "Results", "Trello", "Notes", "ToDo")
 
 # define argument defaults
@@ -86,22 +92,34 @@ def import_library_sheet(year):
     try:
         global library_tracking_spreadsheet_df
         library_tracking_spreadsheet_df = pandas.read_excel(library_tracking_spreadsheet, year)
+        hit = library_tracking_spreadsheet_df.iloc[0]
+        logger.debug(f"First record: {hit}")
+        for column_name in column_names:
+            logger.debug(f"Checking for column name {column_name}...")
+            if column_name not in hit:
+                logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
+                exit(-1)
         logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
-    except:
+    except Exception as e:
         logger.error(f"Failed to load library tracking data from: {library_tracking_spreadsheet}")
 
 
-def get_sample_type(library_id):
-    # TODO: error handling
+def get_meta_data(library_id):
+    result = {}
     try:
         global library_tracking_spreadsheet_df
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df['LibraryID'] == library_id]
-        sample_type = hit['Assay'].values[0]
-        logger.debug(f"Found sample type {sample_type} for sample {library_id}")
-    except:
-        logger.error(f"Could not find sample type for sample {library_id}. Using fallback.")
-        sample_type = "WGS/WTS"
-    return sample_type
+        for column_name in column_names:
+            if not hit[column_name].isnull().values[0]:
+                result[column_name] = hit[column_name].values[0]
+            else:
+                result[column_name] = ''
+    except Exception as e:
+        logger.error(f"Could not find entry for sample {library_id}! Exception {e}")
+
+    logger.info(f"Using values: {result} for sample {library_id}.")
+
+    return result
 
 
 def write_csv_file(output_file, column_headers, data_rows):
@@ -113,7 +131,8 @@ def write_csv_file(output_file, column_headers, data_rows):
 
 
 def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
-    # follow example from: https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
+    # follow example from: 
+    # https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
     scope = ['https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
     client = gspread.authorize(creds)
@@ -148,7 +167,7 @@ if __name__ == "__main__":
                         help="The destination base path (depends on HPC env. ",
                         default=fastq_hpc_base_dir)
     parser.add_argument('--csv-outdir',
-                        help="Where to write the CSV output file to. Default=/output).",
+                        help="Where to write the CSV output file to. Default=/tmp).",
                         default=csv_outdir)
     parser.add_argument('--write-csv', action='store_true',
                         help="Use this flag to write a CSV file.")
@@ -229,15 +248,15 @@ if __name__ == "__main__":
         samples = SampleSheet(samplesheet).samples
         logger.info(f"Found {len(samples)} samples.")
         for sample in samples:
+            column_values = get_meta_data(sample.Sample_Name)
             if extension == ".10X":
-                sample_type = "10X"  # no better way to determine this atm
+                column_values[assay_column_name] = '10X'  # no better way to determine this atm
                 fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                              sample.Sample_Name + "*.fastq.gz")
                 fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
                                                  sample.Sample_Name + "*.fastq.gz")
             else:
                 logger.debug(f"Looing up type for ID; {sample.Sample_Name}")
-                sample_type = get_sample_type(sample.Sample_Name)
                 fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                              sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
                 fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
@@ -248,8 +267,10 @@ if __name__ == "__main__":
             if len(fastq_file_paths) < 1:
                 logger.warn(f"Found no FASTQ files for sample {sample.Sample_ID}!")
             lims_data_rows.add((runfolder, run_number, run_timestamp, sample.Sample_Name, sample.Sample_ID,
-                                sample.Sample_Project, "-", sample_type, "-", "-",
-                                fastq_hpc_pattern, len(fastq_file_paths), "n/a", "-", "-", "-"))
+                                sample.Sample_Project, column_values[subject_column_name],
+                                column_values[assay_column_name], column_values[phenotype_column_name],
+                                column_values[source_column_name], column_values[quality_column_name],
+                                "", fastq_hpc_pattern, len(fastq_file_paths), "", "", "", ""))
 
     ################################################################################
     # write the data into a CSV file

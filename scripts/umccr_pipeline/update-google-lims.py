@@ -9,7 +9,7 @@ from datetime import datetime
 from sample_sheet import SampleSheet
 import logging
 from logging.handlers import RotatingFileHandler
-import gspread
+import gspread  # maybe move to https://github.com/aiguofer/gspread-pandas
 from oauth2client.service_account import ServiceAccountCredentials
 
 import warnings
@@ -26,10 +26,10 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
 assay_column_name = 'Assay'
-phenotype_column_name = 'Phenotype (Tumour/ Normal)'
-quality_column_name = 'Quality: 1Good 2Poor 3Borderline'
-subject_column_name = 'Subject ID (Common for matched sample) '
-source_column_name = 'Source (FFPE/Tissue/FNA/Blood-Normal)'
+phenotype_column_name = 'Phenotype'
+quality_column_name = 'Quality'
+subject_column_name = 'Subject ID'
+source_column_name = 'Source'
 column_names = (subject_column_name, assay_column_name, phenotype_column_name, source_column_name, quality_column_name)
 
 # column headers of the LIMS spreadsheet

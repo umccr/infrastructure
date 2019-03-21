@@ -12,7 +12,7 @@
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::620123204273:saml-provider/keycloak"
+        "Federated": "arn:aws:iam::620123204273:saml-provider/GoogleApps"
       },
       "Action": "sts:AssumeRoleWithSAML",
       "Condition": {

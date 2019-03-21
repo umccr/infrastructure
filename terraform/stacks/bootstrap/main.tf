@@ -74,7 +74,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2InstanceProfileforSSM" {
 resource "aws_iam_role" "fastq_data_uploader" {
   name                 = "fastq_data_uploader"
   path                 = "/"
-  assume_role_policy   = "${file("policies/assume_role_from_bastion.json")}"
+  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
   max_session_duration = "43200"
 }
 

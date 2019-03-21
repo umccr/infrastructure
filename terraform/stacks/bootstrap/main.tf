@@ -70,11 +70,19 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2InstanceProfileforSSM" {
 
 ## Roles #######################################################################
 
+data "template_file" "saml_assume_policy" {
+  template = "${file("policies/assume_role_from_bastion_and_saml.json")}"
+
+  vars {
+    aws_account = "${data.aws_caller_identity.current.account_id}"
+  }
+}
+
 ##### fastq_data_uploader
 resource "aws_iam_role" "fastq_data_uploader" {
   name                 = "fastq_data_uploader"
   path                 = "/"
-  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
+  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
   max_session_duration = "43200"
 }
 
@@ -571,7 +579,7 @@ resource "aws_iam_role" "ops_admin_no_mfa_role" {
   count                = "${terraform.workspace == "dev" ? 1 : 0}"
   name                 = "ops_admin_no_mfa"
   path                 = "/"
-  assume_role_policy   = "${file("policies/assume_role_from_bastion_and_saml.json")}"
+  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
   max_session_duration = "43200"
 }
 

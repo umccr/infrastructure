@@ -185,3 +185,37 @@ def lambda_handler(event, context):
 
     command_id = response['Command']['CommandId']
     print(f"Command ID: {command_id}")
+
+
+def manual_handling(event):
+    print("Received event: " + json.dumps(event, indent=2))
+
+    ############################################################
+    # initial checks
+
+    if event.get('script_execution'):
+        script_execution = event['script_execution']
+        print(f"script_execution: {script_execution}")
+    else:
+        raise ValueError('A script_execution parameter is mandatory!')
+
+    ############################################################
+    # Mock the task token from the wait-for activity task
+    task_token = '12345token54321'
+
+    ############################################################
+    # send a command to the SSM for asynchronous execution
+
+    script_command, script_timeout = build_command(script_case=script_execution,
+                                                   input_data=event['input'])
+
+    session_assumed = aws_session(role_arn=BASTION_SSM_ROLE_ARN, session_name='bastion_session')
+    response = session_assumed.client('ssm').send_command(
+        InstanceIds=[ssm_instance_id],
+        DocumentName=SSM_DOC_NAME,
+        Parameters={"commands": [script_command], "executionTimeout": [script_timeout],
+                    "taskToken": [task_token], "deployEnv": [DEPLOY_ENV]},
+        CloudWatchOutputConfig={'CloudWatchOutputEnabled': True}, )
+
+    command_id = response['Command']['CommandId']
+    print(f"Command ID: {command_id}")

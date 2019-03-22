@@ -48,9 +48,9 @@ variable "group_members_map" {
   description = "Map groups to their members."
 
   default = {
-    agha_gdr_admins = ["florian", "brainstorm", "oliver", "lavinia"]
-    agha_gdr_submit = ["florian", "brainstorm", "oliver", "lavinia", "simonsadedin", "sebastian"]
-    agha_gdr_read   = ["florian", "brainstorm", "oliver", "lavinia", "ametke", "ebenngarvan"]
+    agha_gdr_admins = ["reisingerf"]
+    agha_gdr_submit = ["simonsadedin", "sebastian"]
+    agha_gdr_read   = ["ametke", "ebenngarvan"]
   }
 }
 

@@ -82,6 +82,25 @@ resource "aws_iam_group_policy" "group_assume_policy" {
 EOF
 }
 
+########## Dedicated user to generate long lived presigned URLs
+# See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
+
+module "agha_bot_user" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "agha_bot"
+  pgp_key  = "keybase:freisinger"
+}
+
+resource "aws_iam_user_policy_attachment" "ahga_bot_staging_rw" {
+  user       = "${module.agha_bot_user.username}"
+  policy_arn = "${aws_iam_policy.agha_staging_rw_policy.arn}"
+}
+
+resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
+  user       = "${module.agha_bot_user.username}"
+  policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
+}
+
 ################################################################################
 # bucket(s), roles, policies, role - policy attachments, etc ...
 # => work account (dev/prod)

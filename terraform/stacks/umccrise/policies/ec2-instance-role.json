@@ -32,6 +32,18 @@
                 "s3:ListMultipartUploadParts"
             ],
             "Resource": ${resources}
+        },
+        {
+            "Sid": "CustomAdditionsCW",
+            "Effect": "Allow",
+            "Action": "cloudwatch:PutMetricData",
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowTaggingVolumes",
+            "Effect": "Allow",
+            "Action": "ec2:CreateTags",
+            "Resource": "*"
         }
     ]
 }

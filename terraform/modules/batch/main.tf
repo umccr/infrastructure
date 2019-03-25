@@ -35,6 +35,11 @@ resource "aws_iam_role_policy_attachment" "ecsInstanceRole" {
   policy_arn = "${var.ec2_additional_policy}"
 }
 
+resource "aws_iam_role_policy_attachment" "ssmDefault" {
+  role = "${aws_iam_role.ecsInstanceRole.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+}
+
 resource "aws_iam_role_policy_attachment" "ecsInstanceRoleDefault" {
   role = "${aws_iam_role.ecsInstanceRole.name}"
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
@@ -109,7 +114,6 @@ resource "aws_batch_compute_environment" "batch" {
     instance_type = "${var.instance_types}"
 
     max_vcpus     = "${var.max_vcpus}"
-    desired_vcpus = "${var.desired_vcpus}"
     min_vcpus     = "${var.min_vcpus}"
 
     security_group_ids = ["${var.security_group_ids}"]

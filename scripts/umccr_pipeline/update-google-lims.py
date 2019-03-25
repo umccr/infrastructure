@@ -281,7 +281,7 @@ if __name__ == "__main__":
                                 sample.Sample_Project, column_values[subject_column_name],
                                 column_values[assay_column_name], column_values[phenotype_column_name],
                                 column_values[source_column_name], column_values[quality_column_name],
-                                "-", fastq_hpc_pattern, len(fastq_file_paths), "-", "-", "-", "-"))
+                                "-", fastq_hpc_pattern, len(fastq_file_paths), "-", "-", "-", ""))
 
     ################################################################################
     # write the data into a CSV file

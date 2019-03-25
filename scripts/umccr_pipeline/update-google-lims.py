@@ -104,16 +104,26 @@ def import_library_sheet(year):
         logger.error(f"Failed to load library tracking data from: {library_tracking_spreadsheet}")
 
 
-def get_meta_data(library_id):
+def get_meta_data(library_id, external_id):
     result = {}
     try:
         global library_tracking_spreadsheet_df
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df['LibraryID'] == library_id]
+        if len(hit) != 0:
+            if hit['Lab-External ID'].values[0] != external_id:
+                raise ValueError(f"Found external ID {hit['Lab-External ID'].values[0]} does not match " +
+                                 f"provided one {external_id} for library {library_id}")
+        else:
+            # No hit with library ID, so we need to look for the external ID
+            hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df['Lab-External ID'] == external_id]
+            if len(hit) == 0:
+                raise ValueError(f"No entry found for external ID {external_id}!")
+
         for column_name in column_names:
             if not hit[column_name].isnull().values[0]:
                 result[column_name] = hit[column_name].values[0]
             else:
-                result[column_name] = ''
+                result[column_name] = '-'
     except Exception as e:
         logger.error(f"Could not find entry for sample {library_id}! Exception {e}")
 
@@ -248,19 +258,20 @@ if __name__ == "__main__":
         samples = SampleSheet(samplesheet).samples
         logger.info(f"Found {len(samples)} samples.")
         for sample in samples:
-            column_values = get_meta_data(sample.Sample_Name)
-            if extension == ".10X":
-                column_values[assay_column_name] = '10X'  # no better way to determine this atm
+            logger.debug(f"Looking up metadata for sammple ID; {sample.Sample_Name} and external ID: {sample.Sample_ID}")
+            column_values = get_meta_data(sample.Sample_Name, sample.Sample_ID)
+
+            if sample.Sample_Name == sample.Sample_ID:
                 fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                              sample.Sample_Name + "*.fastq.gz")
                 fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
                                                  sample.Sample_Name + "*.fastq.gz")
             else:
-                logger.debug(f"Looing up type for ID; {sample.Sample_Name}")
                 fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                              sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
                 fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
                                                  sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
+
             logger.debug('Looking for FASTQs: ' + fastq_pattern)
             logger.debug('Setting FASTQ dest: ' + fastq_hpc_pattern)
             fastq_file_paths = glob(fastq_pattern)
@@ -270,14 +281,14 @@ if __name__ == "__main__":
                                 sample.Sample_Project, column_values[subject_column_name],
                                 column_values[assay_column_name], column_values[phenotype_column_name],
                                 column_values[source_column_name], column_values[quality_column_name],
-                                "", fastq_hpc_pattern, len(fastq_file_paths), "", "", "", ""))
+                                "-", fastq_hpc_pattern, len(fastq_file_paths), "-", "-", "-", "-"))
 
     ################################################################################
     # write the data into a CSV file
 
     if write_csv:
         output_file = os.path.join(csv_outdir, runfolder + '-lims-sheet.csv')
-        logger.info(f"Writing to CSV file {output_file}")
+        logger.info(f"Writing {len(lims_data_rows)} records to CSV file {output_file}")
         write_csv_file(output_file=output_file, column_headers=sheet_column_headers, data_rows=lims_data_rows)
     else:
         logger.info("Not writing CSV file.")
@@ -285,7 +296,7 @@ if __name__ == "__main__":
     if skip_lims_update:
         logger.warn("Skipping Google LIMS update!")
     else:
-        logger.info(f"Writing to Google LIMS {spreadsheet_id}")
+        logger.info(f"Writing {len(lims_data_rows)} records to Google LIMS {spreadsheet_id}")
         write_to_google_lims(keyfile=creds_file, spreadsheet_id=spreadsheet_id,
                              data_rows=lims_data_rows, failed_run=failed_run)
 

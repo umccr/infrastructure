@@ -42,7 +42,9 @@ def lambda_handler(event, context):
         container_overrides['environment'] = [
             {'name': 'S3_INPUT_DIR', 'value': result_dir},
             {'name': 'S3_DATA_BUCKET', 'value': data_bucket},
-            {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket}
+            {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket},
+            {'name': 'CONTAINER_VCPUS', 'value': container_vcpus},
+            {'name': 'CONTAINER_MEM', 'value': container_mem}
         ]
         if container_mem:
             container_overrides['memory'] = int(container_mem)

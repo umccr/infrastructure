@@ -8,8 +8,16 @@ def lambda_handler(event, context):
     bucket = event["Records"][0]["s3"]["bucket"]["name"]
     obj = event["Records"][0]["s3"]["object"]["key"]
     data_dir = obj.split("/")[0]
-    job_name = bucket + "---" + data_dir
+    job_name = bucket + "---" + data_dir 
 
+    #Derive environment name from bucket-- if its not detected, take a punt and call it dev
+    if len(bucket.split('-')) is not 1:
+        env = bucket.split('-')[-1]
+        print("Parsed env name of '{}' in bucket. Proceeding.".format(env))
+    else:
+        print("Couldn't detect env name from bucket. Format is <bucket>-<env>. Defaulting env name to 'dev'.")
+        env = "dev"
+    
     request_payload = {
          "resultDir": data_dir, 
          "memory": "50000", 
@@ -26,7 +34,7 @@ def lambda_handler(event, context):
     
     print("Invoking lambda with payload: ", request_payload)
     response = client.invoke(
-    FunctionName='umccrise_lambda_dev',
+    FunctionName='umccrise_lambda_{}'.format(env),
     InvocationType='RequestResponse',
     LogType='Tail',
     ClientContext=base64.b64encode(json.dumps(lambda_context).encode('utf-8')),

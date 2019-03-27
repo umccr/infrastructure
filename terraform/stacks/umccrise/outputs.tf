@@ -14,6 +14,11 @@ output "function_arn" {
   value       = "${module.lambda.function_arn}"
 }
 
+output "trigger_function_arn" {
+  description = "The ARN of the Lambda function"
+  value       = "${module.trigger_umccrise_s3_lambda.function_arn}"
+}
+
 output "function_invoke_arn" {
   description = "The ARN of the Lambda function"
   value       = "${module.lambda.function_invoke_arn}"

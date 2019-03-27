@@ -204,6 +204,62 @@ module "lambda" {
 }
 
 ################################################################################
+data "template_file" "trigger_umccrise_s3_lambda" {
+  template = "${file("${path.module}/policies/umccrise-lambda.json")}"
+
+  vars {
+    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+  }
+}
+
+resource "aws_iam_policy" "trigger_umccrise_s3_lambda" {
+  name   = "${var.stack_name}_trigger_s3_${terraform.workspace}"
+  path   = "/${var.stack_name}/"
+  policy = "${data.template_file.trigger_umccrise_s3_lambda.rendered}"
+}
+module "trigger_umccrise_s3_lambda" {
+  # based on: https://github.com/claranet/terraform-aws-lambda
+  source = "../../modules/lambda"
+
+  function_name = "trigger_umccrise_s3_${terraform.workspace}"
+  description   = "Lambda for triggering UMCCRISE via s3"
+  handler       = "trigger_umccrise_s3.lambda_handler"
+  runtime       = "python2.7"
+  timeout       = 3
+
+  source_path = "${path.module}/lambdas/trigger_umccrise_s3.py"
+
+  attach_policy = true
+  policy        = "${aws_iam_policy.lambda.arn}"
+
+  tags = {
+    service = "${var.stack_name}"
+    name    = "${var.stack_name}"
+    stack   = "${var.stack_name}"
+  }
+}
+
+resource "aws_lambda_permission" "allow-exec-bucket" {
+statement_id = "AllowExecutionFromS3Bucket"
+action = "lambda:InvokeFunction"
+function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
+principal = "s3.amazonaws.com"
+source_arn = "arn:aws:s3:::${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+}
+
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  depends_on = ["aws_lambda_permission.allow-exec-bucket"]
+  bucket = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+
+  lambda_function {
+    lambda_function_arn = "${module.trigger_umccrise_s3_lambda.function_arn}"
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = ""
+    filter_suffix       = "upload_complete"
+  }
+}
+
+################################################################################
 # CloudWatch Event Rule to match batch events and call Slack lambda
 
 resource "aws_cloudwatch_event_rule" "batch_failure" {

@@ -14,6 +14,14 @@
           "batch:SubmitJob"
         ],
         "Resource": "*"
+      },
+      {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction",
+        "lambda:InvokeAsync"
+      ],
+      "Resource": "*"
       }
     ]
   }

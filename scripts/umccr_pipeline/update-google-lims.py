@@ -25,17 +25,21 @@ SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
-assay_column_name = 'Assay'
-phenotype_column_name = 'Phenotype'
-quality_column_name = 'Quality'
-subject_column_name = 'Subject ID'
-source_column_name = 'Source'
+# The column names should be kept in sync between the lab internal library tracking sheet and the Google LIMS
+sample_id_column_name = 'SampleID'  # is the library ID
+sample_name_column_name = 'SampleName'  # is the lab-external sample/library ID
+assay_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
+phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
+quality_column_name = 'Quality'  # Good, Poor, Borderline
+subject_column_name = 'SubjectID'  # ID for the subject/patient
+source_column_name = 'Source'  # tissue, FFPE, ...
 column_names = (subject_column_name, assay_column_name, phenotype_column_name, source_column_name, quality_column_name)
 
 # column headers of the LIMS spreadsheet
-sheet_column_headers = ("IlluminaID", "Run", "Timestamp", "SampleID", "SampleName",
-                        "Project", "SubjectID", "Type", "Phenotype", "Source", "Quality", "Secondary Analysis",
-                        "FASTQ", "Number FASTQs", "Results", "Trello", "Notes", "ToDo")
+sheet_column_headers = ("IlluminaID", "Run", "Timestamp", sample_id_column_name, sample_name_column_name,
+                        "Project", subject_column_name, assay_column_name, phenotype_column_name, source_column_name, 
+                        quality_column_name, "Secondary Analysis", "FASTQ", "Number FASTQs", "Results", "Trello",
+                        "Notes", "ToDo")
 
 # define argument defaults
 if DEPLOY_ENV == 'prod':
@@ -108,14 +112,14 @@ def get_meta_data(library_id, external_id):
     result = {}
     try:
         global library_tracking_spreadsheet_df
-        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df['LibraryID'] == library_id]
+        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == library_id]
         if len(hit) != 0:
-            if hit['Lab-External ID'].values[0] != external_id:
-                raise ValueError(f"Found external ID {hit['Lab-External ID'].values[0]} does not match " +
+            if hit[sample_name_column_name].values[0] != external_id:
+                raise ValueError(f"Found external ID {hit[sample_name_column_name].values[0]} does not match " +
                                  f"provided one {external_id} for library {library_id}")
         else:
             # No hit with library ID, so we need to look for the external ID
-            hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df['Lab-External ID'] == external_id]
+            hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_name_column_name] == external_id]
             if len(hit) == 0:
                 raise ValueError(f"No entry found for external ID {external_id}!")
 

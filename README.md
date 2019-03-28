@@ -103,8 +103,7 @@ The recommended Terraform workflow consists of the following commands:
 
 More details with `terraform help`.
 
-Terraform requires AWS credentials to manipulate AWS resources. It uses the usual AWS supported methods to retrieve them, i.e. env variables or AWS profiles. If not stated otherwise, all stacks require ops-admin credentials, which can be obtained assuming the `ops-admin` role.
-For more details please refer to the `assume-role` script [documentation](https://github.com/coinbase/assume-role).
+Terraform requires AWS credentials to manipulate AWS resources. For more details please refer to the [wiki](https://github.com/umccr/wiki/blob/master/computing/cloud/aws.md#aws-command-line-interface).
 
 Some Terraform stacks require access to sensitive data. We store those secrets in [Vault](https://www.vaultproject.io). Use the `assume-role-vault` wrapper script for convenience, more details [here](scripts/README.md).
 

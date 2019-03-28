@@ -24,19 +24,18 @@ def lambda_handler(event, context):
          "jobName": job_name
     }
 
-    #TODO: I have no idea to put here
-    lambda_context = {
-        "custom": {"clarkie": "wuzhere"},
-        "env": {"ctx": "ctx"},
-        "client": {}
-    }
+    # #TODO: I have no idea to put here
+    # lambda_context = {
+    #     "custom": {"clarkie": "wuzhere"},
+    #     "env": {"ctx": "ctx"},
+    #     "client": {}
+    # }
     
     print("Invoking lambda with payload: ", request_payload)
     response = client.invoke(
     FunctionName=UMCCRISE_FUNCTION_NAME,
     InvocationType='RequestResponse',
     LogType='Tail',
-    ClientContext=base64.b64encode(json.dumps(lambda_context).encode('utf-8')),
     Payload=json.dumps(request_payload).encode('utf-8'),
     Qualifier='$LATEST'
 )

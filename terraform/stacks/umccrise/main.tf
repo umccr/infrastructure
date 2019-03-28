@@ -212,10 +212,10 @@ module "trigger_umccrise_s3_lambda" {
   function_name = "trigger_umccrise_s3_${terraform.workspace}"
   description   = "Lambda for triggering UMCCRISE via s3"
   handler       = "trigger_umccrise_s3.lambda_handler"
-  runtime       = "python2.7"
+  runtime       = "python3.6"
   timeout       = 3
 
-  environment {
+  environment { 
     variables {
       UMCCRISE_MEM             = "${var.umccrise_mem[terraform.workspace]}"
       UMCCRISE_VCPUS           = "${var.umccrise_vcpus[terraform.workspace]}"

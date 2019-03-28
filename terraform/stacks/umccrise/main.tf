@@ -204,19 +204,7 @@ module "lambda" {
 }
 
 ################################################################################
-data "template_file" "trigger_umccrise_s3_lambda" {
-  template = "${file("${path.module}/policies/umccrise-lambda.json")}"
 
-  vars {
-    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
-  }
-}
-
-resource "aws_iam_policy" "trigger_umccrise_s3_lambda" {
-  name   = "${var.stack_name}_trigger_s3_${terraform.workspace}"
-  path   = "/${var.stack_name}/"
-  policy = "${data.template_file.trigger_umccrise_s3_lambda.rendered}"
-}
 module "trigger_umccrise_s3_lambda" {
   # based on: https://github.com/claranet/terraform-aws-lambda
   source = "../../modules/lambda"
@@ -226,6 +214,14 @@ module "trigger_umccrise_s3_lambda" {
   handler       = "trigger_umccrise_s3.lambda_handler"
   runtime       = "python2.7"
   timeout       = 3
+
+  environment {
+    variables {
+      UMCCRISE_MEM             = "${var.umccrise_mem[terraform.workspace]}"
+      UMCCRISE_VCPUS           = "${var.umccrise_vcpus[terraform.workspace]}"
+      UMCCRISE_FUNCTION_NAME   = "${module.lambda.function_name}"
+    }
+  }
 
   source_path = "${path.module}/lambdas/trigger_umccrise_s3.py"
 

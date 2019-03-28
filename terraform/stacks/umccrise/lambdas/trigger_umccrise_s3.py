@@ -1,31 +1,30 @@
 import json
 import boto3
 import base64
+import os
 
 def lambda_handler(event, context):
     client = boto3.client('lambda')
 
+    #environment variables
+    UMCCRISE_MEM = os.environ.get("UMCCRISE_MEM")
+    UMCCRISE_VCPUS = os.environ.get("UMCCRISE_VCPUS")
+    UMCCRISE_FUNCTION_NAME = os.environ.get("UMCCRISE_FUNCTION_NAME")
+
+    #event variables
     bucket = event["Records"][0]["s3"]["bucket"]["name"]
     obj = event["Records"][0]["s3"]["object"]["key"]
     data_dir = obj.split("/")[0]
     job_name = bucket + "---" + data_dir 
-
-    #Derive environment name from bucket-- if its not detected, take a punt and call it dev
-    if len(bucket.split('-')) is not 1:
-        env = bucket.split('-')[-1]
-        print("Parsed env name of '{}' in bucket. Proceeding.".format(env))
-    else:
-        print("Couldn't detect env name from bucket. Format is <bucket>-<env>. Defaulting env name to 'dev'.")
-        env = "dev"
     
     request_payload = {
          "resultDir": data_dir, 
-         "memory": "50000", 
-         "vcpus": "16",
+         "memory": UMCCRISE_MEM, 
+         "vcpus": UMCCRISE_VCPUS,
          "jobName": job_name
     }
 
-#TODO: I have no idea to put here
+    #TODO: I have no idea to put here
     lambda_context = {
         "custom": {"clarkie": "wuzhere"},
         "env": {"ctx": "ctx"},
@@ -34,7 +33,7 @@ def lambda_handler(event, context):
     
     print("Invoking lambda with payload: ", request_payload)
     response = client.invoke(
-    FunctionName='umccrise_lambda_{}'.format(env),
+    FunctionName=UMCCRISE_FUNCTION_NAME,
     InvocationType='RequestResponse',
     LogType='Tail',
     ClientContext=base64.b64encode(json.dumps(lambda_context).encode('utf-8')),
@@ -42,8 +41,11 @@ def lambda_handler(event, context):
     Qualifier='$LATEST'
 )
 
-    #TODO what if the lambda invocation fails?
-    message = "Detected {} was uploaded to {} and fired umccrise successfully.".format(obj,bucket)
+    if response["StatusCode"] is 200:
+        message = "Detected {} was uploaded to {} and fired umccrise successfully.".format(obj,bucket)
+    else:
+        message = "Detected {} was uploaded to {} and there was an error firing umccrise. Error code from lambda was {}".format(obj,bucket,response["StatusCode"])
+
     print(message)
 
     body = {
@@ -52,7 +54,7 @@ def lambda_handler(event, context):
     }
 
     response = {
-        "statusCode": 200,
+        "statusCode": response["StatusCode"],
         "body": json.dumps(body)
     }
 

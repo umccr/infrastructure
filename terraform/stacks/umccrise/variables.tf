@@ -48,3 +48,20 @@ variable "workspace_umccrise_buckets" {
     dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-umccrise-dev", "arn:aws:s3:::umccr-umccrise-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
   }
 }
+
+variable "umccrise_mem" {
+  type = "map"
+
+  default = {
+    prod = 50000
+    dev = 50000
+  }
+}
+variable "umccrise_vcpus" {
+  type = "map"
+
+  default = {
+    prod = 16
+    dev = 16
+  }
+}

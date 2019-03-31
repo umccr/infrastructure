@@ -9,6 +9,7 @@ terraform {
 }
 
 provider "aws" {
+  version = "~> 2.4.0"
   region = "ap-southeast-2"
 }
 
@@ -181,7 +182,7 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
 
     transition {
       days          = 0
-      storage_class = "GLACIER"
+      storage_class = "DEEP_ARCHIVE"
     }
   }
 }

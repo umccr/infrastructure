@@ -220,7 +220,7 @@ resource "aws_s3_bucket" "primary_data" {
   acl    = "private"
 
   versioning {
-    enabled = "${var.workspace_primary_data_bucket_name[terraform.workspace] == "prod" ? true : false}"
+    enabled = "${terraform.workspace == "prod" ? true : false}"
   }
 
   server_side_encryption_configuration {

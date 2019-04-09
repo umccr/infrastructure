@@ -89,3 +89,9 @@ variable "attach_policy" {
   type        = "string"
   default     = false
 }
+
+variable "max_session_duration" {
+  description = "Duration for role session"
+  type        = "string"
+  default     = 1
+}

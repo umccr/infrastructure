@@ -106,6 +106,33 @@ resource "aws_iam_role_policy_attachment" "fastq_data_uploader" {
   policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
 }
 
+##### primary_data_reader
+resource "aws_iam_role" "primary_data_reader" {
+  name                 = "primary_data_reader"
+  path                 = "/"
+  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
+  max_session_duration = "43200"
+}
+
+data "template_file" "primary_data_reader" {
+  template = "${file("policies/primary_data_reader.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.primary_data.id}"
+  }
+}
+
+resource "aws_iam_policy" "primary_data_reader" {
+  name   = "primary_data_reader${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.primary_data_reader.rendered}"
+}
+
+resource "aws_iam_role_policy_attachment" "primary_data_reader" {
+  role       = "${aws_iam_role.primary_data_reader.name}"
+  policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
+}
+
 ##### umccr_pipeline
 resource "aws_iam_role" "umccr_pipeline" {
   name                 = "umccr_pipeline"
@@ -191,6 +218,10 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
 resource "aws_s3_bucket" "primary_data" {
   bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
   acl    = "private"
+
+  versioning {
+    enabled = "${var.workspace_primary_data_bucket_name[terraform.workspace] == "prod" ? true : false}"
+  }
 
   server_side_encryption_configuration {
     rule {

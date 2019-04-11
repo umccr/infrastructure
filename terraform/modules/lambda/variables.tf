@@ -93,5 +93,5 @@ variable "attach_policy" {
 variable "max_session_duration" {
   description = "Duration for role session"
   type        = "string"
-  default     = 1
+  default     = 3600
 }

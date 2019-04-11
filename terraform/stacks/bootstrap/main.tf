@@ -64,9 +64,15 @@ EOF
   max_session_duration = "43200"
 }
 
+resource "aws_iam_policy" "aws_ec2_ssm" {
+  name   = "aws_ec2_ssm${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${file("policies/aws_ec2_ssm.json")}"
+}
+
 resource "aws_iam_role_policy_attachment" "AmazonEC2InstanceProfileforSSM" {
   role       = "${aws_iam_role.AmazonEC2InstanceProfileforSSM.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+  policy_arn = "${aws_iam_policy.aws_ec2_ssm.arn}"
 }
 
 ## Roles #######################################################################
@@ -131,6 +137,33 @@ resource "aws_iam_policy" "primary_data_reader" {
 resource "aws_iam_role_policy_attachment" "primary_data_reader" {
   role       = "${aws_iam_role.primary_data_reader.name}"
   policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
+}
+
+##### umccr_worker
+resource "aws_iam_role" "umccr_worker" {
+  name                 = "umccr_worker"
+  path                 = "/"
+  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
+  max_session_duration = "43200"
+}
+
+data "template_file" "umccr_worker" {
+  template = "${file("policies/umccr_worker.json")}"
+
+  vars {
+    tf_bucket = "${var.tf_bucket}"
+  }
+}
+
+resource "aws_iam_policy" "umccr_worker" {
+  name   = "umccr_worker${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.umccr_worker.rendered}"
+}
+
+resource "aws_iam_role_policy_attachment" "umccr_worker" {
+  role       = "${aws_iam_role.umccr_worker.name}"
+  policy_arn = "${aws_iam_policy.umccr_worker.arn}"
 }
 
 ##### umccr_pipeline

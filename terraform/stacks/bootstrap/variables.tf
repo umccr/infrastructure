@@ -18,6 +18,11 @@ variable "vault_sub_domain" {
   default = "vault"
 }
 
+variable "tf_bucket" {
+  type = "string"
+  default = "arn:aws:s3:::umccr-terraform-states"
+}
+
 ################################################################################
 ## workspace variables
 

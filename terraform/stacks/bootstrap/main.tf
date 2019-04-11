@@ -10,7 +10,7 @@ terraform {
 
 provider "aws" {
   version = "~> 2.4.0"
-  region = "ap-southeast-2"
+  region  = "ap-southeast-2"
 }
 
 data "aws_caller_identity" "current" {}
@@ -38,16 +38,16 @@ resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
 
 ## Instance profile for SSM managed instances ##################################
 
-
 resource "aws_iam_instance_profile" "AmazonEC2InstanceProfileforSSM" {
   name = "AmazonEC2InstanceProfileforSSM"
   role = "${aws_iam_role.AmazonEC2InstanceProfileforSSM.name}"
 }
 
 resource "aws_iam_role" "AmazonEC2InstanceProfileforSSM" {
-  name                 = "AmazonEC2InstanceProfileforSSM"
-  path                 = "/"
-  assume_role_policy   = <<EOF
+  name = "AmazonEC2InstanceProfileforSSM"
+  path = "/"
+
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -61,12 +61,19 @@ resource "aws_iam_role" "AmazonEC2InstanceProfileforSSM" {
   ]
 }
 EOF
+
   max_session_duration = "43200"
+}
+
+resource "aws_iam_policy" "aws_ec2_ssm" {
+  name   = "aws_ec2_ssm${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${file("policies/aws_ec2_ssm.json")}"
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEC2InstanceProfileforSSM" {
   role       = "${aws_iam_role.AmazonEC2InstanceProfileforSSM.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+  policy_arn = "${aws_iam_policy.aws_ec2_ssm.arn}"
 }
 
 ## Roles #######################################################################
@@ -131,6 +138,34 @@ resource "aws_iam_policy" "primary_data_reader" {
 resource "aws_iam_role_policy_attachment" "primary_data_reader" {
   role       = "${aws_iam_role.primary_data_reader.name}"
   policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
+}
+
+##### umccr_worker
+resource "aws_iam_role" "umccr_worker" {
+  name                 = "umccr_worker"
+  path                 = "/"
+  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
+  max_session_duration = "43200"
+}
+
+data "template_file" "umccr_worker" {
+  template = "${file("policies/umccr_worker.json")}"
+
+  vars {
+    tf_bucket   = "${var.tf_bucket}"
+    aws_account = "${data.aws_caller_identity.current.account_id}"
+  }
+}
+
+resource "aws_iam_policy" "umccr_worker" {
+  name   = "umccr_worker${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.umccr_worker.rendered}"
+}
+
+resource "aws_iam_role_policy_attachment" "umccr_worker" {
+  role       = "${aws_iam_role.umccr_worker.name}"
+  policy_arn = "${aws_iam_policy.umccr_worker.arn}"
 }
 
 ##### umccr_pipeline
@@ -269,7 +304,6 @@ data "aws_secretsmanager_secret" "slack_webhook_id" {
 data "aws_secretsmanager_secret_version" "slack_webhook_id" {
   secret_id = "${data.aws_secretsmanager_secret.slack_webhook_id.id}"
 }
-
 
 module "notify_slack_lambda" {
   # based on: https://github.com/claranet/terraform-aws-lambda
@@ -565,7 +599,6 @@ resource "aws_eip" "main_vpc_nat_gateway" {
     Name        = "main_vpc_nat_gateway_1_${terraform.workspace}"
   }
 }
-
 
 ################################################################################
 # Set up a main VPC for resources to use

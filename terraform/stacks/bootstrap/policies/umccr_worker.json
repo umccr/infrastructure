@@ -30,7 +30,7 @@
         {
           "Effect":"Allow",
           "Action":"iam:PassRole",
-          "Resource":"arn:aws:iam::620123204273:role/AmazonEC2InstanceProfileforSSM"
+          "Resource":"arn:aws:iam::${aws_account}:role/AmazonEC2InstanceProfileforSSM"
         },
         {
             "Sid": "SSMSession",

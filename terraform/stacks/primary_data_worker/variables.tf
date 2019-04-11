@@ -29,5 +29,6 @@ variable "workspace_buckets" {
 
   default = {
     dev = ["umccr-primary-data-dev"]
+    prod = ["umccr-primary-data-prod"]
   }
 }

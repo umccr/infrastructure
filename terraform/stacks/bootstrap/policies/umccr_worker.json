@@ -25,7 +25,10 @@
                     "ec2:InstanceType": [
                         "t2.micro",
                         "t3.micro"
-             ]}}
+                    ],
+                    "ec2:ResourceTag/Name": "primary_data_worker_instance"
+                }
+            }
         },
         {
           "Effect":"Allow",

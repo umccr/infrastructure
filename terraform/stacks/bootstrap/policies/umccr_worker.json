@@ -39,7 +39,8 @@
             "Sid": "SSMSession",
             "Effect": "Allow",
             "Action": [
-                "ssm:StartSession"
+                "ssm:StartSession",
+                "ssm:TerminateSession"
             ],
             "Resource": "*"
         },

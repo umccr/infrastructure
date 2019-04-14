@@ -256,6 +256,8 @@ resource "aws_s3_bucket" "primary_data" {
 
   versioning {
     enabled = "${terraform.workspace == "prod" ? true : false}"
+
+    # mfa_delete = true # not supported. see: https://github.com/terraform-providers/terraform-provider-aws/issues/629
   }
 
   server_side_encryption_configuration {

@@ -9,13 +9,11 @@ terraform {
     key            = "agha_gdr/terraform.tfstate"
     region         = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
-    profile        = "umccr_ops_admin_no_mfa"
   }
 }
 
 provider "aws" {
   region  = "ap-southeast-2"
-  profile = "umccr_ops_admin_no_mfa"
 }
 
 provider "aws" {
@@ -23,6 +21,18 @@ provider "aws" {
   region  = "ap-southeast-2"
   profile = "umccr_admin_bastion"
 }
+
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
+locals {
+  common_tags = "${map(
+    "Environment", "${terraform.workspace}",
+    "Stack", "${var.stack_name}"
+  )}"
+}
+
 
 ################################################################################
 # users, assume role policies, etc ...
@@ -75,7 +85,7 @@ resource "aws_iam_group_policy" "group_assume_policy" {
     {
       "Effect": "Allow",
       "Action": [ "sts:AssumeRole" ],
-      "Resource": ${jsonencode(var.group_roles_map[element(keys(var.group_roles_map), count.index)])}
+      "Resource": ${jsonencode(formatlist("arn:aws:iam::%s:role/%s", data.aws_caller_identity.current.account_id, var.group_roles_map[element(keys(var.group_roles_map), count.index)]))}
     }
   ]
 }
@@ -117,16 +127,13 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
     }
   }
 
-  logging {
-    target_bucket = "${aws_s3_bucket.agha_gdr_log.id}"
-    target_prefix = "log/access/staging/"
-  }
 
-  tags {
-    Name        = "agha-gdr-staging"
-    Project     = "AGHA-GDR"
-    Environment = "${terraform.workspace}"
-  }
+  tags = "${merge(
+    local.common_tags,
+    map(
+      "Name", "agha-gdr-staging"
+    )
+  )}"
 }
 
 resource "aws_s3_bucket" "agha_gdr_store" {
@@ -141,16 +148,12 @@ resource "aws_s3_bucket" "agha_gdr_store" {
     }
   }
 
-  logging {
-    target_bucket = "${aws_s3_bucket.agha_gdr_log.id}"
-    target_prefix = "log/access/store/"
-  }
-
-  tags {
-    Name        = "agha-gdr-store"
-    Project     = "AGHA-GDR"
-    Environment = "${terraform.workspace}"
-  }
+  tags = "${merge(
+    local.common_tags,
+    map(
+      "Name", "agha-gdr-store"
+    )
+  )}"
 }
 
 resource "aws_s3_bucket" "agha_gdr_log" {

@@ -1,3 +1,7 @@
+variable "stack_name" {
+  default = "agha_gdr"
+}
+
 ################################################################################
 # workspace specific variables
 # NOTE: only 'dev' is supported at this stage
@@ -62,9 +66,9 @@ variable "group_roles_map" {
   # Used to create the roles (one for each group) and associate the group with the role
 
   default = {
-    agha_gdr_admins = ["arn:aws:iam::620123204273:role/agha_gdr_admins"]
-    agha_gdr_submit = ["arn:aws:iam::620123204273:role/agha_gdr_submit"]
-    agha_gdr_read   = ["arn:aws:iam::620123204273:role/agha_gdr_read"]
+    agha_gdr_admins = ["agha_gdr_admins"]
+    agha_gdr_submit = ["agha_gdr_submit"]
+    agha_gdr_read   = ["agha_gdr_read"]
   }
 }
 

@@ -221,7 +221,7 @@ resource "aws_s3_bucket" "fastq-data" {
 
     transition {
       days          = 0
-      storage_class = "GLACIER"
+      storage_class = "DEEP_ARCHIVE"
     }
   }
 }

@@ -37,6 +37,23 @@ module "umccr_pipeline_user" {
   pgp_key  = "keybase:freisinger"
 }
 
+# User for CloudWatchAgent running on novastor
+module "novastor_cloudwatch_user" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "novastor_cloudwatch"
+  pgp_key  = "keybase:freisinger"
+}
+
+resource "aws_iam_user_policy_attachment" "novastor_cloudwatch_user_policy_1" {
+  user       = "${module.novastor_cloudwatch_user.username}"
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_user_policy_attachment" "novastor_cloudwatch_user_policy_2" {
+  user       = "${module.novastor_cloudwatch_user.username}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+}
+
 ################################################################################
 # define the assume role policies and who can use them
 

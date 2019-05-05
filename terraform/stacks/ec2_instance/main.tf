@@ -1,13 +1,6 @@
 # NOTE: AWS profile is hard coded for convenience
 terraform {
   required_version = "~> 0.11.6"
-
-  backend "s3" {
-    bucket         = "agha-terraform-states"
-    key            = "agha_incoming/terraform.tfstate"
-    region         = "ap-southeast-2"
-    dynamodb_table = "terraform-state-lock"
-  }
 }
 
 provider "aws" {
@@ -18,16 +11,16 @@ provider "aws" {
 # prepare local variables
 
 locals {
-  bucket_arns = "${concat(formatlist("arn:aws:s3:::%s", var.agha_buckets), formatlist("arn:aws:s3:::%s/*", var.agha_buckets))}"
+  bucket_arns = "${concat(formatlist("arn:aws:s3:::%s", var.onboarding_bucket), formatlist("arn:aws:s3:::%s/*", var.onboarding_bucket))}"
 }
 
 ################################################################################
-# EC2 instance setup to access data in s3://agha-gdr-staging-dev
+# EC2 instance setup to access data in s3://umccr-onboarding-test
 data "template_file" "userdata" {
-  template = "${file("${path.module}/templates/userdata.tpl")}"
+  #template = "${file("${path.module}/templates/userdata.tpl")}"
 
   vars {
-    BUCKETS       = "${join(" ", var.agha_buckets)}"
+    BUCKETS       = "${join(" ", var.onboarding_bucket)}"
     INSTANCE_TAGS = "${jsonencode(var.instance_tags)}"
   }
 }
@@ -44,7 +37,7 @@ resource "aws_spot_instance_request" "stackstorm_instance" {
   #   subnet_id              = "${aws_subnet.sn_a_vpc_st2.id}"
   #   vpc_security_group_ids = [ "${aws_security_group.vpc_st2.id}" ]
 
-  user_data = "${data.template_file.userdata.rendered}"
+  #user_data = "${data.template_file.userdata.rendered}"
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 10

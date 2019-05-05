@@ -9,7 +9,7 @@ variable "availability_zone" {
 }
 
 variable "stack_name" {
-  default = "agha_incoming"
+  default = "ec2_instance"
 }
 
 variable "instance_type" {
@@ -32,11 +32,11 @@ variable "instance_spot_price" {
 variable "instance_tags" {
   description = "Tags in json format, see https://docs.aws.amazon.com/cli/latest/reference/ec2/create-tags.html"
 
-  default = "[{\"Key\": \"Name\", \"Value\": \"agha_incoming_dev\"},{\"Key\": \"Stack\", \"Value\": \"agha_incoming\"},{\"Key\": \"Environment\", \"Value\": \"agha\"}]"
+  default = "[{\"Key\": \"Name\", \"Value\": \"aws_onboarding\"},{\"Key\": \"Stack\", \"Value\": \"ec2_instance\"},{\"Key\": \"Environment\", \"Value\": \"ec2\"}]"
 }
 
-variable "agha_buckets" {
+variable "onboarding_bucket" {
   type = "list"
 
-  default = ["agha-gdr-staging", "agha-gdr-store"]
+  default = ["umccr-onboarding-test"]
 }

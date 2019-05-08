@@ -94,13 +94,6 @@ variable "workspace_root_domain" {
   }
 }
 
-variable "workspace_enable_bucket_lifecycle_rule" {
-  default = {
-    prod = true
-    dev  = false
-  }
-}
-
 variable "workspace_vault_env" {
   default = {
     prod = "PROD"

@@ -217,7 +217,7 @@ resource "aws_s3_bucket" "fastq-data" {
 
   lifecycle_rule {
     id      = "move_to_glacier"
-    enabled = "${var.workspace_enable_bucket_lifecycle_rule[terraform.workspace]}"
+    enabled = "${terraform.workspace == "dev" ? false : true}"
 
     transition {
       days          = 0
@@ -240,7 +240,7 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
 
   lifecycle_rule {
     id      = "move_to_glacier"
-    enabled = "${var.workspace_enable_bucket_lifecycle_rule[terraform.workspace]}"
+    enabled = "${terraform.workspace == "dev" ? false : true}"
 
     transition {
       days          = 0

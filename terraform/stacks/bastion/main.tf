@@ -10,6 +10,7 @@ terraform {
 }
 
 provider "aws" {
+  version = "~> 2.4.0"
   region = "ap-southeast-2"
 }
 
@@ -193,4 +194,43 @@ resource "aws_iam_policy_attachment" "assume_umccr_pipeline_prod_role_attachment
   groups     = []
   users      = ["${module.umccr_pipeline_user.username}"]
   roles      = []
+}
+
+
+## Slack notify Lambda #########################################################
+
+data "aws_secretsmanager_secret" "slack_webhook_id" {
+  name = "slack/webhook/id"
+}
+
+data "aws_secretsmanager_secret_version" "slack_webhook_id" {
+  secret_id = "${data.aws_secretsmanager_secret.slack_webhook_id.id}"
+}
+
+module "notify_slack_lambda" {
+  # based on: https://github.com/claranet/terraform-aws-lambda
+  source = "../../modules/lambda"
+
+  function_name = "${var.stack_name}_slack_lambda"
+  description   = "Lambda to send messages to Slack"
+  handler       = "notify_slack.lambda_handler"
+  runtime       = "python3.6"
+  timeout       = 3
+
+  source_path = "${path.module}/lambdas/notify_slack.py"
+
+  environment {
+    variables {
+      SLACK_HOST             = "hooks.slack.com"
+      SLACK_WEBHOOK_ENDPOINT = "/services/${data.aws_secretsmanager_secret_version.slack_webhook_id.secret_string}"
+      SLACK_CHANNEL          = "${var.slack_channel}"
+    }
+  }
+
+  tags = {
+    Service     = "${var.stack_name}_lambda"
+    Name        = "${var.stack_name}_slack_lambda"
+    Stack       = "${var.stack_name}"
+    Environment = "prod"
+  }
 }

@@ -1,6 +1,14 @@
+variable "stack_name" {
+  default = "bastion"
+}
+
+variable "slack_channel" {
+  default = "#biobots"
+}
+
 ################################################################################
-# NOTE: this is currently NOT used. This showe the config if the "secure_users"
-#        module would be used.
+# NOTE: The following is currently NOT used. This showe the config if the
+#       "secure_users" module would be used.
 ################################################################################
 
 ################################################################################

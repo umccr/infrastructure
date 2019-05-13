@@ -1,13 +1,11 @@
 # bastion stack
 
 ```
-export AWS_PROFILE=umccr_bastion
-
 terraform ...
 ```
 
 
-This Terraform stack is mainly used to setup user accounts, arrange them into groups and define who is allowed to do what across our AWS accounts.
+This Terraform stack is mainly used to setup service user accounts, arrange them into groups and define who is allowed to do what across our AWS accounts.
 
 NOTE: This stack is specific to the AWS `bastion` account and only account admins can apply it.
 

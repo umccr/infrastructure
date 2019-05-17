@@ -144,6 +144,11 @@ def write_csv_file(output_file, column_headers, data_rows):
             sheetwriter.writerow(row)
 
 
+def next_available_row(worksheet):
+    str_list = list(filter(None, worksheet.col_values(1)))  # fastest
+    return len(str_list)+1
+
+
 def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
     # follow example from: 
     # https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
@@ -156,8 +161,10 @@ def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
     else:
         sheet = client.open_by_key(spreadsheet_id).sheet1
 
+    next_row = next_available_row(sheet)
     for row in data_rows:
-        sheet.append_row(values=row, value_input_option='USER_ENTERED')
+        sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
+        next_row += 1
 
 
 if __name__ == "__main__":

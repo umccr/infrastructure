@@ -109,19 +109,42 @@ def import_library_sheet(year):
 
 
 def get_meta_data(library_id, external_id):
+    # TODO: this should be rewritten once we agreed on a definitive strategy/naming convention
     result = {}
     try:
         global library_tracking_spreadsheet_df
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == library_id]
-        if len(hit) != 0:
-            if hit[sample_name_column_name].values[0] != external_id:
-                raise ValueError(f"Found external ID {hit[sample_name_column_name].values[0]} does not match " +
-                                 f"provided one {external_id} for library {library_id}")
-        else:
-            # No hit with library ID, so we need to look for the external ID
+        if len(hit) == 0:
+            logger.warn(f"No hit for library ID {library_id} in library ID column.")
             hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_name_column_name] == external_id]
-            if len(hit) == 0:
-                raise ValueError(f"No entry found for external ID {external_id}!")
+        if len(hit) == 0:
+            logger.warn(f"No hit for external ID {external_id} in sample name column")
+            hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == external_id]
+        if len(hit) == 0:
+            logger.warn(f"No hit for external ID {external_id} in sample id column")
+            hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_name_column_name] == library_id]
+
+        # we should have a single hit now
+        if len(hit) == 0:
+            raise ValueError(f"Cound not find records for library/external IDs: {library_id}/{external_id}")
+
+        if len(hit) > 1:
+            # too many hits, let's see if we can figure out which one we need
+            logger.warn(f"Too many hits: {len(hit)}. Trying to select the best fit...")
+            for i in range(len(hit)):
+                logger.debug(f"{hit[sample_name_column_name].values[i]} - {hit[sample_id_column_name].values[i]}")
+            hit = hit[(hit[sample_name_column_name] == external_id) & (hit[sample_id_column_name] == library_id)]
+            logger.debug(f"New hit: {hit}")
+
+        found_library_id = hit[sample_id_column_name].values[0]
+        found_external_id = hit[sample_name_column_name].values[0]
+        logger.debug(f"Found lib/ext ID: {found_library_id}/{found_external_id}.")
+        logger.debug(f"Given lib/ext ID: {library_id}/{external_id}.")
+
+        # Assume that we have the correct record...
+        # if not ((found_library_id == library_id and found_external_id == external_id) or (found_library_id == external_id and found_external_id == library_id)):
+        #     raise ValueError(f"Found external/library ID {hit[sample_name_column_name].values[0]}/{hit[sample_id_column_name].values[0]} do not match " +
+        #                         f"provided ones {external_id} /{library_id}")
 
         for column_name in column_names:
             if not hit[column_name].isnull().values[0]:
@@ -129,7 +152,7 @@ def get_meta_data(library_id, external_id):
             else:
                 result[column_name] = '-'
     except Exception as e:
-        logger.error(f"Could not find entry for sample {library_id}! Exception {e}")
+        logger.error(f"Could not find entry for sample {library_id}! Exception: {e}")
 
     logger.info(f"Using values: {result} for sample {library_id}.")
 

@@ -3,24 +3,22 @@ terraform {
   required_version = "~> 0.11.6"
 
   backend "s3" {
-    bucket         = "umccr-terraform-states"
+    bucket         = "agha-terraform-states"
     key            = "agha_incoming/terraform.tfstate"
     region         = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
-    profile        = "umccr_ops_admin_no_mfa"
   }
 }
 
 provider "aws" {
-  region  = "${var.aws_region}"
-  profile = "umccr_ops_admin_no_mfa"
+  region = "${var.aws_region}"
 }
 
 ################################################################################
 # prepare local variables
 
 locals {
-    bucket_arns = "${concat(formatlist("arn:aws:s3:::%s", var.workspace_agha_buckets[terraform.workspace]), formatlist("arn:aws:s3:::%s/*", var.workspace_agha_buckets[terraform.workspace]))}"
+  bucket_arns = "${concat(formatlist("arn:aws:s3:::%s", var.agha_buckets), formatlist("arn:aws:s3:::%s/*", var.agha_buckets))}"
 }
 
 ################################################################################
@@ -29,8 +27,8 @@ data "template_file" "userdata" {
   template = "${file("${path.module}/templates/userdata.tpl")}"
 
   vars {
-    AGHA_BUCKETS  = "${join(" ", var.workspace_agha_buckets[terraform.workspace])}"
-    INSTANCE_TAGS = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
+    BUCKETS       = "${join(" ", var.agha_buckets)}"
+    INSTANCE_TAGS = "${jsonencode(var.instance_tags)}"
   }
 }
 
@@ -67,7 +65,7 @@ resource "aws_iam_instance_profile" "instance_profile" {
 }
 
 resource "aws_iam_role" "instance_profile" {
-  name = "${var.stack_name}_instance_role_${terraform.workspace}"
+  name = "${var.stack_name}_instance_role"
   path = "/${var.stack_name}/"
 
   assume_role_policy = <<EOF

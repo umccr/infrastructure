@@ -14,12 +14,12 @@ variable "stack_name" {
 
 variable "instance_type" {
   type    = "string"
-  default = "t3.micro"
+  default = "t2.micro"
 }
 
 variable "instance_ami" {
   type    = "string"
-  default = "ami-6bc21b09"
+  default = "ami-04481c741a0311bbb"  # AWS Linux 2
 }
 
 variable "instance_spot_price" {
@@ -29,19 +29,14 @@ variable "instance_spot_price" {
 
 # workspace specific variables
 
-variable "workspace_instance_tags" {
-  type        = "map"
+variable "instance_tags" {
   description = "Tags in json format, see https://docs.aws.amazon.com/cli/latest/reference/ec2/create-tags.html"
 
-  default = {
-    dev = "[{\"Key\": \"Name\", \"Value\": \"agha_incoming_dev\"},{\"Key\": \"Stack\", \"Value\": \"agha_incoming\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
-  }
+  default = "[{\"Key\": \"Name\", \"Value\": \"agha_incoming_dev\"},{\"Key\": \"Stack\", \"Value\": \"agha_incoming\"},{\"Key\": \"Environment\", \"Value\": \"agha\"}]"
 }
 
-variable "workspace_agha_buckets" {
-  type = "map"
+variable "agha_buckets" {
+  type = "list"
 
-  default = {
-    dev = ["agha-gdr-staging-dev", "agha-gdr-log-dev", "agha-gdr-store-dev"]
-  }
+  default = ["agha-gdr-staging", "agha-gdr-store"]
 }

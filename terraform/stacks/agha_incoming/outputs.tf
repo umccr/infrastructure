@@ -1,9 +1,5 @@
-output "workspace" {
-  value = "${terraform.workspace}"
-}
-
 output "instance_tags" {
-  value = "${jsonencode(var.workspace_instance_tags[terraform.workspace])}"
+  value = "${jsonencode(var.instance_tags)}"
 }
 
 output "instance_public_dns" {
@@ -12,4 +8,8 @@ output "instance_public_dns" {
 
 output "instance_public_ip" {
   value = "${aws_spot_instance_request.stackstorm_instance.public_ip}"
+}
+
+output "instance_id" {
+  value = "${aws_spot_instance_request.stackstorm_instance.spot_instance_id}"
 }

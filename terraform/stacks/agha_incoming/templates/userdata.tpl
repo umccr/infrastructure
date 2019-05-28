@@ -2,79 +2,23 @@
 set -euxo pipefail # make sure any failling command will fail the whole script
 
 # This script template uses the following placeholders:
-#   AGHA_BUCKET   : The bucket to mount to the instance (via s3fs)
+#   BUCKETS       : The bucket to mount to the instance (via s3fs)
 #   INSTANCE_TAGS : The tag name/value pairs to associate with this instance
+
 
 echo "--------------------------------------------------------------------------------"
 echo "Provided variables"
-echo "${AGHA_BUCKETS}"
-echo "${INSTANCE_TAGS}"
-if test -z "${AGHA_BUCKETS}" || test -z "${INSTANCE_TAGS}"; then
+echo "BUCKETS: ${BUCKETS}"
+if test -z "${BUCKETS}"; then
   echo "ERROR: Expected variable missing!"
   exit 1
 fi
 
-echo "--------------------------------------------------------------------------------"
-echo "Install dependencies"
-apt-get update
-apt-get install -y jq
-
-
-
-echo "--------------------------------------------------------------------------------"
-echo "Set timezone"
-# set to Melbourne local time
-rm /etc/localtime
-ln -s /usr/share/zoneinfo/Australia/Melbourne /etc/localtime
-ls -al /etc/localtime
-
-
-
-echo "--------------------------------------------------------------------------------"
-echo "Configure SSH"
-echo "GatewayPorts yes" | tee -a /etc/ssh/sshd_config
-
-
-echo "--------------------------------------------------------------------------------"
-echo "Adding SSH public keys"
-# Allows *public* members on UMCCR org to SSH to our AMIs
-github_org="UMCCR"
-
-echo "Fetching GitHub SSH keys for $github_org members..."
-org_ssh_keys=`curl -s https://api.github.com/orgs/$github_org/members | jq -r .[].html_url | sed 's/$/.keys/'`
-for ssh_key in $org_ssh_keys
-do
-	wget $ssh_key -O - >> /home/ubuntu/.ssh/authorized_keys
-done
-echo "All SSH keys from $github_org added to the AMI's /home/ubuntu/.ssh/authorized_keys"
-
-
-
-echo "--------------------------------------------------------------------------------"
-echo "Install awscli"
-apt-get install -y python-pip
-pip install awscli --upgrade
-
-
-
-echo "--------------------------------------------------------------------------------"
-echo "Installing s3fs"
-# https://github.com/s3fs-fuse/s3fs-fuse
-apt-get install -y s3fs
-
-echo "Configuring s3fs"
-echo "user_allow_other" | sudo tee -a /etc/fuse.conf
-
-
-
-echo "--------------------------------------------------------------------------------"
-echo "Mounting buckets with s3fs"
-for bucket in ${AGHA_BUCKETS}
-do
-  mkdir /mnt/$bucket
-  s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
-done
-
+echo "INSTANCE_TAGS: ${INSTANCE_TAGS}"
+if test -z "${INSTANCE_TAGS}"; then
+  echo "ERROR: Expected variable missing!"
+  exit 1
+fi
 
 
 echo "--------------------------------------------------------------------------------"
@@ -82,5 +26,42 @@ echo "Tagging the instance"
 export AWS_DEFAULT_REGION=ap-southeast-2
 instance_id=`cat /var/lib/cloud/data/instance-id`
 aws ec2 create-tags --resources $instance_id --tags ${INSTANCE_TAGS}
+
+
+echo "--------------------------------------------------------------------------------"
+echo "Prerequisites"
+yum update -y
+
+
+echo "--------------------------------------------------------------------------------"
+echo "Set Melbourne timezone"
+# set to Melbourne local time
+rm /etc/localtime
+ln -s /usr/share/zoneinfo/Australia/Melbourne /etc/localtime
+ls -al /etc/localtime
+
+
+echo "--------------------------------------------------------------------------------"
+echo "Installing s3fs"
+# https://github.com/s3fs-fuse/s3fs-fuse
+# TODO: The following is distribution specific (Amazon linux). This could be made more generic.
+
+amazon-linux-extras install -y epel
+yum install -y s3fs-fuse
+echo "Configuring s3fs"
+echo "user_allow_other" | sudo tee -a /etc/fuse.conf
+
+
+# TODO: don't mount buckets by default
+echo "--------------------------------------------------------------------------------"
+echo "Mounting buckets with s3fs"
+for bucket in ${BUCKETS}
+do
+  mkdir /mnt/$bucket
+  s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
+done
+
+echo "--------------------------------------------------------------------------------"
+echo "User data Done."
 
 

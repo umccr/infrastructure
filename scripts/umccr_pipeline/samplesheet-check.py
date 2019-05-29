@@ -51,8 +51,7 @@ def getSortedSamples(samplesheet):
         else:
             index2_length = 0
 
-        if sample.Sample_ID.startswith("SI-GA"):
-            sample.Sample_ID = sample.Sample_Name
+        if sample.I7_Index_ID.startswith("SI-GA"):
             sorted_samples[("10X", index_length, index2_length)].append(sample)
             write_log(f"DEBUG: Adding sample {sample} to key (10X, {index_length}, {index2_length})")
         else:

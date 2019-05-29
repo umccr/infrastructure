@@ -17,7 +17,6 @@ function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
   if test "$DEPLOY_ENV" = "prod"; then
     echo "$msg" >> $DIR/${script}.log
-    echo "$msg" > /dev/udp/localhost/9999
   else
     echo "$msg" >> $DIR/${script}.dev.log
     echo "$msg"

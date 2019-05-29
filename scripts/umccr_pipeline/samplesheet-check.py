@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import sys
 import os
-import socket
 import datetime
 import collections
 from sample_sheet import SampleSheet
@@ -18,19 +17,14 @@ if DEPLOY_ENV == 'prod':
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
 else:
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
-UDP_IP = "127.0.0.1"
-UDP_PORT = 9999
 LOG_FILE = open(LOG_FILE_NAME, "a+")
-SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
 
 
 def write_log(msg):
     now = datetime.datetime.now()
     msg = f"{now} {SCRIPT}: {msg}"
 
-    if DEPLOY_ENV == 'prod':
-        SOCK.sendto(bytes(msg+"\n", "utf-8"), (UDP_IP, UDP_PORT))
-    else:
+    if DEPLOY_ENV == 'dev':
         print(msg)
     print(msg, file=LOG_FILE)
 
@@ -129,4 +123,3 @@ if __name__ == "__main__":
          runfolder_name=runfolder_name)
 
     LOG_FILE.close()
-    SOCK.close()

@@ -72,7 +72,7 @@ def build_command(script_case, input_data):
         samplesheet_path = os.path.join(runfolder_base_path, runfolder, "SampleSheet.csv")
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
-        command += f" python {samplesheet_check_script} {samplesheet_path} {runfolder}"
+        command += f" python {samplesheet_check_script} {samplesheet_path}"
     elif script_case == "bcl2fastq":
         execution_timneout = '36000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"

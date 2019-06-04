@@ -159,6 +159,7 @@ def lambda_handler(event, context):
 
     print("Retrieving task token...")
     print(f"...for activity: {WAIT_FOR_ACTIVITY_ARN} and lambda: {context.function_name}")
+    # TODO: make stable: wait/poll for response!
     activity_task_response = states_client.get_activity_task(
         activityArn=WAIT_FOR_ACTIVITY_ARN,
         workerName=context.function_name, )

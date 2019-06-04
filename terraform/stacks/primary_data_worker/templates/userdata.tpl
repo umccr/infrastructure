@@ -77,7 +77,7 @@ EOF
 yum install -y conda
 conda install -y -c conda-forge -c bioconda bcftools vcflib openssl bedtools htslib pythonpy samtools vawk
 
-yum install -y git mosh tmux
+yum install -y git tmux
 
 echo "--------------------------------------------------------------------------------"
 echo "User data Done."

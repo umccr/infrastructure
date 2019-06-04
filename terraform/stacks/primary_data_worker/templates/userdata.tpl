@@ -55,4 +55,29 @@ do
 done
 
 echo "--------------------------------------------------------------------------------"
+echo "Installing conda, bioinfo tools and other practical "poke-around" basics"
+# https://www.anaconda.com/rpm-and-debian-repositories-for-miniconda/
+
+# Import our gpg public key
+
+rpm --import https://repo.anaconda.com/pkgs/misc/gpgkeys/anaconda.asc
+
+# Add the Anaconda repository
+
+cat <<EOF > /etc/yum.repos.d/conda.repo
+
+[conda]
+name=Conda
+baseurl=https://repo.anaconda.com/pkgs/misc/rpmrepo/conda
+enabled=1
+gpgcheck=1
+gpgkey=https://repo.anaconda.com/pkgs/misc/gpgkeys/anaconda.asc
+EOF
+
+yum install -y conda
+conda install -y -c conda-forge -c bioconda bcftools vcflib openssl bedtools htslib pythonpy samtools vawk
+
+yum install -y git mosh tmux
+
+echo "--------------------------------------------------------------------------------"
 echo "User data Done."

@@ -215,7 +215,7 @@
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
               "ResultPath": "$.script_result",
-              "TimeoutSeconds": 36005,
+              "TimeoutSeconds": 86400,
               "End": true
             }
           }

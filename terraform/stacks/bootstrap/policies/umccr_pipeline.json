@@ -23,7 +23,10 @@
         "Action": [
           "lambda:InvokeFunction"
         ],
-        "Resource": "arn:aws:lambda:${aws_region}:${aws_account}:function:${slack_lambda_name}"
+        "Resource": [
+          "arn:aws:lambda:${aws_region}:${aws_account}:function:${slack_lambda_name}",
+          "arn:aws:lambda:${aws_region}:${aws_account}:function:${submission_lambda_name}"
+        ]
       },
       {
         "Sid": "",

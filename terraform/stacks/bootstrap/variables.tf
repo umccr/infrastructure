@@ -129,6 +129,13 @@ variable "workspace_slack_lambda_name" {
   }
 }
 
+variable "workspace_submission_lambda_name" {
+  default = {
+    prod = "umccr_pipeline_job_submission_lambda_prod"
+    dev  = "umccr_pipeline_job_submission_lambda_dev"
+  }
+}
+
 variable "workspace_state_machine_name" {
   default = {
     prod = "umccr_pipeline_state_machine_prod"

@@ -75,12 +75,13 @@ def checkSampleSheetDataRecords(samplesheet):
         if sample.Sample_ID == sample.Sample_Name:
             raise ValueError(f"Sample_ID '{sample.Sample_ID}' cannot be the same as the Sample_Name!")
 
-        # NOTE: ID?Name are swapped in the SampleSheet
-        if not (regex_sample_id_int.fullmatch(sample.Sample_Name) or regex_sample_id_ext.fullmatch(sample.Sample_Name)):
-            raise ValueError(f"Sample_ID '{sample.Sample_Name}' did not match the expected pattern!")
+        # check Sample ID against expected format
+        if not (regex_sample_id_int.fullmatch(sample.Sample_ID) or regex_sample_id_ext.fullmatch(sample.Sample_ID)):
+            raise ValueError(f"Sample_ID '{sample.Sample_ID}' did not match the expected pattern!")
 
-        if not (regex_sample_name.fullmatch(sample.Sample_ID) or regex_sample_ctl.match(sample.Sample_ID)):
-            raise ValueError(f"Sample_Name '{sample.Sample_ID}' did not match the expected pattern!")
+        # check Sample Name against expected format
+        if not (regex_sample_name.fullmatch(sample.Sample_Name) or regex_sample_ctl.match(sample.Sample_Name)):
+            raise ValueError(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
 
         sample.Sample_Name
 

@@ -364,28 +364,28 @@
     "Notify checksums for fastqs complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
-      "Next": "Asynchronous sync runfolder to hpc",
+      "Next": "Asynchronous sync runfolder to Spartan S3",
       "TimeoutSeconds": 12,
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Fastq checksums complete. Starting runfolder sync to HPC..."
+        "message": "Fastq checksums complete. Starting runfolder sync to Spartan S3..."
       },
       "ResultPath": "$.lambda_result"
     },
-    "Asynchronous sync runfolder to hpc": {
+    "Asynchronous sync runfolder to Spartan S3": {
       "Type": "Parallel",
-      "Next": "Notify runfolder sync to HPC complete",
+      "Next": "Notify runfolder sync to Spartan S3 complete",
       "OutputPath": "$[1]",
       "Branches": [
         {
-          "StartAt": "Start runfolder sync to hpc",
+          "StartAt": "Start runfolder sync to Spartan S3",
           "States": {
-            "Start runfolder sync to hpc": {
+            "Start runfolder sync to Spartan S3": {
               "Type": "Task",
               "Resource": "${pipeline_lambda_arn}",
               "Parameters": {
-                "script_execution": "sync_runfolder_to_hpc",
+                "script_execution": "sync_runfolder_to_s3_spartan",
                 "input.$": "$"
               },
               "TimeoutSeconds": 12,
@@ -404,9 +404,9 @@
           }
         },
         {
-          "StartAt": "Wait for runfolder sync to hpc",
+          "StartAt": "Wait for runfolder sync to Spartan S3",
           "States": {
-            "Wait for runfolder sync to hpc": {
+            "Wait for runfolder sync to Spartan S3": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
               "ResultPath": "$.script_result",
@@ -426,31 +426,31 @@
         }
       ]
     },
-    "Notify runfolder sync to HPC complete": {
+    "Notify runfolder sync to Spartan S3 complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
-      "Next": "Asynchronous sync fastqs to hpc",
+      "Next": "Asynchronous sync fastqs to Spartan S3",
       "TimeoutSeconds": 12,
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Runfolder sync to HPC complete. Starting fastq sync to HPC..."
+        "message": "Runfolder sync to Spartan S3 complete. Starting fastq sync to Spartan S3..."
       },
       "ResultPath": "$.lambda_result"
     },
-    "Asynchronous sync fastqs to hpc": {
+    "Asynchronous sync fastqs to Spartan S3": {
       "Type": "Parallel",
-      "Next": "Notify fastq sync to HPC complete",
+      "Next": "Notify fastq sync to Spartan S3 complete",
       "OutputPath": "$[1]",
       "Branches": [
         {
-          "StartAt": "Start fastq sync to hpc",
+          "StartAt": "Start fastq sync to Spartan S3",
           "States": {
-            "Start fastq sync to hpc": {
+            "Start fastq sync to Spartan S3": {
               "Type": "Task",
               "Resource": "${pipeline_lambda_arn}",
               "Parameters": {
-                "script_execution": "sync_fastqs_to_hpc",
+                "script_execution": "sync_fastqs_to_s3_spartan",
                 "input.$": "$"
               },
               "TimeoutSeconds": 12,
@@ -469,9 +469,9 @@
           }
         },
         {
-          "StartAt": "Wait for fastq sync to hpc",
+          "StartAt": "Wait for fastq sync to Spartan S3",
           "States": {
-            "Wait for fastq sync to hpc": {
+            "Wait for fastq sync to Spartan S3": {
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
               "ResultPath": "$.script_result",
@@ -491,7 +491,7 @@
         }
       ]
     },
-    "Notify fastq sync to HPC complete": {
+    "Notify fastq sync to Spartan S3 complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
       "Next": "Asynchronous sync runfolder to S3",
@@ -499,7 +499,7 @@
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Fastq sync to HPC complete. Starting runfolder sync to S3..."
+        "message": "Fastq sync to Spartan S3 complete. Starting runfolder sync to S3..."
       },
       "ResultPath": "$.lambda_result"
     },

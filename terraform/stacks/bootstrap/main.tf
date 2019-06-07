@@ -336,7 +336,7 @@ module "notify_slack_lambda" {
   }
 }
 
-## Vault resources #############################################################
+## 
 
 # EC2 instance to run Vault server
 data "aws_ami" "vault_ami" {
@@ -344,263 +344,6 @@ data "aws_ami" "vault_ami" {
   owners           = ["620123204273"]
   executable_users = ["self"]
   name_regex       = "^vault-ami*"
-}
-
-resource "aws_spot_instance_request" "vault" {
-  spot_price                      = "${var.vault_instance_spot_price}"
-  wait_for_fulfillment            = true
-  instance_interruption_behaviour = "stop"
-
-  ami                    = "${data.aws_ami.vault_ami.id}"
-  instance_type          = "${var.vault_instance_type}"
-  availability_zone      = "${var.vault_availability_zone}"
-  iam_instance_profile   = "${aws_iam_instance_profile.vault.id}"
-  subnet_id              = "${aws_subnet.vault_subnet_a.id}"
-  vpc_security_group_ids = ["${aws_security_group.vault.id}"]
-
-  monitoring = true
-  user_data  = "${data.template_file.userdata.rendered}"
-
-  root_block_device {
-    volume_type           = "gp2"
-    volume_size           = 8
-    delete_on_termination = true
-  }
-
-  # tags apply to the spot request, NOT the instance!
-  # https://github.com/terraform-providers/terraform-provider-aws/issues/174
-  # https://github.com/hashicorp/terraform/issues/3263#issuecomment-284387578
-  tags {
-    Name = "vault-server-request"
-  }
-}
-
-data "aws_secretsmanager_secret" "token_provider_user" {
-  name = "token_provider/username"
-}
-
-data "aws_secretsmanager_secret_version" "token_provider_user" {
-  secret_id = "${data.aws_secretsmanager_secret.token_provider_user.id}"
-}
-
-data "aws_secretsmanager_secret" "token_provider_pass" {
-  name = "token_provider/password"
-}
-
-data "aws_secretsmanager_secret_version" "token_provider_pass" {
-  secret_id = "${data.aws_secretsmanager_secret.token_provider_pass.id}"
-}
-
-data "template_file" "userdata" {
-  template = "${file("${path.module}/templates/vault_userdata.tpl")}"
-
-  vars {
-    allocation_id = "${aws_eip.vault.id}"
-    bucket_name   = "${aws_s3_bucket.vault.id}"
-    vault_domain  = "${aws_route53_record.vault.fqdn}"
-    vault_env     = "${var.workspace_vault_env[terraform.workspace]}"
-    tp_vault_user = "${data.aws_secretsmanager_secret_version.token_provider_user.secret_string}"
-    tp_vault_pass = "${data.aws_secretsmanager_secret_version.token_provider_pass.secret_string}"
-    instance_tags = "${jsonencode(var.workspace_vault_instance_tags[terraform.workspace])}"
-  }
-}
-
-# Vault instance profile / role / policies
-resource "aws_iam_instance_profile" "vault" {
-  role = "${aws_iam_role.vault.name}"
-}
-
-resource "aws_iam_role" "vault" {
-  name               = "UmccrVaultInstanceProfileRole${var.workspace_name_suffix[terraform.workspace]}"
-  path               = "/"
-  assume_role_policy = "${data.aws_iam_policy_document.vault_assume_policy.json}"
-}
-
-data "aws_iam_policy_document" "vault_assume_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-data "template_file" "vault_s3_policy" {
-  template = "${file("policies/vault-s3-policy.json")}"
-
-  vars {
-    bucket_name = "${aws_s3_bucket.vault.id}"
-  }
-}
-
-resource "aws_iam_policy" "vault_s3_policy" {
-  path   = "/"
-  policy = "${data.template_file.vault_s3_policy.rendered}"
-}
-
-resource "aws_iam_role_policy_attachment" "vault_s3_policy_attachment" {
-  role       = "${aws_iam_role.vault.name}"
-  policy_arn = "${aws_iam_policy.vault_s3_policy.arn}"
-}
-
-resource "aws_iam_policy" "vault_ec2_policy" {
-  path   = "/"
-  policy = "${file("policies/vault_ec2_policy.json")}"
-}
-
-resource "aws_iam_role_policy_attachment" "vault_ec2_policy_attachment" {
-  role       = "${aws_iam_role.vault.name}"
-  policy_arn = "${aws_iam_policy.vault_ec2_policy.arn}"
-}
-
-resource "aws_iam_policy" "vault_logs_policy" {
-  path   = "/"
-  policy = "${file("policies/vault-logs-policy.json")}"
-}
-
-resource "aws_iam_role_policy_attachment" "vault_logs_policy_attachment" {
-  role       = "${aws_iam_role.vault.name}"
-  policy_arn = "${aws_iam_policy.vault_logs_policy.arn}"
-}
-
-# Vault network
-resource "aws_vpc" "vault" {
-  cidr_block           = "172.31.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-  instance_tenancy     = "default"
-
-  tags {
-    Name = "vpc_vault${var.workspace_name_suffix[terraform.workspace]}"
-  }
-}
-
-resource "aws_subnet" "vault_subnet_a" {
-  vpc_id                  = "${aws_vpc.vault.id}"
-  cidr_block              = "172.31.0.0/20"
-  map_public_ip_on_launch = true
-  availability_zone       = "${var.vault_availability_zone}"
-
-  tags {
-    Name = "vault_subnet_a${var.workspace_name_suffix[terraform.workspace]}"
-  }
-}
-
-resource "aws_security_group" "vault" {
-  description = "Security group for Vault VPC"
-  vpc_id      = "${aws_vpc.vault.id}"
-
-  # required for letsencrypt
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # port for vault communication
-  ingress {
-    from_port   = 8200
-    to_port     = 8200
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # port for goldfish communication
-  ingress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # allow SSH access
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # allow full access from within the security group
-  ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-    self      = true
-  }
-
-  # allow all egress
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
-}
-
-resource "aws_internet_gateway" "vault" {
-  vpc_id = "${aws_vpc.vault.id}"
-
-  tags {
-    Name = "vpc_vault_gw${var.workspace_name_suffix[terraform.workspace]}"
-  }
-}
-
-resource "aws_route_table" "vault" {
-  vpc_id = "${aws_vpc.vault.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.vault.id}"
-  }
-}
-
-resource "aws_route_table_association" "vault" {
-  subnet_id      = "${aws_subnet.vault_subnet_a.id}"
-  route_table_id = "${aws_route_table.vault.id}"
-}
-
-data "aws_route53_zone" "umccr_org" {
-  name = "${var.workspace_root_domain[terraform.workspace]}."
-}
-
-resource "aws_route53_record" "vault" {
-  zone_id = "${data.aws_route53_zone.umccr_org.zone_id}"
-  name    = "${var.vault_sub_domain}.${data.aws_route53_zone.umccr_org.name}"
-  type    = "A"
-  ttl     = "300"
-  records = ["${aws_eip.vault.public_ip}"]
-}
-
-################################################################################
-# Set up a pool of EIPs
-# TODO: to enable re-purposing of EIPs, perhaps a generic resource with 'count'
-# could be used. Different tags could be used to differenciate the pooled EIPs.
-# Terraform v0.12 will facilitate this, as lists/maps can be merged, making it
-# easier to combine common with custom tags
-
-resource "aws_eip" "vault" {
-  vpc        = true
-  depends_on = ["aws_internet_gateway.vault"]
-
-  tags {
-    Name       = "vault_${terraform.workspace}"
-    deploy_env = "${terraform.workspace}"
-  }
-}
-
-resource "aws_eip" "main_vpc_nat_gateway" {
-  vpc = true
-
-  tags {
-    Environment = "${terraform.workspace}"
-    Stack       = "${var.stack_name}"
-    Name        = "main_vpc_nat_gateway_1_${terraform.workspace}"
-  }
 }
 
 ################################################################################
@@ -638,6 +381,16 @@ module "app_vpc" {
   }
 }
 
+resource "aws_eip" "main_vpc_nat_gateway" {
+  vpc = true
+
+  tags {
+    Environment = "${terraform.workspace}"
+    Stack       = "${var.stack_name}"
+    Name        = "main_vpc_nat_gateway_1_${terraform.workspace}"
+  }
+}
+
 ################################################################################
 ##     dev only resources                                                     ##
 ################################################################################
@@ -669,4 +422,38 @@ resource "aws_eip" "basespace_playground" {
     Name       = "basespace_playground_${terraform.workspace}"
     deploy_env = "${terraform.workspace}"
   }
+}
+
+################################################################################
+# Dedicated user to generate long lived presigned URLs
+# See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
+
+module "presigned_urls" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "presigned_urls"
+  pgp_key  = "keybase:brainstorm"
+}
+
+resource "aws_iam_user_policy_attachment" "presigned_user_primary_data" {
+  user       = "${module.presigned_urls.username}"
+  policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
+}
+
+resource "aws_iam_user_policy_attachment" "presigned_user_fastq_data" {
+  user       = "${module.presigned_urls.username}"
+  policy_arn = "${aws_iam_policy.fastq_data_reader.arn}"
+}
+
+data "template_file" "fastq_data_reader" {
+  template = "${file("policies/primary_data_reader.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.fastq-data.id}"
+  }
+}
+
+resource "aws_iam_policy" "fastq_data_reader" {
+  name   = "fastq_data_reader_${var.workspace_name_suffix[terraform.workspace]}"
+  path   = "/"
+  policy = "${data.template_file.fastq_data_reader.rendered}"
 }

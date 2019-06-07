@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euxo pipefail # make sure any failling command will fail the whole script
 
+echo "--------------------------------------------------------------------------------"
+echo "Remove unnecessary ssh, sendmail and portmap servers"
+yum remove -y openssh-server sendmail portmap
+echo "--------------------------------------------------------------------------------"
+
+
 # This script template uses the following placeholders:
 #   AGHA_BUCKET   : The bucket to mount to the instance (via s3fs)
 #   INSTANCE_TAGS : The tag name/value pairs to associate with this instance
@@ -54,6 +60,7 @@ ls -al /etc/localtime
 #   s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
 # done
 
+
 echo "--------------------------------------------------------------------------------"
 echo "Installing conda, bioinfo tools and other practical "poke-around" basics"
 # https://www.anaconda.com/rpm-and-debian-repositories-for-miniconda/
@@ -78,11 +85,12 @@ yum install -y git tmux conda
 # Install in both SSM user and EC2-USER, since some users might login via SSH instead of SSM...
 . /opt/conda/etc/profile.d/conda.sh
 
-for awsuser in ssm-user ec2-user
+#for awsuser in ssm-user ec2-user
+for awsuser in ssm-user
 do
   echo ". /opt/conda/etc/profile.d/conda.sh && conda activate umccr" >> /home/$awsuser/.bashrc
   runuser -l $awsuser -c "conda create -y -n umccr"
-  runuser -l $awsuser -c "conda install -n umccr -y -c conda-forge -c bioconda bcftools vcflib bedtools htslib pythonpy samtools vawk"
+  runuser -l $awsuser -c "conda install -n umccr -y -c conda-forge -c bioconda bcftools openssl vcflib bedtools htslib pythonpy samtools vawk"
 done
 
 echo "--------------------------------------------------------------------------------"

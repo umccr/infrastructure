@@ -27,43 +27,41 @@ ln -s /usr/share/zoneinfo/Australia/Melbourne /etc/localtime
 ls -al /etc/localtime
 
 
-echo "--------------------------------------------------------------------------------"
-echo "Installing s3fs"
-# https://github.com/s3fs-fuse/s3fs-fuse
+# echo "--------------------------------------------------------------------------------"
+# echo "Installing s3fs"
+# # https://github.com/s3fs-fuse/s3fs-fuse
 
-sed -i 's/enabled=0/enabled=1/' /etc/yum.repos.d/epel.repo
-yum install -y gcc libstdc++-devel gcc-c++ fuse fuse-devel curl-devel libxml2-devel mailcap automake openssl-devel git
-cd /opt
-git clone https://github.com/s3fs-fuse/s3fs-fuse
-cd s3fs-fuse/
-git checkout tags/v1.85
-./autogen.sh
-./configure --prefix=/usr --with-openssl
-make
-make install
-echo "Configuring s3fs"
-echo "user_allow_other" | sudo tee -a /etc/fuse.conf
+# sed -i 's/enabled=0/enabled=1/' /etc/yum.repos.d/epel.repo
+# yum install -y gcc libstdc++-devel gcc-c++ fuse fuse-devel curl-devel libxml2-devel mailcap automake openssl-devel git
+# cd /opt
+# git clone https://github.com/s3fs-fuse/s3fs-fuse
+# cd s3fs-fuse/
+# git checkout tags/v1.85
+# ./autogen.sh
+# ./configure --prefix=/usr --with-openssl
+# make
+# make install
+# echo "Configuring s3fs"
+# echo "user_allow_other" | sudo tee -a /etc/fuse.conf
 
 
 # TODO: don't mount buckets by default
-echo "--------------------------------------------------------------------------------"
-echo "Mounting buckets with s3fs"
-for bucket in ${BUCKETS}
-do
-  mkdir /mnt/$bucket
-  s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
-done
+# echo "--------------------------------------------------------------------------------"
+# echo "Mounting buckets with s3fs"
+# for bucket in ${BUCKETS}
+# do
+#   mkdir /mnt/$bucket
+#   s3fs -o iam_role -o allow_other -o mp_umask=0022 -o umask=0002 $bucket /mnt/$bucket
+# done
 
 echo "--------------------------------------------------------------------------------"
 echo "Installing conda, bioinfo tools and other practical "poke-around" basics"
 # https://www.anaconda.com/rpm-and-debian-repositories-for-miniconda/
 
 # Import our gpg public key
-
 rpm --import https://repo.anaconda.com/pkgs/misc/gpgkeys/anaconda.asc
 
 # Add the Anaconda repository
-
 cat <<EOF > /etc/yum.repos.d/conda.repo
 
 [conda]
@@ -74,10 +72,18 @@ gpgcheck=1
 gpgkey=https://repo.anaconda.com/pkgs/misc/gpgkeys/anaconda.asc
 EOF
 
-yum install -y conda
-conda install -y -c conda-forge -c bioconda bcftools vcflib openssl bedtools htslib pythonpy samtools vawk
+# Install regular and conda+bioinfo pkgs
+yum install -y git tmux conda
 
-yum install -y git tmux
+# Install in both SSM user and EC2-USER, since some users might login via SSH instead of SSM...
+. /opt/conda/etc/profile.d/conda.sh
+
+for awsuser in ssm-user ec2-user
+do
+  echo ". /opt/conda/etc/profile.d/conda.sh && conda activate umccr" >> /home/$awsuser/.bashrc
+  runuser -l $awsuser -c "conda create -y -n umccr"
+  runuser -l $awsuser -c "conda install -n umccr -y -c conda-forge -c bioconda bcftools vcflib bedtools htslib pythonpy samtools vawk"
+done
 
 echo "--------------------------------------------------------------------------------"
 echo "User data Done."

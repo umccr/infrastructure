@@ -111,6 +111,59 @@ resource "aws_s3_bucket_policy" "staging_bucket_policy" {
 
 
 ################################################################################
+# New dataset ready notification (i.e. manifest S3 creation event -> Slack) 
+
+resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
+  bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
+
+  topic {
+    topic_arn     = "${aws_sns_topic.s3_events.arn}"
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = "manifest.txt"
+  }
+
+  topic {
+    topic_arn     = "${aws_sns_topic.s3_events.arn}"
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = ".manifest"
+  }
+}
+
+resource "aws_sns_topic" "s3_events" {
+  name = "s3_manifest_event"
+
+  policy = <<POLICY
+{
+    "Version":"2012-10-17",
+    "Statement":[{
+        "Effect": "Allow",
+        "Principal": {"AWS":"*"},
+        "Action": "SNS:Publish",
+        "Resource": "arn:aws:sns:*:*:s3_manifest_event",
+        "Condition":{
+            "ArnLike":{"aws:SourceArn":"${aws_s3_bucket.agha_gdr_staging.arn}"}
+        }
+    }]
+}
+POLICY
+
+}
+
+resource "aws_sns_topic_subscription" "s3_manifest_event" {
+  topic_arn = "${aws_sns_topic.s3_events.arn}"
+  protocol  = "lambda"
+  endpoint  = "${module.notify_slack_lambda.function_arn}"
+}
+
+resource "aws_lambda_permission" "slack_lambda_from_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${module.notify_slack_lambda.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.s3_events.arn}"
+}
+
+################################################################################
 # Dedicated IAM role to delete S3 objects (otherwise not allowed)
 
 data "template_file" "saml_assume_policy" {

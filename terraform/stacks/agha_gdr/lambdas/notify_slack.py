@@ -17,7 +17,7 @@ def call_slack_webhook(topic, title, message):
         "channel": slack_channel,
         "username": "Notice from AWS",
         "text": "*" + topic + "*",
-        "icon_emoji": ":aws:",
+        "icon_emoji": ":aws_logo:",
         "attachments": [{
             "title": title,
             "text": message
@@ -34,18 +34,32 @@ def call_slack_webhook(topic, title, message):
 def lambda_handler(event, context):
     # Log the received event
     print("Received event: {}".format(json.dumps(event, indent=2)))
-    print("Slack host: {}".format(slack_host))
-    print("Slack webhook endpoint: {}".format(slack_webhook_endpoint[:-10]))
 
-    slack_message_topic = event['topic'] if event.get('topic') else "No topic"
-    slack_message_title = event['title'] if event.get('title') else "No title"
-    slack_message = event['message'] if event.get('message') else "No message"
-    print("Slack message topic: {}".format(slack_message_topic))
-    print("Slack message title: {}".format(slack_message_title))
-    print("Slack message: {}".format(slack_message))
+    # we may have a custom event that delivers directly the topic/title/message to send to Slack
+    if event.get('topic'):
+        print("Custom Slack event")
+        slack_topic = event['topic']
+        slack_title = event['title'] if event.get('title') else ""
+        slack_message = event['message'] if event.get('message') else ""
+    else:
+        print("Regular AWS event")
+        # Regular AWS event, need to extract useful information
+        event_source = event['source'] if event.get('source') else ""
+        event_detail_type = event['detail-type'] if event.get('detail-type') else ""
+        event_id = event['id'] if event.get('id') else ""
+        event_account = event['account'] if event.get('account') else ""
+        event_resources = event['resources'] if event.get('resources') else []
+        event_resources_names = []
+        for event_res in event_resources:
+            event_resources_names.append(event_res.rpartition(":")[2])
+        slack_topic = f"AWS event from {event_source} in account {event_account}"
+        slack_title = f"{event_detail_type} (id:{event_id}) for {event_resources_names}"
+        # event details are event specific, we just dump them into the message
+        slack_message = json.dumps(event['detail'])
 
+    # Forward the data to Slack
     try:
-        response = call_slack_webhook(slack_message_topic, slack_message_title, slack_message)
+        response = call_slack_webhook(slack_topic, slack_title, slack_message)
         print("Response status: {}".format(response))
         return event
 

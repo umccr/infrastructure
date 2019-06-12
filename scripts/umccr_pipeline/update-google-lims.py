@@ -108,20 +108,13 @@ def import_library_sheet(year):
         logger.error(f"Failed to load library tracking data from: {library_tracking_spreadsheet}")
 
 
-def get_meta_data(library_id, external_id):
+def get_meta_data(sample_id):
     result = {}
     try:
         global library_tracking_spreadsheet_df
-        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == library_id]
-        if len(hit) != 0:
-            if hit[sample_name_column_name].values[0] != external_id:
-                raise ValueError(f"Found external ID {hit[sample_name_column_name].values[0]} does not match " +
-                                 f"provided one {external_id} for library {library_id}")
-        else:
-            # No hit with library ID, so we need to look for the external ID
-            hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_name_column_name] == external_id]
-            if len(hit) == 0:
-                raise ValueError(f"No entry found for external ID {external_id}!")
+        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == sample_id]
+        if len(hit) != 1:
+            raise ValueError(f"No entry found for sammple ID {sample_id}!")
 
         for column_name in column_names:
             if not hit[column_name].isnull().values[0]:
@@ -129,9 +122,9 @@ def get_meta_data(library_id, external_id):
             else:
                 result[column_name] = '-'
     except Exception as e:
-        logger.error(f"Could not find entry for sample {library_id}! Exception {e}")
+        logger.error(f"Could not find entry for sample {sample_id}! Exception {e}")
 
-    logger.info(f"Using values: {result} for sample {library_id}.")
+    logger.info(f"Using values: {result} for sample {sample_id}.")
 
     return result
 
@@ -270,7 +263,7 @@ if __name__ == "__main__":
         logger.info(f"Found {len(samples)} samples.")
         for sample in samples:
             logger.debug(f"Looking up metadata for sample Name; {sample.Sample_Name} and sample ID: {sample.Sample_ID}")
-            column_values = get_meta_data(sample.Sample_Name, sample.Sample_ID)
+            column_values = get_meta_data(sample.Sample_ID)
 
             fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                          sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")

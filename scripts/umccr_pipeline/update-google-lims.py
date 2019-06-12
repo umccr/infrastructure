@@ -53,7 +53,7 @@ else:
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
     spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
 runfolder_name_expected_length = 29
-fastq_hpc_base_dir = '/data/cephfs/punim0010/data/Pipeline/prod/Fastq'
+fastq_hpc_base_dir = 's3://umccr-fastq-data-prod/'
 csv_outdir = '/tmp'
 write_csv = False
 creds_file = "/home/limsadmin/.google/google-lims-updater-b50921f70155.json"
@@ -269,19 +269,13 @@ if __name__ == "__main__":
         samples = SampleSheet(samplesheet).samples
         logger.info(f"Found {len(samples)} samples.")
         for sample in samples:
-            logger.debug(f"Looking up metadata for sammple ID; {sample.Sample_Name} and external ID: {sample.Sample_ID}")
+            logger.debug(f"Looking up metadata for sample Name; {sample.Sample_Name} and sample ID: {sample.Sample_ID}")
             column_values = get_meta_data(sample.Sample_Name, sample.Sample_ID)
 
-            if sample.Sample_Name == sample.Sample_ID:
-                fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
-                                             sample.Sample_Name + "*.fastq.gz")
-                fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
-                                                 sample.Sample_Name + "*.fastq.gz")
-            else:
-                fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
+            fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
+                                         sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
+            fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
                                              sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
-                fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
-                                                 sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
 
             logger.debug('Looking for FASTQs: ' + fastq_pattern)
             logger.debug('Setting FASTQ dest: ' + fastq_hpc_pattern)

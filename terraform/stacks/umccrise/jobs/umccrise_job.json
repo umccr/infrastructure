@@ -1,5 +1,5 @@
 {
-    "image": "umccr/umccrise:0.15.4",
+    "image": "umccr/umccrise:0.15.5",
     "vcpus": 2,
     "memory": 2048,
     "command": [

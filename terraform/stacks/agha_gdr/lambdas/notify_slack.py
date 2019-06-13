@@ -13,11 +13,12 @@ headers = {
 def call_slack_webhook(topic, title, message):
     connection = http.client.HTTPSConnection(slack_host)
 
+    # TODO: make more generic/customisable
     post_data = {
         "channel": slack_channel,
         "username": "Notice from AWS",
         "text": "*" + topic + "*",
-        "icon_emoji": ":aws_logo:",
+        "icon_emoji": ":aws:",  # TODO: change to aws-logo, as :aws: appears in ARNs
         "attachments": [{
             "title": title,
             "text": message
@@ -33,18 +34,56 @@ def call_slack_webhook(topic, title, message):
 
 def lambda_handler(event, context):
     # Log the received event
-    print("Received event: {}".format(json.dumps(event, indent=2)))
+    print(f"Received event: {json.dumps(event, indent=2)}")
 
-    # we may have a custom event that delivers directly the topic/title/message to send to Slack
+    # set Slack message defaults in case we cannot extract more meaningful data
+    # at least this should produce a Slack notification we can follow up on
+    slack_topic = "Unknown"
+    slack_title = "Unknown"
+    slack_message = "Unknown"
+
+    # check what kind of event we have recieved
     if event.get('topic'):
+        # Custom event for Slack
         print("Custom Slack event")
         slack_topic = event['topic']
         slack_title = event['title'] if event.get('title') else ""
         slack_message = event['message'] if event.get('message') else ""
-    else:
-        print("Regular AWS event")
+    elif event.get('Records'):
+        # SNS notification
+        print("Received event records. Looking at first record only")
+        record = event['Records'][0]  # assume we only have one record TODO: check for situations where we can have more
+        if record.get('Sns'):
+            print("Extracted SNS record")
+            event_source = record.get('EventSource')
+            slack_topic = f"Message from {event_source}"
+            sns_record = record.get('Sns')
+            if sns_record.get('Message'):
+                print(f"Message: {sns_record['Message']}")
+                message = json.loads(sns_record['Message'])
+                # Can have all sorts of messages here....
+                if message.get('AlarmName'):
+                    slack_title = message['AlarmName']
+                    slack_title += message['NewStateValue']
+                    slack_message = message['AlarmDescription']
+                elif message.get('Records'):
+                    msg_record = message['Records'][0]  # Only consider first record for now
+                    if msg_record.get('eventSource'):
+                        slack_title = f"Event: {msg_record['eventSource']} {msg_record['eventName']}"
+                        if msg_record.get('s3'):
+                            slack_message = msg_record['s3']['bucket']['name']
+                            slack_message += " : "
+                            slack_message += msg_record['s3']['object']['key']
+                else:
+                    slack_title = "Unknown SNS message format"
+            else:
+                print("SNS record does not seem to contain a message")
+        else:
+            print("No 'Sns' record found")
+    elif event.get('source'):
+        print("Regular CloudWatch event")
         # Regular AWS event, need to extract useful information
-        event_source = event['source'] if event.get('source') else ""
+        event_source = event['source']
         event_detail_type = event['detail-type'] if event.get('detail-type') else ""
         event_id = event['id'] if event.get('id') else ""
         event_account = event['account'] if event.get('account') else ""
@@ -55,12 +94,18 @@ def lambda_handler(event, context):
         slack_topic = f"AWS event from {event_source} in account {event_account}"
         slack_title = f"{event_detail_type} (id:{event_id}) for {event_resources_names}"
         # event details are event specific, we just dump them into the message
-        slack_message = json.dumps(event['detail'])
+        msg_tmp = event['detail'] if event.get('detail') else event['Message']
+        slack_message = json.dumps(msg_tmp)
+    else:
+        slack_topic = "Unknown event source"
+        slack_title = "Don't know how to handle this event"
+        slack_message = json.dumps(event, indent=2)
 
     # Forward the data to Slack
     try:
+        print(f"Sending Slack message with topic ({slack_topic}), title ({slack_title}) and message ({slack_message})")
         response = call_slack_webhook(slack_topic, slack_title, slack_message)
-        print("Response status: {}".format(response))
+        print(f"Response status: {response}")
         return event
 
     except Exception as e:

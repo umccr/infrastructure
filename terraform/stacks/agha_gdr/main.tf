@@ -187,6 +187,19 @@ resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+################################################################################
+# Dedicated user for PanelApp
+module "panelapp" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "panelapp"
+  pgp_key  = "keybase:brainstorm"
+}
+
+resource "aws_iam_user_policy_attachment" "panelapp" {
+  user       = "${module.panelapp.username}"
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+  depends_on = ["module.panelapp"]
+}
 
 ################################################################################
 # Dedicated user to generate long lived presigned URLs
@@ -197,6 +210,7 @@ module "agha_bot_user" {
   username = "agha_bot"
   pgp_key  = "keybase:freisinger"
 }
+
 
 resource "aws_iam_user_policy_attachment" "ahga_bot_staging_rw" {
   user       = "${module.agha_bot_user.username}"

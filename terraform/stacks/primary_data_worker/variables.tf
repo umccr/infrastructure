@@ -10,11 +10,11 @@ variable "instance_ami" {
 }
 
 variable "instance_type" {
-  default = "t2.micro"
+  default = "m4.large"
 }
 
 variable "instance_vol_size" {
-  default = 10
+  default = 300
 }
 
 variable "instance_profile_name" {

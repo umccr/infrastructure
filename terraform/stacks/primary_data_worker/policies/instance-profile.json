@@ -82,7 +82,7 @@
                 "s3:GetBucketLocation",
                 "s3:GetObject",
                 "s3:GetEncryptionConfiguration",
-                "s3:ListBucket"
+                "s3:List*"
             ],
             "Resource": "*"
         }

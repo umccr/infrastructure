@@ -431,7 +431,7 @@ resource "aws_eip" "basespace_playground" {
 module "presigned_urls" {
   source   = "../../modules/iam_user/secure_user"
   username = "presigned_urls"
-  pgp_key  = "keybase:freisinger"
+  pgp_key  = "keybase:brainstorm"
 }
 
 resource "aws_iam_user_policy_attachment" "presigned_user_primary_data" {

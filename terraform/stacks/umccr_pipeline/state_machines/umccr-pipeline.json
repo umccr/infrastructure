@@ -245,7 +245,7 @@
     },
     "Asynchronous create checksums for runfolder": {
       "Type": "Parallel",
-      "Next": "Notify checksums for runfolderr complete",
+      "Next": "Notify checksums for runfolder complete",
       "OutputPath": "$[1]",
       "Branches": [
         {
@@ -296,7 +296,7 @@
         }
       ]
     },
-    "Notify checksums for runfolderr complete": {
+    "Notify checksums for runfolder complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
       "Next": "Asynchronous create checksums for fastqs",

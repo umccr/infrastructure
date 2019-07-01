@@ -20,5 +20,8 @@ variable "s3_keys_bucket_for_crawler" {
 }
 
 variable "google_app_id" {
-    default = "1077202000373-61vctlp83rjrr4i2aab89ms5fagbakdp.apps.googleusercontent.com"
+    default = {
+        prod = ""
+        dev = "1077202000373-61vctlp83rjrr4i2aab89ms5fagbakdp.apps.googleusercontent.com"
+    }
 }

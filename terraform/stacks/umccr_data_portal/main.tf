@@ -56,6 +56,12 @@ resource "aws_cloudfront_distribution" "client_distribution" {
 
         viewer_protocol_policy  = "redirect-to-https"
     }
+
+    restrictions {
+        geo_restriction {
+            restriction_type = "none"
+        }
+    }
 }
 
 # Hosted zone for organisation domain
@@ -324,6 +330,9 @@ resource "aws_glue_catalog_table" "glue_catalog_tb_lims" {
 resource "aws_cognito_user_pool" "user_pool" {
     name = "data-portal-${terraform.workspace}"
 }
+data "external" "helper" {
+  program = ["echo", "${data.aws_secretsmanager_secret_version.secrets.secret_string}"]
+}
 
 # Google identity provider
 resource "aws_cognito_identity_provider" "identity_provider" {
@@ -334,7 +343,7 @@ resource "aws_cognito_identity_provider" "identity_provider" {
     provider_details = {
         authorize_scopes    = "profile email openid"
         client_id           = "${var.google_app_id[terraform.workspace]}"
-        client_secret       = "${lookup(jsondecode(data.aws_secretsmanager_secret_version.secrets.secret_string),"google_app_secret")}"
+        client_secret       = "${lookup(data.external.helper.result, "google_app_secret")}"
     }
 
     attribute_mapping = {

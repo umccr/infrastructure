@@ -282,6 +282,10 @@ resource "aws_s3_bucket" "primary_data" {
       days          = 0
       storage_class = "INTELLIGENT_TIERING"
     }
+
+    noncurrent_version_expiration {
+      days = 90
+    }
   }
 }
 

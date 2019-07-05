@@ -286,6 +286,12 @@ resource "aws_s3_bucket" "primary_data" {
     noncurrent_version_expiration {
       days = 90
     }
+
+	expiration {
+		expired_object_delete_marker = true
+	}
+
+	abort_incomplete_multipart_upload_days = 7
   }
 }
 

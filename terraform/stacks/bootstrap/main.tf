@@ -273,6 +273,16 @@ resource "aws_s3_bucket" "primary_data" {
     Name        = "primary-data"
     Environment = "${terraform.workspace}"
   }
+
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = "${terraform.workspace == "dev" ? false : true}"
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
 }
 
 # S3 bucket as Vault backend store

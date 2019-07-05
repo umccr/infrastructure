@@ -27,7 +27,6 @@ function write_log {
   echo "$msg"
   if test "$DEPLOY_ENV" = "prod"; then
     echo "$msg" >> $DIR/${script_name}.log
-    echo "$msg" > /dev/udp/localhost/9999 # Export to DataDog
   else
     echo "$msg" >> $DIR/${script_name}.dev.log
   fi

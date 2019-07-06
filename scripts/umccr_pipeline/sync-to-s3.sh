@@ -1,6 +1,15 @@
 #!/bin/bash
 set -eo pipefail
 
+################################################################################
+# Activate a conda environment where the required resources are available
+
+. $HOME/.miniconda3/etc/profile.d/conda.sh
+conda activate pipeline
+
+################################################################################
+# Check env and set defaults
+
 if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
     exit 1

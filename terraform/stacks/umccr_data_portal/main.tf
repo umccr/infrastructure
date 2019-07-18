@@ -2,7 +2,7 @@
 # Generic resources
 
 provider "aws" {
-    region = "ap-southeast-2"
+    region = "${local.main_region}"
 }
 
 # for ACM certificate
@@ -28,6 +28,7 @@ data "external" "secrets_helper" {
 }
 
 locals {
+    main_region = "ap-southeast-2"
     client_s3_origin_id = "clientS3"
     data_portal_domain_prefix = "data-portal"
     google_app_secret = "${data.external.secrets_helper.result["google_app_secret"]}"
@@ -52,17 +53,57 @@ resource "aws_s3_bucket" "client_bucket" {
     }
 }
 
+# Policy document for the client bucket
+data "aws_iam_policy_document" "client_bucket_policy_document" {
+    statement {
+        actions   = ["s3:GetObject"]
+        resources = ["${aws_s3_bucket.client_bucket.arn}/*"]
+
+        principals {
+            type        = "AWS"
+            identifiers = ["${aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn}"]
+        }
+    }
+
+    statement {
+        # Alow access for the origin access identity to index.html
+        actions   = ["s3:ListBucket"]
+        resources = ["${aws_s3_bucket.client_bucket.arn}"]
+
+        principals {
+            type        = "AWS"
+            identifiers = ["${aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn}"]
+        }
+    }
+}
+
+# Attach the policy to the client bucket
+resource "aws_s3_bucket_policy" "client_bucket_policy" {
+    bucket = "${aws_s3_bucket.client_bucket.id}"
+    policy = "${data.aws_iam_policy_document.client_bucket_policy_document.json}"
+}
+
+# Origin access identity for cloudfront to access client s3 bucket
+resource "aws_cloudfront_origin_access_identity" "client_origin_access_identity" {
+    comment = "Origin access identity for client bucket"
+}
+
 # CloudFront layer for client S3 bucket access
 resource "aws_cloudfront_distribution" "client_distribution" {
     origin {
         domain_name = "${aws_s3_bucket.client_bucket.bucket_regional_domain_name}"
         origin_id   = "${local.client_s3_origin_id}"
+
+        s3_origin_config {
+            origin_access_identity = "${aws_cloudfront_origin_access_identity.client_origin_access_identity.cloudfront_access_identity_path}"
+        }
     }
 
-    enabled = true
-    aliases = ["data-portal.dev.umccr.org"]
+    enabled                 = true
+    aliases                 = ["data-portal.dev.umccr.org"]
+    default_root_object     = "index.html"
     viewer_certificate {
-        acm_certificate_arn = "${aws_acm_certificate.client_cert.arn}"
+        acm_certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
         ssl_support_method  = "sni-only"
     }
 
@@ -87,14 +128,20 @@ resource "aws_cloudfront_distribution" "client_distribution" {
             restriction_type = "none"
         }
     }
+
+    # Route handling for SPA
+    custom_error_response {
+        error_caching_min_ttl   = 0
+        error_code              = 404
+        response_code           = 200
+        response_page_path      = "/index.html"
+    }
 }
 
 # Hosted zone for organisation domain
 data "aws_route53_zone" "org_zone" {
     name = "${var.org_domain[terraform.workspace]}."
 }
-
-data "aws_elb_hosted_zone_id" "main" {}
 
 # Alias the client domain name to CloudFront distribution address
 resource "aws_route53_record" "client_alias" {
@@ -103,7 +150,7 @@ resource "aws_route53_record" "client_alias" {
     type = "A"
     alias {
         name                    = "${aws_cloudfront_distribution.client_distribution.domain_name}"
-        zone_id                 = "${data.aws_elb_hosted_zone_id.main.id}"
+        zone_id                 = "${aws_cloudfront_distribution.client_distribution.hosted_zone_id}"
         evaluate_target_health  = false
     }
 }
@@ -449,8 +496,8 @@ resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
     user_pool_id                            = "${aws_cognito_user_pool.user_pool.id}"
     supported_identity_providers            = ["Google"]
 
-    callback_urls                           = ["http://localhost:3000"]
-    logout_urls                             = ["http://localhost:3000"]
+    callback_urls                           = ["${var.localhost_url}"]
+    logout_urls                             = ["${var.localhost_url}"]
 
     generate_secret                         = false
 
@@ -503,9 +550,7 @@ resource "aws_iam_role_policy" "codepipeline_base_policy" {
         {
         "Effect":"Allow",
         "Action": [
-            "s3:GetObject",
-            "s3:GetObjectVersion",
-            "s3:GetBucketVersioning"
+            "s3:*"
         ],
         "Resource": [
             "${aws_s3_bucket.codepipeline_bucket.arn}",
@@ -615,7 +660,7 @@ resource "aws_codepipeline" "codepipeline_apis" {
             version             = "1"
 
             configuration = {
-                ProjectName     = "${local.codebuild_project_name_client}"
+                ProjectName     = "${local.codebuild_project_name_apis}"
             }
         }
     }
@@ -825,7 +870,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
     source {
         type = "GITHUB"
-        location = "https://github.com/umccr/data-portal-client.git"
+        location = "https://github.com/umccr/data-portal-apis.git"
         git_clone_depth = 1
     }
 }

@@ -1,0 +1,51 @@
+output "main_region" {
+    value = "${local.main_region}"
+}
+
+output "cognito_user_pool_id" {
+    value = "${aws_cognito_user_pool.user_pool.id}"
+}
+
+output "cognito_app_client_id_localhost" {
+    value = "${aws_cognito_user_pool_client.user_pool_client_localhost.id}"
+}
+
+output "cognito_app_client_id_stage" {
+    value = "${aws_cognito_user_pool_client.user_pool_client.id}"
+}
+
+output "cognito_identity_pool_id" {
+    value = "${aws_cognito_identity_pool.identity_pool.id}"
+}
+
+output "cognito_oauth_domain_localhost" {
+    value = "${aws_cognito_user_pool_client.user_pool_client_localhost.name}"
+}
+
+output "cognito_oauth_domain_stage" {
+    value = "${aws_cognito_user_pool_client.user_pool_client.name}"
+}
+
+output "cognito_oauth_scope" {
+    value = ["${aws_cognito_user_pool_client.user_pool_client.allowed_oauth_scopes}"]
+}
+
+output "cognito_oauth_redirect_signin_localhost" {
+    value = "${aws_cognito_user_pool_client.user_pool_client_localhost.callback_urls[0]}"
+}
+
+output "cognito_oauth_redirect_signin" {
+    value = "${aws_cognito_user_pool_client.user_pool_client.callback_urls[0]}"
+}
+
+output "cognito_oauth_redirect_signout_localhost" {
+    value = "${aws_cognito_user_pool_client.user_pool_client_localhost.logout_urls[0]}"
+}
+
+output "cognito_oauth_redirect_signout" {
+    value = "${aws_cognito_user_pool_client.user_pool_client.logout_urls[0]}"
+}
+
+output "cognito_oauth_response_type" {
+  value = "${aws_cognito_user_pool_client.user_pool_client.allowed_oauth_flows[0]}"
+}

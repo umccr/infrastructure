@@ -37,3 +37,8 @@ variable "github_branch" {
     }
     description = "The branch corresponding to current stage"
 }
+
+variable "localhost_url" {
+    default     = "http://localhost:3000",
+    description = "The localhost url used for testing"
+}

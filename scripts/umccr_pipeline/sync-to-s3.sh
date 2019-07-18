@@ -1,6 +1,15 @@
 #!/bin/bash
 set -eo pipefail
 
+################################################################################
+# Activate a conda environment where the required resources are available
+
+. $HOME/.miniconda3/etc/profile.d/conda.sh
+conda activate pipeline
+
+################################################################################
+# Check env and set defaults
+
 if test -z "$DEPLOY_ENV"; then
     echo "DEPLOY_ENV is not set! Set it to either 'dev' or 'prod'."
     exit 1
@@ -17,7 +26,6 @@ function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
   if test "$DEPLOY_ENV" = "prod"; then
     echo "$msg" >> $DIR/${script}.log
-    echo "$msg" > /dev/udp/localhost/9999
   else
     echo "$msg" >> $DIR/${script}.dev.log
     echo "$msg"

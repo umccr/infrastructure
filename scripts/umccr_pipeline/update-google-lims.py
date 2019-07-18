@@ -113,6 +113,7 @@ def get_meta_data(sample_id):
     try:
         global library_tracking_spreadsheet_df
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == sample_id]
+        # We expect exactly one matching record, not more, not less!
         if len(hit) != 1:
             raise ValueError(f"No entry found for sammple ID {sample_id}!")
 

@@ -5,6 +5,12 @@ provider "aws" {
     region = "ap-southeast-2"
 }
 
+# for ACM certificate
+provider "aws" {
+    region = "us-east-1"
+    alias  = "use1"
+}
+
 provider "github" {
     # Token to be provided by GITHUB_TOKEN env variable
     # (i.e. export GITHUB_TOKEN=xxx)
@@ -37,7 +43,7 @@ locals {
 
 # S3 bucket storing client side (compiled) code
 resource "aws_s3_bucket" "client_bucket" {
-    bucket  = "umccr-data-portal-${terraform.workspace}"
+    bucket  = "umccr-data-portal-client-${terraform.workspace}"
     acl     = "private"
 
     website {
@@ -57,6 +63,7 @@ resource "aws_cloudfront_distribution" "client_distribution" {
     aliases = ["data-portal.dev.umccr.org"]
     viewer_certificate {
         acm_certificate_arn = "${aws_acm_certificate.client_cert.arn}"
+        ssl_support_method  = "sni-only"
     }
 
     default_cache_behavior {
@@ -112,6 +119,8 @@ resource "aws_route53_record" "client_cert_validation" {
 
 # The certificate for client domain, validating using DNS
 resource "aws_acm_certificate" "client_cert" {
+    # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
+    provider            = "aws.use1"
     domain_name         = "${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
     validation_method   = "DNS"
 
@@ -122,7 +131,8 @@ resource "aws_acm_certificate" "client_cert" {
 
 # Certificate validation for client domain
 resource "aws_acm_certificate_validation" "client_cert_dns" {
-    certificate_arn = "${aws_acm_certificate.client_cert.arn}"
+    provider                = "aws.use1"
+    certificate_arn         = "${aws_acm_certificate.client_cert.arn}"
     validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
 }
 
@@ -132,6 +142,33 @@ resource "aws_iam_role" "glue_service_role" {
     name = "AWSGlueServiceRole-Data-Portal"
 
     assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Principal": {
+                "Service": "glue.amazonaws.com"
+            },
+            "Effect": "Allow",
+            "Sid": ""
+        }
+    ]
+}
+EOF
+}
+
+# Attach the default policy to the glue service role
+resource "aws_iam_role_policy_attachment" "glue_service_role_attach_default" {
+    role = "${aws_iam_role.glue_service_role.name}"
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
+resource "aws_iam_policy" "glue_service_role_policy" {
+    name = "AWSGlueServiceRole-Data-Portal"
+    description = "IAM policy for data portal glue service role"
+
+    policy = <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -151,10 +188,12 @@ resource "aws_iam_role" "glue_service_role" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "glue_service_role_attach" {
-    role = "${aws_iam_role.glue_service_role.name}"
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+# Attach specific policy to the service role
+resource "aws_iam_role_policy_attachment" "glue_service_role_attach_specific" {
+    role        = "${aws_iam_role.glue_service_role.name}"
+    policy_arn  = "${aws_iam_policy.glue_service_role_policy.arn}"
 }
+
 
 # S3 buckets for Glue crawler
 data "aws_s3_bucket" "s3_keys_bucket_for_crawler" {
@@ -166,9 +205,8 @@ data "aws_s3_bucket" "lims_bucket_for_crawler" {
 }
 
 # # The bucket to store athena query results
-resource "aws_s3_bucket" "athena_results_s3" {
+data "aws_s3_bucket" "athena_results_s3" {
     bucket  = "umccr-athena-query-results-${terraform.workspace}"
-    acl     = "private"
 }
 
 # # Athena database
@@ -395,9 +433,14 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
     callback_urls                           = ["https://${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"]
     logout_urls                             = ["https://${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"]
 
+    generate_secret                         = false
+
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
     allowed_oauth_scopes                    = ["email", "openid", "aws.cognito.signin.user.admin", "profile"]
+
+    # Need to explicitly specify this dependency
+    depends_on                              = ["aws_cognito_identity_provider.identity_provider"]
 }
 
 # User pool client (localhost access)
@@ -409,9 +452,14 @@ resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
     callback_urls                           = ["http://localhost:3000"]
     logout_urls                             = ["http://localhost:3000"]
 
+    generate_secret                         = false
+
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
     allowed_oauth_scopes                    = ["email", "openid", "aws.cognito.signin.user.admin", "profile"]
+
+    # Need to explicitly specify this dependency
+    depends_on                              = ["aws_cognito_identity_provider.identity_provider"]
 }
 
 ################################################################################
@@ -759,7 +807,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
         environment_variable {
             name  = "ATHENA_OUTPUT_LOCATION"
-            value = "s3://${aws_s3_bucket.athena_results_s3.bucket}" 
+            value = "s3://${data.aws_s3_bucket.athena_results_s3.bucket}" 
         }
 
         # The table name is determined by the corresponding glue catelog table

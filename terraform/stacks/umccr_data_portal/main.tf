@@ -37,6 +37,9 @@ locals {
 
     codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
     codebuild_project_name_apis = "data-portal-apis-${terraform.workspace}"
+
+    lims_crawler_target = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
+    s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/data"
 } 
 
 ################################################################################
@@ -256,35 +259,53 @@ data "aws_s3_bucket" "athena_results_s3" {
     bucket  = "umccr-athena-query-results-${terraform.workspace}"
 }
 
-# # Athena database
-# resource "aws_athena_database" "athena_db" {
-#     name    = "data_portal_${terraform.workspace}"
-#     bucket  = "${aws_s3_bucket.athena_results_s3.bucket}"
-
-#     encryption_configuration {
-#         encryption_option = "SSE_S3"
-#     }
-# }
-
 # Glue crawlers
 resource "aws_glue_crawler" "glue_crawler_s3" {
     database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
-    name            = "s3_keys_crawler"
+    name            = "data_portal_${terraform.workspace}_s3_keys_crawler"
     role            = "${aws_iam_role.glue_service_role.arn}"
 
     s3_target {
-        path = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}"
+        path = "${local.s3_keys_crawler_target}"
     }
+
+    # Prevent the crawler from changing our preset schema
+    schema_change_policy {
+        update_behavior = "LOG"
+    }
+
+    configuration = <<EOF
+{
+   "Version": 1.0,
+   "CrawlerOutput": {
+       "Partitions": { "AddOrUpdateBehavior": "InheritFromTable" }
+   }
+}
+EOF
 }
 
 resource "aws_glue_crawler" "glue_crawler_lims" {
     database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
-    name            = "lims_crawler"
+    name            = "data_portal_${terraform.workspace}_lims_crawler"
     role            = "${aws_iam_role.glue_service_role.arn}"
 
     s3_target {
-        path = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
+        path ="${local.lims_crawler_target}"
     }
+
+    # Prevent the crawler from changing our preset schema
+    schema_change_policy {
+        update_behavior = "LOG"
+    }
+
+    configuration = <<EOF
+{
+   "Version": 1.0,
+   "CrawlerOutput": {
+       "Partitions": { "AddOrUpdateBehavior": "InheritFromTable" }
+   }
+}
+EOF
 }
 
 # Glue catalog database
@@ -293,12 +314,13 @@ resource "aws_glue_catalog_database" "glue_catalog_db" {
 }
 
 resource "aws_glue_catalog_table" "glue_catalog_tb_s3" {
-    name            = "s3_keys"
+    name            = "data"
     database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
     description     = "Table storing crawled data from s3 file keys"
 
     storage_descriptor {
-        location        = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}"
+        # Use the same location as the crawler target
+        location        = "${local.s3_keys_crawler_target}/"
         input_format    = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
         output_format   = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
 
@@ -310,16 +332,52 @@ resource "aws_glue_catalog_table" "glue_catalog_tb_s3" {
                 "serialization.format" = 1
             }
         }
+
+        columns {
+            name = "bucket"
+            type = "string"
+        }
+
+        columns {
+            name = "key"
+            type = "string"
+        }
+
+        columns {
+            name = "size"
+            type = "bigint"
+        }
+
+        columns {
+            name = "last_modified_date"
+            type = "timestamp"
+        }
+
+        columns {
+            name = "e_tag"
+            type = "string"
+        }
+
+        columns {
+            name = "storage_class"
+            type = "string"
+        }
+
+        columns {
+            name = "encryption_status"
+            type = "string"
+        }
     }
 }
 
 resource "aws_glue_catalog_table" "glue_catalog_tb_lims" {
-    name            = "lims"
-    database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
+    name            = "${replace(data.aws_s3_bucket.lims_bucket_for_crawler.bucket, "-", "_")}"
+    database_name   =  "${aws_glue_catalog_database.glue_catalog_db.name}"
     description     = "Table storing crawled data from LIMS spreadsheet"
 
     storage_descriptor {
-        location        = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
+        # Use the same location as the crawler target
+        location        = "${local.lims_crawler_target}/"
         input_format    = "org.apache.hadoop.mapred.TextInputFormat"
         output_format   = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
 
@@ -404,11 +462,6 @@ resource "aws_glue_catalog_table" "glue_catalog_tb_lims" {
         }
 
         columns {
-            name = "number fastqs"
-            type = "string"
-        }
-
-        columns {
             name = "results"
             type = "string"
         }
@@ -471,6 +524,78 @@ resource "aws_cognito_identity_pool" "identity_pool" {
     }
 }
 
+# IAM role for the identity pool for authenticated identities
+resource "aws_iam_role" "role_authenticated" {
+    name = "data_portal_${terraform.workspace}_authenticated"
+
+    assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.identity_pool.id}"
+                },
+                "ForAnyValue:StringLike": {
+                    "cognito-identity.amazonaws.com:amr": "authenticated"
+                }
+            }
+        }
+    ]
+}
+EOF
+}
+
+# IAM role policy for authenticated identities
+resource "aws_iam_role_policy" "role_policy_authenticated" {
+    name = "authenticated_policy"
+    role = "${aws_iam_role.role_authenticated.id}"
+
+    # Todo: we should have a explicit reference to our api
+    policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "mobileanalytics:PutEvents",
+                "cognito-sync:*",
+                "cognito-identity:*"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+           "Effect": "Allow",
+            "Action": [
+                "execute-api:Invoke"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+# Attach the IAM role to the identity pool
+resource "aws_cognito_identity_pool_roles_attachment" "identity_pool_role_attach" {
+    identity_pool_id = "${aws_cognito_identity_pool.identity_pool.id}"
+
+    roles = {
+        "authenticated" = "${aws_iam_role.role_authenticated.arn}"
+    }
+}
+
 # User pool client
 resource "aws_cognito_user_pool_client" "user_pool_client" {
     name                                    = "data-portal-app-${terraform.workspace}"
@@ -485,6 +610,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
     allowed_oauth_scopes                    = ["email", "openid", "aws.cognito.signin.user.admin", "profile"]
+    explicit_auth_flows                     = ["ADMIN_NO_SRP_AUTH"]
 
     # Need to explicitly specify this dependency
     depends_on                              = ["aws_cognito_identity_provider.identity_provider"]
@@ -504,9 +630,16 @@ resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
     allowed_oauth_scopes                    = ["email", "openid", "aws.cognito.signin.user.admin", "profile"]
+    explicit_auth_flows                     = ["ADMIN_NO_SRP_AUTH"]
 
     # Need to explicitly specify this dependency
     depends_on                              = ["aws_cognito_identity_provider.identity_provider"]
+}
+
+# Assign an explicit domain
+resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
+    domain          = "data-portal-app-${terraform.workspace}"
+    user_pool_id    = "${aws_cognito_user_pool.user_pool.id}"
 }
 
 ################################################################################

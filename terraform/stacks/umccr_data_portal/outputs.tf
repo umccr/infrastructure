@@ -18,12 +18,8 @@ output "cognito_identity_pool_id" {
     value = "${aws_cognito_identity_pool.identity_pool.id}"
 }
 
-output "cognito_oauth_domain_localhost" {
-    value = "${aws_cognito_user_pool_client.user_pool_client_localhost.name}"
-}
-
-output "cognito_oauth_domain_stage" {
-    value = "${aws_cognito_user_pool_client.user_pool_client.name}"
+output "cognito_oauth_domain" {
+    value = "${aws_cognito_user_pool_domain.user_pool_client_domain.domain}"
 }
 
 output "cognito_oauth_scope" {

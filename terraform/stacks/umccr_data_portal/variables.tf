@@ -8,7 +8,7 @@ variable "org_domain" {
 
 variable "lims_bucket_for_crawler" {
     default = {
-        prod = "umccr-data-google-lims-dev" # Todo: change this for production 
+        prod = "umccr-data-google-lims-prod" 
         dev = "umccr-data-google-lims-dev" 
     }
     description = "Name of the S3 bucket storing lims data to be used by crawler "
@@ -16,12 +16,14 @@ variable "lims_bucket_for_crawler" {
 
 variable "s3_keys_bucket_for_crawler" {
     default = {
-        prod = "umccr-inventory-dev" # Todo: change this for production 
+        prod = "umccr-inventory-prod"
         dev  = "umccr-inventory-dev"
     }
     description = "Name of the S3 bucket storing s3 keys data to be used by crawler "
 }
 
+# Terraform doesn't currently support configuraing google oauth credentials
+# https://github.com/terraform-providers/terraform-provider-google/issues/1287
 variable "google_app_id" {
     default = {
         prod = "1077202000373-d21cktrmves8u9e0mpmuosfld2gngv2s.apps.googleusercontent.com"
@@ -42,3 +44,10 @@ variable "localhost_url" {
     default     = "http://localhost:3000",
     description = "The localhost url used for testing"
 }
+
+variable "api_id" {
+    # We can only hardcode this for now since this is done by Serverless framework
+    default     = "2a0mvgomd8" 
+    description = "APIGateway ID"
+}
+

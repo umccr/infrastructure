@@ -956,6 +956,61 @@ resource "aws_codebuild_project" "codebuild_client" {
             name  = "S3"
             value = "s3://${aws_s3_bucket.client_bucket.bucket}" 
         }
+
+        environment_variable {
+            name  = "API_ID"
+            value = "${var.api_id}"
+        }
+
+        environment_variable {
+            name  = "REGION"
+            value = "${local.main_region}"
+        }
+
+        environment_variable {
+            name  = "COGNITO_USER_POOL_ID"
+            value = "${aws_cognito_user_pool.user_pool.id}"
+        }
+
+        environment_variable {
+            name  = "COGNITO_IDENITTY_POOL_ID"
+            value = "${aws_cognito_identity_pool.identity_pool.id}"
+        }
+
+        environment_variable {
+            name  = "COGNITO_APP_CLIENT_ID_STAGE"
+            value = "${aws_cognito_user_pool_client.user_pool_client.id}"
+        }       
+
+        environment_variable {
+            name  = "COGNITO_APP_CLIENT_ID_LOCAL"
+            value = "${aws_cognito_user_pool_client.user_pool_client_localhost.id}"
+        }       
+
+        environment_variable {
+            name  = "OAUTH_DOMAIN"
+            value = "${aws_cognito_user_pool_domain.user_pool_client_domain.domain}"
+        }
+
+        environment_variable {
+            name  = "OAUTH_REDIRECT_IN_STAGE"
+            value = "${aws_cognito_user_pool_client.user_pool_client.callback_urls[0]}"
+        }
+
+        environment_variable {
+            name  = "OAUTH_REDIRECT_OUT_STAGE"
+            value = "${aws_cognito_user_pool_client.user_pool_client.logout_urls[0]}"
+        }
+
+        environment_variable {
+            name  = "OAUTH_REDIRECT_IN_LOCAL"
+            value = "${aws_cognito_user_pool_client.user_pool_client_localhost.callback_urls[0]}"
+        }
+
+        environment_variable {
+            name  = "OAUTH_REDIRECT_OUT_LOCAL"
+            value = "${aws_cognito_user_pool_client.user_pool_client_localhost.logout_urls[0]}"
+        }
     }
 
     source {

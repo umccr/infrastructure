@@ -1016,7 +1016,7 @@ resource "aws_codebuild_project" "codebuild_client" {
         }
 
         environment_variable {
-            name  = "COGNITO_IDENITTY_POOL_ID"
+            name  = "COGNITO_IDENTITY_POOL_ID"
             value = "${aws_cognito_identity_pool.identity_pool.id}"
         }
 

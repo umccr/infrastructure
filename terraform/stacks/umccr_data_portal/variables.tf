@@ -44,10 +44,3 @@ variable "localhost_url" {
     default     = "http://localhost:3000",
     description = "The localhost url used for testing"
 }
-
-variable "api_id" {
-    # We can only hardcode this for now since this is done by Serverless framework
-    default     = "2a0mvgomd8" 
-    description = "APIGateway ID"
-}
-

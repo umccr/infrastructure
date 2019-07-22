@@ -202,6 +202,9 @@ resource "aws_acm_certificate" "subdomain_cert" {
     lifecycle {
         create_before_destroy = true
     }
+
+    # Wait for our main certificate to be ready as it has the same validation CNAME
+    depends_on          = ["aws_acm_certificate_validation.client_cert_dns"]
 }
 
 resource "aws_acm_certificate_validation" "subdomain_cert_validation" {

@@ -296,8 +296,9 @@ data "aws_s3_bucket" "lims_bucket_for_crawler" {
 }
 
 # # The bucket to store athena query results
-data "aws_s3_bucket" "athena_results_s3" {
+resource "aws_s3_bucket" "athena_results_s3" {
     bucket  = "umccr-athena-query-results-${terraform.workspace}"
+    acl     = "private"
 }
 
 # Glue crawlers
@@ -1088,7 +1089,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
         environment_variable {
             name  = "ATHENA_OUTPUT_LOCATION"
-            value = "s3://${data.aws_s3_bucket.athena_results_s3.bucket}" 
+            value = "s3://${aws_s3_bucket.athena_results_s3.bucket}" 
         }
 
         # The table name is determined by the corresponding glue catelog table

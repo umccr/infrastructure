@@ -40,6 +40,8 @@ locals {
 
     lims_crawler_target = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
     s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/data"
+
+    api_url = "api.${aws_acm_certificate.client_cert.domain_name}"
 } 
 
 ################################################################################
@@ -188,6 +190,45 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 
 ################################################################################
 # Back end configurations
+# The certificate for client domain, validating using DNS
+
+# ACM certificate for subdomain, supporting for custom API
+resource "aws_acm_certificate" "subdomain_cert" {
+    # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
+    provider            = "aws.use1"
+    domain_name         = "*.${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
+    validation_method   = "DNS"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+}
+
+resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
+    provider                = "aws.use1"
+    certificate_arn         = "${aws_acm_certificate.subdomain_cert.arn}"
+    # We can use the same one as client cert as this domain is a sub domain
+    validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
+}
+
+# Custom domain is to be created by Serverless Domain Manager
+# resource "aws_api_gateway_domain_name" "api_domain" {
+#     certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
+#     domain_name     = "api.${aws_acm_certificate.client_cert.domain_name}"
+# }
+
+# resource "aws_route53_record" "api_domain_route53_record" {
+#   name    = "${aws_api_gateway_domain_name.api_domain.domain_name}"
+#   type    = "A"
+#   zone_id = "${data.aws_route53_zone.org_zone.zone_id}"
+
+#   alias {
+#     evaluate_target_health = true
+#     name                   = "${aws_api_gateway_domain_name.api_domain.cloudfront_domain_name}"
+#     zone_id                = "${aws_api_gateway_domain_name.api_domain.cloudfront_zone_id}"
+#   }
+# }
+
 resource "aws_iam_role" "glue_service_role" {
     name = "AWSGlueServiceRole-Data-Portal"
 
@@ -861,7 +902,9 @@ resource "aws_iam_policy" "codebuild_apis_iam_policy" {
                 "apigateway:DELETE",
                 "apigateway:PATCH",
                 "apigateway:GET",
-                "apigateway:PUT"
+                "apigateway:PUT",
+                "acm:*",
+                "route53:*"
             ],
             "Resource": "*"
         }
@@ -958,8 +1001,8 @@ resource "aws_codebuild_project" "codebuild_client" {
         }
 
         environment_variable {
-            name  = "API_ID"
-            value = "${var.api_id}"
+            name  = "API_URL"
+            value = "${local.api_url}"
         }
 
         environment_variable {
@@ -1037,6 +1080,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
             name  = "STAGE"
             value = "${terraform.workspace}"
         } 
+
+        environment_variable {
+            name  = "API_DOMAIN_NAME"
+            value = "${local.api_url}"
+        }
 
         environment_variable {
             name  = "ATHENA_OUTPUT_LOCATION"

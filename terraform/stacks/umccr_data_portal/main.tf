@@ -19,7 +19,7 @@ provider "github" {
 
 # Secrets manager
 data "aws_secretsmanager_secret_version" "secrets" {
-  secret_id = "${terraform.workspace}/DataPortal"
+  secret_id = "data_portal"
 }
 
 # Secret helper for retrieving value from map (as we dont have jsondecode in v11)

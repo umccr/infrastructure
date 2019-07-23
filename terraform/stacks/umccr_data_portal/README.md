@@ -1,6 +1,16 @@
 # umccr_data_portal stack
 
-Stack to deploy AWS resources for UMCCR data portal. 
+This stack to deploys the AWS resources for the UMCCR data portal.
+
+## Data portal deployment quickstart
+
+```bash
+$ terraform init .
+$ terraform workspace new prod
+$ terraform workspace select prod
+$ terraform apply
+$ terraform output -json > serverless-client.json
+```
 
 ### 1. React App (client/front end)
 

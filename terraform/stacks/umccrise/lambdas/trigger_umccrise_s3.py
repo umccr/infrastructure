@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     bucket = event["Records"][0]["s3"]["bucket"]["name"]
     obj = event["Records"][0]["s3"]["object"]["key"]
     data_dir = os.path.dirname(obj)
-    job_name = bucket + "---" + data_dir.replace('/', '_')
+    job_name = bucket + "---" + data_dir.replace('/', '_').replace('.', '_')
 
     request_payload = {
          "resultDir": data_dir,

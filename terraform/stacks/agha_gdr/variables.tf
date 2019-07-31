@@ -18,5 +18,5 @@ variable "agha_gdr_store_bucket_name" {
 }
 
 variable "slack_channel" {
-  default = "#arteria-dev"
+  default = "#agha-gdr"
 }

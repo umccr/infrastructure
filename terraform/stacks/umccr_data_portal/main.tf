@@ -141,6 +141,9 @@ resource "aws_cloudfront_distribution" "client_distribution" {
         response_code           = 200
         response_page_path      = "/index.html"
     }
+
+    # Link to the web security acl
+    web_acl_id = "${aws_waf_web_acl.web_acl.id}"
 }
 
 # Hosted zone for organisation domain
@@ -1185,4 +1188,67 @@ resource "github_repository_webhook" "apis_github_webhook" {
     }
 
     events = ["push"]
+}
+
+################################################################################
+# Security configurations
+
+# Web Application Firewall
+resource "aws_waf_web_acl" "web_acl" {
+    depends_on = [
+        "aws_waf_sql_injection_match_set.sql_injection_match_set",
+        "aws_waf_rule.waf_sql_rule"
+    ]
+    name = "data-portal-web-acl"
+    metric_name = "dataPortalWebAcl"
+
+    default_action {
+        type = "ALLOW"
+    }
+
+    rules {
+        action {
+            type = "BLOCK"
+        }
+
+        priority    = 1
+        rule_id     = "${aws_waf_rule.waf_sql_rule.id}"
+        type        = "REGULAR"
+    }
+}
+
+# SQL Injection protection
+resource "aws_waf_rule" "waf_sql_rule" {
+    depends_on = ["aws_waf_sql_injection_match_set.sql_injection_match_set"]
+    name = "data-portal-sql-rule"
+    metric_name = "dataPortalSqlRule"
+
+    predicates {
+        data_id = "${aws_waf_sql_injection_match_set.sql_injection_match_set.id}"
+        negated = false
+        type    = "SqlInjectionMatch"
+    }
+}
+
+# SQL injection match set
+resource "aws_waf_sql_injection_match_set" "sql_injection_match_set" {
+    name = "data-portal-injection-match-set"
+
+    # Based on the suggestion from 
+    # https://d0.awsstatic.com/whitepapers/Security/aws-waf-owasp.pdf
+    sql_injection_match_tuples {
+        text_transformation = "HTML_ENTITY_DECODE"
+
+        field_to_match {
+            type = "QUERY_STRING"
+        }
+    }
+
+    sql_injection_match_tuples {
+        text_transformation = "URL_DECODE"
+
+        field_to_match {
+            type = "QUERY_STRING"
+        }
+    }
 }

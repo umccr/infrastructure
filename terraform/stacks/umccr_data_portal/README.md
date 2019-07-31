@@ -54,3 +54,4 @@ $ terraform output -json > serverless-client.json
 - S3 bucket storing both CodePipeline artifacts
 - ACM Certificate for subdomain (`*.data-portal.{stage}.umccr.org`)
 - The stack also establishes IAM roles and policies where relavent
+- Web Application Firewall including SQL injection protection (on query strings)

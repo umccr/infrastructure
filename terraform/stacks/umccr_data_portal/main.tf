@@ -305,6 +305,7 @@ data "aws_s3_bucket" "lims_bucket_for_crawler" {
 resource "aws_s3_bucket" "athena_results_s3" {
     bucket  = "umccr-athena-query-results-${terraform.workspace}"
     acl     = "private"
+    force_destroy = true
 }
 
 # Glue crawlers
@@ -695,7 +696,7 @@ resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
 
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
-    bucket  = "data-portal-codepipeline-artifacts"
+    bucket  = "umccr-data-portal-codepipeline-artifacts-${terraform.workspace}"
     acl     = "private"
 }
 

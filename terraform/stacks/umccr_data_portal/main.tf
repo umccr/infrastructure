@@ -1,3 +1,13 @@
+terraform {
+  required_version = "~> 0.11.14"
+
+  backend "s3" {
+    bucket = "umccr-terraform-states"
+    key    = "umccr_data_portal/terraform.tfstate"
+    region = "ap-southeast-2"
+  }
+}
+
 ################################################################################
 # Generic resources
 

@@ -695,6 +695,7 @@ resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
 resource "aws_s3_bucket" "codepipeline_bucket" {
     bucket  = "umccr-data-portal-codepipeline-artifacts-${terraform.workspace}"
     acl     = "private"
+    force_destroy = true
 }
 
 # Base IAM role for codepipeline service

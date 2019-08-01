@@ -32,9 +32,6 @@ locals {
     client_s3_origin_id = "clientS3"
     data_portal_domain_prefix = "data-portal"
     google_app_secret = "${data.external.secrets_helper.result["google_app_secret"]}"
-    git_webhook_secret_client = "${data.external.secrets_helper.result["git_webhook_secret_client"]}"
-    git_webhook_secret_apis = "${data.external.secrets_helper.result["git_webhook_secret_apis"]}"
-
     codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
     codebuild_project_name_apis = "data-portal-apis-${terraform.workspace}"
 
@@ -105,7 +102,7 @@ resource "aws_cloudfront_distribution" "client_distribution" {
     }
 
     enabled                 = true
-    aliases                 = ["data-portal.dev.umccr.org"]
+    aliases                 = ["data-portal.${terraform.workspace}.umccr.org"]
     default_root_object     = "index.html"
     viewer_certificate {
         acm_certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
@@ -1122,13 +1119,9 @@ resource "aws_codebuild_project" "codebuild_apis" {
 # Codepipeline webhook for client code repository
 resource "aws_codepipeline_webhook" "codepipeline_client_webhook" {
     name            = "webhook-github-client"
-    authentication  = "GITHUB_HMAC"
+    authentication  = "UNAUTHENTICATED"
     target_action   = "Source"
     target_pipeline = "${aws_codepipeline.codepipeline_client.name}"
-
-    authentication_configuration {
-        secret_token = "${local.git_webhook_secret_client}"
-    }
 
     filter {
         json_path       = "$.ref"
@@ -1139,13 +1132,9 @@ resource "aws_codepipeline_webhook" "codepipeline_client_webhook" {
 # Codepipeline webhook for apis code repository
 resource "aws_codepipeline_webhook" "codepipeline_apis_webhook" {
     name            = "webhook-github-apis"
-    authentication  = "GITHUB_HMAC"
+    authentication  = "UNAUTHENTICATED"
     target_action   = "Source"
     target_pipeline = "${aws_codepipeline.codepipeline_apis.name}"
-
-    authentication_configuration {
-        secret_token = "${local.git_webhook_secret_apis}"
-    }
 
     filter {
         json_path       = "$.ref"
@@ -1171,7 +1160,6 @@ resource "github_repository_webhook" "client_github_webhook" {
         url             = "${aws_codepipeline_webhook.codepipeline_client_webhook.url}"
         content_type    = "json"
         insecure_ssl    = false
-        secret          = "${local.git_webhook_secret_client}"
     }
 
     events = ["push"]
@@ -1185,7 +1173,6 @@ resource "github_repository_webhook" "apis_github_webhook" {
         url             = "${aws_codepipeline_webhook.codepipeline_apis_webhook.url}"
         content_type    = "json"
         insecure_ssl    = false
-        secret          = "${local.git_webhook_secret_apis}"
     }
 
     events = ["push"]

@@ -9,8 +9,14 @@ $ terraform init .
 $ terraform workspace new prod
 $ terraform workspace select prod
 $ terraform apply
-$ terraform output -json > serverless-client.json
+$ terraform output -json > out.json # Optional
 ```
+
+### Github Webhooks
+A `GITHUB_TOKEN` env variable is required.
+In order for terraform to create GitHub webhooks, the personal access token
+should have `admin:repo_hook` scope at least, and the associated account should
+be admin-level user for both repositories (`data-portal-apis` and `data-portal-client`).
 
 ### 1. React App (client/front end)
 

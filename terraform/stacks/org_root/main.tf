@@ -107,7 +107,7 @@ resource "aws_s3_bucket" "cloudtrail_root" {
   lifecycle_rule { # onboarding account
     id      = "onboarding_account"
     prefix  = "AWSLogs/o-p5xvdd9ddb/702956374523"
-    enabled = false
+    enabled = true
 
     transition {
       days          = 30

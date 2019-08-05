@@ -13,14 +13,20 @@ provider "aws" {
   region = "ap-southeast-2"
 }
 
+locals {
+  common_tags = "${map(
+    "Stack", "${var.stack_name}"
+  )}"
+}
+
 ################################################################################
 # Buckets
 
 resource "aws_s3_bucket" "cloudtrail_root" {
   bucket = "${var.cloudtrail_bucket}"
 
-  lifecycle_rule { # org account
-    id      = "org_account"
+  lifecycle_rule {
+    id      = "org_account"                       # org account
     prefix  = "AWSLogs/o-p5xvdd9ddb/650704067584"
     enabled = false
 
@@ -30,8 +36,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # bastion account
-    id      = "bastion_account"
+  lifecycle_rule {
+    id      = "bastion_account"                   # bastion account
     prefix  = "AWSLogs/o-p5xvdd9ddb/383856791668"
     enabled = false
 
@@ -41,8 +47,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # prod account
-    id      = "prod_account"
+  lifecycle_rule {
+    id      = "prod_account"                      # prod account
     prefix  = "AWSLogs/o-p5xvdd9ddb/472057503814"
     enabled = false
 
@@ -52,8 +58,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # agha account
-    id      = "agha_account"
+  lifecycle_rule {
+    id      = "agha_account"                      # agha account
     prefix  = "AWSLogs/o-p5xvdd9ddb/602836945884"
     enabled = false
 
@@ -63,8 +69,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # ArvadosAGHA account
-    id      = "arvados_agha_account"
+  lifecycle_rule {
+    id      = "arvados_agha_account"              # ArvadosAGHA account
     prefix  = "AWSLogs/o-p5xvdd9ddb/941767615664"
     enabled = false
 
@@ -74,8 +80,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # dev account
-    id      = "dev_account"
+  lifecycle_rule {
+    id      = "dev_account"                       # dev account
     prefix  = "AWSLogs/o-p5xvdd9ddb/843407916570"
     enabled = false
 
@@ -89,8 +95,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # old dev account
-    id      = "old_dev_account"
+  lifecycle_rule {
+    id      = "old_dev_account"                   # old dev account
     prefix  = "AWSLogs/o-p5xvdd9ddb/620123204273"
     enabled = false
 
@@ -104,8 +110,8 @@ resource "aws_s3_bucket" "cloudtrail_root" {
     }
   }
 
-  lifecycle_rule { # onboarding account
-    id      = "onboarding_account"
+  lifecycle_rule {
+    id      = "onboarding_account"                # onboarding account
     prefix  = "AWSLogs/o-p5xvdd9ddb/702956374523"
     enabled = true
 
@@ -118,7 +124,6 @@ resource "aws_s3_bucket" "cloudtrail_root" {
       days = 365 # keep for one year
     }
   }
-
 }
 
 resource "aws_s3_bucket_policy" "cloudtrail_root" {
@@ -171,4 +176,11 @@ POLICY
 }
 
 ################################################################################
+# SNS
 
+resource "aws_sns_topic" "chatbot_slack_topic" {
+  name_prefix  = "chatbot_slack_topic"
+  display_name = "chatbot_slack_topic"
+
+  tags = "${local.common_tags}"
+}

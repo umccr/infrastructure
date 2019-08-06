@@ -356,16 +356,6 @@ module "notify_slack_lambda" {
   }
 }
 
-## 
-
-# EC2 instance to run Vault server
-data "aws_ami" "vault_ami" {
-  most_recent      = true
-  owners           = ["620123204273"]
-  executable_users = ["self"]
-  name_regex       = "^vault-ami*"
-}
-
 ################################################################################
 # Set up a main VPC for resources to use
 # It'll have with private and public subnets, internet and NAT gateways, etc

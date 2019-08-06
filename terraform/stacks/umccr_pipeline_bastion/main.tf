@@ -68,7 +68,8 @@ resource "aws_iam_role" "ssm_role" {
       }
     }
   ]
-}EOF
+}
+EOF
 
   tags = "${local.common_tags}"
 }
@@ -176,7 +177,7 @@ resource "aws_cloudwatch_event_rule" "umccr_pipeline" {
   event_pattern = "${data.template_file.cloudwatch_event_rule_pattern.rendered}"
 
   depends_on = [
-    "module.async_task_manager_lambda",
+    "module.async_task_manager_lambda"
   ]
 }
 

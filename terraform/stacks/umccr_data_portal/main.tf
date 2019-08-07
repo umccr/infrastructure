@@ -46,7 +46,7 @@ locals {
     codebuild_project_name_apis = "data-portal-apis-${terraform.workspace}"
 
     lims_crawler_target = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
-    s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/data"
+    s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/umccr-primary-data-${terraform.workspace}/primary-data/data"
 
     api_url = "api.${aws_acm_certificate.client_cert.domain_name}"
 } 
@@ -909,6 +909,7 @@ resource "aws_iam_policy" "codebuild_apis_iam_policy" {
                 "logs:*",
                 "athena:*",
                 "cloudformation:*",
+                "cloudfront:UpdateDistribution",
                 "iam:*",
                 "lambda:*",
                 "apigateway:POST",                

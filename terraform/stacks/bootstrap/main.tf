@@ -287,11 +287,21 @@ resource "aws_s3_bucket" "primary_data" {
       days = 90
     }
 
-	expiration {
-		expired_object_delete_marker = true
-	}
+    expiration {
+      expired_object_delete_marker = true
+    }
 
-	abort_incomplete_multipart_upload_days = 7
+    abort_incomplete_multipart_upload_days = 7
+  }
+
+  lifecycle_rule {
+    id      = "Deep archive BAM files older than 90 days"
+    filter  = "*.bam"
+    enabled = true
+    transition {
+      days          = 90
+      storage_class = "DEEP_ARCHIVE"
+    }
   }
 }
 

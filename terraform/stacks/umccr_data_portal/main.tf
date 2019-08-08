@@ -12,8 +12,10 @@ terraform {
 # Generic resources
 
 provider "aws" {
-    region = "${local.main_region}"
+    region = "ap-southeast-2"
 }
+
+data "aws_region" "current" {}
 
 # for ACM certificate
 provider "aws" {
@@ -38,7 +40,6 @@ data "external" "secrets_helper" {
 }
 
 locals {
-    main_region = "ap-southeast-2"
     client_s3_origin_id = "clientS3"
     data_portal_domain_prefix = "data-portal"
     google_app_secret = "${data.external.secrets_helper.result["google_app_secret"]}"
@@ -1026,7 +1027,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
         environment_variable {
             name  = "REGION"
-            value = "${local.main_region}"
+            value = "${data.aws_region.current.name}"
         }
 
         environment_variable {

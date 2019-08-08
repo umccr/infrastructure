@@ -1,5 +1,5 @@
 output "main_region" {
-    value = "${local.main_region}"
+    value = "${data.aws_region.current.name}"
 }
 
 output "cognito_user_pool_id" {

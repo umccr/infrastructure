@@ -40,6 +40,11 @@ data "external" "secrets_helper" {
 }
 
 locals {
+    # Stack name in under socre
+    stack_name_us       = "data_portal"
+    # Stack name in dash
+    stack_name_dash     = "data-portal"
+
     client_s3_origin_id = "clientS3"
     data_portal_domain_prefix = "data-portal"
     google_app_secret = "${data.external.secrets_helper.result["google_app_secret"]}"
@@ -50,6 +55,14 @@ locals {
     s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/umccr-primary-data-${terraform.workspace}/primary-data/data"
 
     api_url = "api.${aws_acm_certificate.client_cert.domain_name}"
+    iam_role_path = "/${local.stack_name_us}/"
+
+    site_domain = "${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
+
+    org_name = "umccr"
+
+    github_repo_client = "data-portal-client"
+    github_repo_apis   = "data-portal-apis"
 } 
 
 ################################################################################
@@ -57,7 +70,7 @@ locals {
 
 # S3 bucket storing client side (compiled) code
 resource "aws_s3_bucket" "client_bucket" {
-    bucket  = "umccr-data-portal-client-${terraform.workspace}"
+    bucket  = "${local.org_name}-${local.stack_name_dash}-client-${terraform.workspace}"
     acl     = "private"
 
     website {
@@ -113,7 +126,7 @@ resource "aws_cloudfront_distribution" "client_distribution" {
     }
 
     enabled                 = true
-    aliases                 = ["data-portal.${terraform.workspace}.umccr.org"]
+    aliases                 = ["${local.site_domain}"]
     default_root_object     = "index.html"
     viewer_certificate {
         acm_certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
@@ -184,7 +197,7 @@ resource "aws_route53_record" "client_cert_validation" {
 resource "aws_acm_certificate" "client_cert" {
     # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
     provider            = "aws.use1"
-    domain_name         = "${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
+    domain_name         = "${local.site_domain}"
     validation_method   = "DNS"
 
     lifecycle {
@@ -207,7 +220,7 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 resource "aws_acm_certificate" "subdomain_cert" {
     # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
     provider            = "aws.use1"
-    domain_name         = "*.${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
+    domain_name         = "*.${local.site_domain}"
     validation_method   = "DNS"
 
     lifecycle {
@@ -244,7 +257,8 @@ resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
 # }
 
 resource "aws_iam_role" "glue_service_role" {
-    name = "AWSGlueServiceRole-Data-Portal"
+    name = "${local.stack_name_us}_glue_service_role"
+    path = "${local.iam_role_path}"
 
     assume_role_policy = <<EOF
 {
@@ -270,7 +284,7 @@ resource "aws_iam_role_policy_attachment" "glue_service_role_attach_default" {
 }
 
 resource "aws_iam_policy" "glue_service_role_policy" {
-    name = "AWSGlueServiceRole-Data-Portal"
+    name = "${local.stack_name_us}_glue_service_policy"
     description = "IAM policy for data portal glue service role"
 
     policy = <<EOF
@@ -311,7 +325,7 @@ data "aws_s3_bucket" "lims_bucket_for_crawler" {
 
 # # The bucket to store athena query results
 resource "aws_s3_bucket" "athena_results_s3" {
-    bucket  = "umccr-athena-query-results-${terraform.workspace}"
+    bucket  = "${local.org_name}-athena-query-results-${terraform.workspace}"
     acl     = "private"
     force_destroy = true
 }
@@ -542,7 +556,7 @@ resource "aws_glue_catalog_table" "glue_catalog_tb_lims" {
 
 # Cognito
 resource "aws_cognito_user_pool" "user_pool" {
-    name = "data-portal-${terraform.workspace}"
+    name = "${local.stack_name_dash}-${terraform.workspace}"
 }
 
 # Google identity provider
@@ -583,7 +597,8 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 
 # IAM role for the identity pool for authenticated identities
 resource "aws_iam_role" "role_authenticated" {
-    name = "data_portal_${terraform.workspace}_authenticated"
+    name = "${local.stack_name_us}_identity_pool_authenticated"
+    path = "${local.iam_role_path}"
 
     assume_role_policy = <<EOF
 {
@@ -611,7 +626,7 @@ EOF
 
 # IAM role policy for authenticated identities
 resource "aws_iam_role_policy" "role_policy_authenticated" {
-    name = "authenticated_policy"
+    name = "${local.stack_name_us}_authenticated_policy"
     role = "${aws_iam_role.role_authenticated.id}"
 
     # Todo: we should have a explicit reference to our api
@@ -655,12 +670,12 @@ resource "aws_cognito_identity_pool_roles_attachment" "identity_pool_role_attach
 
 # User pool client
 resource "aws_cognito_user_pool_client" "user_pool_client" {
-    name                                    = "data-portal-app-${terraform.workspace}"
+    name                                    = "${local.stack_name_dash}-app-${terraform.workspace}"
     user_pool_id                            = "${aws_cognito_user_pool.user_pool.id}"
     supported_identity_providers            = ["Google"]
 
-    callback_urls                           = ["https://${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"]
-    logout_urls                             = ["https://${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"]
+    callback_urls                           = ["https://${local.site_domain}"]
+    logout_urls                             = ["https://${local.site_domain}"]
 
     generate_secret                         = false
 
@@ -675,7 +690,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
 # User pool client (localhost access)
 resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
-    name                                    = "data-portal-app-${terraform.workspace}-localhost"
+    name                                    = "${local.stack_name_dash}-app-${terraform.workspace}-localhost"
     user_pool_id                            = "${aws_cognito_user_pool.user_pool.id}"
     supported_identity_providers            = ["Google"]
 
@@ -695,7 +710,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
 
 # Assign an explicit domain
 resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
-    domain          = "data-portal-app-${terraform.workspace}"
+    domain          = "${local.stack_name_dash}-app-${terraform.workspace}"
     user_pool_id    = "${aws_cognito_user_pool.user_pool.id}"
 }
 
@@ -704,14 +719,15 @@ resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
 
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
-    bucket  = "umccr-data-portal-codepipeline-artifacts-${terraform.workspace}"
+    bucket  = "${local.org_name}-${local.stack_name_dash}-codepipeline-artifacts-${terraform.workspace}"
     acl     = "private"
     force_destroy = true
 }
 
 # Base IAM role for codepipeline service
 resource "aws_iam_role" "codepipeline_base_role" {
-    name = "codepipeline-data-portal-base-role"
+    name = "${local.stack_name_us}_codepipeline_base_role"
+    path = "${local.iam_role_path}"
 
     assume_role_policy = <<EOF
 {
@@ -731,7 +747,7 @@ EOF
 
 # Base IAM policy for codepiepline service role
 resource "aws_iam_role_policy" "codepipeline_base_policy" {
-    name = "codepipeline-data-portal-base-policy"
+    name = "${local.stack_name_us}_codepipeline_data_oortal_base_policy"
     role = "${aws_iam_role.codepipeline_base_role.id}"
 
     policy = <<EOF
@@ -763,7 +779,7 @@ EOF
 
 # Codepipeline for client
 resource "aws_codepipeline" "codepipeline_client" {
-    name        = "data-portal-client-${terraform.workspace}"
+    name        = "${local.stack_name_dash}-client-${terraform.workspace}"
     role_arn    = "${aws_iam_role.codepipeline_base_role.arn}"
 
     artifact_store {
@@ -783,8 +799,8 @@ resource "aws_codepipeline" "codepipeline_client" {
             version             = "1"
             
             configuration = {
-                Owner   = "umccr"
-                Repo    = "data-portal-client"
+                Owner   = "${local.org_name}"
+                Repo    = "${local.github_repo_client}"
                 # Use branch for current stage
                 Branch  = "${var.github_branch[terraform.workspace]}"
             }
@@ -811,7 +827,7 @@ resource "aws_codepipeline" "codepipeline_client" {
 
 # Codepipeline for apis
 resource "aws_codepipeline" "codepipeline_apis" {
-    name        = "data-portal-apis-${terraform.workspace}"
+    name        = "${local.stack_name_dash}-apis-${terraform.workspace}"
     role_arn    = "${aws_iam_role.codepipeline_base_role.arn}"
 
     artifact_store {
@@ -831,8 +847,8 @@ resource "aws_codepipeline" "codepipeline_apis" {
             version             = "1"
             
             configuration = {
-                Owner   = "umccr"
-                Repo    = "data-portal-apis"
+                Owner   = "${local.org_name}"
+                Repo    = "${local.github_repo_apis}"
                 # Use branch for current stage
                 Branch  = "${var.github_branch[terraform.workspace]}"
             }
@@ -860,7 +876,8 @@ resource "aws_codepipeline" "codepipeline_apis" {
 
 # IAM role for code build (client)
 resource "aws_iam_role" "codebuild_client_iam_role" {
-    name = "codebuild-data-portal-client-service-role"
+    name = "${local.stack_name_us}_codebuild_client_service_role"
+    path = "${local.iam_role_path}"
 
     assume_role_policy = <<EOF
 {
@@ -880,7 +897,8 @@ EOF
 
 # IAM role for code build (client)
 resource "aws_iam_role" "codebuild_apis_iam_role" {
-    name = "codebuild-data-portal-apis-service-role"
+    name = "${local.stack_name_us}_codebuild_apis_service_role"
+    path = "${local.iam_role_path}"
 
     assume_role_policy = <<EOF
 {
@@ -900,7 +918,7 @@ EOF
 
 # IAM policy specific for the apis side 
 resource "aws_iam_policy" "codebuild_apis_iam_policy" {
-    name = "codebuild-data-portal-apis-service-policy"
+    name = "${local.stack_name_us}_codebuild_apis_service_policy"
     description = "Policy for CodeBuild for backend side of data portal"
 
     policy = <<POLICY
@@ -954,7 +972,7 @@ resource "aws_iam_role_policy_attachment" "codebuild_apis_iam_role_attach_specif
 
 # Base IAM policy for code build
 resource "aws_iam_policy" "codebuild_base_iam_policy" {
-    name = "codebuild-data-portal-base-service-policy"
+    name = "codebuild-${local.stack_name_dash}-base-service-policy"
     description = "Base policy for CodeBuild for data portal site"
 
     policy = <<POLICY
@@ -1078,7 +1096,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     source {
         type = "GITHUB"
-        location = "https://github.com/umccr/data-portal-client.git"
+        location = "https://github.com/${local.org_name}/${local.github_repo_client}.git"
         git_clone_depth = 1
     }
 }
@@ -1126,7 +1144,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
     source {
         type = "GITHUB"
-        location = "https://github.com/umccr/data-portal-apis.git"
+        location = "https://github.com/${local.org_name}/${local.github_repo_apis}.git"
         git_clone_depth = 1
     }
 }
@@ -1159,12 +1177,12 @@ resource "aws_codepipeline_webhook" "codepipeline_apis_webhook" {
 
 # Github repository of client
 data "github_repository" "client_github_repo" {
-    full_name = "umccr/data-portal-client"
+    full_name = "${local.org_name}/${local.github_repo_client}"
 }
 
 # Github repository of apis
 data "github_repository" "apis_github_repo" {
-    full_name = "umccr/data-portal-apis"
+    full_name = "${local.org_name}/${local.github_repo_apis}"
 }
 
 # Github repository webhook for client
@@ -1223,7 +1241,7 @@ resource "aws_wafregional_web_acl" "api_web_acl" {
 # SQL Injection protection
 resource "aws_wafregional_rule" "api_waf_sql_rule" {
     depends_on = ["aws_wafregional_sql_injection_match_set.sql_injection_match_set"]
-    name = "data-portal-sql-rule"
+    name = "${local.stack_name_dash}-sql-rule"
     metric_name = "dataPortalSqlRule"
 
     predicate {
@@ -1235,7 +1253,7 @@ resource "aws_wafregional_rule" "api_waf_sql_rule" {
 
 # SQL injection match set
 resource "aws_wafregional_sql_injection_match_set" "sql_injection_match_set" {
-    name = "data-portal-api-injection-match-set"
+    name = "${local.stack_name_dash}-api-injection-match-set"
 
     # Based on the suggestion from 
     # https://d0.awsstatic.com/whitepapers/Security/aws-waf-owasp.pdf

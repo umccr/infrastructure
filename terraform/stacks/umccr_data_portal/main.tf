@@ -573,8 +573,8 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 }
 
 # IAM role for the identity pool for authenticated identities
-data "template_file" "iam_role_authenticated_assumed_role_policy" {
-    template = "${file("policies/iam_role_authenticated_assumed_role_policy.json")}"
+data "template_file" "iam_role_authenticated_assume_role_policy" {
+    template = "${file("policies/iam_role_authenticated_assume_role_policy.json")}"
 
     vars {
         identity_pool_id = "${aws_cognito_identity_pool.identity_pool.id}"
@@ -584,7 +584,7 @@ resource "aws_iam_role" "role_authenticated" {
     name = "${local.stack_name_us}_identity_pool_authenticated"
     path = "${local.iam_role_path}"
 
-    assume_role_policy = "${data.template_file.iam_role_authenticated_assumed_role_policy.rendered}"
+    assume_role_policy = "${data.template_file.iam_role_authenticated_assume_role_policy.rendered}"
 }
 
 # IAM role policy for authenticated identities
@@ -979,6 +979,12 @@ resource "aws_codebuild_project" "codebuild_apis" {
             name  = "LIMS_TABLE_NAME"
             value = "${aws_glue_catalog_table.glue_catalog_tb_lims.database_name}.${aws_glue_catalog_table.glue_catalog_tb_lims.name}"
         }
+
+        # ARN of the lambda iam role
+        environment_variable {
+            name = "LAMBDA_IAM_ROLE_ARN"
+            value = "${aws_iam_role.lambda_apis_role.arn}"
+        }
     }
 
     source {
@@ -1048,6 +1054,29 @@ resource "github_repository_webhook" "apis_github_webhook" {
     }
 
     events = ["push"]
+}
+
+# IAM role for lambda functions (to be use by Serverless framework)
+data "template_file" "lambda_apis_role_assume_role_policy" {
+    template = "${file("policies/lambda_apis_role_assume_role_policy.json")}"
+}
+
+resource "aws_iam_role" "lambda_apis_role" {
+    name = "${local.stack_name_us}_lambda_apis_role"
+    path = "${local.iam_role_path}"
+    
+    assume_role_policy = "${data.template_file.lambda_apis_role_assume_role_policy.rendered}"
+}
+
+data "template_file" "lambda_apis_policy" {
+    template = "${file("policies/lambda_apis_policy.json")}"
+}
+
+resource "aws_iam_role_policy" "lambda_apis_role_policy" {
+    name = "${local.stack_name_us}_lambda_apis_policy"
+    role = "${aws_iam_role.lambda_apis_role.id}"
+
+    policy = "${data.template_file.lambda_apis_policy.rendered}"
 }
 
 ################################################################################

@@ -1,0 +1,26 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:*",
+                "athena:*",
+                "cloudformation:*",
+                "cloudfront:UpdateDistribution",
+                "iam:*",
+                "lambda:*",
+                "apigateway:POST",                
+                "apigateway:DELETE",
+                "apigateway:PATCH",
+                "apigateway:GET",
+                "apigateway:PUT",
+                "apigateway:SetWebACL",
+                "acm:*",
+                "route53:*",
+                "waf-regional:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

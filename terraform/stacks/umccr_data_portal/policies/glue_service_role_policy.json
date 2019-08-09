@@ -1,0 +1,16 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "${lims_bucket_arn}/*",
+                "${s3_keys_bucket_arn}/*"
+            ]
+        }
+    ]
+}

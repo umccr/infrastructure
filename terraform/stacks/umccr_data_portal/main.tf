@@ -80,33 +80,18 @@ resource "aws_s3_bucket" "client_bucket" {
 }
 
 # Policy document for the client bucket
-data "aws_iam_policy_document" "client_bucket_policy_document" {
-    statement {
-        actions   = ["s3:GetObject"]
-        resources = ["${aws_s3_bucket.client_bucket.arn}/*"]
-
-        principals {
-            type        = "AWS"
-            identifiers = ["${aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn}"]
-        }
-    }
-
-    statement {
-        # Alow access for the origin access identity to index.html
-        actions   = ["s3:ListBucket"]
-        resources = ["${aws_s3_bucket.client_bucket.arn}"]
-
-        principals {
-            type        = "AWS"
-            identifiers = ["${aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn}"]
-        }
+data "template_file" "client_bucket_policy" {
+    template = "${file("policies/client_bucket_policy.json")}"
+    vars {
+        client_bucket_arn   = "${aws_s3_bucket.client_bucket.arn}"
+        origin_access_identity_arn = "${aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn}"
     }
 }
 
 # Attach the policy to the client bucket
 resource "aws_s3_bucket_policy" "client_bucket_policy" {
     bucket = "${aws_s3_bucket.client_bucket.id}"
-    policy = "${data.aws_iam_policy_document.client_bucket_policy_document.json}"
+    policy = "${data.template_file.client_bucket_policy.rendered}"
 }
 
 # Origin access identity for cloudfront to access client s3 bucket
@@ -283,28 +268,20 @@ resource "aws_iam_role_policy_attachment" "glue_service_role_attach_default" {
     policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
+data "template_file" "glue_service_role_policy" {
+    template = "${file("policies/glue_service_role_policy.json")}"
+
+    vars = {
+        lims_bucket_arn = "${data.aws_s3_bucket.lims_bucket_for_crawler.arn}"
+        s3_keys_bucket_arn = "${data.aws_s3_bucket.s3_keys_bucket_for_crawler.arn}"
+    }
+}
+ 
 resource "aws_iam_policy" "glue_service_role_policy" {
     name = "${local.stack_name_us}_glue_service_policy"
     description = "IAM policy for data portal glue service role"
 
-    policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject",
-                "s3:GetObject"
-            ],
-            "Resource": [
-                "${data.aws_s3_bucket.lims_bucket_for_crawler.arn}/*",
-                "${data.aws_s3_bucket.s3_keys_bucket_for_crawler.arn}/*"
-            ]
-        }
-    ]
-}
-EOF
+    policy = "${data.template_file.glue_service_role_policy.rendered}"
 }
 
 # Attach specific policy to the service role
@@ -596,67 +573,31 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 }
 
 # IAM role for the identity pool for authenticated identities
+data "template_file" "iam_role_authenticated_assumed_role_policy" {
+    template = "${file("policies/iam_role_authenticated_assumed_role_policy.json")}"
+
+    vars {
+        identity_pool_id = "${aws_cognito_identity_pool.identity_pool.id}"
+    }
+}
 resource "aws_iam_role" "role_authenticated" {
     name = "${local.stack_name_us}_identity_pool_authenticated"
     path = "${local.iam_role_path}"
 
-    assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Federated": "cognito-identity.amazonaws.com"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-                "StringEquals": {
-                    "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.identity_pool.id}"
-                },
-                "ForAnyValue:StringLike": {
-                    "cognito-identity.amazonaws.com:amr": "authenticated"
-                }
-            }
-        }
-    ]
-}
-EOF
+    assume_role_policy = "${data.template_file.iam_role_authenticated_assumed_role_policy.rendered}"
 }
 
 # IAM role policy for authenticated identities
+data "template_file" "iam_role_authenticated_policy" {
+    template = "${file("policies/iam_role_authenticated_policy.json")}"
+}
+
 resource "aws_iam_role_policy" "role_policy_authenticated" {
     name = "${local.stack_name_us}_authenticated_policy"
     role = "${aws_iam_role.role_authenticated.id}"
 
     # Todo: we should have a explicit reference to our api
-    policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "mobileanalytics:PutEvents",
-                "cognito-sync:*",
-                "cognito-identity:*"
-            ],
-            "Resource": [
-                "*"
-            ]
-        },
-        {
-           "Effect": "Allow",
-            "Action": [
-                "execute-api:Invoke"
-            ],
-            "Resource": [
-                "*"
-            ]
-        }
-    ]
-}
-EOF
+    policy = "${data.template_file.iam_role_authenticated_policy.rendered}"
 }
 
 # Attach the IAM role to the identity pool
@@ -725,56 +666,29 @@ resource "aws_s3_bucket" "codepipeline_bucket" {
 }
 
 # Base IAM role for codepipeline service
+data "template_file" "codepipeline_base_role_assume_role_policy" {
+    template = "${file("policies/codepipeline_base_role_assume_role_policy.json")}"
+}
+
 resource "aws_iam_role" "codepipeline_base_role" {
     name = "${local.stack_name_us}_codepipeline_base_role"
     path = "${local.iam_role_path}"
 
-    assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "codepipeline.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
+    assume_role_policy = "${data.template_file.codepipeline_base_role_assume_role_policy.rendered}"
 }
 
 # Base IAM policy for codepiepline service role
-resource "aws_iam_role_policy" "codepipeline_base_policy" {
-    name = "${local.stack_name_us}_codepipeline_data_oortal_base_policy"
-    role = "${aws_iam_role.codepipeline_base_role.id}"
+data "template_file" "codepipeline_base_role_policy" {
+    template = "${file("policies/codepipeline_base_role_policy.json")}"
 
-    policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-        "Effect":"Allow",
-        "Action": [
-            "s3:*"
-        ],
-        "Resource": [
-            "${aws_s3_bucket.codepipeline_bucket.arn}",
-            "${aws_s3_bucket.codepipeline_bucket.arn}/*"
-        ]
-        },
-        {
-        "Effect": "Allow",
-        "Action": [
-            "codebuild:BatchGetBuilds",
-            "codebuild:StartBuild"
-        ],
-        "Resource": "*"
-        }
-    ]
+    vars {
+        codepipeline_bucket_arn = "${aws_s3_bucket.codepipeline_bucket.arn}"
+    }
 }
-EOF
+resource "aws_iam_role_policy" "codepipeline_base_role_policy" {
+    name = "${local.stack_name_us}_codepipeline_base_role_policy"
+    role = "${aws_iam_role.codepipeline_base_role.id}"
+    policy = "${data.template_file.codepipeline_base_role_policy.rendered}"
 }
 
 # Codepipeline for client
@@ -875,150 +789,75 @@ resource "aws_codepipeline" "codepipeline_apis" {
 
 
 # IAM role for code build (client)
-resource "aws_iam_role" "codebuild_client_iam_role" {
+data "template_file" "codebuild_client_role_assume_role_policy" {
+    template = "${file("policies/codebuild_client_role_assume_role_policy.json")}"
+}
+
+resource "aws_iam_role" "codebuild_client_role" {
     name = "${local.stack_name_us}_codebuild_client_service_role"
     path = "${local.iam_role_path}"
 
-    assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "codebuild.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-        }
-    ]
-}
-EOF
+    assume_role_policy = "${data.template_file.codebuild_client_role_assume_role_policy.rendered}"
 }
 
 # IAM role for code build (client)
-resource "aws_iam_role" "codebuild_apis_iam_role" {
+data "template_file" "codebuild_apis_role_assume_role_policy" {
+    template = "${file("policies/codebuild_apis_role_assume_role_policy.json")}"
+}
+
+resource "aws_iam_role" "codebuild_apis_role" {
     name = "${local.stack_name_us}_codebuild_apis_service_role"
     path = "${local.iam_role_path}"
 
-    assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "codebuild.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
-    ]
-}
-EOF
+    assume_role_policy = "${data.template_file.codebuild_apis_role_assume_role_policy.rendered}"
 }
 
 # IAM policy specific for the apis side 
-resource "aws_iam_policy" "codebuild_apis_iam_policy" {
+data "template_file" "codebuild_apis_policy" {
+    template = "${file("policies/codebuild_apis_policy.json")}"
+}
+resource "aws_iam_policy" "codebuild_apis_policy" {
     name = "${local.stack_name_us}_codebuild_apis_service_policy"
     description = "Policy for CodeBuild for backend side of data portal"
 
-    policy = <<POLICY
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:*",
-                "athena:*",
-                "cloudformation:*",
-                "cloudfront:UpdateDistribution",
-                "iam:*",
-                "lambda:*",
-                "apigateway:POST",                
-                "apigateway:DELETE",
-                "apigateway:PATCH",
-                "apigateway:GET",
-                "apigateway:PUT",
-                "apigateway:SetWebACL",
-                "acm:*",
-                "route53:*",
-                "waf-regional:*"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-POLICY
+    policy = "${data.template_file.codebuild_apis_policy.rendered}"
 }
 
 # Attach the base policy to the code build role for client
-resource "aws_iam_role_policy_attachment" "codebuild_client_iam_role_attach_base_policy" {
-    role        = "${aws_iam_role.codebuild_client_iam_role.name}"
-    policy_arn  = "${aws_iam_policy.codebuild_base_iam_policy.arn}"
+resource "aws_iam_role_policy_attachment" "codebuild_client_role_attach_base_policy" {
+    role        = "${aws_iam_role.codebuild_client_role.name}"
+    policy_arn  = "${aws_iam_policy.codebuild_base_policy.arn}"
 }
 
 # Attach the base policy to the code build role for apis
-resource "aws_iam_role_policy_attachment" "codebuild_apis_iam_role_attach_base_policy" {
-    role        = "${aws_iam_role.codebuild_apis_iam_role.name}"
-    policy_arn  = "${aws_iam_policy.codebuild_base_iam_policy.arn}"
+resource "aws_iam_role_policy_attachment" "codebuild_apis_role_attach_base_policy" {
+    role        = "${aws_iam_role.codebuild_apis_role.name}"
+    policy_arn  = "${aws_iam_policy.codebuild_base_policy.arn}"
 }
 
 # Attach specific policies to the code build ro for apis
-resource "aws_iam_role_policy_attachment" "codebuild_apis_iam_role_attach_specific_policy" {
-    role        = "${aws_iam_role.codebuild_apis_iam_role.name}"
-    policy_arn  = "${aws_iam_policy.codebuild_apis_iam_policy.arn}"
+resource "aws_iam_role_policy_attachment" "codebuild_apis_role_attach_specific_policy" {
+    role        = "${aws_iam_role.codebuild_apis_role.name}"
+    policy_arn  = "${aws_iam_policy.codebuild_apis_policy.arn}"
 }
 
 
 # Base IAM policy for code build
-resource "aws_iam_policy" "codebuild_base_iam_policy" {
+data "template_file" "codebuild_base_policy" {
+    template = "${file("policies/codebuild_base_policy.json")}"
+}
+
+resource "aws_iam_policy" "codebuild_base_policy" {
     name = "codebuild-${local.stack_name_dash}-base-service-policy"
     description = "Base policy for CodeBuild for data portal site"
 
-    policy = <<POLICY
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-        "Effect": "Allow",
-        "Resource": [
-            "*"
-        ],
-        "Action": [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents"
-        ]
-        },
-        {
-        "Effect": "Allow",
-        "Action": [
-            "ec2:CreateNetworkInterface",
-            "ec2:DescribeDhcpOptions",
-            "ec2:DescribeNetworkInterfaces",
-            "ec2:DeleteNetworkInterface",
-            "ec2:DescribeSubnets",
-            "ec2:DescribeSecurityGroups",
-            "ec2:DescribeVpcs"
-        ],
-        "Resource": "*"
-        },
-        {
-        "Effect": "Allow",
-        "Action": [
-            "s3:*"
-        ],
-        "Resource": "*"
-        }
-    ]
-}
-POLICY
+    policy = "${data.template_file.codebuild_base_policy.rendered}"
 }
 
 # Codebuild project for client
 resource "aws_codebuild_project" "codebuild_client" {
     name = "${local.codebuild_project_name_client}"
-    service_role = "${aws_iam_role.codebuild_client_iam_role.arn}"
+    service_role = "${aws_iam_role.codebuild_client_role.arn}"
 
     artifacts {
         type = "NO_ARTIFACTS"
@@ -1104,7 +943,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 # Codebuild project for apis
 resource "aws_codebuild_project" "codebuild_apis" {
     name = "${local.codebuild_project_name_apis}"
-    service_role = "${aws_iam_role.codebuild_apis_iam_role.arn}"
+    service_role = "${aws_iam_role.codebuild_apis_role.arn}"
 
     artifacts {
         type = "NO_ARTIFACTS"

@@ -2,8 +2,9 @@ variable "availability_zone" {
   default = "ap-southeast-2c"
 }
 
+# XXX: Use filters instead of hardcoded AMI
 variable "umccrise_image_id" {
-  default = "ami-03037fc9d9ca37131"
+  default = "ami-03ee7e950390e920a"
 }
 
 variable "stack_name" {
@@ -48,7 +49,13 @@ variable "workspace_umccrise_buckets" {
     dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-umccrise-dev", "arn:aws:s3:::umccr-umccrise-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
   }
 }
-
+variable "github_branch" {
+    default = {
+        prod = "master"
+        dev  = "dev"
+    }
+    description = "The branch corresponding to current stage"
+}
 variable "umccrise_mem" {
   type = "map"
 

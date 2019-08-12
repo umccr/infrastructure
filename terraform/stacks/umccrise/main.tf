@@ -19,6 +19,14 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+locals {
+    org_name = "umccr"
+    stack_name     = "umccrise"
+    iam_role_path = "/${local.stack_name}/"
+    github_repo = "${local.stack_name}"
+    codebuild_project_name = "${local.stack_name}-${terraform.workspace}"
+}
+
 ################################################################################
 # networking
 
@@ -438,6 +446,90 @@ resource "aws_lambda_permission" "lambda" {
   # source_arn = "${aws_api_gateway_deployment.example.execution_arn}/*/*"
   # source_arn = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.lambda_rest_api.id}/*/${aws_api_gateway_method.lambda_proxy.http_method}/lambda"
   source_arn = "${aws_api_gateway_rest_api.lambda_rest_api.execution_arn}/*/*/*"
+}
+
+################################################################################
+# Deployment pipeline configurations
+
+# Bucket storing codepipeline artifacts
+resource "aws_s3_bucket" "codepipeline_bucket" {
+    bucket  = "${local.org_name}-${local.stack_name}-codepipeline-artifacts-${terraform.workspace}"
+    acl     = "private"
+    force_destroy = true
+}
+
+# Base IAM role for codepipeline service
+data "template_file" "codepipeline_base_role_assume_role_policy" {
+    template = "${file("policies/codepipeline_base_role_assume_role_policy.json")}"
+}
+
+resource "aws_iam_role" "codepipeline_base_role" {
+    name = "${local.stack_name}_codepipeline_base_role"
+    path = "${local.iam_role_path}"
+
+    assume_role_policy = "${data.template_file.codepipeline_base_role_assume_role_policy.rendered}"
+}
+
+# Base IAM policy for codepiepline service role
+data "template_file" "codepipeline_base_role_policy" {
+    template = "${file("policies/codepipeline_base_role_policy.json")}"
+
+    vars {
+        codepipeline_bucket_arn = "${aws_s3_bucket.codepipeline_bucket.arn}"
+    }
+}
+resource "aws_iam_role_policy" "codepipeline_base_role_policy" {
+    name = "${local.stack_name}_codepipeline_base_role_policy"
+    role = "${aws_iam_role.codepipeline_base_role.id}"
+    policy = "${data.template_file.codepipeline_base_role_policy.rendered}"
+}
+
+# Codepipeline for umccrise
+resource "aws_codepipeline" "codepipeline" {
+    name        = "umccrise-${terraform.workspace}"
+    role_arn    = "${aws_iam_role.codepipeline_base_role.arn}"
+
+    artifact_store {
+        location    = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+        type        = "S3"
+    }
+
+    stage {
+        name = "Source"
+
+        action {
+            name                = "Source"
+            category            = "Source"
+            owner               = "ThirdParty"
+            provider            = "GitHub"
+            output_artifacts    = ["SourceArtifact"]
+            version             = "1"
+            
+            configuration = {
+                Owner   = "${local.org_name}"
+                Repo    = "${local.github_repo}"
+                # Use branch for current stage
+                Branch  = "${var.github_branch[terraform.workspace]}"
+            }
+        }
+    }
+
+    stage {
+        name = "Build"
+
+        action {
+            name                = "Build"
+            category            = "Build"
+            owner               = "AWS"
+            provider            = "CodeBuild"
+            input_artifacts     = ["SourceArtifact"]
+            version             = "1"
+
+            configuration = {
+                ProjectName     = "${local.codebuild_project_name}"
+            }
+        }
+    }
 }
 
 ################################################################################

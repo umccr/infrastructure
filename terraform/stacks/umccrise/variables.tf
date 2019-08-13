@@ -4,7 +4,7 @@ variable "availability_zone" {
 
 # XXX: Use filters instead of hardcoded AMI
 variable "umccrise_image_id" {
-  default = "ami-03ee7e950390e920a"
+  default = "ami-0a23757556098dfdd"
 }
 
 variable "stack_name" {

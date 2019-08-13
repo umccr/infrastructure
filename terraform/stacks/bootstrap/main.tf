@@ -293,6 +293,21 @@ resource "aws_s3_bucket" "primary_data" {
 
 	abort_incomplete_multipart_upload_days = 7
   }
+
+  lifecycle_rule {
+    id = "glacier_older_than_90_days_bams"
+    enabled = "${terraform.workspace == "dev" ? false : true}"
+
+    tags = {
+      "Filetype"      = "bam"
+      "Archive"       = "true"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "DEEP_ARCHIVE"
+    }
+  }
 }
 
 # S3 bucket as Vault backend store

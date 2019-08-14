@@ -2,6 +2,10 @@ output "main_region" {
     value = "${data.aws_region.current.name}"
 }
 
+output "api_domain" {
+    value = "${local.api_domain}"
+}
+
 output "cognito_user_pool_id" {
     value = "${aws_cognito_user_pool.user_pool.id}"
 }

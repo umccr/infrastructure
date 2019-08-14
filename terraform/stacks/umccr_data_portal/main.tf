@@ -54,7 +54,7 @@ locals {
     lims_crawler_target = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
     s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/umccr-primary-data-${terraform.workspace}/primary-data/data"
 
-    api_url = "api.${aws_acm_certificate.client_cert.domain_name}"
+    api_domain = "api.${aws_acm_certificate.client_cert.domain_name}"
     iam_role_path = "/${local.stack_name_us}/"
 
     site_domain = "${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
@@ -879,7 +879,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
         environment_variable {
             name  = "API_URL"
-            value = "${local.api_url}"
+            value = "${local.api_domain}"
         }
 
         environment_variable {
@@ -960,7 +960,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
         environment_variable {
             name  = "API_DOMAIN_NAME"
-            value = "${local.api_url}"
+            value = "${local.api_domain}"
         }
 
         environment_variable {

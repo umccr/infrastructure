@@ -622,8 +622,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
-    allowed_oauth_scopes                    = ["email", "openid", "aws.cognito.signin.user.admin", "profile"]
-    explicit_auth_flows                     = ["ADMIN_NO_SRP_AUTH"]
+    allowed_oauth_scopes                    = ["email", "openid", "profile"]
 
     # Need to explicitly specify this dependency
     depends_on                              = ["aws_cognito_identity_provider.identity_provider"]

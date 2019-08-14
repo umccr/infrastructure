@@ -108,6 +108,7 @@ module "compute_env" {
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
   min_vcpus             = 0
+  max_vcpus             = 160
   spot_bid_percent      = "100"
 }
 

@@ -3,7 +3,7 @@ variable "availability_zone" {
 }
 
 variable "umccrise_image_id" {
-  default = "ami-03037fc9d9ca37131"
+  default = "ami-0a23757556098dfdd"
 }
 
 variable "stack_name" {

@@ -60,6 +60,18 @@ def getLogger():
     return new_logger
 
 
+logger = getLogger()
+
+
+# method to count the differences between two strings
+def str_compare(a, b):
+    cnt = 0
+    for i, j in zip(a, b):
+        if i != j:
+            cnt += 1
+    return cnt
+
+
 def checkSampleSheetMetadata(samplesheet):
     logger.info("Checking SampleSheet metadata")
     if not samplesheet.Header.Assay:
@@ -83,7 +95,72 @@ def checkSampleSheetDataRecords(samplesheet):
         if not (regex_sample_name.fullmatch(sample.Sample_Name) or regex_sample_ctl.match(sample.Sample_Name)):
             raise ValueError(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
 
-        sample.Sample_Name
+
+def checkSampleSheetForIndexClashes(samplesheet):
+    logger.info("Checking SampleSheet for index clashes")
+    # TODO: check logic!
+
+    # We only support indexes of length 6 or 8
+    indexes6 = set()
+    indexes8 = set()
+
+    # Run over all indexes (I7 and I5) and aggregate them by length, and check
+    # if any has been used already
+    for sample in samplesheet:
+        # index (I7)
+        index_to_check = sample.index.replace('N', '')
+        if len(index_to_check) == 6:
+            if index_to_check in indexes6:
+                raise ValueError(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
+            else:
+                indexes6.add(index_to_check)
+        elif len(index_to_check) == 8:
+            if index_to_check in indexes8:
+                raise ValueError(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
+            else:
+                indexes8.add(index_to_check)
+        elif len(index_to_check) == 0:
+            # index completely consisting of Ns
+            logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index}")
+        else:
+            raise ValueError(f"In sample {sample.Sample_ID}: index of unsupported length: {len(index_to_check)}")
+
+        # index2 (I5)
+        index_to_check = sample.index2.replace('N', '')
+        if len(index_to_check) == 6:
+            if index_to_check in indexes6:
+                raise ValueError(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
+            else:
+                indexes6.add(index_to_check)
+        elif len(index_to_check) == 8:
+            if index_to_check in indexes8:
+                raise ValueError(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
+            else:
+                indexes8.add(index_to_check)
+        elif len(index_to_check) == 0:
+            # index completely consisting of Ns
+            logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index2}")
+        else:
+            raise ValueError(f"In sample {sample.Sample_ID}: index2 of unsupported length: {len(index_to_check)}")
+
+    # Now check that non of the short indexes are part of any of the longer ones
+    for i6 in indexes6:
+        for i8 in indexes8:
+            if i6 in i8:
+                raise ValueError(f"In sample {sample.Sample_ID}: index {i8} contains index {i6}!")
+
+    # Now make sure that indexes of the same length differ in more that 2 bases
+    for i6 in indexes6:
+        for j6 in indexes6:
+            str_diff = str_compare(i6, j6)
+            if str_diff > 0 and str_diff < 3:
+                raise ValueError(f"Indexes {i6} and {j6} are too similar!")
+
+    for i8 in indexes8:
+        for j8 in indexes8:
+            str_diff = str_compare(i8, j8)
+            if str_diff > 0 and str_diff < 3:
+                raise ValueError(f"Indexes {i8} and {j8} are too similar!")
 
 
 def getSortedSamples(samplesheet):
@@ -149,6 +226,7 @@ def main(samplesheet_file_path, check_only):
     # Run some consistency checks
     checkSampleSheetMetadata(original_sample_sheet)
     checkSampleSheetDataRecords(original_sample_sheet)
+    checkSampleSheetForIndexClashes(original_sample_sheet)
 
     if not check_only:
         # Sort samples based on technology (truseq/10X and/or index length)
@@ -166,7 +244,6 @@ def main(samplesheet_file_path, check_only):
 
 
 if __name__ == "__main__":
-    logger = getLogger()
     logger.info(f"Invocation with parameters: {sys.argv[1:]}")
 
     if DEPLOY_ENV == "prod":

@@ -63,6 +63,10 @@ locals {
 
     github_repo_client = "data-portal-client"
     github_repo_apis   = "data-portal-apis"
+
+    rds_db_password = "${data.external.secrets_helper.result["rds_db_password"]}"
+
+    django_secret_key = "${data.external.secrets_helper.result["django_secret_key"]}"
 } 
 
 ################################################################################
@@ -962,27 +966,35 @@ resource "aws_codebuild_project" "codebuild_apis" {
             value = "${local.api_domain}"
         }
 
+        # Parse the list of security group ids into a single string
         environment_variable {
-            name  = "ATHENA_OUTPUT_LOCATION"
-            value = "s3://${aws_s3_bucket.athena_results_s3.bucket}" 
+            name = "RDS_SECURITY_GROUP_IDS"
+            value = "${join(",", aws_rds_cluster.db.vpc_security_group_ids)}"
         }
 
-        # The table name is determined by the corresponding glue catelog table
+        # Parse the list of subnet ids into a single string
         environment_variable {
-            name  = "S3_KEYS_TABLE_NAME"
-            value = "${aws_glue_catalog_table.glue_catalog_tb_s3.database_name}.${aws_glue_catalog_table.glue_catalog_tb_s3.name}"
-        }
-
-        # The table name is determined by the corresponding glue catelog table
-        environment_variable {
-            name  = "LIMS_TABLE_NAME"
-            value = "${aws_glue_catalog_table.glue_catalog_tb_lims.database_name}.${aws_glue_catalog_table.glue_catalog_tb_lims.name}"
+            name = "RDS_SUBNET_IDS"
+            value = "${join(",", data.aws_subnet_ids.default.ids)}"
         }
 
         # ARN of the lambda iam role
         environment_variable {
             name = "LAMBDA_IAM_ROLE_ARN"
             value = "${aws_iam_role.lambda_apis_role.arn}"
+        }
+
+        # Name of the SSM KEY for django secret key
+        environment_variable {
+            name = "SSM_KEY_NAME_DJANGO_SECRET_KEY"
+            value = "${aws_ssm_parameter.ssm_database_url.name}"
+
+        }
+
+        # Name of the SSM KEY for database url
+        environment_variable {
+            name = "SSM_KEY_NAME_DATABSE_URL"
+            value = "${aws_ssm_parameter.ssm_django_secret_key.name}"
         }
     }
 
@@ -1077,6 +1089,47 @@ resource "aws_iam_role_policy" "lambda_apis_role_policy" {
 
     policy = "${data.template_file.lambda_apis_policy.rendered}"
 }
+
+# Default VPC in the current region
+data "aws_vpc" "default" {
+    default = true
+}
+
+# Subnet IDs of the default VPC
+data "aws_subnet_ids" "default" {
+    vpc_id = "${data.aws_vpc.default.id}"
+}
+
+# RDS DB
+resource "aws_rds_cluster" "db" {
+    cluster_identifier = "${local.stack_name_dash}-aurora-cluster"
+    engine = "aurora" # (for MySQL 5.6-compatible Aurora)
+    availability_zones = ["${data.aws_region.current.name}"]
+    engine_mode = "serverless"
+
+    database_name = "${local.stack_name_us}"
+    master_username = "admin"
+    master_password = "${local.rds_db_password}"
+
+    vpc_security_group_ids = ["${data.aws_vpc.default.id}"]
+
+    iam_database_authentication_enabled = true
+}
+
+resource "aws_ssm_parameter" "ssm_database_url" {
+    name = "/${local.stack_name_us}/database_url"
+    type = "SecureString"
+    description = "Database url used by the Django app"
+    value = "mysql://${aws_rds_cluster.db.master_username}:${local.rds_db_password}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+}
+
+resource "aws_ssm_parameter" "ssm_django_secret_key" {
+    name = "/${local.stack_name_us}/django_secret_key"
+    type = "SecureString"
+    description = "Django app secret key"
+    value = "${local.django_secret_key}"
+}
+
 
 ################################################################################
 # Security configurations

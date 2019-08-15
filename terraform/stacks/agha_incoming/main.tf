@@ -32,7 +32,7 @@ data "template_file" "userdata" {
   }
 }
 
-resource "aws_spot_instance_request" "stackstorm_instance" {
+resource "aws_spot_instance_request" "agha_instance" {
   spot_price           = "${var.instance_spot_price}"
   wait_for_fulfillment = true
 

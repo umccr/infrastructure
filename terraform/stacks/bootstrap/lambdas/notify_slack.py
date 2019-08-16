@@ -71,9 +71,12 @@ def lambda_handler(event, context):
                     # There can be GDS and TES notifications
                     # TODO: check differences between notifcations
                     slack_title = message['Name'] if message.get('Name') else ""
+                    stratus_status = message['Status'] if message.get('Status') else ""
                     stratus_type = sns_record['MessageAttributes']['type']['Value']
                     stratus_action = sns_record['MessageAttributes']['action']['Value']
                     slack_message = F"A {stratus_type} was {stratus_action}"
+                    if stratus_status:
+                        slack_message += f": Status {stratus_status}"
                 else:
                     slack_message = "Unrecognised SNS notification format"
             else:

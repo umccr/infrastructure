@@ -440,15 +440,6 @@ resource "aws_iam_role_policy_attachment" "admin_access_to_ops_admin_no_mfa_role
   policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
 }
 
-resource "aws_eip" "basespace_playground" {
-  count = "${terraform.workspace == "dev" ? 1 : 0}"
-
-  tags {
-    Name       = "basespace_playground_${terraform.workspace}"
-    deploy_env = "${terraform.workspace}"
-  }
-}
-
 ################################################################################
 # Dedicated user to generate long lived presigned URLs
 # See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/

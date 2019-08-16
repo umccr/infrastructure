@@ -64,9 +64,13 @@ locals {
     github_repo_client = "data-portal-client"
     github_repo_apis   = "data-portal-apis"
 
-    rds_db_password = "${data.external.secrets_helper.result["rds_db_password"]}"
+    rds_db_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
-    django_secret_key = "${data.external.secrets_helper.result["django_secret_key"]}"
+    LAMBDA_IAM_ROLE_ARN = "${aws_iam_role.lambda_apis_role.arn}"
+    RDS_SUBNET_IDS = "${join(",", data.aws_subnet_ids.default.ids)}"
+    RDS_SECURITY_GROUP_IDS = "${join(",", aws_rds_cluster.db.vpc_security_group_ids)}"
+    SSM_KEY_NAME_FULL_DB_URL = "${aws_ssm_parameter.ssm_full_db_url.name}"
+    SSM_KEY_NAME_DJANGO_SECRET_KEY =  "${data.aws_ssm_parameter.ssm_django_secret_key.name}"
 } 
 
 ################################################################################
@@ -969,32 +973,31 @@ resource "aws_codebuild_project" "codebuild_apis" {
         # Parse the list of security group ids into a single string
         environment_variable {
             name = "RDS_SECURITY_GROUP_IDS"
-            value = "${join(",", aws_rds_cluster.db.vpc_security_group_ids)}"
+            value = "${local.RDS_SECURITY_GROUP_IDS}"
         }
 
         # Parse the list of subnet ids into a single string
         environment_variable {
             name = "RDS_SUBNET_IDS"
-            value = "${join(",", data.aws_subnet_ids.default.ids)}"
+            value = "${local.RDS_SUBNET_IDS}"
         }
 
         # ARN of the lambda iam role
         environment_variable {
             name = "LAMBDA_IAM_ROLE_ARN"
-            value = "${aws_iam_role.lambda_apis_role.arn}"
+            value = "${local.LAMBDA_IAM_ROLE_ARN}"
         }
 
         # Name of the SSM KEY for django secret key
         environment_variable {
             name = "SSM_KEY_NAME_DJANGO_SECRET_KEY"
-            value = "${aws_ssm_parameter.ssm_database_url.name}"
-
+            value = "${local.SSM_KEY_NAME_DJANGO_SECRET_KEY}"
         }
 
         # Name of the SSM KEY for database url
         environment_variable {
-            name = "SSM_KEY_NAME_DATABSE_URL"
-            value = "${aws_ssm_parameter.ssm_django_secret_key.name}"
+            name = "SSM_KEY_NAME_FULL_DB_URL"
+            value = "${local.SSM_KEY_NAME_FULL_DB_URL}"
         }
     }
 
@@ -1100,36 +1103,40 @@ data "aws_subnet_ids" "default" {
     vpc_id = "${data.aws_vpc.default.id}"
 }
 
+# Default security group under the default VPC
+data "aws_security_group" "default" {
+    vpc_id = "${data.aws_vpc.default.id}"
+    name = "default"
+}
+
 # RDS DB
 resource "aws_rds_cluster" "db" {
     cluster_identifier = "${local.stack_name_dash}-aurora-cluster"
     engine = "aurora" # (for MySQL 5.6-compatible Aurora)
-    availability_zones = ["${data.aws_region.current.name}"]
     engine_mode = "serverless"
 
     database_name = "${local.stack_name_us}"
     master_username = "admin"
     master_password = "${local.rds_db_password}"
 
-    vpc_security_group_ids = ["${data.aws_vpc.default.id}"]
-
-    iam_database_authentication_enabled = true
+    vpc_security_group_ids = ["${data.aws_security_group.default.id}"]
 }
 
-resource "aws_ssm_parameter" "ssm_database_url" {
-    name = "/${local.stack_name_us}/database_url"
+data "aws_ssm_parameter" "ssm_django_secret_key" {
+    name = "/${local.stack_name_us}/django_secret_key"
+}
+
+data "aws_ssm_parameter" "rds_db_password" {
+    name = "/${local.stack_name_us}/rds_db_password"
+}
+
+# Composed database url for backend to use
+resource "aws_ssm_parameter" "ssm_full_db_url" {
+    name = "/${local.stack_name_us}/full_db_url"
     type = "SecureString"
     description = "Database url used by the Django app"
     value = "mysql://${aws_rds_cluster.db.master_username}:${local.rds_db_password}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
 }
-
-resource "aws_ssm_parameter" "ssm_django_secret_key" {
-    name = "/${local.stack_name_us}/django_secret_key"
-    type = "SecureString"
-    description = "Django app secret key"
-    value = "${local.django_secret_key}"
-}
-
 
 ################################################################################
 # Security configurations

@@ -49,3 +49,27 @@ output "cognito_oauth_redirect_signout" {
 output "cognito_oauth_response_type" {
   value = "${aws_cognito_user_pool_client.user_pool_client.allowed_oauth_flows[0]}"
 }
+
+output "LAMBDA_IAM_ROLE_ARN" {
+    value = "${local.LAMBDA_IAM_ROLE_ARN}"  
+}
+
+output "RDS_SUBNET_IDS" {
+    value = "${local.RDS_SUBNET_IDS}"  
+}
+
+output "RDS_SECURITY_GROUP_IDS" {
+    value = "${local.RDS_SECURITY_GROUP_IDS}"  
+}
+
+output "SSM_KEY_NAME_FULL_DB_URL" {
+    value = "${local.SSM_KEY_NAME_FULL_DB_URL}"  
+}
+
+output "SSM_KEY_NAME_DJANGO_SECRET_KEY" {
+    value = "${local.SSM_KEY_NAME_DJANGO_SECRET_KEY}"  
+}
+
+output "API_DOMAIN_NAME" {
+    value = "${local.api_domain}"
+}

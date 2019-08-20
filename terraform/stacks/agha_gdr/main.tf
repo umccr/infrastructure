@@ -24,7 +24,6 @@ locals {
   )}"
 }
 
-
 ################################################################################
 # S3 buckets
 
@@ -74,6 +73,18 @@ resource "aws_s3_bucket" "agha_gdr_store" {
       "Name", "${var.agha_gdr_store_bucket_name}"
     )
   )}"
+
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
 }
 
 # Attach bucket policy to deny object deletion
@@ -108,7 +119,6 @@ resource "aws_s3_bucket_policy" "staging_bucket_policy" {
   bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
   policy = "${data.template_file.staging_bucket_policy.rendered}"
 }
-
 
 ################################################################################
 # New dataset ready notification (i.e. manifest S3 creation event -> Slack) 
@@ -146,7 +156,6 @@ resource "aws_sns_topic" "s3_events" {
     }]
 }
 POLICY
-
 }
 
 resource "aws_sns_topic_subscription" "s3_manifest_event" {
@@ -211,7 +220,6 @@ module "agha_bot_user" {
   pgp_key  = "keybase:freisinger"
 }
 
-
 resource "aws_iam_user_policy_attachment" "ahga_bot_staging_rw" {
   user       = "${module.agha_bot_user.username}"
   policy_arn = "${aws_iam_policy.agha_staging_rw_policy.arn}"
@@ -221,7 +229,6 @@ resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
   user       = "${module.agha_bot_user.username}"
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
-
 
 ################################################################################
 # Dedicated user to list store content
@@ -236,7 +243,6 @@ resource "aws_iam_user_policy_attachment" "ahga_catalogue_store_list" {
   user       = "${module.agha_catalogue_user.username}"
   policy_arn = "${aws_iam_policy.agha_store_list_policy.arn}"
 }
-
 
 ################################################################################
 # Users & groups
@@ -410,8 +416,6 @@ resource "aws_iam_group_policy_attachment" "read_store_rw_policy_attachment" {
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
 
-
-
 ################################################################################
 # Slack notification lambda
 
@@ -443,7 +447,7 @@ module "notify_slack_lambda" {
     }
   }
 
-    tags = "${merge(
+  tags = "${merge(
     local.common_tags,
     map(
       "Description", "Lambda to send notifications to UMCCR Slack"
@@ -505,6 +509,7 @@ resource "aws_lambda_permission" "batch_failure" {
 #   name        = "${var.stack_name}_capture_batch_job_success"
 #   description = "Capture Batch Job Success"
 
+
 #   event_pattern = <<PATTERN
 # {
 #   "detail-type": [
@@ -522,10 +527,12 @@ resource "aws_lambda_permission" "batch_failure" {
 # PATTERN
 # }
 
+
 # resource "aws_cloudwatch_event_target" "batch_success" {
 #   rule      = "${aws_cloudwatch_event_rule.batch_success.name}"
 #   target_id = "${var.stack_name}_send_batch_success_to_slack_lambda"
 #   arn       = "${module.notify_slack_lambda.function_arn}"
+
 
 #   input_transformer = {
 #     input_paths = {
@@ -534,10 +541,12 @@ resource "aws_lambda_permission" "batch_failure" {
 #       status = "$.detail.status"
 #     }
 
+
 #     # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
 #     input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
 #   }
 # }
+
 
 # resource "aws_lambda_permission" "batch_success" {
 #   statement_id  = "${var.stack_name}_allow_batch_success_to_invoke_slack_lambda"
@@ -546,3 +555,4 @@ resource "aws_lambda_permission" "batch_failure" {
 #   principal     = "events.amazonaws.com"
 #   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
 # }
+

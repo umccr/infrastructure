@@ -18,6 +18,7 @@ script_pid=$$
 
 FLAG_WGS="--no-lane-splitting"
 FLAG_10X="--no-lane-splitting --minimum-trimmed-read-length=8 --mask-short-adapter-reads=8 --ignore-missing-positions --ignore-missing-controls --ignore-missing-filter --ignore-missing-bcls"
+FLAG_UMI="--no-lane-splitting -r 4 -p 24 -w 4 --barcode-mismatches 1 --mask-short-adapter-reads 3 --use-bases-mask Y151,I8,Y10,Y151"
 
 ################################################################################
 # Define functions

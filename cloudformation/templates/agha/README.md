@@ -8,7 +8,7 @@ NOTE: this template does not yet support user data and therefore starts a basic 
 ```bash
 aws cloudformation create-stack \
     --stack-name agha-worker-1 \
-    --template-body file://cf-template-agha-worker-1.json \
+    --template-body file://agha-worker.yaml \
     --capabilities CAPABILITY_NAMED_IAM \
     --parameters '[{"ParameterKey": "InstanceTypeParameter", "ParameterValue": "t2.medium"}, {"ParameterKey": "InstanceMaxSpotPriceParameter", "ParameterValue": "0.02"}]'
 # if parameters are omited, the default instance type will be used: m4.large

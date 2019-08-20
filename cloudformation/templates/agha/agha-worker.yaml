@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    71df5cba-bb0a-4bca-af60-da99ca773844:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 100
+      z: 1
+      embeds: []
+    59e6ef0a-1bf7-418b-9783-349e8b0a5f2e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 40
+        'y': 100
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 6baf523f-c929-4e29-bcd4-406dbef85d9f
+    6baf523f-c929-4e29-bcd4-406dbef85d9f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -80
+        'y': 100
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 13dd3e8a-15fd-4be9-8456-a1d172a7b42a
+        - 53865d6b-1d82-4efc-aef6-dd24a8ff1df2
+    53865d6b-1d82-4efc-aef6-dd24a8ff1df2:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -210
+        'y': 100
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 6baf523f-c929-4e29-bcd4-406dbef85d9f
+    07392f22-c58c-42c5-83b5-9d980c2a2944:
+      source:
+        id: 53865d6b-1d82-4efc-aef6-dd24a8ff1df2
+      target:
+        id: 6baf523f-c929-4e29-bcd4-406dbef85d9f
+      z: 2
+    f2bffecb-eb27-4b51-9035-ea372c3dd169:
+      source:
+        id: 59e6ef0a-1bf7-418b-9783-349e8b0a5f2e
+      target:
+        id: 6baf523f-c929-4e29-bcd4-406dbef85d9f
+      z: 3
+    d1818bc7-9f09-4d36-b086-598c5c9b05a9:
+      source:
+        id: 6baf523f-c929-4e29-bcd4-406dbef85d9f
+      target:
+        id: 13dd3e8a-15fd-4be9-8456-a1d172a7b42a
+      z: 2
+    50be16f8-25bd-4ad7-a446-f7b09366bf2b:
+      source:
+        id: 6baf523f-c929-4e29-bcd4-406dbef85d9f
+      target:
+        id: 53865d6b-1d82-4efc-aef6-dd24a8ff1df2
+      z: 2
+    8d925f52-1978-4165-9515-59ebd01538fc:
+      source:
+        id: 53865d6b-1d82-4efc-aef6-dd24a8ff1df2
+      target:
+        id: 6baf523f-c929-4e29-bcd4-406dbef85d9f
+      z: 2
+    9d20f41b-8f48-4762-ae7f-01eecbb81c1d:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 100
+      z: 0
+      embeds: []
+Resources:
+  aghaInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      AvailabilityZone: ap-southeast-2a
+      IamInstanceProfile: !Ref aghaWorkerInstanceProfile
+      ImageId: ami-0dc96254d5535925f
+      InstanceType: !Ref InstanceTypeParameter
+      SecurityGroupIds:
+        - sg-9f01b1e2
+      SubnetId: subnet-b1cbc7d6
+      LaunchTemplate:
+        LaunchTemplateId: !Ref lauchTemplateForAghaInstance
+        Version: !GetAtt 
+          - lauchTemplateForAghaInstance
+          - LatestVersionNumber
+      Tags:
+        - Key: Source
+          Value: CloudFormation
+        - Key: Env
+          Value: Test
+        - Key: Name
+          Value: AGHA worker instance
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 71df5cba-bb0a-4bca-af60-da99ca773844
+  aghaWorkerInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: agha_worker_instance_profile
+      Path: /agha/
+      Roles:
+        - !Ref aghaWorkerInstanceRole
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 59e6ef0a-1bf7-418b-9783-349e8b0a5f2e
+  aghaWorkerInstancePolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AGHAWorkerInstancePolicy
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'ssm:DescribeAssociation'
+              - 'ssm:GetDeployablePatchSnapshotForInstance'
+              - 'ssm:GetDocument'
+              - 'ssm:DescribeDocument'
+              - 'ssm:GetManifest'
+              - 'ssm:GetParameters'
+              - 'ssm:ListAssociations'
+              - 'ssm:ListInstanceAssociations'
+              - 'ssm:PutInventory'
+              - 'ssm:PutComplianceItems'
+              - 'ssm:PutConfigurePackageResult'
+              - 'ssm:UpdateAssociationStatus'
+              - 'ssm:UpdateInstanceAssociationStatus'
+              - 'ssm:UpdateInstanceInformation'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ssmmessages:CreateControlChannel'
+              - 'ssmmessages:CreateDataChannel'
+              - 'ssmmessages:OpenControlChannel'
+              - 'ssmmessages:OpenDataChannel'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ec2messages:AcknowledgeMessage'
+              - 'ec2messages:DeleteMessage'
+              - 'ec2messages:FailMessage'
+              - 'ec2messages:GetEndpoint'
+              - 'ec2messages:GetMessages'
+              - 'ec2messages:SendReply'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'cloudwatch:PutMetricData'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ec2:DescribeInstanceStatus'
+              - 'ec2:CreateTags'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeLogStreams'
+              - 'logs:PutLogEvents'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ec2messages:SendReply'
+            Resource: '*'
+      Roles:
+        - !Ref aghaWorkerInstanceRole
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 53865d6b-1d82-4efc-aef6-dd24a8ff1df2
+  aghaWorkerInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: agha_worker_role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /agha/
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 6baf523f-c929-4e29-bcd4-406dbef85d9f
+  lauchTemplateForAghaInstance:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: SpotInstanceLaunchTemplate
+      LaunchTemplateData:
+        InstanceMarketOptions:
+          MarketType: spot
+          SpotOptions:
+            MaxPrice: !Ref InstanceMaxSpotPriceParameter
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9d20f41b-8f48-4762-ae7f-01eecbb81c1d
+Parameters:
+  InstanceTypeParameter:
+    Description: 'Select one of t2.micro, t2.medium,...'
+    Type: String
+    Default: m4.large
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+  InstanceMaxSpotPriceParameter:
+    Description: Set the max spot price (hourly) for the selected instance type. e.g. 0.05
+    Type: String
+    Default: '0.04'

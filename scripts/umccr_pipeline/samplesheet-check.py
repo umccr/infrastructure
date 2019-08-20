@@ -50,7 +50,7 @@ def getLogger():
 
     # create a console handler
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.ERROR)
     console_handler.setFormatter(formatter)
 
     # add the handlers to the logger
@@ -74,93 +74,130 @@ def str_compare(a, b):
 
 def checkSampleSheetMetadata(samplesheet):
     logger.info("Checking SampleSheet metadata")
+    has_error = False
     if not samplesheet.Header.Assay:
-        raise ValueError("Assay not defined in Header!")
+        has_error = True
+        logger.error("Assay not defined in Header!")
     if not samplesheet.Header.get('Experiment Name'):
-        raise ValueError("Experiment Name not defined in Header!")
+        has_error = True
+        logger.error("Experiment Name not defined in Header!")
+
+    return has_error
 
 
-def checkSampleSheetDataRecords(samplesheet):
+def checkSampleIds(samplesheet):
     logger.info("Checking SampleSheet data records")
+    has_error = False
+
     for sample in samplesheet:
         logger.debug(f"Checking Sammple_ID/Sample_Name: {sample.Sample_ID}/{sample.Sample_Name}")
+        # Checkt that the IDs are not the same
         if sample.Sample_ID == sample.Sample_Name:
-            raise ValueError(f"Sample_ID '{sample.Sample_ID}' cannot be the same as the Sample_Name!")
-
+            has_error = True
+            logger.error(f"Sample_ID '{sample.Sample_ID}' cannot be the same as the Sample_Name!")
         # check Sample ID against expected format
         if not (regex_sample_id_int.fullmatch(sample.Sample_ID) or regex_sample_id_ext.fullmatch(sample.Sample_ID)):
-            raise ValueError(f"Sample_ID '{sample.Sample_ID}' did not match the expected pattern!")
-
+            has_error = True
+            logger.error(f"Sample_ID '{sample.Sample_ID}' did not match the expected pattern!")
         # check Sample Name against expected format
         if not (regex_sample_name.fullmatch(sample.Sample_Name) or regex_sample_ctl.match(sample.Sample_Name)):
-            raise ValueError(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
+            has_error = True
+            logger.error(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
+
+    return has_error
 
 
 def checkSampleSheetForIndexClashes(samplesheet):
     logger.info("Checking SampleSheet for index clashes")
+    has_error = False
     # TODO: check logic!
-
-    # We only support indexes of length 6 or 8
-    indexes6 = set()
-    indexes8 = set()
 
     # Run over all indexes (I7 and I5) and aggregate them by length, and check
     # if any has been used already
+
+    # TODO: check if lane numbers are used
+
+    # Assemble indexes by lane
+    lane_map = {}
     for sample in samplesheet:
-        # index (I7)
-        index_to_check = sample.index.replace('N', '')
-        if len(index_to_check) == 6:
-            if index_to_check in indexes6:
-                raise ValueError(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
-            else:
-                indexes6.add(index_to_check)
-        elif len(index_to_check) == 8:
-            if index_to_check in indexes8:
-                raise ValueError(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
-            else:
-                indexes8.add(index_to_check)
-        elif len(index_to_check) == 0:
-            # index completely consisting of Ns
-            logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index}")
-        else:
-            raise ValueError(f"In sample {sample.Sample_ID}: index of unsupported length: {len(index_to_check)}")
+        if not lane_map.get(sample.lane):
+            lane_map[sample.lane] = list()
+        sample_list = lane_map[sample.lane]
+        sample_list.append(sample)
 
-        # index2 (I5)
-        index_to_check = sample.index2.replace('N', '')
-        if len(index_to_check) == 6:
-            if index_to_check in indexes6:
-                raise ValueError(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
-            else:
-                indexes6.add(index_to_check)
-        elif len(index_to_check) == 8:
-            if index_to_check in indexes8:
-                raise ValueError(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
-            else:
-                indexes8.add(index_to_check)
-        elif len(index_to_check) == 0:
-            # index completely consisting of Ns
-            logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index2}")
-        else:
-            raise ValueError(f"In sample {sample.Sample_ID}: index2 of unsupported length: {len(index_to_check)}")
+    for lane in lane_map:
+        samples = lane_map[lane]
+        logger.info(f"Processing lane {lane}...")
 
-    # Now check that non of the short indexes are part of any of the longer ones
-    for i6 in indexes6:
+        # We only support indexes of length 6 or 8
+        indexes6 = set()
+        indexes8 = set()
+        for sample in samples:
+            # index (I7)
+            index_to_check = sample.index.replace('N', '')
+            if len(index_to_check) == 6:
+                if index_to_check in indexes6:
+                    has_error = True
+                    logger.error(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
+                else:
+                    indexes6.add(index_to_check)
+            elif len(index_to_check) == 8:
+                if index_to_check in indexes8:
+                    has_error = True
+                    logger.error(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
+                else:
+                    indexes8.add(index_to_check)
+            elif len(index_to_check) == 0:
+                # index completely consisting of Ns
+                logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index}")
+            else:
+                has_error = True
+                logger.error(f"In sample {sample.Sample_ID}: index of unsupported length: {len(index_to_check)}")
+
+            # index2 (I5)
+            index_to_check = sample.index2.replace('N', '')
+            if len(index_to_check) == 6:
+                if index_to_check in indexes6:
+                    has_error = True
+                    logger.error(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
+                else:
+                    indexes6.add(index_to_check)
+            elif len(index_to_check) == 8:
+                if index_to_check in indexes8:
+                    has_error = True
+                    logger.error(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
+                else:
+                    indexes8.add(index_to_check)
+            elif len(index_to_check) == 0:
+                # index completely consisting of Ns
+                logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index2}")
+            else:
+                has_error = True
+                logger.error(f"In sample {sample.Sample_ID}: index2 of unsupported length: {len(index_to_check)}")
+
+        # Now check that non of the short indexes are part of any of the longer ones
+        for i6 in indexes6:
+            for i8 in indexes8:
+                if i6 in i8:
+                    has_error = True
+                    logger.error(f"Index {i8} contains index {i6}!")
+
+        # Now make sure that indexes of the same length differ in more that 2 bases
+        for i6 in indexes6:
+            for j6 in indexes6:
+                str_diff = str_compare(i6, j6)
+                if str_diff > 0 and str_diff < 3:
+                    has_error = True
+                    logger.error(f"Indexes {i6} and {j6} are too similar!")
+
         for i8 in indexes8:
-            if i6 in i8:
-                raise ValueError(f"In sample {sample.Sample_ID}: index {i8} contains index {i6}!")
+            for j8 in indexes8:
+                str_diff = str_compare(i8, j8)
+                if str_diff > 0 and str_diff < 3:
+                    has_error = True
+                    logger.error(f"Indexes {i8} and {j8} are too similar!")
 
-    # Now make sure that indexes of the same length differ in more that 2 bases
-    for i6 in indexes6:
-        for j6 in indexes6:
-            str_diff = str_compare(i6, j6)
-            if str_diff > 0 and str_diff < 3:
-                raise ValueError(f"Indexes {i6} and {j6} are too similar!")
-
-    for i8 in indexes8:
-        for j8 in indexes8:
-            str_diff = str_compare(i8, j8)
-            if str_diff > 0 and str_diff < 3:
-                raise ValueError(f"Indexes {i8} and {j8} are too similar!")
+    return has_error
 
 
 def getSortedSamples(samplesheet):
@@ -224,10 +261,16 @@ def main(samplesheet_file_path, check_only):
     original_sample_sheet = SampleSheet(samplesheet_file_path)
 
     # Run some consistency checks
-    checkSampleSheetMetadata(original_sample_sheet)
-    checkSampleSheetDataRecords(original_sample_sheet)
-    checkSampleSheetForIndexClashes(original_sample_sheet)
+    has_metadata_error = checkSampleSheetMetadata(original_sample_sheet)
+    has_id_error = checkSampleIds(original_sample_sheet)
+    has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
+    # Only fail on metadata or id errors
+    if has_metadata_error or has_id_error:
+        raise ValueError(f"Validation detected errors. Please review the error logs!")
+    if has_index_error:
+        logger.warning("WARNING: proceeding even though index errors were detected. Please review reported index errors!")
 
+    # Split and write individual SampleSheets, based on indexes and technology (10X)
     if not check_only:
         # Sort samples based on technology (truseq/10X and/or index length)
         # Also replace N indexes with ""

@@ -10,6 +10,10 @@ variable "stack_name" {
   default = "umccrise"
 }
 
+variable "umccrise_trigger_file" {
+  default = "upload_complete"
+}
+
 ################################################################################
 ## workspace variables
 
@@ -28,6 +32,15 @@ variable "workspace_umccrise_data_bucket" {
   default = {
     prod = "umccr-primary-data-prod"
     dev  = "umccr-primary-data-dev"
+  }
+}
+
+variable "workspace_umccrise_temp_bucket" {
+  type = "map"
+
+  default = {
+    prod = "umccr-temp"
+    dev  = "umccr-umccrise-dev"
   }
 }
 

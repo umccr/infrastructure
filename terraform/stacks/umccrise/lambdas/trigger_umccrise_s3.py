@@ -19,6 +19,7 @@ def lambda_handler(event, context):
 
     request_payload = {
          "resultDir": data_dir,
+         "dataBucket": bucket,
          "memory": UMCCRISE_MEM,
          "vcpus": UMCCRISE_VCPUS,
          "jobName": job_name

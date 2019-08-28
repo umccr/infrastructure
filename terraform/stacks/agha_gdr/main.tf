@@ -295,6 +295,19 @@ module "scottwood" {
   pgp_key  = "keybase:qimrbscott"
 }
 
+module "cassimons" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "cassimons"
+  pgp_key  = "keybase:freisinger"
+}
+
+module "minw" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "minw"
+  pgp_key  = "keybase:freisinger"
+}
+
+
 # groups
 resource "aws_iam_group" "admin" {
   name = "agha_gdr_admins"
@@ -322,7 +335,7 @@ resource "aws_iam_group_membership" "submit_members" {
 
 resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
-  users = ["${module.ametke.username}", "${module.ebenngarvan.username}"]
+  users = ["${module.ametke.username}", "${module.ebenngarvan.username}", "${module.cassimons.username}", "${module.minw.username}"]
   group = "${aws_iam_group.read.name}"
 }
 

@@ -113,6 +113,34 @@ output "scottwood_secret_access_key" {
 }
 
 
+# cassimons
+output "cassimons_username" {
+  value = "${module.cassimons.username}"
+}
+
+output "cassimons_access_key" {
+  value = "${module.cassimons.access_key}"
+}
+
+output "cassimons_secret_access_key" {
+  value = "${module.cassimons.encrypted_secret_access_key}"
+}
+
+
+# minw
+output "minw_username" {
+  value = "${module.minw.username}"
+}
+
+output "minw_access_key" {
+  value = "${module.minw.access_key}"
+}
+
+output "minw_secret_access_key" {
+  value = "${module.minw.encrypted_secret_access_key}"
+}
+
+
 
 # output for serivce user: agha_bot_user
 output "agha_bot_user_username" {

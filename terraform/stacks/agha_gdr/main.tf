@@ -164,6 +164,12 @@ resource "aws_sns_topic_subscription" "s3_manifest_event" {
   endpoint  = "${module.notify_slack_lambda.function_arn}"
 }
 
+resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
+  topic_arn = "${aws_sns_topic.s3_events.arn}"
+  protocol  = "lambda"
+  endpoint  = "${module.folder_lock_lambda.function_arn}"
+}
+
 resource "aws_lambda_permission" "slack_lambda_from_sns" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
@@ -307,7 +313,6 @@ module "minw" {
   pgp_key  = "keybase:freisinger"
 }
 
-
 # groups
 resource "aws_iam_group" "admin" {
   name = "agha_gdr_admins"
@@ -430,8 +435,9 @@ resource "aws_iam_group_policy_attachment" "read_store_rw_policy_attachment" {
 }
 
 ################################################################################
-# Slack notification lambda
+# Lambdas
 
+# Slack notification lambda
 data "aws_secretsmanager_secret" "slack_webhook_id" {
   name = "slack/webhook/id"
 }
@@ -466,6 +472,53 @@ module "notify_slack_lambda" {
       "Description", "Lambda to send notifications to UMCCR Slack"
     )
   )}"
+}
+
+# Folder lock lambda
+data "template_file" "folder_lock_lambda" {
+  template = "${file("${path.module}/policies/folder_lock_lambda.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
+  }
+}
+
+resource "aws_iam_policy" "folder_lock_lambda" {
+  name   = "${var.stack_name}_folder_lock_lambda_${terraform.workspace}"
+  path   = "/${var.stack_name}/"
+  policy = "${data.template_file.folder_lock_lambda.rendered}"
+}
+
+module "folder_lock_lambda" {
+  # based on: https://github.com/claranet/terraform-aws-lambda
+  source = "../../modules/lambda"
+
+  function_name = "${var.stack_name}_folder_lock_lambda"
+  description   = "Lambda to update bucket policy to deny put/delete"
+  handler       = "folder_lock.lambda_handler"
+  runtime       = "python3.7"
+  timeout       = 3
+
+  source_path = "${path.module}/lambdas/folder_lock.py"
+
+  attach_policy = true
+  policy        = "${aws_iam_policy.folder_lock_lambda.arn}"
+
+  tags = "${merge(
+    local.common_tags,
+    map(
+      "Description", "Lambda to update a bucket policy to Deny PutObject/DeleteObject whenever a specific flag file event was triggered"
+    )
+  )}"
+}
+
+# allow events from SNS topic for manifest notifications
+resource "aws_lambda_permission" "folder_lock_sns_permission" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${module.folder_lock_lambda.function_arn}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.s3_events.arn}"
 }
 
 ################################################################################

@@ -19,11 +19,17 @@ fi
 stats_folder_base_path="$fastq_data_base_path/$runfolder/"
 stats_folders="${stats_folder_base_path}Stats_custom.*"
 
-# run multiQC on all Stats folders
+# translate list of host stats path into equivalent list of container paths
+fldr_list=""
 shopt -s nullglob
 for stats_folder in $stats_folders; do
-    echo "Processing: $stats_folder"
-    fldr="${stats_folder#$stats_folder_base_path}" # specific Stats_custom.* folder name
-    docker run --rm --user 1002 -v $fastq_data_base_path/$runfolder/:/$runfolder/:ro -v $qc_output_base_path/:/output/ umccr/multiqc -f -m bcl2fastq /$runfolder/$fldr -o /output/$runfolder/$fldr -n bcl2fastq_qc.html --title 'UMCCR bcl2fastq run stats'
+    fldr=`basename "$stats_folder"`
+    fldr_list+="/$runfolder/$fldr "
 done
 shopt -u nullglob
+
+cmd="docker run --rm --user 1002 -v $fastq_data_base_path/$runfolder/:/$runfolder/:ro -v $qc_output_base_path/:/output/ umccr/multiqc multiqc -f -m bcl2fastq $fldr_list -o /output/${runfolder}/ -n ${runfolder}_bcl2fastq_qc.html --title \"UMCCR MultiQC report (bcl2fastq) for $runfolder\""
+echo "$cmd"
+eval "$cmd"
+
+echo "All done."

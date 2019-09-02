@@ -25,21 +25,46 @@ SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
-# The column names should be kept in sync between the lab internal library tracking sheet and the Google LIMS
-sample_id_column_name = 'SampleID'  # is the library ID
-sample_name_column_name = 'SampleName'  # is the lab-external sample/library ID
-assay_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
+
+# The column names of the Google LIMS (in order!)
+# Names and values should be kept in sync between the lab internal library tracking sheet and the Google LIMS
+illumina_id_column_name = 'IlluminaID'
+run_column_name = 'Run'
+timestamp_column_name = 'Timestamp'
+subject_id_column_name = 'SubjectID'  # the internal ID for the subject/patient
+sample_id_column_name = 'SampleID'  # the internal ID for the sample
+library_id_column_name = 'LibraryID'  # the internal ID for the library
+subject_ext_id_column_name = 'ExternalSubjectID'  # the external (provided) ID for the subject/patient
+sample_ext_id_column_name = 'ExternalSampleID'  # is the external (provided) sample ID
+library_ext_id_column_name = 'ExternalLibraryID'  # is the external (provided) library ID
+sample_name_column_name = 'SampleName'  # the sample name assigned by the lab
+project_owner_column_name = 'ProjectOwner'
+project_name_column_name = 'ProjectName'
+type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
+assay_column_name = 'Assay'
 phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
-quality_column_name = 'Quality'  # Good, Poor, Borderline
-subject_column_name = 'SubjectID'  # ID for the subject/patient
 source_column_name = 'Source'  # tissue, FFPE, ...
-column_names = (subject_column_name, assay_column_name, phenotype_column_name, source_column_name, quality_column_name)
+quality_column_name = 'Quality'  # Good, Poor, Borderline
+topup_column_name = 'Topup'
+secondary_analysis_column_name = 'SecondaryAnalysis'
+fastq_column_name = 'FASTQ'
+number_fastqs_column_name = 'NumberFASTQS'
+results_column_name = 'Results'
+trello_column_name = 'Trello'
+notes_column_name = 'Notes'
+todo_column_name = 'ToDo'
+
+column_names = (subject_id_column_name, type_column_name,
+                phenotype_column_name, source_column_name, quality_column_name)
 
 # column headers of the LIMS spreadsheet
-sheet_column_headers = ("IlluminaID", "Run", "Timestamp", sample_id_column_name, sample_name_column_name,
-                        "Project", subject_column_name, assay_column_name, phenotype_column_name, source_column_name, 
-                        quality_column_name, "Secondary Analysis", "FASTQ", "Number FASTQs", "Results", "Trello",
-                        "Notes", "ToDo")
+sheet_column_headers = (illumina_id_column_name, run_column_name, timestamp_column_name, subject_id_column_name,
+                        sample_id_column_name, library_id_column_name, subject_ext_id_column_name,
+                        sample_ext_id_column_name, library_ext_id_column_name, sample_name_column_name,
+                        project_owner_column_name, project_name_column_name, type_column_name, assay_column_name,
+                        phenotype_column_name, source_column_name, quality_column_name, topup_column_name,
+                        secondary_analysis_column_name, fastq_column_name, number_fastqs_column_name,
+                        results_column_name, trello_column_name, notes_column_name, todo_column_name)
 
 # define argument defaults
 if DEPLOY_ENV == 'prod':
@@ -144,7 +169,7 @@ def next_available_row(worksheet):
 
 
 def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
-    # follow example from: 
+    # follow example from:
     # https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
     scope = ['https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
@@ -159,6 +184,11 @@ def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
     for row in data_rows:
         sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
         next_row += 1
+
+
+def split_at(s, c, n):
+    words = s.split(c)
+    return c.join(words[:n]), c.join(words[n:])
 
 
 if __name__ == "__main__":
@@ -276,11 +306,17 @@ if __name__ == "__main__":
             fastq_file_paths = glob(fastq_pattern)
             if len(fastq_file_paths) < 1:
                 logger.warn(f"Found no FASTQ files for sample {sample.Sample_ID}!")
-            lims_data_rows.add((runfolder, run_number, run_timestamp, sample.Sample_Name, sample.Sample_ID,
-                                sample.Sample_Project, column_values[subject_column_name],
-                                column_values[assay_column_name], column_values[phenotype_column_name],
-                                column_values[source_column_name], column_values[quality_column_name],
-                                "-", fastq_hpc_pattern, len(fastq_file_paths), "-", "-", "-", ""))
+            # TODO: fix the value order
+            if sample.Sample_Name.startswith('NTC') or sample.Sample_Name.startswith('PTC'):
+                s_id, es_id = split_at(sample.Sample_Name, '_', 2)
+            else:
+                s_id, es_id = split_at(sample.Sample_Name, '_', 1)  # splitting the combined sample name
+            lims_data_rows.add((runfolder, run_number, run_timestamp, '-', s_id, sample.Sample_ID,
+                                column_values[subject_id_column_name], es_id, '-', sample.Sample_Name,
+                                '-', sample.Sample_Project, column_values[type_column_name], '-',
+                                column_values[phenotype_column_name], column_values[source_column_name],
+                                column_values[quality_column_name], '-', "-", fastq_hpc_pattern, len(fastq_file_paths),
+                                "-", "-", "-", "-"))
 
     ################################################################################
     # write the data into a CSV file

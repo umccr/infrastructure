@@ -1,10 +1,17 @@
+# OSX
+
 .DS_Store
+
+
+# Terraform
 terraform/stacks/stackstorm/keys
 **/.terraform
 **/*.tfstate
 **/*.tfstate.backup
+
+# AWS CDK
 .env
 __pycache__
 *.pyc
 cdk.egg-info
-
+**/cdk.out

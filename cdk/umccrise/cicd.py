@@ -1,7 +1,8 @@
 from aws_cdk import (
+    core,
     aws_codebuild as cb,
     aws_codecommit as cc,
-    core
+    aws_codepipeline as cp
 )
 
 class CICDStack(core.Stack):
@@ -9,7 +10,7 @@ class CICDStack(core.Stack):
         super().__init__(scope, id, **kwargs)
 
         cb.Project(self, id = "umccrise", 
-                    environment = { "buildImage": cb.LinuxBuildImage.from_docker_registry("umccr/umccrise")},
+                    environment = { "buildImage": cb.LinuxBuildImage.STANDARD_2_0},
                     source = cb.Source.git_hub(
                         identifier = "umccrise",
                         owner = "umccr",

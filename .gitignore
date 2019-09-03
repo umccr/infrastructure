@@ -4,3 +4,7 @@ terraform/stacks/stackstorm/keys
 **/*.tfstate
 **/*.tfstate.backup
 .env
+__pycache__
+*.pyc
+cdk.egg-info
+

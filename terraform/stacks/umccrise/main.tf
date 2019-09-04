@@ -327,6 +327,7 @@ resource "aws_lambda_permission" "batch_failure" {
   source_arn    = "${aws_cloudwatch_event_rule.batch_failure.arn}"
 }
 
+
 resource "aws_cloudwatch_event_rule" "batch_success" {
   name        = "${var.stack_name}_capture_batch_job_success_${terraform.workspace}"
   description = "Capture Batch Job Failures"
@@ -371,6 +372,54 @@ resource "aws_lambda_permission" "batch_success" {
   function_name = "${var.workspace_slack_lambda_arn[terraform.workspace]}"
   principal     = "events.amazonaws.com"
   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
+}
+
+
+resource "aws_cloudwatch_event_rule" "batch_submitted" {
+  name        = "${var.stack_name}_capture_batch_job_submit_${terraform.workspace}"
+  description = "Capture Batch Job Submissions"
+
+  event_pattern = <<PATTERN
+{
+  "detail-type": [
+    "Batch Job State Change"
+  ],
+  "source": [
+    "aws.batch"
+  ],
+  "detail": {
+    "status": [
+      "SUBMITTED"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "batch_submitted" {
+  rule      = "${aws_cloudwatch_event_rule.batch_submitted.name}"
+  target_id = "${var.stack_name}_send_batch_submitted_to_slack_lambda_${terraform.workspace}"
+  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                      # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
+  input_transformer = {
+    input_paths = {
+      jobid  = "$.detail.jobId"
+      job    = "$.detail.jobName"
+      title  = "$.detail-type"
+      status = "$.detail.status"
+    }
+
+    # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
+    input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
+  }
+}
+
+resource "aws_lambda_permission" "batch_submitted" {
+  statement_id  = "${var.stack_name}_allow_batch_submitted_to_invoke_slack_lambda_${terraform.workspace}"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.workspace_slack_lambda_arn[terraform.workspace]}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.batch_submitted.arn}"
 }
 
 ################################################################################

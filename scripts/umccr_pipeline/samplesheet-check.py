@@ -186,14 +186,14 @@ def checkSampleSheetForIndexClashes(samplesheet):
         for i6 in indexes6:
             for j6 in indexes6:
                 str_diff = str_compare(i6, j6)
-                if str_diff > 0 and str_diff < 3:
+                if str_diff > 0 and str_diff < 2:
                     has_error = True
                     logger.error(f"Indexes {i6} and {j6} are too similar!")
 
         for i8 in indexes8:
             for j8 in indexes8:
                 str_diff = str_compare(i8, j8)
-                if str_diff > 0 and str_diff < 3:
+                if str_diff > 0 and str_diff < 2:
                     has_error = True
                     logger.error(f"Indexes {i8} and {j8} are too similar!")
 

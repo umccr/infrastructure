@@ -101,14 +101,4 @@ if test "$use_case" == "$CASE_INTEROP"; then
     fi
 fi
 
-
 write_log "INFO: All done."
-
-
-
-# interop_index-summary --csv=1 190621_A00130_0108_AHLHYHDSXX/ > interop_index-summary.csv
-# interop_summary --csv=1 190621_A00130_0108_AHLHYHDSXX/ > interop_summary.csv
-# multiqc -m interop *.csv -o interop_multiqc
-
-# docker run --rm --user 1002 -v /storage/shared/raw/Baymax/190510_A00130_0103_BHKKVWDSXX/:/190510_A00130_0103_BHKKVWDSXX/:ro -v /storage/shared/dev/multiQC/:/output/ umccr/multiqc interop_index-summary --csv=1 /190510_A00130_0103_BHKKVWDSXX/ > /tmp/interop_index-summary.csv && interop_summary --csv=1 /190510_A00130_0103_BHKKVWDSXX/ > /tmp/interop_summary.csv && multiqc -m interop /tmp/interop*.csv -o /output/interop_multiqc
-# docker run --rm --user 1002 -v /storage/shared/raw/Baymax/190510_A00130_0103_BHKKVWDSXX/:/190510_A00130_0103_BHKKVWDSXX/:ro -v /storage/shared/dev/multiQC/:/output/ umccr/multiqc bash -c "interop_index-summary --csv=1 /190510_A00130_0103_BHKKVWDSXX/ > /tmp/interop_index-summary.csv; interop_summary --csv=1 /190510_A00130_0103_BHKKVWDSXX/ > /tmp/interop_summary.csv; multiqc -m interop /tmp/interop*.csv -o /output/190510_A00130_0103_BHKKVWDSXX/ -n 190510_A00130_0103_BHKKVWDSXX_interop_qc.html"

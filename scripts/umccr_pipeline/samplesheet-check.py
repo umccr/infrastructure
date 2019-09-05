@@ -265,10 +265,8 @@ def main(samplesheet_file_path, check_only):
     has_id_error = checkSampleIds(original_sample_sheet)
     has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
     # Only fail on metadata or id errors
-    if has_metadata_error or has_id_error:
+    if has_metadata_error or has_id_error or has_index_error:
         raise ValueError(f"Validation detected errors. Please review the error logs!")
-    if has_index_error:
-        logger.warning("WARNING: proceeding even though index errors were detected. Please review reported index errors!")
 
     # Split and write individual SampleSheets, based on indexes and technology (10X)
     if not check_only:

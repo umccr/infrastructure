@@ -76,7 +76,7 @@ def build_command(script_case, input_data):
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" python {samplesheet_check_script} {samplesheet_path}"
     elif script_case == "bcl2fastq":
-        execution_timneout = '36000'
+        execution_timneout = '72000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" {bcl2fastq_script} -R {runfolder_path} -n {runfolder} -o {bcl2fastq_out_path}"
     elif script_case == "create_runfolder_checksums":

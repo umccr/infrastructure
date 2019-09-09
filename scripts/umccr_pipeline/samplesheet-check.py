@@ -21,13 +21,13 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 topup_exp = '(?:_topup\d?)?'
 sample_name_int = '(?:PRJ|CCR|MDX)\d{6}'
 sample_name_ext = '.*'
-sample_control = '(?:NTC|PTC)_'
+sample_control = '(?:NTC|PTC)'
 sample_id_int = 'L\d{7}'
 sample_id_ext = 'L' + sample_name_int
 regex_sample_id_int = re.compile(sample_id_int + topup_exp)
 regex_sample_id_ext = re.compile(sample_id_ext + topup_exp)
 regex_sample_name = re.compile(sample_name_int + '_' + sample_name_ext + topup_exp)
-regex_sample_ctl = re.compile(sample_control)
+regex_sample_ctl = re.compile(sample_control + '_' + sample_name_ext)
 
 
 if DEPLOY_ENV == 'prod':
@@ -96,11 +96,11 @@ def checkSampleIds(samplesheet):
             has_error = True
             logger.error(f"Sample_ID '{sample.Sample_ID}' cannot be the same as the Sample_Name!")
         # check Sample ID against expected format
-        if not (regex_sample_id_int.fullmatch(sample.Sample_ID) or regex_sample_id_ext.fullmatch(sample.Sample_ID)):
+        if not (regex_sample_name.fullmatch(sample.Sample_ID) or regex_sample_ctl.fullmatch(sample.Sample_ID)):
             has_error = True
             logger.error(f"Sample_ID '{sample.Sample_ID}' did not match the expected pattern!")
         # check Sample Name against expected format
-        if not (regex_sample_name.fullmatch(sample.Sample_Name) or regex_sample_ctl.match(sample.Sample_Name)):
+        if not (regex_sample_id_int.fullmatch(sample.Sample_Name) or regex_sample_id_ext.match(sample.Sample_Name)):
             has_error = True
             logger.error(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
 

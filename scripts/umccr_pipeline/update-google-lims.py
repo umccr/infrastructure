@@ -137,10 +137,13 @@ def get_meta_data(sample_id):
     result = {}
     try:
         global library_tracking_spreadsheet_df
+        print(f"Looking up {sample_id} in metadata sheet for {sample_id_column_name}")
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == sample_id]
         # We expect exactly one matching record, not more, not less!
-        if len(hit) != 1:
-            raise ValueError(f"No entry found for sammple ID {sample_id}!")
+        if len(hit) == 1:
+            logger.debug(f"Unique entry found for sample ID {sample_id}")
+        else:
+            raise ValueError(f"No unique ({len(hit)}) entry found for sample ID {sample_id}")
 
         for column_name in column_names:
             if not hit[column_name].isnull().values[0]:
@@ -182,8 +185,13 @@ def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
 
     next_row = next_available_row(sheet)
     for row in data_rows:
-        sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
-        next_row += 1
+        try:
+            sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
+            next_row += 1
+        except Exception as e:
+            logger.error(f"Caught exception {e} trying to instert row {row}. Trying again...")
+            sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
+            next_row += 1
 
 
 def split_at(s, c, n):
@@ -293,29 +301,29 @@ if __name__ == "__main__":
         samples = SampleSheet(samplesheet).samples
         logger.info(f"Found {len(samples)} samples.")
         for sample in samples:
-            logger.debug(f"Looking up metadata for sample Name; {sample.Sample_Name} and sample ID: {sample.Sample_ID}")
-            column_values = get_meta_data(sample.Sample_ID)
+            logger.debug(f"Looking up metadata with {sample.Sample_Name} for samplesheet.Sample_ID (UMCCR SampleID); " +
+                         f"{sample.Sample_ID} and samplesheet.sample_Name (UMCCR LibraryID): {sample.Sample_Name}")
+            column_values = get_meta_data(sample.Sample_Name)
 
             fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                          sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
-            fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
-                                             sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
 
             logger.debug('Looking for FASTQs: ' + fastq_pattern)
-            logger.debug('Setting FASTQ dest: ' + fastq_hpc_pattern)
             fastq_file_paths = glob(fastq_pattern)
             if len(fastq_file_paths) < 1:
                 logger.warn(f"Found no FASTQ files for sample {sample.Sample_ID}!")
-            # TODO: fix the value order
-            if sample.Sample_Name.startswith('NTC') or sample.Sample_Name.startswith('PTC'):
-                s_id, es_id = split_at(sample.Sample_Name, '_', 2)
+
+            # splitting the combined sample name
+            if sample.Sample_ID.startswith('NTC') or sample.Sample_ID.startswith('PTC'):
+                s_id, es_id = split_at(sample.Sample_ID, '_', 2)
             else:
-                s_id, es_id = split_at(sample.Sample_Name, '_', 1)  # splitting the combined sample name
-            lims_data_rows.add((runfolder, run_number, run_timestamp, '-', s_id, sample.Sample_ID,
-                                column_values[subject_id_column_name], es_id, '-', sample.Sample_Name,
+                s_id, es_id = split_at(sample.Sample_ID, '_', 1)
+            print(f"Split SampleID {sample.Sample_ID} into intID {s_id} and extID {es_id}")
+            lims_data_rows.add((runfolder, run_number, run_timestamp, '-', s_id, sample.Sample_Name,
+                                column_values[subject_id_column_name], es_id, '-', sample.Sample_ID,
                                 '-', sample.Sample_Project, column_values[type_column_name], '-',
                                 column_values[phenotype_column_name], column_values[source_column_name],
-                                column_values[quality_column_name], '-', "-", fastq_hpc_pattern, len(fastq_file_paths),
+                                column_values[quality_column_name], '-', "-", fastq_pattern, len(fastq_file_paths),
                                 "-", "-", "-", "-"))
 
     ################################################################################

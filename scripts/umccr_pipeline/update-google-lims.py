@@ -307,6 +307,8 @@ if __name__ == "__main__":
 
             fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                          sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
+            s3_fastq_pattern = os.path.join(fastq_hpc_base_dir, runfolder, sample.Sample_Project,
+                                            sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
 
             logger.debug('Looking for FASTQs: ' + fastq_pattern)
             fastq_file_paths = glob(fastq_pattern)
@@ -323,8 +325,8 @@ if __name__ == "__main__":
                                 column_values[subject_id_column_name], es_id, '-', sample.Sample_ID,
                                 '-', sample.Sample_Project, column_values[type_column_name], '-',
                                 column_values[phenotype_column_name], column_values[source_column_name],
-                                column_values[quality_column_name], '-', "-", fastq_pattern, len(fastq_file_paths),
-                                "-", "-", "-", "-"))
+                                column_values[quality_column_name], '-', "-", s3_fastq_pattern,
+                                len(fastq_file_paths), "-", "-", "-", "-"))
 
     ################################################################################
     # write the data into a CSV file

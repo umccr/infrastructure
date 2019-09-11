@@ -283,6 +283,13 @@ module "ebenngarvan" {
   pgp_key  = "keybase:ebenngarvan"
 }
 
+module "dnafault" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "dnafault"
+  pgp_key  = "keybase:freisinger"
+}
+
+
 module "michaelblackpath" {
   source   = "../../modules/iam_user/secure_user"
   username = "michaelblackpath"
@@ -340,7 +347,7 @@ resource "aws_iam_group_membership" "submit_members" {
 
 resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
-  users = ["${module.ametke.username}", "${module.ebenngarvan.username}", "${module.cassimons.username}", "${module.minw.username}"]
+  users = ["${module.ametke.username}", "${module.ebenngarvan.username}", "${module.dnafault.username}", "${module.cassimons.username}", "${module.minw.username}"]
   group = "${aws_iam_group.read.name}"
 }
 

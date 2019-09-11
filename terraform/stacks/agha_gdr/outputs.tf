@@ -70,6 +70,20 @@ output "ebenngarvan_secret_access_key" {
 }
 
 
+# dnafault
+output "dnafault_username" {
+  value = "${module.dnafault.username}"
+}
+
+output "dnafault_access_key" {
+  value = "${module.dnafault.access_key}"
+}
+
+output "dnafault_secret_access_key" {
+  value = "${module.dnafault.encrypted_secret_access_key}"
+}
+
+
 # michaelblackpath
 output "michaelblackpath_username" {
   value = "${module.michaelblackpath.username}"

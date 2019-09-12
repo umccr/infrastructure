@@ -81,3 +81,7 @@ output "LIMS_BUCKET_NAME" {
 output "LIMS_CSV_OBJECT_KEY" {
     value = "${var.lims_csv_file_key}"
 }
+
+output "S3_EVENT_SQS_ARN" {
+    value = "${aws_sqs_queue.s3_event_queue.arn}"
+}

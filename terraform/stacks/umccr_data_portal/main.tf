@@ -254,6 +254,35 @@ data "aws_s3_bucket" "lims_bucket" {
     bucket = "${var.lims_bucket[terraform.workspace]}"
 }
 
+data "template_file" "sqs_s3_inventory_event_policy" {
+    template = "${file("policies/sqs_s3_inventory_event_policy.json")}"
+
+    vars {        
+        # Use the same name as the one below, if referring there will be
+        # cicurlar dependency
+        sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+        s3_inventory_bucket_arn = "${data.aws_s3_bucket.s3_inventory_bucket.arn}"
+    }
+}
+
+# SQS Queue for S3 event delivery
+resource "aws_sqs_queue" "s3_event_queue" {
+    name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+    policy = "${data.template_file.sqs_s3_inventory_event_policy.rendered}"
+}
+
+# Enable s3 event notification for the invevntory bucket --> SQS
+resource "aws_s3_bucket_notification" "s3_inventory_notification" {
+    bucket = "${data.aws_s3_bucket.s3_inventory_bucket.id}"
+
+    queue {
+        queue_arn = "${aws_sqs_queue.s3_event_queue.arn}"
+        events = [
+            "s3:ObjectCreated:*", 
+            "s3:ObjectRemoved:*"
+        ]
+    }
+}
 
 # Cognito
 resource "aws_cognito_user_pool" "user_pool" {
@@ -724,6 +753,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
         environment_variable {
             name = "LIMS_CSV_OBJECT_KEY"
             value = "${var.lims_csv_file_key}"
+        }
+
+        environment_variable {
+            name = "S3_EVENT_SQS_ARN"
+            value = "${aws_sqs_queue.s3_event_queue.arn}"
         }
     }
 

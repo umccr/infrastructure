@@ -1,0 +1,16 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "sqs:SendMessage",
+            "Resource": "${sqs_arn}",
+            "Condition": {
+                "ArnEquals": { 
+                    "aws:SourceArn": "${s3_inventory_bucket_arn}" 
+                }
+            }
+        }
+    ]
+}

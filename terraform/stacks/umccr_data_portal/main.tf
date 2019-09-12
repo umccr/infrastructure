@@ -51,9 +51,6 @@ locals {
     codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
     codebuild_project_name_apis = "data-portal-apis-${terraform.workspace}"
 
-    lims_crawler_target = "s3://${data.aws_s3_bucket.lims_bucket_for_crawler.bucket}"
-    s3_keys_crawler_target = "s3://${data.aws_s3_bucket.s3_keys_bucket_for_crawler.bucket}/umccr-primary-data-${terraform.workspace}/primary-data/data"
-
     api_domain = "api.${aws_acm_certificate.client_cert.domain_name}"
     iam_role_path = "/${local.stack_name_us}/"
 
@@ -67,8 +64,8 @@ locals {
     rds_db_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
     LAMBDA_IAM_ROLE_ARN = "${aws_iam_role.lambda_apis_role.arn}"
-    RDS_SUBNET_IDS = "${join(",", data.aws_subnet_ids.default.ids)}"
-    RDS_SECURITY_GROUP_IDS = "${join(",", aws_rds_cluster.db.vpc_security_group_ids)}"
+    LAMBDA_SUBNET_IDS = "${join(",", data.aws_subnet_ids.default.ids)}"
+    LAMBDA_SECURITY_GROUP_IDS = "${data.aws_security_group.default.id}"
     SSM_KEY_NAME_FULL_DB_URL = "${aws_ssm_parameter.ssm_full_db_url.name}"
     SSM_KEY_NAME_DJANGO_SECRET_KEY =  "${data.aws_ssm_parameter.ssm_django_secret_key.name}"
 } 
@@ -249,295 +246,14 @@ resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
 #   }
 # }
 
-resource "aws_iam_role" "glue_service_role" {
-    name = "${local.stack_name_us}_glue_service_role"
-    path = "${local.iam_role_path}"
-
-    assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": "sts:AssumeRole",
-            "Principal": {
-                "Service": "glue.amazonaws.com"
-            },
-            "Effect": "Allow",
-            "Sid": ""
-        }
-    ]
-}
-EOF
+data "aws_s3_bucket" "s3_inventory_bucket" {
+    bucket = "${var.s3_inventory_bucket[terraform.workspace]}"
 }
 
-# Attach the default policy to the glue service role
-resource "aws_iam_role_policy_attachment" "glue_service_role_attach_default" {
-    role = "${aws_iam_role.glue_service_role.name}"
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+data "aws_s3_bucket" "lims_bucket" {
+    bucket = "${var.lims_bucket[terraform.workspace]}"
 }
 
-data "template_file" "glue_service_role_policy" {
-    template = "${file("policies/glue_service_role_policy.json")}"
-
-    vars = {
-        lims_bucket_arn = "${data.aws_s3_bucket.lims_bucket_for_crawler.arn}"
-        s3_keys_bucket_arn = "${data.aws_s3_bucket.s3_keys_bucket_for_crawler.arn}"
-    }
-}
- 
-resource "aws_iam_policy" "glue_service_role_policy" {
-    name = "${local.stack_name_us}_glue_service_policy"
-    description = "IAM policy for data portal glue service role"
-
-    policy = "${data.template_file.glue_service_role_policy.rendered}"
-}
-
-# Attach specific policy to the service role
-resource "aws_iam_role_policy_attachment" "glue_service_role_attach_specific" {
-    role        = "${aws_iam_role.glue_service_role.name}"
-    policy_arn  = "${aws_iam_policy.glue_service_role_policy.arn}"
-}
-
-
-# S3 buckets for Glue crawler
-data "aws_s3_bucket" "s3_keys_bucket_for_crawler" {
-    bucket = "${var.s3_keys_bucket_for_crawler[terraform.workspace]}"
-}
-
-data "aws_s3_bucket" "lims_bucket_for_crawler" {
-    bucket = "${var.lims_bucket_for_crawler[terraform.workspace]}"
-}
-
-# # The bucket to store athena query results
-resource "aws_s3_bucket" "athena_results_s3" {
-    bucket  = "${local.org_name}-athena-query-results-${terraform.workspace}"
-    acl     = "private"
-    force_destroy = true
-}
-
-# Glue crawlers
-resource "aws_glue_crawler" "glue_crawler_s3" {
-    database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
-    name            = "data_portal_${terraform.workspace}_s3_keys_crawler"
-    role            = "${aws_iam_role.glue_service_role.arn}"
-
-    s3_target {
-        path = "${local.s3_keys_crawler_target}"
-    }
-
-    # Prevent the crawler from changing our preset schema
-    schema_change_policy {
-        update_behavior = "LOG"
-    }
-
-    configuration = <<EOF
-{
-   "Version": 1.0,
-   "CrawlerOutput": {
-       "Partitions": { "AddOrUpdateBehavior": "InheritFromTable" }
-   }
-}
-EOF
-}
-
-resource "aws_glue_crawler" "glue_crawler_lims" {
-    database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
-    name            = "data_portal_${terraform.workspace}_lims_crawler"
-    role            = "${aws_iam_role.glue_service_role.arn}"
-
-    s3_target {
-        path ="${local.lims_crawler_target}"
-    }
-
-    # Prevent the crawler from changing our preset schema
-    schema_change_policy {
-        update_behavior = "LOG"
-    }
-
-    configuration = <<EOF
-{
-   "Version": 1.0,
-   "CrawlerOutput": {
-       "Partitions": { "AddOrUpdateBehavior": "InheritFromTable" }
-   }
-}
-EOF
-}
-
-# Glue catalog database
-resource "aws_glue_catalog_database" "glue_catalog_db" {
-    name = "data_portal_${terraform.workspace}"
-}
-
-resource "aws_glue_catalog_table" "glue_catalog_tb_s3" {
-    name            = "data"
-    database_name   = "${aws_glue_catalog_database.glue_catalog_db.name}"
-    description     = "Table storing crawled data from s3 file keys"
-
-    storage_descriptor {
-        # Use the same location as the crawler target
-        location        = "${local.s3_keys_crawler_target}/"
-        input_format    = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
-        output_format   = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
-
-        ser_de_info {
-            name = "parquet"
-            serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
-
-            parameters = {
-                "serialization.format" = 1
-            }
-        }
-
-        columns {
-            name = "bucket"
-            type = "string"
-        }
-
-        columns {
-            name = "key"
-            type = "string"
-        }
-
-        columns {
-            name = "size"
-            type = "bigint"
-        }
-
-        columns {
-            name = "last_modified_date"
-            type = "timestamp"
-        }
-
-        columns {
-            name = "e_tag"
-            type = "string"
-        }
-
-        columns {
-            name = "storage_class"
-            type = "string"
-        }
-
-        columns {
-            name = "encryption_status"
-            type = "string"
-        }
-    }
-}
-
-resource "aws_glue_catalog_table" "glue_catalog_tb_lims" {
-    name            = "${replace(data.aws_s3_bucket.lims_bucket_for_crawler.bucket, "-", "_")}"
-    database_name   =  "${aws_glue_catalog_database.glue_catalog_db.name}"
-    description     = "Table storing crawled data from LIMS spreadsheet"
-
-    storage_descriptor {
-        # Use the same location as the crawler target
-        location        = "${local.lims_crawler_target}/"
-        input_format    = "org.apache.hadoop.mapred.TextInputFormat"
-        output_format   = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
-
-        ser_de_info {
-            name = "csv"
-            serialization_library = "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe"
-
-            parameters = {
-                "skip.header.line.count"    = 1
-                "field.delim"               = ","
-            }
-        }
-
-        columns {
-            name = "illumina_id"
-            type = "string"
-        }
-
-        columns {
-            name = "run"
-            type = "string"
-        }   
-
-        columns {
-            name = "timestamp"
-            type = "string"
-        }   
-
-        columns {
-            name = "sampleid"
-            type = "string"
-        }   
-
-        columns {
-            name = "samplename"
-            type = "string"
-        }   
-
-        columns {
-            name = "project"
-            type = "string"
-        }   
-
-        columns {
-            name = "subjectid"
-            type = "string"
-        }
-
-        columns {
-            name = "type"
-            type = "string"
-        }
-
-        columns {
-            name = "phenotype"
-            type = "string"
-        }
-
-        columns {
-            name = "source"
-            type = "string"
-        }
-
-        columns {
-            name = "quality"
-            type = "string"
-        }
-
-        columns {
-            name = "secondary analysis"
-            type = "string"
-        }
-
-        columns {
-            name = "fastq"
-            type = "string"
-        }
-
-        columns {
-            name = "number fastqs"
-            type = "string"
-        }
-
-        columns {
-            name = "results"
-            type = "string"
-        }
-
-        columns {
-            name = "trello"
-            type = "string"
-        }
-
-        columns {
-            name = "notes"
-            type = "string"
-        }
-
-        columns {
-            name = "todo"
-            type = "string"
-        }
-    }
-}
 
 # Cognito
 resource "aws_cognito_user_pool" "user_pool" {
@@ -630,7 +346,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
-    allowed_oauth_scopes                    = ["email", "openid", "profile"]
+    allowed_oauth_scopes                    = ["email", "openid",  "aws.cognito.signin.user.admin", "profile"]
 
     # Need to explicitly specify this dependency
     depends_on                              = ["aws_cognito_identity_provider.identity_provider"]
@@ -972,14 +688,14 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
         # Parse the list of security group ids into a single string
         environment_variable {
-            name = "RDS_SECURITY_GROUP_IDS"
-            value = "${local.RDS_SECURITY_GROUP_IDS}"
+            name = "LAMBDA_SECURITY_GROUP_IDS"
+            value = "${local.LAMBDA_SECURITY_GROUP_IDS}"
         }
 
         # Parse the list of subnet ids into a single string
         environment_variable {
-            name = "RDS_SUBNET_IDS"
-            value = "${local.RDS_SUBNET_IDS}"
+            name = "LAMBDA_SUBNET_IDS"
+            value = "${local.LAMBDA_SUBNET_IDS}"
         }
 
         # ARN of the lambda iam role
@@ -998,6 +714,16 @@ resource "aws_codebuild_project" "codebuild_apis" {
         environment_variable {
             name = "SSM_KEY_NAME_FULL_DB_URL"
             value = "${local.SSM_KEY_NAME_FULL_DB_URL}"
+        }
+
+        environment_variable {
+            name = "LIMS_BUCKET_NAME"
+            value = "${data.aws_s3_bucket.lims_bucket.bucket}"
+        }
+
+        environment_variable {
+            name = "LIMS_CSV_OBJECT_KEY"
+            value = "${var.lims_csv_file_key}"
         }
     }
 
@@ -1109,6 +835,26 @@ data "aws_security_group" "default" {
     name = "default"
 }
 
+resource "aws_security_group" "rds_security_group" {
+    name = "allow_rds_mysql"
+    description = "Allow inbound traffic for RDS MySQL"
+    vpc_id = "${data.aws_vpc.default.id}"
+
+    ingress {
+        from_port       = 3306
+        to_port         = 3306
+        protocol        = "tcp"
+        security_groups = ["${data.aws_security_group.default.id}"]
+    }
+
+    egress {
+        from_port       = 0
+        to_port         = 0
+        protocol        = "-1"
+        cidr_blocks     = ["0.0.0.0/0"]
+    }
+}
+
 # RDS DB
 resource "aws_rds_cluster" "db" {
     cluster_identifier = "${local.stack_name_dash}-aurora-cluster"
@@ -1119,7 +865,11 @@ resource "aws_rds_cluster" "db" {
     master_username = "admin"
     master_password = "${local.rds_db_password}"
 
-    vpc_security_group_ids = ["${data.aws_security_group.default.id}"]
+    vpc_security_group_ids = ["${aws_security_group.rds_security_group.id}"]
+
+    scaling_configuration {
+        auto_pause = false
+    }
 }
 
 data "aws_ssm_parameter" "ssm_django_secret_key" {

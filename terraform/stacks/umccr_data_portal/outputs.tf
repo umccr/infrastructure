@@ -54,12 +54,12 @@ output "LAMBDA_IAM_ROLE_ARN" {
     value = "${local.LAMBDA_IAM_ROLE_ARN}"  
 }
 
-output "RDS_SUBNET_IDS" {
-    value = "${local.RDS_SUBNET_IDS}"  
+output "LAMBDA_SUBNET_IDS" {
+    value = "${local.LAMBDA_SUBNET_IDS}"  
 }
 
-output "RDS_SECURITY_GROUP_IDS" {
-    value = "${local.RDS_SECURITY_GROUP_IDS}"  
+output "LAMBDA_SECURITY_GROUP_IDS" {
+    value = "${local.LAMBDA_SECURITY_GROUP_IDS}"  
 }
 
 output "SSM_KEY_NAME_FULL_DB_URL" {
@@ -72,4 +72,12 @@ output "SSM_KEY_NAME_DJANGO_SECRET_KEY" {
 
 output "API_DOMAIN_NAME" {
     value = "${local.api_domain}"
+}
+
+output "LIMS_BUCKET_NAME" {
+    value =  "${data.aws_s3_bucket.lims_bucket.bucket}"
+}
+
+output "LIMS_CSV_OBJECT_KEY" {
+    value = "${var.lims_csv_file_key}"
 }

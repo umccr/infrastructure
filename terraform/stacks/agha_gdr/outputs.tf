@@ -84,6 +84,34 @@ output "dnafault_secret_access_key" {
 }
 
 
+# shyrav
+output "shyrav_username" {
+  value = "${module.shyrav.username}"
+}
+
+output "shyrav_access_key" {
+  value = "${module.shyrav.access_key}"
+}
+
+output "shyrav_secret_access_key" {
+  value = "${module.shyrav.encrypted_secret_access_key}"
+}
+
+
+# joecop
+output "joecop_username" {
+  value = "${module.joecop.username}"
+}
+
+output "joecop_access_key" {
+  value = "${module.joecop.access_key}"
+}
+
+output "joecop_secret_access_key" {
+  value = "${module.joecop.encrypted_secret_access_key}"
+}
+
+
 # michaelblackpath
 output "michaelblackpath_username" {
   value = "${module.michaelblackpath.username}"

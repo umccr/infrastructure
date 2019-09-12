@@ -289,6 +289,17 @@ module "dnafault" {
   pgp_key  = "keybase:freisinger"
 }
 
+module "shyrav" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "shyrav"
+  pgp_key  = "keybase:freisinger"
+}
+
+module "joecop" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "joecop"
+  pgp_key  = "keybase:freisinger"
+}
 
 module "michaelblackpath" {
   source   = "../../modules/iam_user/secure_user"
@@ -347,7 +358,7 @@ resource "aws_iam_group_membership" "submit_members" {
 
 resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
-  users = ["${module.ametke.username}", "${module.ebenngarvan.username}", "${module.dnafault.username}", "${module.cassimons.username}", "${module.minw.username}"]
+  users = ["${module.ametke.username}", "${module.ebenngarvan.username}", "${module.dnafault.username}", "${module.shyrav.username}", "${module.joecop.username}", "${module.cassimons.username}", "${module.minw.username}"]
   group = "${aws_iam_group.read.name}"
 }
 

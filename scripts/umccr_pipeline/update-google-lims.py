@@ -10,6 +10,7 @@ from sample_sheet import SampleSheet
 import logging
 from logging.handlers import RotatingFileHandler
 import gspread  # maybe move to https://github.com/aiguofer/gspread-pandas
+from gspread_pandas import Spread
 from oauth2client.service_account import ServiceAccountCredentials
 
 import warnings
@@ -23,8 +24,6 @@ if not DEPLOY_ENV:
     raise ValueError("DEPLOY_ENV needs to be set!")
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-
-library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
 
 # The column names of the Google LIMS (in order!)
 # Names and values should be kept in sync between the lab internal library tracking sheet and the Google LIMS
@@ -54,7 +53,7 @@ trello_column_name = 'Trello'
 notes_column_name = 'Notes'
 todo_column_name = 'ToDo'
 
-column_names = (subject_id_column_name, type_column_name,
+column_names = (subject_id_column_name, subject_ext_id_column_name, type_column_name,
                 phenotype_column_name, source_column_name, quality_column_name)
 
 # column headers of the LIMS spreadsheet
@@ -71,12 +70,15 @@ if DEPLOY_ENV == 'prod':
     raw_data_base_dir = '/storage/shared/raw/Baymax'
     bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-    spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
+    lims_spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
 else:
     raw_data_base_dir = '/storage/shared/dev/Baymax'
     bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
-    spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
+    lims_spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
+
+library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
+lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
 runfolder_name_expected_length = 29
 fastq_hpc_base_dir = 's3://umccr-fastq-data-prod/'
 csv_outdir = '/tmp'
@@ -133,27 +135,41 @@ def import_library_sheet(year):
         logger.error(f"Failed to load library tracking data from: {library_tracking_spreadsheet}")
 
 
-def get_meta_data(sample_id):
+def import_library_sheet_from_google(year):
+    global library_tracking_spreadsheet_df
+    spread = Spread(lab_spreadsheet_id)
+    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet='2019', index=0, header_rows=1, start_row=1)
+    hit = library_tracking_spreadsheet_df.iloc[0]
+    logger.debug(f"First record: {hit}")
+    for column_name in column_names:
+        logger.debug(f"Checking for column name {column_name}...")
+        if column_name not in hit:
+            logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
+            exit(-1)
+    logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
+
+
+def get_meta_data_by_library_id(library_id):
     result = {}
     try:
         global library_tracking_spreadsheet_df
-        print(f"Looking up {sample_id} in metadata sheet for {sample_id_column_name}")
-        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == sample_id]
+        print(f"Looking up {library_id} in metadata sheet for {library_id_column_name}")
+        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
         # We expect exactly one matching record, not more, not less!
         if len(hit) == 1:
-            logger.debug(f"Unique entry found for sample ID {sample_id}")
+            logger.debug(f"Unique entry found for sample ID {library_id}")
         else:
-            raise ValueError(f"No unique ({len(hit)}) entry found for sample ID {sample_id}")
+            raise ValueError(f"No unique ({len(hit)}) entry found for sample ID {library_id}")
 
         for column_name in column_names:
-            if not hit[column_name].isnull().values[0]:
-                result[column_name] = hit[column_name].values[0]
-            else:
+            if hit[column_name].isnull().values[0] or len(hit[column_name].values[0]) < 1:
                 result[column_name] = '-'
+            else:
+                result[column_name] = hit[column_name].values[0]
     except Exception as e:
-        logger.error(f"Could not find entry for sample {sample_id}! Exception {e}")
+        logger.error(f"Could not find entry for sample {library_id}! Exception {e}")
 
-    logger.info(f"Using values: {result} for sample {sample_id}.")
+    logger.info(f"Using values: {result} for sample {library_id}.")
 
     return result
 
@@ -171,7 +187,7 @@ def next_available_row(worksheet):
     return len(str_list)+1
 
 
-def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
+def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run):
     # follow example from:
     # https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
     scope = ['https://www.googleapis.com/auth/drive']
@@ -179,9 +195,9 @@ def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
     client = gspread.authorize(creds)
 
     if failed_run:
-        sheet = client.open_by_key(spreadsheet_id).worksheet('Failed Runs')
+        sheet = client.open_by_key(lims_spreadsheet_id).worksheet('Failed Runs')
     else:
-        sheet = client.open_by_key(spreadsheet_id).sheet1
+        sheet = client.open_by_key(lims_spreadsheet_id).sheet1
 
     next_row = next_available_row(sheet)
     for row in data_rows:
@@ -224,9 +240,9 @@ if __name__ == "__main__":
                         default=csv_outdir)
     parser.add_argument('--write-csv', action='store_true',
                         help="Use this flag to write a CSV file.")
-    parser.add_argument('--spreadsheet-id',
+    parser.add_argument('--lims-spreadsheet-id',
                         help="The name of the Google LIMS spreadsheet.",
-                        default=spreadsheet_id)
+                        default=lims_spreadsheet_id)
     parser.add_argument('--creds-file',
                         help="The Google credentials file to grant access to the spreadsheet.",
                         default=creds_file)
@@ -247,8 +263,8 @@ if __name__ == "__main__":
         csv_outdir = args.csv_outdir
     if args.write_csv:
         write_csv = True
-    if args.spreadsheet_id:
-        spreadsheet_id = args.spreadsheet_id
+    if args.lims_spreadsheet_id:
+        lims_spreadsheet_id = args.lims_spreadsheet_id
     if args.creds_file:
         creds_file = args.creds_file
     if args.skip_lims_update:
@@ -276,7 +292,7 @@ if __name__ == "__main__":
 
     # load the library tracking sheet for the run year
     logger.debug("Loading library tracking data.")
-    import_library_sheet(run_year)
+    import_library_sheet_from_google(run_year)
 
     ################################################################################
     # Generate LIMS records from SampleSheet
@@ -303,7 +319,7 @@ if __name__ == "__main__":
         for sample in samples:
             logger.debug(f"Looking up metadata with {sample.Sample_Name} for samplesheet.Sample_ID (UMCCR SampleID); " +
                          f"{sample.Sample_ID} and samplesheet.sample_Name (UMCCR LibraryID): {sample.Sample_Name}")
-            column_values = get_meta_data(sample.Sample_Name)
+            column_values = get_meta_data_by_library_id(sample.Sample_Name)
 
             fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
                                          sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
@@ -321,12 +337,32 @@ if __name__ == "__main__":
             else:
                 s_id, es_id = split_at(sample.Sample_ID, '_', 1)
             print(f"Split SampleID {sample.Sample_ID} into intID {s_id} and extID {es_id}")
-            lims_data_rows.add((runfolder, run_number, run_timestamp, '-', s_id, sample.Sample_Name,
-                                column_values[subject_id_column_name], es_id, '-', sample.Sample_ID,
-                                '-', sample.Sample_Project, column_values[type_column_name], '-',
-                                column_values[phenotype_column_name], column_values[source_column_name],
-                                column_values[quality_column_name], '-', "-", s3_fastq_pattern,
-                                len(fastq_file_paths), "-", "-", "-", "-"))
+            print(f"Inserting values {column_values}")
+            lims_data_rows.add((runfolder,
+                                run_number,
+                                run_timestamp,
+                                column_values[subject_id_column_name],
+                                s_id,
+                                sample.Sample_Name,
+                                column_values[subject_ext_id_column_name],
+                                es_id,
+                                '-',
+                                sample.Sample_ID,
+                                '-',
+                                sample.Sample_Project,
+                                column_values[type_column_name],
+                                '-',
+                                column_values[phenotype_column_name],
+                                column_values[source_column_name],
+                                column_values[quality_column_name],
+                                '-',
+                                '-',
+                                s3_fastq_pattern,
+                                len(fastq_file_paths),
+                                '-',
+                                '-',
+                                '-',
+                                '-'))
 
     ################################################################################
     # write the data into a CSV file
@@ -341,8 +377,8 @@ if __name__ == "__main__":
     if skip_lims_update:
         logger.warn("Skipping Google LIMS update!")
     else:
-        logger.info(f"Writing {len(lims_data_rows)} records to Google LIMS {spreadsheet_id}")
-        write_to_google_lims(keyfile=creds_file, spreadsheet_id=spreadsheet_id,
+        logger.info(f"Writing {len(lims_data_rows)} records to Google LIMS {lims_spreadsheet_id}")
+        write_to_google_lims(keyfile=creds_file, lims_spreadsheet_id=lims_spreadsheet_id,
                              data_rows=lims_data_rows, failed_run=failed_run)
 
     logger.info("All done.")

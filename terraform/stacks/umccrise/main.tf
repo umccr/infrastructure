@@ -109,6 +109,7 @@ module "compute_env" {
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
   min_vcpus             = 0
   max_vcpus             = 160
+  use_spot              = "false"
   spot_bid_percent      = "100"
 }
 
@@ -145,7 +146,8 @@ data "template_file" "additionalEc2InstancePolicy" {
   template = "${file("${path.module}/policies/ec2-instance-role.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+    resources        = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+    delete_resources = "${jsonencode(var.workspace_umccrise_delete_buckets[terraform.workspace])}"
   }
 }
 
@@ -216,11 +218,11 @@ module "trigger_umccrise_s3_lambda" {
   runtime       = "python3.6"
   timeout       = 3
 
-  environment { 
+  environment {
     variables {
-      UMCCRISE_MEM             = "${var.umccrise_mem[terraform.workspace]}"
-      UMCCRISE_VCPUS           = "${var.umccrise_vcpus[terraform.workspace]}"
-      UMCCRISE_FUNCTION_NAME   = "${module.lambda.function_name}"
+      UMCCRISE_MEM           = "${var.umccrise_mem[terraform.workspace]}"
+      UMCCRISE_VCPUS         = "${var.umccrise_vcpus[terraform.workspace]}"
+      UMCCRISE_FUNCTION_NAME = "${module.lambda.function_name}"
     }
   }
 
@@ -238,16 +240,16 @@ module "trigger_umccrise_s3_lambda" {
 
 ##### Add S3 event notifications to the primary data bucket for umccrise trigger file
 resource "aws_lambda_permission" "allow_exec_bucket" {
-statement_id = "AllowExecutionFromS3Bucket"
-action = "lambda:InvokeFunction"
-function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
-principal = "s3.amazonaws.com"
-source_arn = "arn:aws:s3:::${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
+  principal     = "s3.amazonaws.com"
+  source_arn    = "arn:aws:s3:::${var.workspace_umccrise_data_bucket[terraform.workspace]}"
 }
 
 resource "aws_s3_bucket_notification" "bucket_notification" {
   depends_on = ["aws_lambda_permission.allow_exec_bucket"]
-  bucket = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+  bucket     = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
 
   lambda_function {
     lambda_function_arn = "${module.trigger_umccrise_s3_lambda.function_arn}"
@@ -259,16 +261,16 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
 ##### Add S3 event notifications to the primary data bucket for umccrise trigger file
 resource "aws_lambda_permission" "allow_exec_temp_bucket" {
-statement_id = "AllowExecutionFromS3TempBucket"
-action = "lambda:InvokeFunction"
-function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
-principal = "s3.amazonaws.com"
-source_arn = "arn:aws:s3:::${var.workspace_umccrise_temp_bucket[terraform.workspace]}"
+  statement_id  = "AllowExecutionFromS3TempBucket"
+  action        = "lambda:InvokeFunction"
+  function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
+  principal     = "s3.amazonaws.com"
+  source_arn    = "arn:aws:s3:::${var.workspace_umccrise_temp_bucket[terraform.workspace]}"
 }
 
 resource "aws_s3_bucket_notification" "temp_bucket_notification" {
   depends_on = ["aws_lambda_permission.allow_exec_temp_bucket"]
-  bucket = "${var.workspace_umccrise_temp_bucket[terraform.workspace]}"
+  bucket     = "${var.workspace_umccrise_temp_bucket[terraform.workspace]}"
 
   lambda_function {
     lambda_function_arn = "${module.trigger_umccrise_s3_lambda.function_arn}"
@@ -327,7 +329,6 @@ resource "aws_lambda_permission" "batch_failure" {
   source_arn    = "${aws_cloudwatch_event_rule.batch_failure.arn}"
 }
 
-
 resource "aws_cloudwatch_event_rule" "batch_success" {
   name        = "${var.stack_name}_capture_batch_job_success_${terraform.workspace}"
   description = "Capture Batch Job Failures"
@@ -374,7 +375,6 @@ resource "aws_lambda_permission" "batch_success" {
   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
 }
 
-
 resource "aws_cloudwatch_event_rule" "batch_submitted" {
   name        = "${var.stack_name}_capture_batch_job_submit_${terraform.workspace}"
   description = "Capture Batch Job Submissions"
@@ -399,7 +399,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "batch_submitted" {
   rule      = "${aws_cloudwatch_event_rule.batch_submitted.name}"
   target_id = "${var.stack_name}_send_batch_submitted_to_slack_lambda_${terraform.workspace}"
-  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                      # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                        # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
 
   input_transformer = {
     input_paths = {

@@ -34,6 +34,14 @@
             "Resource": ${resources}
         },
         {
+            "Sid": "CustomAdditionsS3Delete",
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteObject"
+            ],
+            "Resource": ${delete_resources}
+        },
+        {
             "Sid": "CustomAdditionsCW",
             "Effect": "Allow",
             "Action": "cloudwatch:PutMetricData",

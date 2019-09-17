@@ -57,8 +57,17 @@ variable "workspace_umccrise_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-umccrise-prod", "arn:aws:s3:::umccr-umccrise-prod/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
+    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
     dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-umccrise-dev", "arn:aws:s3:::umccr-umccrise-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
+  }
+}
+
+variable "workspace_umccrise_delete_buckets" {
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/umccrised/*", "arn:aws:s3:::umccr-temp/*/umccrised/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev/*/umccrised/*", "arn:aws:s3:::umccr-umccrise-dev/*/umccrised/*"]
   }
 }
 

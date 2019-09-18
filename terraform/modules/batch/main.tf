@@ -127,7 +127,8 @@ resource "aws_batch_compute_environment" "batch_ondemand" {
 
     tags = {
       Name  = "batch"
-      stack = "${var.stack_name}"
+      Stack = "${var.stack_name}"
+      Creator = "${var.stack_name}_batch"
     }
   }
 
@@ -157,7 +158,8 @@ resource "aws_batch_compute_environment" "batch" {
 
     tags = {
       Name  = "batch"
-      stack = "${var.stack_name}"
+      Stack = "${var.stack_name}"
+      Creator = "${var.stack_name}_batch"
     }
   }
 

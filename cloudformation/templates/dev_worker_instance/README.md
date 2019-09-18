@@ -6,18 +6,19 @@ This instance will have a volume of customisable size attached and monted on `/m
 - read/write access to `dev` buckets: `aws s3 cp /tmp/foo.txt s3://umccr-misc-temp/foo/`
 
 ```bash
-# create stack (and contained resources)
+# create stack and contained resources (providing the mandatory user name from env variable)
 aws cloudformation create-stack \
     --stack-name worker-1 \
     --template-body file://worker.yaml \
-    --capabilities CAPABILITY_NAMED_IAM
+    --capabilities CAPABILITY_NAMED_IAM \
+    --parameters '[{"ParameterKey": "userName", "ParameterValue": "'"$USER"'"}]'
 
 # create stack with custom parameters (defaults shown, only overwrite the ones you want to change)
 aws cloudformation create-stack \
     --stack-name worker-1 \
     --template-body file://worker.yaml \
     --capabilities CAPABILITY_NAMED_IAM \
-    --parameters '[{"ParameterKey": "instanceTypeParameter", "ParameterValue": "m4.large"}, {"ParameterKey": "instanceMaxSpotPriceParameter", "ParameterValue": "0.04"}, {"ParameterKey": "instanceDiskSpaceParameter", "ParameterValue": "100"}, {"ParameterKey": "instanceSecurityGroup", "ParameterValue": "sg-c13f6abc"}, {"ParameterKey": "instanceSubnet", "ParameterValue": "subnet-d93b35be"}]'
+    --parameters '[{"ParameterKey": "instanceTypeParameter", "ParameterValue": "m4.large"}, {"ParameterKey": "instanceMaxSpotPriceParameter", "ParameterValue": "0.04"}, {"ParameterKey": "instanceDiskSpaceParameter", "ParameterValue": "100"}, {"ParameterKey": "instanceSecurityGroup", "ParameterValue": "sg-c13f6abc"}, {"ParameterKey": "instanceSubnet", "ParameterValue": "subnet-d93b35be"}, {"ParameterKey": "userName", "ParameterValue": "'"$USER"'"}]'
 
 # check stack creation status
 aws cloudformation describe-stacks \

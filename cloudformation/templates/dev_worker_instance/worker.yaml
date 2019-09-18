@@ -18,10 +18,14 @@ Resources:
       Tags:
         - Key: Source
           Value: CloudFormation
+        - Key: Creator
+          Value: !Ref userName
         - Key: Env
           Value: Test
         - Key: Name
           Value: Worker instance
+        - Key: Stack
+          Value: !Ref AWS::StackId
       UserData:
         Fn::Base64: !Sub |
             #!/bin/bash -xe
@@ -176,3 +180,6 @@ Parameters:
     Description: 'Set the max spot price (hourly) for the selected instance type. Default: 0.05'
     Type: String
     Default: '0.04'
+  userName:
+    Description: 'This name will be set as the Creator tag value'
+    Type: String

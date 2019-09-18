@@ -246,9 +246,32 @@ resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
 #   }
 # }
 
-data "aws_s3_bucket" "s3_inventory_bucket" {
-    bucket = "${var.s3_inventory_bucket[terraform.workspace]}"
+data "aws_s3_bucket" "s3_primary_data_bucket" {
+    bucket = "${var.s3_primary_data_bucket[terraform.workspace]}"
 }
+
+resource "aws_s3_bucket" "s3_inventory_bucket" {
+    bucket = "${local.stack_name_dash}-inventory"
+}
+
+resource "aws_s3_bucket_inventory" "name" {
+    bucket = "${data.aws_s3_bucket.s3_primary_data_bucket}"
+    name = "{local.stack_name_dash}-inventory"
+
+    included_object_versions = "current"
+    
+    schedule {
+        frequency = "Daily"
+    }
+
+    destination {
+        bucket {
+            bucket_arn = "${aws_s3_bucket.s3_inventory_bucket.arn}"
+            format = "CSV"
+        }
+    }
+}
+
 
 data "aws_s3_bucket" "lims_bucket" {
     bucket = "${var.lims_bucket[terraform.workspace]}"

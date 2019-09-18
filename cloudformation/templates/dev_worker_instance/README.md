@@ -5,6 +5,8 @@ This instance will have a volume of customisable size attached and monted on `/m
 - read only access to selected `prod` buckets: `aws s3 ls s3://umccr-primary-data-prod/`
 - read/write access to `dev` buckets: `aws s3 cp /tmp/foo.txt s3://umccr-misc-temp/foo/`
 
+With the following instructions, you'll need the `worker.yaml` file locally. Either checkout the GitHub repo and navigate to this folder or download the file to a location of your choice.
+
 ```bash
 # create stack and contained resources (providing the mandatory user name from env variable)
 aws cloudformation create-stack \

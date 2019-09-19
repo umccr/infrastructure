@@ -42,14 +42,13 @@ Resources:
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
-      InstanceProfileName: worker_instance_profile
       Path: /worker/
       Roles:
         - !Ref workerInstanceRole
-  WorkerInstancePolicy:
+  workerInstancePolicy:
     Type: 'AWS::IAM::Policy'
     Properties:
-      PolicyName: WorkerInstancePolicy
+      PolicyName: !Sub '${AWS::StackName}_instance_policy'
       PolicyDocument:
         Statement:
           - Effect: Allow
@@ -111,7 +110,6 @@ Resources:
   workerInstanceRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: worker_role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -127,7 +125,6 @@ Resources:
   workerIstanceLauchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
-      LaunchTemplateName: SpotInstanceLaunchTemplate
       LaunchTemplateData:
         InstanceMarketOptions:
           MarketType: spot

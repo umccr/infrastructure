@@ -46,7 +46,7 @@ write_log "INFO: Invocation with parameters: $*"
 
 if [[ $# -lt 6 ]]; then
   write_log "ERROR: Insufficient parameters"
-  echo "A minimum of 4 arguments are required!"
+  echo "A minimum of 3 arguments are required!"
   echo "  1) The runfolder directory [-R|--runfolder-dir]"
   echo "  2) The runfolder name [-n|--runfolder-name]"
   echo "  3) The output directory [-o|--output-dir]"

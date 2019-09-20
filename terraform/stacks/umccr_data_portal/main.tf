@@ -271,6 +271,10 @@ resource "aws_s3_bucket_notification" "s3_inventory_notification" {
 # Cognito
 resource "aws_cognito_user_pool" "user_pool" {
     name = "${local.stack_name_dash}-${terraform.workspace}"
+
+    user_pool_add_ons {
+        advanced_security_mode = "AUDIT"
+    }
 }
 
 # Google identity provider
@@ -359,7 +363,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
-    allowed_oauth_scopes                    = ["email", "openid",  "aws.cognito.signin.user.admin", "profile"]
+    allowed_oauth_scopes                    = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
 
     # Need to explicitly specify this dependency
     depends_on                              = ["aws_cognito_identity_provider.identity_provider"]
@@ -378,7 +382,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
 
     allowed_oauth_flows                     = ["code"]
     allowed_oauth_flows_user_pool_client    = true
-    allowed_oauth_scopes                    = ["email", "openid", "aws.cognito.signin.user.admin", "profile"]
+    allowed_oauth_scopes                    = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
     explicit_auth_flows                     = ["ADMIN_NO_SRP_AUTH"]
 
     # Need to explicitly specify this dependency

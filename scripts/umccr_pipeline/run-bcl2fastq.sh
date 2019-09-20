@@ -2,12 +2,6 @@
 set -eo pipefail
 
 ################################################################################
-# Activate a conda environment where the required resources are available
-
-. $HOME/.miniconda3/etc/profile.d/conda.sh
-conda activate pipeline
-
-################################################################################
 # Define constants/variables
 
 script_name=$(basename $0)

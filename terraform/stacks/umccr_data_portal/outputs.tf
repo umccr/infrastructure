@@ -49,3 +49,39 @@ output "cognito_oauth_redirect_signout" {
 output "cognito_oauth_response_type" {
   value = "${aws_cognito_user_pool_client.user_pool_client.allowed_oauth_flows[0]}"
 }
+
+output "LAMBDA_IAM_ROLE_ARN" {
+    value = "${local.LAMBDA_IAM_ROLE_ARN}"  
+}
+
+output "LAMBDA_SUBNET_IDS" {
+    value = "${local.LAMBDA_SUBNET_IDS}"  
+}
+
+output "LAMBDA_SECURITY_GROUP_IDS" {
+    value = "${local.LAMBDA_SECURITY_GROUP_IDS}"  
+}
+
+output "SSM_KEY_NAME_FULL_DB_URL" {
+    value = "${local.SSM_KEY_NAME_FULL_DB_URL}"  
+}
+
+output "SSM_KEY_NAME_DJANGO_SECRET_KEY" {
+    value = "${local.SSM_KEY_NAME_DJANGO_SECRET_KEY}"  
+}
+
+output "API_DOMAIN_NAME" {
+    value = "${local.api_domain}"
+}
+
+output "LIMS_BUCKET_NAME" {
+    value =  "${data.aws_s3_bucket.lims_bucket.bucket}"
+}
+
+output "LIMS_CSV_OBJECT_KEY" {
+    value = "${var.lims_csv_file_key}"
+}
+
+output "S3_EVENT_SQS_ARN" {
+    value = "${aws_sqs_queue.s3_event_queue.arn}"
+}

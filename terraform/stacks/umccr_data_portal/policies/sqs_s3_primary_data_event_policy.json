@@ -8,7 +8,7 @@
             "Resource": "${sqs_arn}",
             "Condition": {
                 "ArnEquals": { 
-                    "aws:SourceArn": "${s3_inventory_bucket_arn}" 
+                    "aws:SourceArn": "${s3_primary_data_bucket_arn}" 
                 }
             }
         }

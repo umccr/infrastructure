@@ -46,7 +46,7 @@ locals {
     stack_name_dash     = "data-portal"
 
     client_s3_origin_id = "clientS3"
-    data_portal_domain_prefix = "data-portal"
+    data_portal_domain_prefix = "data"
     google_app_secret = "${data.external.secrets_helper.result["google_app_secret"]}"
     codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
     codebuild_project_name_apis = "data-portal-apis-${terraform.workspace}"
@@ -54,7 +54,7 @@ locals {
     api_domain = "api.${aws_acm_certificate.client_cert.domain_name}"
     iam_role_path = "/${local.stack_name_us}/"
 
-    site_domain = "${local.data_portal_domain_prefix}.${var.org_domain[terraform.workspace]}"
+    app_domain = "${local.data_portal_domain_prefix}.${var.base_domain[terraform.workspace]}"
 
     org_name = "umccr"
 
@@ -116,7 +116,7 @@ resource "aws_cloudfront_distribution" "client_distribution" {
     }
 
     enabled                 = true
-    aliases                 = ["${local.site_domain}"]
+    aliases                 = ["${local.app_domain}"]
     default_root_object     = "index.html"
     viewer_certificate {
         acm_certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
@@ -159,13 +159,13 @@ resource "aws_cloudfront_distribution" "client_distribution" {
 
 # Hosted zone for organisation domain
 data "aws_route53_zone" "org_zone" {
-    name = "${var.org_domain[terraform.workspace]}."
+    name = "${var.base_domain[terraform.workspace]}."
 }
 
 # Alias the client domain name to CloudFront distribution address
 resource "aws_route53_record" "client_alias" {
     zone_id = "${data.aws_route53_zone.org_zone.zone_id}"
-    name = "${local.data_portal_domain_prefix}.${data.aws_route53_zone.org_zone.name}"
+    name = "${local.app_domain}."
     type = "A"
     alias {
         name                    = "${aws_cloudfront_distribution.client_distribution.domain_name}"
@@ -187,7 +187,7 @@ resource "aws_route53_record" "client_cert_validation" {
 resource "aws_acm_certificate" "client_cert" {
     # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
     provider            = "aws.use1"
-    domain_name         = "${local.site_domain}"
+    domain_name         = "${local.app_domain}"
     validation_method   = "DNS"
 
     lifecycle {
@@ -200,6 +200,8 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
     provider                = "aws.use1"
     certificate_arn         = "${aws_acm_certificate.client_cert.arn}"
     validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
+
+    depends_on = ["aws_route53_record.client_cert_validation"]
 }
 
 ################################################################################
@@ -210,7 +212,7 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 resource "aws_acm_certificate" "subdomain_cert" {
     # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
     provider            = "aws.use1"
-    domain_name         = "*.${local.site_domain}"
+    domain_name         = "*.${local.app_domain}"
     validation_method   = "DNS"
 
     lifecycle {
@@ -228,52 +230,34 @@ resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
     validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
 }
 
-# Custom domain is to be created by Serverless Domain Manager
-# resource "aws_api_gateway_domain_name" "api_domain" {
-#     certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
-#     domain_name     = "api.${aws_acm_certificate.client_cert.domain_name}"
-# }
-
-# resource "aws_route53_record" "api_domain_route53_record" {
-#   name    = "${aws_api_gateway_domain_name.api_domain.domain_name}"
-#   type    = "A"
-#   zone_id = "${data.aws_route53_zone.org_zone.zone_id}"
-
-#   alias {
-#     evaluate_target_health = true
-#     name                   = "${aws_api_gateway_domain_name.api_domain.cloudfront_domain_name}"
-#     zone_id                = "${aws_api_gateway_domain_name.api_domain.cloudfront_zone_id}"
-#   }
-# }
-
-data "aws_s3_bucket" "s3_inventory_bucket" {
-    bucket = "${var.s3_inventory_bucket[terraform.workspace]}"
+data "aws_s3_bucket" "s3_primary_data_bucket" {
+    bucket = "${var.s3_primary_data_bucket[terraform.workspace]}"
 }
 
 data "aws_s3_bucket" "lims_bucket" {
     bucket = "${var.lims_bucket[terraform.workspace]}"
 }
 
-data "template_file" "sqs_s3_inventory_event_policy" {
-    template = "${file("policies/sqs_s3_inventory_event_policy.json")}"
+data "template_file" "sqs_s3_primary_data_event_policy" {
+    template = "${file("policies/sqs_s3_primary_data_event_policy.json")}"
 
     vars {        
         # Use the same name as the one below, if referring there will be
         # cicurlar dependency
         sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
-        s3_inventory_bucket_arn = "${data.aws_s3_bucket.s3_inventory_bucket.arn}"
+        s3_primary_data_bucket_arn = "${data.aws_s3_bucket.s3_primary_data_bucket.arn}"
     }
 }
 
 # SQS Queue for S3 event delivery
 resource "aws_sqs_queue" "s3_event_queue" {
     name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
-    policy = "${data.template_file.sqs_s3_inventory_event_policy.rendered}"
+    policy = "${data.template_file.sqs_s3_primary_data_event_policy.rendered}"
 }
 
 # Enable s3 event notification for the invevntory bucket --> SQS
 resource "aws_s3_bucket_notification" "s3_inventory_notification" {
-    bucket = "${data.aws_s3_bucket.s3_inventory_bucket.id}"
+    bucket = "${data.aws_s3_bucket.s3_primary_data_bucket.id}"
 
     queue {
         queue_arn = "${aws_sqs_queue.s3_event_queue.arn}"
@@ -368,8 +352,8 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
     user_pool_id                            = "${aws_cognito_user_pool.user_pool.id}"
     supported_identity_providers            = ["Google"]
 
-    callback_urls                           = ["https://${local.site_domain}"]
-    logout_urls                             = ["https://${local.site_domain}"]
+    callback_urls                           = ["https://${local.app_domain}"]
+    logout_urls                             = ["https://${local.app_domain}"]
 
     generate_secret                         = false
 

@@ -12,11 +12,31 @@ $ terraform apply
 $ terraform output -json > out.json # Optional
 ```
 
-### Github Webhooks
+### External Dependencies
+
+#### 1. SSM Keys
+- Django secrete key: `/${local.stack_name_us}/django_secret_key`
+- RDS DB password: `/${local.stack_name_us}/rds_db_password`
+
+#### 2. Secrets Manager
+- Google app secret: `google_app_secret`
+
+#### 3. S3 Buckets
+- S3 primary data: `${var.s3_primary_data_bucket[terraform.workspace]}`
+- LIMS bucket (storing the csv):`${var.lims_bucket[terraform.workspace]}`
+
+#### 4. VPC
+- Default VPC in the current region: `${data.aws_vpc.default}` (and subnets and security groups)
+
+#### 5. Github Webhooks
 A `GITHUB_TOKEN` env variable is required.
 In order for terraform to create GitHub webhooks, the personal access token
 should have `admin:repo_hook` scope at least, and the associated account should
 be admin-level user for both repositories (`data-portal-apis` and `data-portal-client`).
+
+
+## Stack Overview
+
 
 ### 1. React App (client/front end)
 
@@ -36,9 +56,8 @@ be admin-level user for both repositories (`data-portal-apis` and `data-portal-c
 ### 2. APIs (back end)
 
 #### Data
-- Glue crawler (one for S3 keys and one for LIMS)
-- Glue catalog database and its catalog tables storing crawler input (S3 keys and LIMS)
-- S3 bucket storing Athena query results
+- S3 primary data bucket: used to create SQS event notification
+- LIMS data bucket.
 
 #### Authentication
 - Cognito user pool
@@ -58,6 +77,6 @@ be admin-level user for both repositories (`data-portal-apis` and `data-portal-c
 ### 3. Others
 
 - S3 bucket storing both CodePipeline artifacts
-- ACM Certificate for subdomain (`*.data-portal.{stage}.umccr.org`)
+- ACM Certificate for subdomain (`*.data.{stage}.umccr.org`)
 - The stack also establishes IAM roles and policies where relavent
 - Web Application Firewall including SQL injection protection (on query strings)

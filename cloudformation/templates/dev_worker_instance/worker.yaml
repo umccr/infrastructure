@@ -39,6 +39,11 @@ Resources:
             mount -a
             # change the owner so the user (via SSM) has access
             chown -R ssm-user /mnt/xvdh/
+            # install docker
+            sudo yum update -y
+            sudo amazon-linux-extras install docker
+            sudo service docker start
+            sudo usermod -a -G docker ssm-user
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:

@@ -10,10 +10,6 @@ variable "stack_name" {
   default = "umccrise"
 }
 
-variable "umccrise_trigger_file" {
-  default = "upload_complete"
-}
-
 ################################################################################
 ## workspace variables
 

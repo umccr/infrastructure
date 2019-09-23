@@ -196,6 +196,8 @@ module "lambda" {
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
       DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
       REFDATA_BUCKET = "${var.workspace_umccrise_refdata_bucket[terraform.workspace]}"
+      UMCCRISE_MEM   = "${var.umccrise_mem[terraform.workspace]}"
+      UMCCRISE_VCPUS = "${var.umccrise_vcpus[terraform.workspace]}"
     }
   }
 
@@ -203,80 +205,6 @@ module "lambda" {
     service = "${var.stack_name}"
     name    = "${var.stack_name}"
     stack   = "${var.stack_name}"
-  }
-}
-
-################################################################################
-
-module "trigger_umccrise_s3_lambda" {
-  # based on: https://github.com/claranet/terraform-aws-lambda
-  source = "../../modules/lambda"
-
-  function_name = "trigger_umccrise_s3_${terraform.workspace}"
-  description   = "Lambda for triggering UMCCRISE via s3"
-  handler       = "trigger_umccrise_s3.lambda_handler"
-  runtime       = "python3.6"
-  timeout       = 3
-
-  environment {
-    variables {
-      UMCCRISE_MEM           = "${var.umccrise_mem[terraform.workspace]}"
-      UMCCRISE_VCPUS         = "${var.umccrise_vcpus[terraform.workspace]}"
-      UMCCRISE_FUNCTION_NAME = "${module.lambda.function_name}"
-    }
-  }
-
-  source_path = "${path.module}/lambdas/trigger_umccrise_s3.py"
-
-  attach_policy = true
-  policy        = "${aws_iam_policy.lambda.arn}"
-
-  tags = {
-    service = "${var.stack_name}"
-    name    = "${var.stack_name}"
-    stack   = "${var.stack_name}"
-  }
-}
-
-##### Add S3 event notifications to the primary data bucket for umccrise trigger file
-resource "aws_lambda_permission" "allow_exec_bucket" {
-  statement_id  = "AllowExecutionFromS3Bucket"
-  action        = "lambda:InvokeFunction"
-  function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
-  principal     = "s3.amazonaws.com"
-  source_arn    = "arn:aws:s3:::${var.workspace_umccrise_data_bucket[terraform.workspace]}"
-}
-
-resource "aws_s3_bucket_notification" "bucket_notification" {
-  depends_on = ["aws_lambda_permission.allow_exec_bucket"]
-  bucket     = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
-
-  lambda_function {
-    lambda_function_arn = "${module.trigger_umccrise_s3_lambda.function_arn}"
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = ""
-    filter_suffix       = "${var.umccrise_trigger_file}"
-  }
-}
-
-##### Add S3 event notifications to the primary data bucket for umccrise trigger file
-resource "aws_lambda_permission" "allow_exec_temp_bucket" {
-  statement_id  = "AllowExecutionFromS3TempBucket"
-  action        = "lambda:InvokeFunction"
-  function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
-  principal     = "s3.amazonaws.com"
-  source_arn    = "arn:aws:s3:::${var.workspace_umccrise_temp_bucket[terraform.workspace]}"
-}
-
-resource "aws_s3_bucket_notification" "temp_bucket_notification" {
-  depends_on = ["aws_lambda_permission.allow_exec_temp_bucket"]
-  bucket     = "${var.workspace_umccrise_temp_bucket[terraform.workspace]}"
-
-  lambda_function {
-    lambda_function_arn = "${module.trigger_umccrise_s3_lambda.function_arn}"
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = ""
-    filter_suffix       = "${var.umccrise_trigger_file}"
   }
 }
 
@@ -399,7 +327,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "batch_runnable" {
   rule      = "${aws_cloudwatch_event_rule.batch_runnable.name}"
   target_id = "${var.stack_name}_send_batch_runnable_to_slack_lambda_${terraform.workspace}"
-  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                        # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                       # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
 
   input_transformer = {
     input_paths = {

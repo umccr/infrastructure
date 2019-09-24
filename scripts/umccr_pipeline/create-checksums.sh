@@ -7,12 +7,6 @@ set -eo pipefail
 # TODO: create .md5 file per input file
 
 ################################################################################
-# Activate a conda environment where the required resources are available
-
-. $HOME/.miniconda3/etc/profile.d/conda.sh
-conda activate pipeline
-
-################################################################################
 # Constants/Variables
 
 HASHFUNC="md5sum"

@@ -39,6 +39,19 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
     }
   }
 
+  lifecycle_rule {
+    enabled = "1"
+    noncurrent_version_expiration {
+      days = 30
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
   versioning {
     enabled = true
   }

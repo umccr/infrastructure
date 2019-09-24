@@ -1,19 +1,22 @@
 # UMCCRISE
 
-## S3 Trigger
-A umccrise run can be executed automatically via upload of a trigger file, called `upload_complete`, to the approproate location in the S3 bucket (i.e. buckets `umccr-primary-data-prod`/`umccr-primary-data-dev` in the `prod`/`dev` environment).
+To trigger a umccrise Batch job, call the the job submission lambda.
 
-Make sure the trigger file is uploaded to the same location as and *after* all other analysis results (e.g. the bcbio `final` and `config` output directories). The trigger file can be placed automatically or manually.
+NOTE: the `prod_operator` role has the necessary priviledges to invoke the lambda
 
-Example via the AWS CLI:
+The only required parameter is `resultDir`, the "directory" of the bcbio results to run `umccrise` on, i.e. the S3 path where the `final` and `config` folders are located.
 ```bash
-# check the content of the target location
-$ aws s3 ls s3://umccr-primary-data-dev/Patients/2019-06-07/
-    PRE config/
-    PRE final/
+# invoke the umccrise lambda
+aws lambda invoke \
+    --function-name umccrise_lambda_prod \
+    --payload '{ "resultDir": "Patients/SBJ00001/WGS/2019-03-20"}' \
+    /tmp/lambda.output
 
-# upload the trigger file
-$ touch /tmp/upload_complete && aws s3 cp /tmp/upload_complete s3://umccr-primary-data-dev/Patients/2019-06-07/
+# to run on data in the temp bucket or to change memory/cpu requirements
+aws lambda invoke \
+    --function-name umccrise_lambda_prod \
+    --payload '{ "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "dataBucket": "umccr-temp", "memory": "50000", "vcpus": "16"}' \
+    /tmp/lambda.output
 ```
 
-Each AWS Batch umccrise job will produce a timestamped output directory at the same level as the bcbio results and the trigger file. The timestamp allows the repetition of umccrise runs without overwriting existing data. To rerun umccrise, just remove the trigger file and upload it again. However, please be aware that unnecessary/duplicated umccrise results need to be cleaned up manually.
+Each AWS Batch umccrise job will overwrite any existing output in the `umccrised` directory at the same level as the bcbio results. Rerunning a job will therefore result in the loss of the previous results.

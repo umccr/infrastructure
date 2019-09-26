@@ -15,14 +15,15 @@ def lambda_handler(event, context):
     depends_on = event['dependsOn'] if event.get('dependsOn') else []
     job_queue = event['jobQueue'] if event.get('jobQueue') else os.environ.get('JOBQUEUE')
     job_definition = event['jobDefinition'] if event.get('jobDefinition') else os.environ.get('JOBDEF')
-    container_mem = event['memory'] if event.get('memory') else os.environ.get('UMCCRISE_MEM')
-    container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('UMCCRISE_VCPUS')
+    container_mem = event['memory'] if event.get('memory') else os.environ.get('JOB_MEM')
+    container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('JOB_VCPUS')
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
 
     data_wts_dir = event['dataDirWTS']
     data_wgs_dir = event['dataDirWGS']
     job_name = data_bucket + "---" + data_wts_dir.replace('/', '_').replace('.', '_')
+    job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
 
     # create and submit a Batch job request
     container_overrides['environment'] = [

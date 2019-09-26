@@ -172,11 +172,13 @@ module "trigger_lambda" {
 
   environment {
     variables {
-      JOBNAME        = "trigger_wts_report"
+      JOBNAME_PREFIX = "${var.stack_name}"
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.wts_report.arn}"
       DATA_BUCKET    = "${var.workspace_primary_data_bucket[terraform.workspace]}"
       REFDATA_BUCKET = "${var.workspace_refdata_bucket[terraform.workspace]}"
+      JOB_MEM        = "${var.umccrise_mem[terraform.workspace]}"
+      JOB_VCPUS      = "${var.umccrise_vcpus[terraform.workspace]}"
     }
   }
 
@@ -191,9 +193,11 @@ module "trigger_lambda" {
 # CloudWatch Event Rule to match batch events and call Slack lambda
 # NOTE: those are already covered by the event rules of umccrise
 
+
 # resource "aws_cloudwatch_event_rule" "batch_failure" {
 #   name        = "${var.stack_name}_capture_batch_job_failure_${terraform.workspace}"
 #   description = "Capture Batch Job Failures"
+
 
 #   event_pattern = <<PATTERN
 # {
@@ -212,10 +216,12 @@ module "trigger_lambda" {
 # PATTERN
 # }
 
+
 # resource "aws_cloudwatch_event_target" "batch_failure" {
 #   rule      = "${aws_cloudwatch_event_rule.batch_failure.name}"
 #   target_id = "${var.stack_name}_send_batch_failure_to_slack_lambda_${terraform.workspace}"
 #   arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                      # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
 
 #   input_transformer = {
 #     input_paths = {
@@ -224,10 +230,12 @@ module "trigger_lambda" {
 #       status = "$.detail.status"
 #     }
 
+
 #     # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
 #     input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
 #   }
 # }
+
 
 # resource "aws_lambda_permission" "batch_failure" {
 #   statement_id  = "${var.stack_name}_allow_batch_failure_to_invoke_slack_lambda_${terraform.workspace}"
@@ -237,9 +245,11 @@ module "trigger_lambda" {
 #   source_arn    = "${aws_cloudwatch_event_rule.batch_failure.arn}"
 # }
 
+
 # resource "aws_cloudwatch_event_rule" "batch_success" {
 #   name        = "${var.stack_name}_capture_batch_job_success_${terraform.workspace}"
 #   description = "Capture Batch Job Failures"
+
 
 #   event_pattern = <<PATTERN
 # {
@@ -258,10 +268,12 @@ module "trigger_lambda" {
 # PATTERN
 # }
 
+
 # resource "aws_cloudwatch_event_target" "batch_success" {
 #   rule      = "${aws_cloudwatch_event_rule.batch_success.name}"
 #   target_id = "${var.stack_name}_send_batch_success_to_slack_lambda_${terraform.workspace}"
 #   arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                      # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
 
 #   input_transformer = {
 #     input_paths = {
@@ -270,10 +282,12 @@ module "trigger_lambda" {
 #       status = "$.detail.status"
 #     }
 
+
 #     # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
 #     input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
 #   }
 # }
+
 
 # resource "aws_lambda_permission" "batch_success" {
 #   statement_id  = "${var.stack_name}_allow_batch_success_to_invoke_slack_lambda_${terraform.workspace}"
@@ -283,9 +297,11 @@ module "trigger_lambda" {
 #   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
 # }
 
+
 # resource "aws_cloudwatch_event_rule" "batch_submitted" {
 #   name        = "${var.stack_name}_capture_batch_job_submit_${terraform.workspace}"
 #   description = "Capture Batch Job Submissions"
+
 
 #   event_pattern = <<PATTERN
 # {
@@ -304,10 +320,12 @@ module "trigger_lambda" {
 # PATTERN
 # }
 
+
 # resource "aws_cloudwatch_event_target" "batch_submitted" {
 #   rule      = "${aws_cloudwatch_event_rule.batch_submitted.name}"
 #   target_id = "${var.stack_name}_send_batch_submitted_to_slack_lambda_${terraform.workspace}"
 #   arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                        # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
 
 #   input_transformer = {
 #     input_paths = {
@@ -317,10 +335,12 @@ module "trigger_lambda" {
 #       status = "$.detail.status"
 #     }
 
+
 #     # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
 #     input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
 #   }
 # }
+
 
 # resource "aws_lambda_permission" "batch_submitted" {
 #   statement_id  = "${var.stack_name}_allow_batch_submitted_to_invoke_slack_lambda_${terraform.workspace}"
@@ -329,6 +349,7 @@ module "trigger_lambda" {
 #   principal     = "events.amazonaws.com"
 #   source_arn    = "${aws_cloudwatch_event_rule.batch_submitted.arn}"
 # }
+
 
 ################################################################################
 

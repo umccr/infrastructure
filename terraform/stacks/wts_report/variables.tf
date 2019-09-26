@@ -15,7 +15,7 @@ variable "wts_report_trigger_file" {
 
 variable "workspace_wts_report_image_id" {
   default = {
-    prod = "ami-0dec783a1085e23e1"
+    prod = "ami-0b4c6e88a004d42ec"
     dev = "ami-0d49b1b22eabc9826"
   }
 }
@@ -69,8 +69,8 @@ variable "wts_report_mem" {
   type = "map"
 
   default = {
-    prod = 50000
-    dev = 50000
+    prod = 32000
+    dev = 32000
   }
 }
 variable "wts_report_vcpus" {

@@ -30,7 +30,7 @@ def lambda_handler(event, context):
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     result_dir = event['resultDir']
     job_name = event['jobName'] if event.get('jobName') else data_bucket + "---" + result_dir.replace('/', '_').replace('.', '_')
-    job_name = os.environ.get('JOBNAME_PREFIX') + job_name
+    job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
     print("resultDir: %s  in data bucket: %s" % (result_dir, data_bucket))
 
     try:

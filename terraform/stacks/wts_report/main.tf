@@ -110,7 +110,6 @@ resource "aws_batch_job_queue" "umccr_batch_queue" {
 }
 
 ## Job definitions
-
 resource "aws_batch_job_definition" "wts_report" {
   name = "${var.stack_name}_job_${terraform.workspace}"
   type = "container"
@@ -185,50 +184,6 @@ module "trigger_lambda" {
     service = "${var.stack_name}"
     name    = "${var.stack_name}"
     stack   = "${var.stack_name}"
-  }
-}
-
-################################################################################
-
-##### Add S3 event notifications to the primary data bucket for WTS trigger file
-resource "aws_lambda_permission" "allow_exec_bucket" {
-  statement_id  = "AllowExecutionFromS3Bucket"
-  action        = "lambda:InvokeFunction"
-  function_name = "${module.trigger_lambda.function_arn}"
-  principal     = "s3.amazonaws.com"
-  source_arn    = "arn:aws:s3:::${var.workspace_primary_data_bucket[terraform.workspace]}"
-}
-
-resource "aws_s3_bucket_notification" "bucket_notification" {
-  depends_on = ["aws_lambda_permission.allow_exec_bucket"]
-  bucket     = "${var.workspace_primary_data_bucket[terraform.workspace]}"
-
-  lambda_function {
-    lambda_function_arn = "${module.trigger_lambda.function_arn}"
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = ""
-    filter_suffix       = "${var.wts_report_trigger_file}"
-  }
-}
-
-##### Add S3 event notifications to the primary data bucket for WTS trigger file
-resource "aws_lambda_permission" "allow_exec_temp_bucket" {
-  statement_id  = "AllowExecutionFromS3TempBucket"
-  action        = "lambda:InvokeFunction"
-  function_name = "${module.trigger_lambda.function_arn}"
-  principal     = "s3.amazonaws.com"
-  source_arn    = "arn:aws:s3:::${var.workspace_temp_bucket[terraform.workspace]}"
-}
-
-resource "aws_s3_bucket_notification" "temp_bucket_notification" {
-  depends_on = ["aws_lambda_permission.allow_exec_temp_bucket"]
-  bucket     = "${var.workspace_temp_bucket[terraform.workspace]}"
-
-  lambda_function {
-    lambda_function_arn = "${module.trigger_lambda.function_arn}"
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = ""
-    filter_suffix       = "${var.wts_report_trigger_file}"
   }
 }
 

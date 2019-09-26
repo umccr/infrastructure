@@ -133,12 +133,6 @@ resource "aws_batch_job_definition" "umccrise_standard" {
   container_properties = "${file("jobs/umccrise_job.json")}"
 }
 
-resource "aws_batch_job_definition" "sleeper" {
-  name                 = "${var.stack_name}_sleeper_${terraform.workspace}"
-  type                 = "container"
-  container_properties = "${file("jobs/sleeper_job.json")}"
-}
-
 ################################################################################
 # custom policy for the EC2 instances of the compute env
 
@@ -146,8 +140,8 @@ data "template_file" "additionalEc2InstancePolicy" {
   template = "${file("${path.module}/policies/ec2-instance-role.json")}"
 
   vars {
-    resources        = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
-    delete_resources = "${jsonencode(var.workspace_umccrise_delete_buckets[terraform.workspace])}"
+    ro_buckets = "${jsonencode(var.workspace_umccrise_ro_buckets[terraform.workspace])}"
+    wd_buckets = "${jsonencode(var.workspace_umccrise_wd_buckets[terraform.workspace])}"
   }
 }
 
@@ -164,7 +158,7 @@ data "template_file" "lambda" {
   template = "${file("${path.module}/policies/umccrise-lambda.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+    resources = "${jsonencode(var.workspace_umccrise_ro_buckets[terraform.workspace])}"
   }
 }
 

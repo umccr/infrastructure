@@ -91,13 +91,13 @@
             "Resource": ${ro_buckets}
         },
         {
-            "Sid": "CustomAdditionsS3Delete",
+            "Sid": "CustomAdditionsS3WriteDelete",
             "Effect": "Allow",
             "Action": [
                 "s3:PutObject",
                 "s3:DeleteObject"
             ],
-            "Resource": ${rw_buckets}
+            "Resource": ${wd_buckets}
         }
     ]
 }

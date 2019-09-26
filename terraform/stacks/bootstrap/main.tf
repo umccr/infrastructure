@@ -128,7 +128,9 @@ data "template_file" "operator" {
     s3_buckets  = "${jsonencode(var.workspace_operator_write_buckets[terraform.workspace])}"
     aws_account = "${data.aws_caller_identity.current.account_id}"
     aws_region  = "${data.aws_region.current.name}"
-    function_name = "umccrise*"
+
+    umccrise_function_name   = "umccrise*"
+    wts_report_function_name = "wts_report*"
   }
 }
 

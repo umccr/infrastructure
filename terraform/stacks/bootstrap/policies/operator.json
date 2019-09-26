@@ -7,7 +7,8 @@
                 "lambda:InvokeFunction"
             ],
             "Resource": [
-                "arn:aws:lambda:${aws_region}:${aws_account}:function:${function_name}"
+                "arn:aws:lambda:${aws_region}:${aws_account}:function:${umccrise_function_name}",
+                "arn:aws:lambda:${aws_region}:${aws_account}:function:${wts_report_function_name}"
             ]
         },
         {

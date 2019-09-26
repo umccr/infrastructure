@@ -128,7 +128,8 @@ data "template_file" "additionalEc2InstancePolicy" {
   template = "${file("${path.module}/policies/ec2-instance-role.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_wts_report_buckets[terraform.workspace])}"
+    ro_buckets = "${jsonencode(var.workspace_wts_report_buckets[terraform.workspace])}"
+    rw_buckets = "${jsonencode(var.workspace_wts_report_buckets[terraform.workspace])}"
   }
 }
 

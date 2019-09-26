@@ -1,19 +1,28 @@
 # WTS REPORT
 
-## S3 Trigger
-A WTS report run can be executed automatically via upload of a trigger file, called `wts_complete`, to the approproate location in the S3 bucket (i.e. buckets `umccr-primary-data-prod`/`umccr-primary-data-dev2` in the `prod`/`dev` environment).
+To trigger a WTS report Batch job, call the job submission lambda via the AWS CLI.
 
-Make sure the trigger file is uploaded to the same location as and *after* all other analysis results. The process checks for WGS data and will incorporate it if present, but a WTS report generation goes ahead even if no WGS data is available/was found. The trigger file can be placed automatically or manually.
+NOTE: the `prod_operator` role has the necessary priviledges to invoke the lambda
 
-Example via the AWS CLI:
+The only two required parameters are `dataDirWGS` and `dataDirWTS`, the sample "directories" of the `umccrise` output and the WTS bcBio result.
 ```bash
-# check the content of the target location
-$ aws s3 ls s3://umccr-primary-data-dev/Patients/Subject123/WTS/2019-08-23/
-    PRE config/
-    PRE final/
+# invoke the WTS report lambda
+aws lambda invoke \
+    --function-name wts_report_trigger_lambda_prod  \
+    --payload '{"dataDirWGS":"wts-report-test/WGS/2019-09-26/umccrised/SAMPLE123", "dataDirWTS":"wts-report-test/WTS/2019-09-26/final/SAMPLE123"}'
+    /tmp/lambda.output
 
-# upload the trigger file
-$ touch /tmp/wts_complete && aws s3 cp /tmp/wts_complete s3://umccr-primary-data-dev/Patients/Subject123/WTS/2019-08-23/
+# to run on data in the temp bucket or to change memory/cpu requirements
+aws lambda invoke \
+    --function-name wts_report_trigger_lambda_prod  \
+    --payload '{"dataDirWGS":"wts-report-test/WGS/2019-09-26/umccrised/SAMPLE123", "dataDirWTS":"wts-report-test/WTS/2019-09-26/final/SAMPLE123", "dataBucket":"umccr-temp", "memory":"32000", "vcpus":"8"}'
+    /tmp/lambda.output
+
+# to list the umccr/wtsreport Docker container version used in the Batch job
+aws batch describe-job-definitions \
+    --job-definition-name wts_report_job_prod \
+    --status ACTIVE \
+    --query "jobDefinitions[*].containerProperties.image"
 ```
 
-An AWS Batch job will produce an output directory at the same level as the trigger file. To re-run a WTS report, just remove the trigger file and upload it again. However, please be aware that previous results/reports will be overwritten.
+Each AWS Batch wts_report job will overwrite any existing output in the `wts-report` directory. Rerunning a job will therefore result in the loss of the previous results.

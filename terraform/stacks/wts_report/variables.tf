@@ -51,8 +51,8 @@ variable "workspace_refdata_bucket" {
   type = "map"
 
   default = {
-    prod = "umccr-umccrise-refdata-prod"
-    dev  = "umccr-misc-temp"
+    prod = "umccr-refdata-prod/WTS-report/data"
+    dev  = "umccr-misc-temp/WTS-report/data"
   }
 }
 
@@ -60,8 +60,11 @@ variable "workspace_wts_report_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-umccrise-prod", "arn:aws:s3:::umccr-umccrise-prod/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev2", "arn:aws:s3:::umccr-primary-data-dev2/*", "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*"]
+    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
+            "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*",
+            "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev2", "arn:aws:s3:::umccr-primary-data-dev2/*",
+            "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*"]
   }
 }
 

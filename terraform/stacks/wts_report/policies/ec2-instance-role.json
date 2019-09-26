@@ -5,10 +5,23 @@
             "Sid": "CustomAdditionsEc2",
             "Effect": "Allow",
             "Action": [
+                "ec2:Describe*",
                 "ec2:AttachVolume",
                 "ec2:CreateVolume",
-                "ec2:Describe*",
+                "ec2:CreateTags",
                 "ec2:ModifyInstanceAttribute"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2messages:AcknowledgeMessage",
+                "ec2messages:DeleteMessage",
+                "ec2messages:FailMessage",
+                "ec2messages:GetEndpoint",
+                "ec2messages:GetMessages",
+                "ec2messages:SendReply"
             ],
             "Resource": "*"
         },
@@ -21,17 +34,34 @@
             "Resource": "*"
         },
         {
-            "Sid": "CustomAdditionsS3",
             "Effect": "Allow",
             "Action": [
-                "s3:ListBucket",
-                "s3:ListObjects",
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:AbortMultipartUpload",
-                "s3:ListMultipartUploadParts"
+                "ssm:DescribeAssociation",
+                "ssm:GetDeployablePatchSnapshotForInstance",
+                "ssm:GetDocument",
+                "ssm:DescribeDocument",
+                "ssm:GetManifest",
+                "ssm:GetParameters",
+                "ssm:ListAssociations",
+                "ssm:ListInstanceAssociations",
+                "ssm:PutInventory",
+                "ssm:PutComplianceItems",
+                "ssm:PutConfigurePackageResult",
+                "ssm:UpdateAssociationStatus",
+                "ssm:UpdateInstanceAssociationStatus",
+                "ssm:UpdateInstanceInformation"
             ],
-            "Resource": ${resources}
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssmmessages:CreateControlChannel",
+                "ssmmessages:CreateDataChannel",
+                "ssmmessages:OpenControlChannel",
+                "ssmmessages:OpenDataChannel"
+            ],
+            "Resource": "*"
         },
         {
             "Sid": "CustomAdditionsCW",
@@ -40,10 +70,34 @@
             "Resource": "*"
         },
         {
-            "Sid": "AllowTaggingVolumes",
             "Effect": "Allow",
-            "Action": "ec2:CreateTags",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents"
+            ],
             "Resource": "*"
+        },
+        {
+            "Sid": "CustomAdditionsS3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:List*",
+                "s3:Get*",
+                "s3:AbortMultipartUpload"
+            ],
+            "Resource": ${ro_buckets}
+        },
+        {
+            "Sid": "CustomAdditionsS3Delete",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": ${rw_buckets}
         }
     ]
 }

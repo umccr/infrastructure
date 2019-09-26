@@ -91,14 +91,14 @@ module "compute_env" {
   name_suffix           = "_${terraform.workspace}"
   stack_name            = "${var.stack_name}"
   compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
-  image_id              = "${var.wts_report_image_id}"
-  instance_types        = ["m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "r3.4xlarge", "m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
+  image_id              = "${var.workspace_wts_report_image_id[terraform.workspace]}"
+  instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
   min_vcpus             = 0
-  max_vcpus             = 20
-  use_spot              = "true"
+  max_vcpus             = 80
+  use_spot              = "false"
   spot_bid_percent      = "100"
 }
 
@@ -234,6 +234,7 @@ resource "aws_s3_bucket_notification" "temp_bucket_notification" {
 
 ################################################################################
 # CloudWatch Event Rule to match batch events and call Slack lambda
+# NOTE: those are already covered by the event rules of umccrise
 
 # resource "aws_cloudwatch_event_rule" "batch_failure" {
 #   name        = "${var.stack_name}_capture_batch_job_failure_${terraform.workspace}"

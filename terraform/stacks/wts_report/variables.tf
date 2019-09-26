@@ -6,16 +6,19 @@ variable "availability_zone" {
   default = "ap-southeast-2c"
 }
 
-variable "wts_report_image_id" {
-  default = "ami-0d49b1b22eabc9826"
-}
-
 variable "wts_report_trigger_file" {
   default = "wtc_complete"
 }
 
 ################################################################################
 ## workspace variables
+
+variable "workspace_wts_report_image_id" {
+  default = {
+    prod = "ami-0dec783a1085e23e1"
+    dev = "ami-0d49b1b22eabc9826"
+  }
+}
 
 variable "workspace_slack_lambda_arn" {
   type = "map"

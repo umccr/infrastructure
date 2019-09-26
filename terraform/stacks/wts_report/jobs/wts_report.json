@@ -1,0 +1,38 @@
+{
+    "image": "umccr/wtsreport:0.1.2",
+    "vcpus": 2,
+    "memory": 2048,
+    "command": [
+        "/opt/container/WTS-report-wrapper.sh",
+        "Ref::vcpus"
+    ],
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "/mnt"
+            },
+            "name": "work"
+        },
+        {
+            "host": {
+                "sourcePath": "/opt/container"
+            },
+            "name": "container"
+        }
+    ],
+    "mountPoints": [
+        {
+            "containerPath": "/work",
+            "readOnly": false,
+            "sourceVolume": "work"
+        },
+        {
+            "containerPath": "/opt/container",
+            "readOnly": true,
+            "sourceVolume": "container"
+        }
+    ],
+    "readonlyRootFilesystem": false,
+    "privileged": true,
+    "ulimits": []
+}

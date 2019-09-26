@@ -191,7 +191,7 @@ module "lambda" {
 
   environment {
     variables {
-      JOBNAME        = "umccrise"
+      JOBNAME_PREFIX = "umccrise"
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
       DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"

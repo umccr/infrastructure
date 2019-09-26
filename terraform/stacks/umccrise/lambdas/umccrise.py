@@ -21,7 +21,6 @@ def lambda_handler(event, context):
     container_overrides = event['containerOverrides'] if event.get('containerOverrides') else {}
     parameters = event['parameters'] if event.get('parameters') else {}
     depends_on = event['dependsOn'] if event.get('dependsOn') else []
-    job_name = event['jobName'] if event.get('jobName') else os.environ.get('JOBNAME')
     job_queue = event['jobQueue'] if event.get('jobQueue') else os.environ.get('JOBQUEUE')
     job_definition = event['jobDefinition'] if event.get('jobDefinition') else os.environ.get('JOBDEF')
 
@@ -30,6 +29,8 @@ def lambda_handler(event, context):
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     result_dir = event['resultDir']
+    job_name = event['jobName'] if event.get('jobName') else data_bucket + "---" + result_dir.replace('/', '_').replace('.', '_')
+    job_name = os.environ.get('JOBNAME_PREFIX') + job_name
     print("resultDir: %s  in data bucket: %s" % (result_dir, data_bucket))
 
     try:

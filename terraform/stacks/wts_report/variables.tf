@@ -56,7 +56,8 @@ variable "workspace_refdata_bucket" {
   }
 }
 
-variable "workspace_wts_report_buckets" {
+variable "workspace_wts_report_ro_buckets" {
+  description = "Buckets for which the batch job has read-only permissions"
   type = "map"
 
   default = {
@@ -65,6 +66,18 @@ variable "workspace_wts_report_buckets" {
             "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*"]
     dev  = ["arn:aws:s3:::umccr-primary-data-dev2", "arn:aws:s3:::umccr-primary-data-dev2/*",
             "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*"]
+  }
+}
+
+variable "workspace_wts_report_wd_buckets" {
+  description = "Bucket paths for which the batch job has write and delete permissions"
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/wts-report/*",
+            "arn:aws:s3:::umccr-temp/*/wts-report/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/wts-report/*",
+            "arn:aws:s3:::umccr-misc-temp/*/wts-report/*"]
   }
 }
 

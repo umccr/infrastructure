@@ -128,8 +128,8 @@ data "template_file" "additionalEc2InstancePolicy" {
   template = "${file("${path.module}/policies/ec2-instance-role.json")}"
 
   vars {
-    ro_buckets = "${jsonencode(var.workspace_wts_report_buckets[terraform.workspace])}"
-    rw_buckets = "${jsonencode(var.workspace_wts_report_buckets[terraform.workspace])}"
+    ro_buckets = "${jsonencode(var.workspace_wts_report_ro_buckets[terraform.workspace])}"
+    wd_buckets = "${jsonencode(var.workspace_wts_report_wd_buckets[terraform.workspace])}"
   }
 }
 
@@ -144,10 +144,6 @@ resource "aws_iam_policy" "additionalEc2InstancePolicy" {
 
 data "template_file" "trigger_lambda" {
   template = "${file("${path.module}/policies/wts_report_trigger_lambda.json")}"
-
-  vars {
-    resources = "${jsonencode(var.workspace_wts_report_buckets[terraform.workspace])}"
-  }
 }
 
 resource "aws_iam_policy" "trigger_lambda" {

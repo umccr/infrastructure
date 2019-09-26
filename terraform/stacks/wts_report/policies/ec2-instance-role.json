@@ -97,7 +97,7 @@
                 "s3:PutObject",
                 "s3:DeleteObject"
             ],
-            "Resource": ${rw_buckets}
+            "Resource": ${wd_buckets}
         }
     ]
 }

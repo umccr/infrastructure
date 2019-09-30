@@ -35,7 +35,13 @@ def lambda_handler(event, context):
 
     try:
         response = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=result_dir)
-        print("Response: " + json.dumps(response, indent=2, sort_keys=True, default=str))
+        print("S3 list response: " + json.dumps(response, indent=2, sort_keys=True, default=str))
+        if not response.get('Contents') or len(response['Contents']) < 1:
+            return {
+                'statusCode': 400,
+                'error': 'Bad parameter',
+                'message': f"Provided S3 path ({result_dir}) does not exist in bucket {data_bucket}!"
+            }
 
         # Inject S3 object from the data_bucket into parameters for AWS Batch and
         # inside the docker container
@@ -73,7 +79,7 @@ def lambda_handler(event, context):
         )
 
         # Log response from AWS Batch
-        print("Response: " + json.dumps(response, indent=2))
+        print("Batch submit job response: " + json.dumps(response, indent=2))
         # Return the jobId
         event['jobId'] = response['jobId']
         return event

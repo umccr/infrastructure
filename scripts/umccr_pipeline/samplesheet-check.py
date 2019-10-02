@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import os
 import re
@@ -7,8 +5,9 @@ import argparse
 import logging
 from logging.handlers import RotatingFileHandler
 import collections
-from sample_sheet import SampleSheet
-# Sample sheet library: https://github.com/clintval/sample-sheet
+from sample_sheet import SampleSheet  # https://github.com/clintval/sample-sheet
+from gspread_pandas import Spread
+
 
 import warnings
 warnings.simplefilter("ignore")
@@ -16,18 +15,47 @@ warnings.simplefilter("ignore")
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
+
+subject_id_column_name = 'SubjectID'  # the internal ID for the subject/patient
+sample_id_column_name = 'SampleID'  # the internal ID for the sample
+sample_name_column_name = 'SampleName'  # the sample name assigned by the lab
+library_id_column_name = 'LibraryID'  # the internal ID for the library
+project_name_column_name = 'ProjectName'
+project_owner_column_name = 'ProjectOwner'
+type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
+phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
+source_column_name = 'Source'  # tissue, FFPE, ...
+quality_column_name = 'Quality'  # Good, Poor, Borderline
+metadata_column_names = (library_id_column_name,
+                         subject_id_column_name,
+                         sample_id_column_name,
+                         sample_name_column_name,
+                         project_name_column_name,
+                         project_owner_column_name,
+                         type_column_name,
+                         phenotype_column_name,
+                         source_column_name,
+                         quality_column_name)
+
+# TODO: retrieve allowed values from metadata sheet
+type_values = ['WGS', 'WTS', '10X', 'TSO', 'Exome', 'ctDNA', 'TSO_RNA', 'TSO_DNA', 'other']
+phenotype_values = ['normal', 'tumor', 'negative-control']
+quality_values = ['Good', 'Poor', 'Borderline']
+source_values = ['Blood', 'Cell_line', 'FFPE', 'FNA', 'Organoid', 'RNA', 'Tissue', 'Water', 'Buccal']
+
 
 # Regex pattern for Sample ID/Name
 topup_exp = '(?:_topup\d?)?'
 sample_name_int = '(?:PRJ|CCR|MDX)\d{6}'
-sample_name_ext = '.*'
+sample_name_ext = '(_.+)?'
 sample_control = '(?:NTC|PTC)'
 sample_id_int = 'L\d{7}'
 sample_id_ext = 'L' + sample_name_int
 regex_sample_id_int = re.compile(sample_id_int + topup_exp)
 regex_sample_id_ext = re.compile(sample_id_ext + topup_exp)
-regex_sample_name = re.compile(sample_name_int + '_' + sample_name_ext + topup_exp)
-regex_sample_ctl = re.compile(sample_control + '_' + sample_name_ext)
+regex_sample_name = re.compile(sample_name_int + sample_name_ext + topup_exp)
+regex_sample_ctl = re.compile(sample_control + sample_name_ext)
 
 
 if DEPLOY_ENV == 'prod':
@@ -50,7 +78,7 @@ def getLogger():
 
     # create a console handler
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.ERROR)
+    console_handler.setLevel(logging.WARNING)
     console_handler.setFormatter(formatter)
 
     # add the handlers to the logger
@@ -64,12 +92,45 @@ logger = getLogger()
 
 
 # method to count the differences between two strings
+# NOTE: strings have to be of equal length
 def str_compare(a, b):
     cnt = 0
     for i, j in zip(a, b):
         if i != j:
             cnt += 1
     return cnt
+
+
+def import_library_sheet_from_google(year):
+    global library_tracking_spreadsheet_df
+    spread = Spread(lab_spreadsheet_id)
+    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet='2019', index=0, header_rows=1, start_row=1)
+    hit = library_tracking_spreadsheet_df.iloc[0]
+    logger.debug(f"First record: {hit}")
+    for column_name in metadata_column_names:
+        logger.debug(f"Checking for column name {column_name}...")
+        if column_name not in hit:
+            logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
+            exit(-1)
+    logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
+
+
+def get_meta_data_by_library_id(library_id):
+    try:
+        global library_tracking_spreadsheet_df
+        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
+        # We expect exactly one matching record, not more, not less!
+        if len(hit) == 1:
+            logger.debug(f"Unique entry found for sample ID {library_id}")
+        else:
+            raise ValueError(f"No unique ({len(hit)}) entry found for sample ID {library_id}")
+
+        return hit
+    except Exception as e:
+        raise ValueError(f"Could not find entry for sample {library_id}! Exception {e}")
+    except (KeyError, NameError, TypeError) as er:
+        print(f"Cought Error: {er}")
+        # raise
 
 
 def checkSampleSheetMetadata(samplesheet):
@@ -85,7 +146,7 @@ def checkSampleSheetMetadata(samplesheet):
     return has_error
 
 
-def checkSampleIds(samplesheet):
+def checkSampleAndLibraryIdFormat(samplesheet):
     logger.info("Checking SampleSheet data records")
     has_error = False
 
@@ -107,95 +168,129 @@ def checkSampleIds(samplesheet):
     return has_error
 
 
+def checkMetadataCorrespondence(samplesheet):
+    logger.info("Checking SampleSheet data against metadata")
+    has_error = False
+
+    for sample in samplesheet:
+        library_id = sample.Sample_Name  # SampleSheet Sample_Name == LIMS LibraryID
+        sample_name = sample.Sample_ID  # SampleSheet Sample_ID == LIMS SampleName
+        logger.debug(f"Checking Sammple_ID/Sample_Name: {sample_name}/{library_id}")
+
+        # Make sure the ID exists and is unique
+        column_values = get_meta_data_by_library_id(library_id)
+        logger.debug(f"Retrieved values: {column_values} for sample {library_id}.")
+
+        # check sample ID/Name match
+        if column_values[sample_name_column_name].item() != sample_name:
+            logger.warn(f"Sample_ID of SampleSheet ({sample_name}) does not match " +
+                        f"SampleID of metadata ({column_values[sample_name_column_name].item()})")
+
+        # exclude 10X samples for now, as they usually don't comply
+        if column_values[type_column_name].item() != '10X':
+            # check presence of subject ID
+            if column_values[subject_id_column_name].item() == '':
+                logger.warn(f"No subject ID for {sample_name}")
+
+            # check controlled vocab: phenotype, type, source, quality: WARN if not present
+            if column_values[type_column_name].item() not in type_values:
+                logger.warn(f"Unsupported Type '{column_values[type_column_name].item()}' for {sample_name}")
+            if column_values[phenotype_column_name].item() not in phenotype_values:
+                logger.warn(f"Unsupproted Phenotype '{column_values[phenotype_column_name].item()}' for {sample_name}")
+            if column_values[quality_column_name].item() not in quality_values:
+                logger.warn(f"Unsupproted Quality '{column_values[quality_column_name].item()}'' for {sample_name}")
+            if column_values[source_column_name].item() not in source_values:
+                logger.warn(f"Unsupproted Source '{column_values[source_column_name].item()}'' for {sample_name}")
+
+            # check project name: WARN if not consistent
+            p_name = column_values[project_name_column_name].item()
+            p_owner = column_values[project_owner_column_name].item()
+            if p_owner != '':
+                p_name = p_owner + '_' + p_name
+            if p_name != sample.Sample_Project:
+                logger.warn(f"Project of SampleSheet ({sample.Sample_Project}) does not match " +
+                            f"ProjectName of metadata ({p_name})")
+
+    return has_error
+
+
 def checkSampleSheetForIndexClashes(samplesheet):
     logger.info("Checking SampleSheet for index clashes")
     has_error = False
-    # TODO: check logic!
 
-    # Run over all indexes (I7 and I5) and aggregate them by length, and check
-    # if any has been used already
-
-    # TODO: check if lane numbers are used
-
-    # Assemble indexes by lane
-    lane_map = {}
+    remaining_samples = list()
     for sample in samplesheet:
-        if not lane_map.get(sample.lane):
-            lane_map[sample.lane] = list()
-        sample_list = lane_map[sample.lane]
-        sample_list.append(sample)
+        remaining_samples.append(sample)
 
-    for lane in lane_map:
-        samples = lane_map[lane]
-        logger.info(f"Processing lane {lane}...")
-
-        # We only support indexes of length 6 or 8
-        indexes6 = set()
-        indexes8 = set()
-        for sample in samples:
-            # index (I7)
-            index_to_check = sample.index.replace('N', '')
-            if len(index_to_check) == 6:
-                if index_to_check in indexes6:
+    for sample in samplesheet:
+        remaining_samples.remove(sample)
+        logger.info(f"Comparing indexes of sample {sample}")
+        sample_i7 = sample.index.replace('N', '')
+        sample_i5 = sample.index2.replace('N', '')
+        # compare i7 to i5 of sample
+        if len(sample_i5) > 0:
+            if len(sample_i7) == len(sample_i5):
+                if str_compare(sample_i7, sample_i5) <= 1:
+                    logger.error(f"Too similar: i7 and i5 for sample {sample}")
                     has_error = True
-                    logger.error(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
-                else:
-                    indexes6.add(index_to_check)
-            elif len(index_to_check) == 8:
-                if index_to_check in indexes8:
-                    has_error = True
-                    logger.error(f"In sample {sample.Sample_ID}: index {index_to_check} already used!")
-                else:
-                    indexes8.add(index_to_check)
-            elif len(index_to_check) == 0:
-                # index completely consisting of Ns
-                logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index}")
             else:
-                has_error = True
-                logger.error(f"In sample {sample.Sample_ID}: index of unsupported length: {len(index_to_check)}")
-
-            # index2 (I5)
-            index_to_check = sample.index2.replace('N', '')
-            if len(index_to_check) == 6:
-                if index_to_check in indexes6:
+                if sample_i5 in sample_i7:
+                    logger.error(f"Substring: i5 of i7 for sample {sample}")
                     has_error = True
-                    logger.error(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
+        else:
+            logger.debug(f"Skipping i5 index of sample {sample}")
+        for sample_other in remaining_samples:
+            logger.info(f"Checking indexes of sample {sample} against {sample_other}")
+            if sample.Sample_ID != sample_other.Sample_ID and sample.lane == sample_other.lane:
+                sample_other_i7 = sample_other.index.replace('N', '')
+                sample_other_i5 = sample_other.index2.replace('N', '')
+                # compare i7 of sample to i7 of other sample
+                if len(sample_i7) == len(sample_other_i7):
+                    if str_compare(sample_i7, sample_other_i7) <= 1:
+                        logger.error(f"Too similar: i7 for samples {sample} and {sample_other}")
+                        has_error = True
                 else:
-                    indexes6.add(index_to_check)
-            elif len(index_to_check) == 8:
-                if index_to_check in indexes8:
-                    has_error = True
-                    logger.error(f"In sample {sample.Sample_ID}: index2 {index_to_check} already used!")
+                    if sample_other_i7 in sample_i7 or sample_i7 in sample_other_i7:
+                        logger.error(f"Substring: i7 for samples {sample} and {sample_other}")
+                        has_error = True
+                # compare i7 of sample to i5 of other sample
+                if len(sample_i7) == len(sample_other_i5):
+                    if str_compare(sample_i7, sample_other_i5) <= 1:
+                        logger.error(f"Too similar: i7/i5 for samples {sample} and {sample_other}")
+                        has_error = True
+                elif len(sample_other_i5) > 0:
+                    if sample_other_i5 in sample_i7 or sample_i7 in sample_other_i5:
+                        logger.error(f"Substring: i5/i7 for samples {sample} and {sample_other}")
+                        has_error = True
                 else:
-                    indexes8.add(index_to_check)
-            elif len(index_to_check) == 0:
-                # index completely consisting of Ns
-                logger.debug(f"In sample {sample.Sample_ID}: ignoring index {sample.index2}")
+                    logger.info(f"Skipping i5 index of sample {sample_other}")
+                # compare i5 of sample to i7 of other sample
+                if len(sample_i5) == len(sample_other_i7):
+                    if str_compare(sample_i5, sample_other_i7) <= 1:
+                        logger.error(f"Too similar: i5/i7 for samples {sample} and {sample_other}")
+                        has_error = True
+                elif len(sample_i5) > 0:
+                    if sample_i5 in sample_other_i7 or sample_other_i7 in sample_i5:
+                        logger.error(f"Substring: i5/i7 for samples {sample} and {sample_other}")
+                        has_error = True
+                else:
+                    logger.info(f"Skipping i5 index of sample {sample}")
+                # compare i5 of sample to i5 of other sample
+                if len(sample_i5) > 0:
+                    if len(sample_i5) == len(sample_other_i5):
+                        if str_compare(sample_i5, sample_other_i5) <= 1:
+                            logger.error(f"Too similar: i5/i5 for samples {sample} and {sample_other}")
+                            has_error = True
+                    elif len(sample_other_i5) > 0:
+                        if sample_i5 in sample_other_i5 or sample_other_i5 in sample_i5:
+                            logger.error(f"Substring: i5/i5 for samples {sample} and {sample_other}")
+                            has_error = True
+                    else:
+                        logger.info(f"Skipping i5 index of sample {sample_other}")
+                else:
+                    logger.info(f"Skipping i5 index of sample {sample}")
             else:
-                has_error = True
-                logger.error(f"In sample {sample.Sample_ID}: index2 of unsupported length: {len(index_to_check)}")
-
-        # Now check that non of the short indexes are part of any of the longer ones
-        for i6 in indexes6:
-            for i8 in indexes8:
-                if i6 in i8:
-                    has_error = True
-                    logger.error(f"Index {i8} contains index {i6}!")
-
-        # Now make sure that indexes of the same length differ in more that 2 bases
-        for i6 in indexes6:
-            for j6 in indexes6:
-                str_diff = str_compare(i6, j6)
-                if str_diff > 0 and str_diff < 2:
-                    has_error = True
-                    logger.error(f"Indexes {i6} and {j6} are too similar!")
-
-        for i8 in indexes8:
-            for j8 in indexes8:
-                str_diff = str_compare(i8, j8)
-                if str_diff > 0 and str_diff < 2:
-                    has_error = True
-                    logger.error(f"Indexes {i8} and {j8} are too similar!")
+                logger.info(f"Sample sample or different lane")
 
     return has_error
 
@@ -261,11 +356,14 @@ def main(samplesheet_file_path, check_only):
     original_sample_sheet = SampleSheet(samplesheet_file_path)
 
     # Run some consistency checks
-    has_metadata_error = checkSampleSheetMetadata(original_sample_sheet)
-    has_id_error = checkSampleIds(original_sample_sheet)
+    import_library_sheet_from_google('2019')
+    # TODO: replace has_error return with enum and expand to error, warning, info?
+    has_header_error = checkSampleSheetMetadata(original_sample_sheet)
+    has_id_error = checkSampleAndLibraryIdFormat(original_sample_sheet)
     has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
+    has_metadata_error = checkMetadataCorrespondence(original_sample_sheet)
     # Only fail on metadata or id errors
-    if has_metadata_error or has_id_error or has_index_error:
+    if has_header_error or has_id_error or has_index_error or has_metadata_error:
         raise ValueError(f"Validation detected errors. Please review the error logs!")
 
     # Split and write individual SampleSheets, based on indexes and technology (10X)

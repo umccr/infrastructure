@@ -1,21 +1,22 @@
-from tkinter import filedialog
-from tkinter import Tk
-from tkinter import messagebox
-ss = __import__('samplesheet-check')
+from gooey import Gooey, GooeyParser
+ss = __import__('samplesheet-check-copy')
 
 
-root = Tk()
-root.filename = filedialog.askopenfilename(
-    initialdir="/",
-    title="Select file",
-    filetypes=(("jpeg files", "*.jpg"), ("all files", "*.*"), ("CSV files", "*.csv")))
+@Gooey()
+def main():
+    parser = GooeyParser(description="A Graphical User Interface for the sampleSheet check script")
+    parser.add_argument('samplesheet',
+                        metavar='samplesheet',
+                        help='The Samplesheet to check',
+                        widget='FileChooser')
 
-print(root.filename)
+    return parser.parse_args()
 
-message = "All OK."
+
+args = main()
+print(f"Samplesheet: {args.samplesheet}")
+
 try:
-    ss.main(root.filename, True)
+    ss.main(args.samplesheet, True)
 except ValueError as ve:
     message = ve
-
-messagebox.showinfo("Validation Result", message)

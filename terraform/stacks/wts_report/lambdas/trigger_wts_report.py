@@ -19,6 +19,7 @@ def lambda_handler(event, context):
     container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('JOB_VCPUS')
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
+    ref_dataset = event['refDataset'] if event.get('refDataset') else os.environ.get('REF_DATASET')
 
     data_wts_dir = event['dataDirWTS']
     data_wgs_dir = event['dataDirWGS']
@@ -30,7 +31,8 @@ def lambda_handler(event, context):
         {'name': 'S3_WTS_INPUT_DIR', 'value': data_wts_dir},
         {'name': 'S3_WGS_INPUT_DIR', 'value': data_wgs_dir},
         {'name': 'S3_DATA_BUCKET', 'value': data_bucket},
-        {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket}
+        {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket},
+        {'name': 'REF_DATASET', 'value': ref_dataset}
     ]
 
     if container_mem:

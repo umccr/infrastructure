@@ -118,6 +118,7 @@ def getLogger():
     return new_logger
 
 
+# deprecated!
 def import_library_sheet(year):
     # TODO: error handling
     try:

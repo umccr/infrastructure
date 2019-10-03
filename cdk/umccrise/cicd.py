@@ -23,4 +23,8 @@ class CICDStack(core.Stack):
 app = core.App()
 CICDStack(app, "UmccriseCICDStack")
 
+# XXX: https://stackoverflow.com/questions/38587325/aws-ecr-getauthorizationtoken/54806087
+# Because of GitHub MFA, we are getting "is not authorized to perform: ecr:GetAuthorizationToken on resource: *"
+# Assigning Policy to CICD role "AmazonEC2ContainerRegistryPowerUser" for now...
+
 app.synth()

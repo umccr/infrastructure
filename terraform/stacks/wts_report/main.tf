@@ -176,6 +176,7 @@ module "trigger_lambda" {
       REFDATA_BUCKET = "${var.workspace_refdata_bucket[terraform.workspace]}"
       JOB_MEM        = "${var.wts_report_mem[terraform.workspace]}"
       JOB_VCPUS      = "${var.wts_report_vcpus[terraform.workspace]}"
+      REF_DATASET    = "PANCAN"
     }
   }
 

@@ -80,6 +80,20 @@ resource "aws_s3_bucket" "agha_gdr_store" {
     enabled = true
   }
 
+  lifecycle_rule {
+    id      = "noncurrent_version_expiration"
+    enabled = true
+    noncurrent_version_expiration {
+      days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
   tags = "${merge(
     local.common_tags,
     map(

@@ -173,34 +173,35 @@ def checkMetadataCorrespondence(samplesheet):
     has_error = False
 
     for sample in samplesheet:
-        library_id = sample.Sample_Name  # SampleSheet Sample_Name == LIMS LibraryID
-        sample_name = sample.Sample_ID  # SampleSheet Sample_ID == LIMS SampleName
-        logger.debug(f"Checking Sammple_ID/Sample_Name: {sample_name}/{library_id}")
+        ss_sample_name = sample.Sample_Name  # SampleSheet Sample_Name == LIMS LibraryID
+        ss_sample_id = sample.Sample_ID  # SampleSheet Sample_ID == LIMS SampleID_LibraryID
+        logger.debug(f"Checking Sammple_ID/Sample_Name: {ss_sample_id}/{ss_sample_name}")
 
         # Make sure the ID exists and is unique
-        column_values = get_meta_data_by_library_id(library_id)
-        logger.debug(f"Retrieved values: {column_values} for sample {library_id}.")
+        column_values = get_meta_data_by_library_id(ss_sample_name)
+        logger.debug(f"Retrieved values: {column_values} for sample {ss_sample_name}.")
 
         # check sample ID/Name match
-        if column_values[sample_name_column_name].item() != sample_name:
-            logger.warn(f"Sample_ID of SampleSheet ({sample_name}) does not match " +
+        ss_sn = column_values[sample_id_column_name].item() + '_' + column_values[library_id_column_name].item()
+        if ss_sn != ss_sample_id:
+            logger.warn(f"Sample_ID of SampleSheet ({ss_sample_id}) does not match " +
                         f"SampleID of metadata ({column_values[sample_name_column_name].item()})")
 
         # exclude 10X samples for now, as they usually don't comply
         if column_values[type_column_name].item() != '10X':
             # check presence of subject ID
             if column_values[subject_id_column_name].item() == '':
-                logger.warn(f"No subject ID for {sample_name}")
+                logger.warn(f"No subject ID for {ss_sample_id}")
 
             # check controlled vocab: phenotype, type, source, quality: WARN if not present
             if column_values[type_column_name].item() not in type_values:
-                logger.warn(f"Unsupported Type '{column_values[type_column_name].item()}' for {sample_name}")
+                logger.warn(f"Unsupported Type '{column_values[type_column_name].item()}' for {ss_sample_id}")
             if column_values[phenotype_column_name].item() not in phenotype_values:
-                logger.warn(f"Unsupproted Phenotype '{column_values[phenotype_column_name].item()}' for {sample_name}")
+                logger.warn(f"Unsupproted Phenotype '{column_values[phenotype_column_name].item()}' for {ss_sample_id}")
             if column_values[quality_column_name].item() not in quality_values:
-                logger.warn(f"Unsupproted Quality '{column_values[quality_column_name].item()}'' for {sample_name}")
+                logger.warn(f"Unsupproted Quality '{column_values[quality_column_name].item()}'' for {ss_sample_id}")
             if column_values[source_column_name].item() not in source_values:
-                logger.warn(f"Unsupproted Source '{column_values[source_column_name].item()}'' for {sample_name}")
+                logger.warn(f"Unsupproted Source '{column_values[source_column_name].item()}'' for {ss_sample_id}")
 
             # check project name: WARN if not consistent
             p_name = column_values[project_name_column_name].item()

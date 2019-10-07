@@ -1,5 +1,5 @@
 from gooey import Gooey, GooeyParser
-ss = __import__('samplesheet-check-copy')
+ss = __import__('samplesheet-check')
 
 
 @Gooey()

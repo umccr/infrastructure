@@ -14,19 +14,12 @@ You can then either log into the existing instance (please check with the stack 
 Typical usage:
 ```bash
 export STACK_NAME="worker-1"
-# create stack and contained resources (providing the mandatory user name from env variable)
+# create stack and contained resources with defaults (NOTE: userName parameter is mandatory)
 aws cloudformation create-stack \
     --stack-name "$STACK_NAME" \
     --template-body file://worker.yaml \
     --capabilities CAPABILITY_NAMED_IAM \
     --parameters '[{"ParameterKey": "userName", "ParameterValue": "'"$USER"'"}]'
-
-# create stack with custom parameters (defaults shown, only overwrite the ones you want to change)
-aws cloudformation create-stack \
-    --stack-name "$STACK_NAME" \
-    --template-body file://worker.yaml \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --parameters '[{"ParameterKey": "instanceTypeParameter", "ParameterValue": "m4.large"}, {"ParameterKey": "instanceMaxSpotPriceParameter", "ParameterValue": "0.04"}, {"ParameterKey": "instanceDiskSpaceParameter", "ParameterValue": "100"}, {"ParameterKey": "instanceSecurityGroup", "ParameterValue": "sg-c13f6abc"}, {"ParameterKey": "instanceSubnet", "ParameterValue": "subnet-d93b35be"}, {"ParameterKey": "userName", "ParameterValue": "'"$USER"'"}]'
 
 # check stack creation status
 aws cloudformation describe-stacks \
@@ -43,4 +36,30 @@ aws ssm start-session --target i-087645kboff4983
 
 # delete the stack when finished
 aws cloudformation delete-stack --stack-name "$STACK_NAME"
+```
+
+Other useful commands and command variations:
+```bash
+# customise the stack (defaults shown, only overwrite the ones you want to change)
+aws cloudformation create-stack \
+    --stack-name "$STACK_NAME" \
+    --template-body file://worker.yaml \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --parameters '[{"ParameterKey": "instanceTypeParameter", "ParameterValue": "m4.large"}, {"ParameterKey": "instanceMaxSpotPriceParameter", "ParameterValue": "0.04"}, {"ParameterKey": "instanceDiskSpaceParameter", "ParameterValue": "100"}, {"ParameterKey": "instanceSecurityGroup", "ParameterValue": "sg-c13f6abc"}, {"ParameterKey": "instanceSubnet", "ParameterValue": "subnet-d93b35be"}, {"ParameterKey": "userName", "ParameterValue": "'"$USER"'"}]'
+
+
+# useful to see the creators of stacks
+aws cloudformation describe-stacks \
+    --query 'Stacks[].[StackStatus,StackName,Parameters[?ParameterKey==`userName`]]'
+
+
+# start session
+# NOTE: the argument piping does currently not work! The session starts, but is immediately terminated. Issue submitted to AWS support.
+aws ec2 describe-instances \
+    --query "Reservations[*].Instances[*].[InstanceId]" \
+    --filters 'Name=tag:Creator,Values=vsaveliev' \
+    --filters 'Name=tag:aws:cloudformation:stack-name,Values=vlad-1TB-2' \
+    | jq '.[][][]' \
+    | xargs -I {} aws ssm start-session \
+    --target {}
 ```

@@ -58,10 +58,10 @@ regex_sample_name = re.compile(sample_name_int + sample_name_ext + topup_exp)
 regex_sample_ctl = re.compile(sample_control + sample_name_ext)
 
 
-if DEPLOY_ENV == 'prod':
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-else:
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
+#if DEPLOY_ENV == 'prod':
+#    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+#else:
+#    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
 
 
 def getLogger():
@@ -71,10 +71,10 @@ def getLogger():
     # create a logging format
     formatter = logging.Formatter('%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s')
 
-    # create a file handler
-    file_handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
+    # create a file handler - commnenting this out as in cwl we'll read-in from the stdout.
+    #file_handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
+    #file_handler.setLevel(logging.DEBUG)
+    #file_handler.setFormatter(formatter)
 
     # create a console handler
     console_handler = logging.StreamHandler()
@@ -82,7 +82,7 @@ def getLogger():
     console_handler.setFormatter(formatter)
 
     # add the handlers to the logger
-    new_logger.addHandler(file_handler)
+    #new_logger.addHandler(file_handler)
     new_logger.addHandler(console_handler)
 
     return new_logger

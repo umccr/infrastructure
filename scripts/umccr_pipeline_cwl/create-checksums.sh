@@ -23,9 +23,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script: $1"
   if test "$DEPLOY_ENV" = "prod"; then
-    echo "$msg" >> $DIR/${script}.log
+    echo "$msg"
   else
-    echo "$msg" >> $DIR/${script}.dev.log
+    echo "$msg"
     echo "$msg"
   fi
 }

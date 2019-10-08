@@ -26,9 +26,9 @@ function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name: $1"
   echo "$msg"
   if test "$DEPLOY_ENV" = "prod"; then
-    echo "$msg" >> $DIR/${script_name}.log
+    echo "$msg"
   else
-    echo "$msg" >> $DIR/${script_name}.dev.log
+    echo "$msg"
   fi
 }
 

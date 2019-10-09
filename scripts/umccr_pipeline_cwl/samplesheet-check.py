@@ -6,7 +6,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import collections
 from sample_sheet import SampleSheet  # https://github.com/clintval/sample-sheet
-from gspread_pandas import Spread
+from gspread_pandas import Spread, conf
 
 
 import warnings
@@ -103,7 +103,8 @@ def str_compare(a, b):
 
 def import_library_sheet_from_google(year):
     global library_tracking_spreadsheet_df
-    spread = Spread(lab_spreadsheet_id)
+    c = conf.get_config(conf_dir=sys.argv[2])
+    spread = Spread(lab_spreadsheet_id, config=c)
     library_tracking_spreadsheet_df = spread.sheet_to_df(sheet='2019', index=0, header_rows=1, start_row=1)
     hit = library_tracking_spreadsheet_df.iloc[0]
     logger.debug(f"First record: {hit}")
@@ -401,6 +402,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate data for LIMS spreadsheet.')
     parser.add_argument('samplesheet',
                         help="The samplesheet to process.")
+    parser.add_argument('gspread_config',
+                        help="The gspread pandas config directory")
     parser.add_argument('--check-only', action='store_true',
                         help="Only run the checks, do not split the samplesheet.")
 

@@ -2,9 +2,15 @@ import os
 import json
 import boto3
 import http.client
+from dateutil.parser import parse
 
 slack_host = os.environ.get("SLACK_HOST")
 slack_channel = os.environ.get("SLACK_CHANNEL")
+GREEN = 'good'
+RED = 'danger'
+BLUE = '#439FE0'
+GRAY = '#dddddd'
+BLACK = '#000000'
 
 ssm_client = boto3.client('ssm')
 
@@ -23,21 +29,17 @@ def getSSMParam(name):
            )['Parameter']['Value']
 
 
-def call_slack_webhook(topic, title, message, sender='Notice from AWS'):
+def call_slack_webhook(sender, topic, attachments):
     slack_webhook_endpoint = '/services/' + getSSMParam("/slack/webhook/id")
 
     connection = http.client.HTTPSConnection(slack_host)
 
-    # TODO: make more generic/customisable
     post_data = {
         "channel": slack_channel,
         "username": sender,
         "text": "*" + topic + "*",
         "icon_emoji": ":aws_logo:",
-        "attachments": [{
-            "title": title,
-            "text": message
-        }]
+        "attachments": attachments
     }
 
     connection.request("POST", slack_webhook_endpoint, json.dumps(post_data), headers)
@@ -48,83 +50,104 @@ def call_slack_webhook(topic, title, message, sender='Notice from AWS'):
 
 
 def lambda_handler(event, context):
-    # Log the received event
-    print(f"Received event: {json.dumps(event, indent=2)}")
+    # Log the received event in CloudWatch
+    print(f"Received event: {json.dumps(event)}")
+    print("Invocation context:")
+    print(f"LogGroup: {context.log_group_name}")
+    print(f"LogStream: {context.log_stream_name}")
+    print(f"RequestId: {context.aws_request_id}")
+    print(f"FunctionName: {context.function_name}")
 
-    # set Slack message defaults in case we cannot extract more meaningful data
-    # at least this should produce a Slack notification we can follow up on
-    slack_sender = ""
-    slack_topic = "Unknown"
-    slack_title = "Unknown"
-    slack_message = "Unknown"
-
-    # check what kind of event we have recieved
-    if event.get('topic'):
-        # Custom event for Slack
-        print("Custom Slack event")
-        slack_topic = event['topic']
-        slack_title = event['title'] if event.get('title') else ""
-        slack_message = event['message'] if event.get('message') else ""
-    elif event.get('Records'):
-        # SNS notification
-        print("Received event records. Looking at first record only")
-        record = event['Records'][0]  # assume we only have one record TODO: check for situations where we can have more
-        if record.get('EventSource'):
-            slack_sender = f"Message from {record['EventSource']}"
-        if record.get('Sns'):
-            print("Extracted SNS record")
+    # we expect events of a defined format
+    records = event.get('Records')
+    if len(records) == 1:
+        record = records[0]
+        if record.get('EventSource') == 'aws:sns' and record.get('Sns'):
             sns_record = record.get('Sns')
-            topic_arn = sns_record['TopicArn'] if sns_record.get('TopicArn') else ""
-            slack_topic = f"SNS topic: {topic_arn}"
-            if sns_record.get('Message'):
-                print(f"Message: {sns_record['Message']}")
-                message = json.loads(sns_record['Message'])
-                if message.get('AlarmName'):
-                    slack_title = f"Alarm {message['AlarmName']} changed to {message['NewStateValue']}"
-                    slack_message = message['AlarmDescription'] if message.get('AlarmDescription') else ""
-                elif 'Stratus' in topic_arn:
-                    # There can be GDS and TES notifications
-                    # TODO: check differences between notifcations
-                    slack_title = message['name'] if message.get('name') else ""
-                    stratus_status = message['status'] if message.get('status') else ""
-                    stratus_type = sns_record['MessageAttributes']['type']['Value']
-                    stratus_action = sns_record['MessageAttributes']['action']['Value']
-                    slack_message = F"A {stratus_type} was {stratus_action}"
-                    if stratus_status:
-                        slack_message += f": Status {stratus_status}"
-                else:
-                    slack_message = "Unrecognised SNS notification format"
+            sns_record_date = parse(sns_record.get('Timestamp'))
+
+            sns_msg = json.loads(sns_record.get('Message'))
+            task_id = sns_msg['id']
+            task_name = sns_msg['name']
+            task_status = sns_msg['status']
+            task_description = sns_msg['description']
+            task_crated_time = sns_msg['timeCreated']
+            task_created_by = sns_msg['createdBy']
+
+            sns_msg_atts = sns_record.get('MessageAttributes')
+            stratus_action = sns_msg_atts['action']['Value']
+            stratus_action_date = sns_msg_atts['actiondate']['Value']
+            stratus_action_type = sns_msg_atts['type']['Value']
+            stratus_produced_by = sns_msg_atts['producedby']['Value']
+
+            action = stratus_action.lower()
+            status = task_status.lower()
+            if action == "created":
+                slack_color = BLUE
+            elif action == 'updated' and (status == 'pending' or status == 'running'):
+                slack_color = GRAY
+            elif action == 'updated' and status == 'completed':
+                slack_color = GREEN
+            elif action == 'updated' and (status == 'aborted' or status == 'failed'):
+                slack_color = RED
             else:
-                print("SNS record does not seem to contain a message")
+                slack_color = BLACK
+
+            slack_sender = "Illumina Application Platform"
+            slack_topic = f"Notification from {stratus_action_type}"
+            slack_attachment = [
+                {
+                    "fallback": f"Task {task_name} update: {task_status}",
+                    "color": slack_color,
+                    "pretext": task_name,
+                    "title": f"Task ID: {task_id}",
+                    "text": task_description,
+                    "fields": [
+                        {
+                            "title": "Action",
+                            "value": stratus_action,
+                            "short": True
+                        },
+                        {
+                            "title": "Action Type",
+                            "value": stratus_action_type,
+                            "short": True
+                        },
+                        {
+                            "title": "Action Date",
+                            "value": stratus_action_date,
+                            "short": True
+                        },
+                        {
+                            "title": "Produced By",
+                            "value": stratus_produced_by,
+                            "short": True
+                        },
+                        {
+                            "title": "Task Created At",
+                            "value": task_crated_time,
+                            "short": True
+                        },
+                        {
+                            "title": "Task Created By",
+                            "value": task_created_by,
+                            "short": True
+                        }
+                    ],
+                    "footer": "IAP TES Task",
+                    "ts": int(sns_record_date.timestamp())
+                }
+            ]
+
         else:
-            print("No 'Sns' record found")
-    elif event.get('source'):
-        print("Regular CloudWatch event")
-        # Regular AWS event, need to extract useful information
-        event_source = event['source']
-        event_detail_type = event['detail-type'] if event.get('detail-type') else ""
-        event_id = event['id'] if event.get('id') else ""
-        event_account = event['account'] if event.get('account') else ""
-        event_resources = event['resources'] if event.get('resources') else []
-        event_resources_names = []
-        for event_res in event_resources:
-            event_resources_names.append(event_res.rpartition(":")[2])
-        slack_topic = f"AWS event from {event_source} in account {event_account}"
-        slack_title = f"{event_detail_type} (id:{event_id}) for {event_resources_names}"
-        # event details are event specific, we just dump them into the message
-        slack_message = json.dumps(event['detail'])
+            raise ValueError("Unexpected Message Format!")
     else:
-        slack_topic = "Unknown event source"
-        slack_title = "Don't know how to handle this event"
-        slack_message = json.dumps(event, indent=2)
+        raise ValueError("Unexpected Message Format!")
 
     # Forward the data to Slack
     try:
-        print(f"Sending Slack message with topic ({slack_topic}), title ({slack_title}) and message ({slack_message})")
-        if slack_sender != "":
-            response = call_slack_webhook(slack_topic, slack_title, slack_message, slack_sender)
-        else:
-            response = call_slack_webhook(slack_topic, slack_title, slack_message)
+        print(f"Slack message: sender: ({slack_sender}), topic: ({slack_topic}) and attachments: {json.dumps(slack_attachment)}")
+        response = call_slack_webhook(slack_sender, slack_topic, slack_attachment)
         print(f"Response status: {response}")
         return event
 

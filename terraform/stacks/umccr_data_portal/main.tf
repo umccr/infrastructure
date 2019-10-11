@@ -64,8 +64,8 @@ locals {
     rds_db_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
     LAMBDA_IAM_ROLE_ARN = "${aws_iam_role.lambda_apis_role.arn}"
-    LAMBDA_SUBNET_IDS = "${join(",", data.aws_subnet_ids.default.ids)}"
-    LAMBDA_SECURITY_GROUP_IDS = "${data.aws_security_group.default.id}"
+    LAMBDA_SUBNET_IDS = "${join(",", aws_db_subnet_group.rds.subnet_ids)}"
+    LAMBDA_SECURITY_GROUP_IDS = "${aws_security_group.lambda_security_group.id}"
     SSM_KEY_NAME_FULL_DB_URL = "${aws_ssm_parameter.ssm_full_db_url.name}"
     SSM_KEY_NAME_DJANGO_SECRET_KEY =  "${data.aws_ssm_parameter.ssm_django_secret_key.name}"
 } 
@@ -841,32 +841,108 @@ resource "aws_iam_role_policy" "lambda_apis_role_policy" {
     policy = "${data.template_file.lambda_apis_policy.rendered}"
 }
 
-# Default VPC in the current region
-data "aws_vpc" "default" {
-    default = true
+# Isolated VPC for the backend
+resource "aws_vpc" "backend_vpc" {
+    cidr_block = "10.0.0.0/16"
+    enable_dns_support = true
+    enable_dns_hostnames = true
 }
 
-# Subnet IDs of the default VPC
-data "aws_subnet_ids" "default" {
-    vpc_id = "${data.aws_vpc.default.id}"
+# End point for SSM access (from lambda functions)
+resource "aws_vpc_endpoint" "ssm_access" {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    service_name = "com.amazonaws.${data.aws_region.current.name}.ssm"
+    vpc_endpoint_type = "Interface"
+
+    security_group_ids = [
+        "${aws_security_group.lambda_security_group.id}"
+    ]
+
+    subnet_ids = [
+        "${aws_subnet.backend_main_1.id}",
+        "${aws_subnet.backend_main_2.id}",
+        "${aws_subnet.backend_main_3.id}"
+    ]
+
+    private_dns_enabled = true
 }
 
-# Default security group under the default VPC
-data "aws_security_group" "default" {
-    vpc_id = "${data.aws_vpc.default.id}"
-    name = "default"
+# End point for S3 LIMS access (from lambda functions)
+resource "aws_vpc_endpoint" "lims_access" {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    service_name = "com.amazonaws.${data.aws_region.current.name}.s3"
+    vpc_endpoint_type = "Gateway"
+
+    route_table_ids = [
+        "${aws_vpc.backend_vpc.default_route_table_id}"
+    ]
 }
 
+# Subnet in the VPC
+resource "aws_subnet" "backend_main_1" {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    cidr_block = "10.0.1.0/24"
+    availability_zone = "ap-southeast-2a"
+
+    timeouts {
+        // https://www.terraform.io/docs/providers/aws/r/subnet.html
+        delete = "45m"
+    } 
+}
+
+resource "aws_subnet" "backend_main_2" {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    cidr_block = "10.0.2.0/24"
+    availability_zone = "ap-southeast-2b"
+
+    timeouts {
+        // https://www.terraform.io/docs/providers/aws/r/subnet.html
+        delete = "45m"
+    } 
+}
+
+
+resource "aws_subnet" "backend_main_3" {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    cidr_block = "10.0.3.0/24"
+    availability_zone = "ap-southeast-2c"
+
+    timeouts {
+        // https://www.terraform.io/docs/providers/aws/r/subnet.html
+        delete = "45m"
+    } 
+}
+# Security group for lambda functions
+resource "aws_security_group" "lambda_security_group" {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    name = "${local.stack_name_us}_lambda"
+    description = "Security group for lambda functions"
+
+    ingress {
+        from_port       = 0
+        to_port         = 0
+        protocol        = "-1"
+        cidr_blocks     = ["0.0.0.0/0"]
+    }
+    egress {
+        from_port       = 0
+        to_port         = 0
+        protocol        = "-1"
+        cidr_blocks     = ["0.0.0.0/0"]
+    }
+}
+
+# Security group for RDS
 resource "aws_security_group" "rds_security_group" {
-    name = "allow_rds_mysql"
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+    name = "${local.stack_name_us}_rds"
     description = "Allow inbound traffic for RDS MySQL"
-    vpc_id = "${data.aws_vpc.default.id}"
 
     ingress {
         from_port       = 3306
         to_port         = 3306
         protocol        = "tcp"
-        security_groups = ["${data.aws_security_group.default.id}"]
+        security_groups = ["${aws_security_group.lambda_security_group.id}"]
     }
 
     egress {
@@ -878,6 +954,15 @@ resource "aws_security_group" "rds_security_group" {
 }
 
 # RDS DB
+resource "aws_db_subnet_group" "rds" {
+    name = "${local.stack_name_us}_db_subnet_group"
+    subnet_ids = [
+        "${aws_subnet.backend_main_1.id}",
+        "${aws_subnet.backend_main_2.id}",
+        "${aws_subnet.backend_main_3.id}",
+    ]
+}
+
 resource "aws_rds_cluster" "db" {
     cluster_identifier = "${local.stack_name_dash}-aurora-cluster"
     engine = "aurora" # (for MySQL 5.6-compatible Aurora)
@@ -888,6 +973,8 @@ resource "aws_rds_cluster" "db" {
     master_password = "${local.rds_db_password}"
 
     vpc_security_group_ids = ["${aws_security_group.rds_security_group.id}"]
+    # Workfround from https://github.com/terraform-providers/terraform-provider-aws/issues/3060
+    db_subnet_group_name = "${aws_db_subnet_group.rds.name}"
 
     scaling_configuration {
         auto_pause = false

@@ -25,10 +25,7 @@ $ terraform output -json > out.json # Optional
 - S3 primary data: `${var.s3_primary_data_bucket[terraform.workspace]}`
 - LIMS bucket (storing the csv):`${var.lims_bucket[terraform.workspace]}`
 
-#### 4. VPC
-- Default VPC in the current region: `${data.aws_vpc.default}` (and subnets and security groups)
-
-#### 5. Github Webhooks
+#### 4. Github Webhooks
 A `GITHUB_TOKEN` env variable is required.
 In order for terraform to create GitHub webhooks, the personal access token
 should have `admin:repo_hook` scope at least, and the associated account should
@@ -58,6 +55,7 @@ be admin-level user for both repositories (`data-portal-apis` and `data-portal-c
 #### Data
 - S3 primary data bucket: used to create SQS event notification
 - LIMS data bucket.
+- RDS cluster: MySQL database
 
 #### Authentication
 - Cognito user pool
@@ -65,6 +63,17 @@ be admin-level user for both repositories (`data-portal-apis` and `data-portal-c
   - Custom user pool domain (prefix) `data-portal-app-{stage}`
 - Cognito identity provider (Google OAuth)
 - Cognito identity pool - connecting the identity provider and the two app clients
+
+#### VPC
+- VPC for the backend, separate from the default VPC
+- Three subnets in different availability zone
+- VPC Endpoints:
+  - SSM Interface for parameter access (from lambda)
+  - S3 Gateway for LIMS data access (from lambda)
+- Security Groups:
+  - RDS and Lambda are in separate groups so that Lambda can access RDS
+  - One for RDS, enabling MySQL inbound requests (from Lambda)
+  - One for Lambda
 
 #### Deployment
 
@@ -80,3 +89,17 @@ be admin-level user for both repositories (`data-portal-apis` and `data-portal-c
 - ACM Certificate for subdomain (`*.data.{stage}.umccr.org`)
 - The stack also establishes IAM roles and policies where relavent
 - Web Application Firewall including SQL injection protection (on query strings)
+
+#### LIMS data processing
+- If we ever want to rewrite the LIMS data (and S3 keys data is at production
+scale), we need to run the rewrite function in an EC2 instance so long running time is allowed.
+- Currently we need to manually configure an EC2 instance:
+   - AMI: Amazon Linux AMI 2018.03.0 (HVM), SSD Volume Type
+   - Install following packages in the EC2 instance:
+     - python36 (as the default python in the instance is python 2)
+     - git - so that we can pull from the backend repository 
+   - Once above has been set, go to the backend code directory, and install
+     the python dependencies, via `pip-3.6 install -r requirements.txt`
+   - To run the LIMS rewrite function, run 
+     `python-3.6 manage.py lims_rewrite --csv_bucket_name [bucket name] 
+     --csv_key [csv file name]`

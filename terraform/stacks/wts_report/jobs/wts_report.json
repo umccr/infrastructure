@@ -1,9 +1,9 @@
 {
-    "image": "umccr/umccrise:0.15.14",
+    "image": "umccr/wtsreport:0.2",
     "vcpus": 2,
     "memory": 2048,
     "command": [
-        "/opt/container/umccrise-wrapper.sh",
+        "/opt/container/WTS-report-wrapper.sh",
         "Ref::vcpus"
     ],
     "volumes": [

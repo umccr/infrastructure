@@ -1,0 +1,23 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "batch:ListJobs",
+          "batch:DescribeJobs",
+          "batch:SubmitJob"
+        ],
+        "Resource": "*"
+      },
+      {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction",
+        "lambda:InvokeAsync"
+      ],
+      "Resource": "*"
+      }
+    ]
+  }
+  

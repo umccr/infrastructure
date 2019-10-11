@@ -70,6 +70,48 @@ output "ebenngarvan_secret_access_key" {
 }
 
 
+# dnafault
+output "dnafault_username" {
+  value = "${module.dnafault.username}"
+}
+
+output "dnafault_access_key" {
+  value = "${module.dnafault.access_key}"
+}
+
+output "dnafault_secret_access_key" {
+  value = "${module.dnafault.encrypted_secret_access_key}"
+}
+
+
+# shyrav
+output "shyrav_username" {
+  value = "${module.shyrav.username}"
+}
+
+output "shyrav_access_key" {
+  value = "${module.shyrav.access_key}"
+}
+
+output "shyrav_secret_access_key" {
+  value = "${module.shyrav.encrypted_secret_access_key}"
+}
+
+
+# joecop
+output "joecop_username" {
+  value = "${module.joecop.username}"
+}
+
+output "joecop_access_key" {
+  value = "${module.joecop.access_key}"
+}
+
+output "joecop_secret_access_key" {
+  value = "${module.joecop.encrypted_secret_access_key}"
+}
+
+
 # michaelblackpath
 output "michaelblackpath_username" {
   value = "${module.michaelblackpath.username}"
@@ -110,6 +152,34 @@ output "scottwood_access_key" {
 
 output "scottwood_secret_access_key" {
   value = "${module.scottwood.encrypted_secret_access_key}"
+}
+
+
+# cassimons
+output "cassimons_username" {
+  value = "${module.cassimons.username}"
+}
+
+output "cassimons_access_key" {
+  value = "${module.cassimons.access_key}"
+}
+
+output "cassimons_secret_access_key" {
+  value = "${module.cassimons.encrypted_secret_access_key}"
+}
+
+
+# minw
+output "minw_username" {
+  value = "${module.minw.username}"
+}
+
+output "minw_access_key" {
+  value = "${module.minw.access_key}"
+}
+
+output "minw_secret_access_key" {
+  value = "${module.minw.encrypted_secret_access_key}"
 }
 
 

@@ -24,7 +24,6 @@ locals {
   )}"
 }
 
-
 ################################################################################
 # S3 buckets
 
@@ -38,6 +37,19 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
         sse_algorithm = "AES256"
       }
     }
+  }
+
+  lifecycle_rule {
+    enabled = "1"
+    noncurrent_version_expiration {
+      days = 30
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
   }
 
   versioning {
@@ -68,12 +80,38 @@ resource "aws_s3_bucket" "agha_gdr_store" {
     enabled = true
   }
 
+  lifecycle_rule {
+    id      = "noncurrent_version_expiration"
+    enabled = true
+    noncurrent_version_expiration {
+      days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
   tags = "${merge(
     local.common_tags,
     map(
       "Name", "${var.agha_gdr_store_bucket_name}"
     )
   )}"
+
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
 }
 
 # Attach bucket policy to deny object deletion
@@ -108,7 +146,6 @@ resource "aws_s3_bucket_policy" "staging_bucket_policy" {
   bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
   policy = "${data.template_file.staging_bucket_policy.rendered}"
 }
-
 
 ################################################################################
 # New dataset ready notification (i.e. manifest S3 creation event -> Slack) 
@@ -146,13 +183,18 @@ resource "aws_sns_topic" "s3_events" {
     }]
 }
 POLICY
-
 }
 
 resource "aws_sns_topic_subscription" "s3_manifest_event" {
   topic_arn = "${aws_sns_topic.s3_events.arn}"
   protocol  = "lambda"
   endpoint  = "${module.notify_slack_lambda.function_arn}"
+}
+
+resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
+  topic_arn = "${aws_sns_topic.s3_events.arn}"
+  protocol  = "lambda"
+  endpoint  = "${module.folder_lock_lambda.function_arn}"
 }
 
 resource "aws_lambda_permission" "slack_lambda_from_sns" {
@@ -211,7 +253,6 @@ module "agha_bot_user" {
   pgp_key  = "keybase:freisinger"
 }
 
-
 resource "aws_iam_user_policy_attachment" "ahga_bot_staging_rw" {
   user       = "${module.agha_bot_user.username}"
   policy_arn = "${aws_iam_policy.agha_staging_rw_policy.arn}"
@@ -221,7 +262,6 @@ resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
   user       = "${module.agha_bot_user.username}"
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
-
 
 ################################################################################
 # Dedicated user to list store content
@@ -236,7 +276,6 @@ resource "aws_iam_user_policy_attachment" "ahga_catalogue_store_list" {
   user       = "${module.agha_catalogue_user.username}"
   policy_arn = "${aws_iam_policy.agha_store_list_policy.arn}"
 }
-
 
 ################################################################################
 # Users & groups
@@ -271,6 +310,24 @@ module "ebenngarvan" {
   pgp_key  = "keybase:ebenngarvan"
 }
 
+module "dnafault" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "dnafault"
+  pgp_key  = "keybase:freisinger"
+}
+
+module "shyrav" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "shyrav"
+  pgp_key  = "keybase:freisinger"
+}
+
+module "joecop" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "joecop"
+  pgp_key  = "keybase:freisinger"
+}
+
 module "michaelblackpath" {
   source   = "../../modules/iam_user/secure_user"
   username = "michaelblackpath"
@@ -287,6 +344,18 @@ module "scottwood" {
   source   = "../../modules/iam_user/secure_user"
   username = "scottwood"
   pgp_key  = "keybase:qimrbscott"
+}
+
+module "cassimons" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "cassimons"
+  pgp_key  = "keybase:freisinger"
+}
+
+module "minw" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "minw"
+  pgp_key  = "keybase:freisinger"
 }
 
 # groups
@@ -316,7 +385,7 @@ resource "aws_iam_group_membership" "submit_members" {
 
 resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
-  users = ["${module.ametke.username}", "${module.ebenngarvan.username}"]
+  users = ["${module.ametke.username}", "${module.ebenngarvan.username}", "${module.dnafault.username}", "${module.shyrav.username}", "${module.joecop.username}", "${module.cassimons.username}", "${module.minw.username}"]
   group = "${aws_iam_group.read.name}"
 }
 
@@ -410,11 +479,10 @@ resource "aws_iam_group_policy_attachment" "read_store_rw_policy_attachment" {
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
 
-
-
 ################################################################################
-# Slack notification lambda
+# Lambdas
 
+# Slack notification lambda
 data "aws_secretsmanager_secret" "slack_webhook_id" {
   name = "slack/webhook/id"
 }
@@ -443,12 +511,59 @@ module "notify_slack_lambda" {
     }
   }
 
-    tags = "${merge(
+  tags = "${merge(
     local.common_tags,
     map(
       "Description", "Lambda to send notifications to UMCCR Slack"
     )
   )}"
+}
+
+# Folder lock lambda
+data "template_file" "folder_lock_lambda" {
+  template = "${file("${path.module}/policies/folder_lock_lambda.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
+  }
+}
+
+resource "aws_iam_policy" "folder_lock_lambda" {
+  name   = "${var.stack_name}_folder_lock_lambda_${terraform.workspace}"
+  path   = "/${var.stack_name}/"
+  policy = "${data.template_file.folder_lock_lambda.rendered}"
+}
+
+module "folder_lock_lambda" {
+  # based on: https://github.com/claranet/terraform-aws-lambda
+  source = "../../modules/lambda"
+
+  function_name = "${var.stack_name}_folder_lock_lambda"
+  description   = "Lambda to update bucket policy to deny put/delete"
+  handler       = "folder_lock.lambda_handler"
+  runtime       = "python3.7"
+  timeout       = 3
+
+  source_path = "${path.module}/lambdas/folder_lock.py"
+
+  attach_policy = true
+  policy        = "${aws_iam_policy.folder_lock_lambda.arn}"
+
+  tags = "${merge(
+    local.common_tags,
+    map(
+      "Description", "Lambda to update a bucket policy to Deny PutObject/DeleteObject whenever a specific flag file event was triggered"
+    )
+  )}"
+}
+
+# allow events from SNS topic for manifest notifications
+resource "aws_lambda_permission" "folder_lock_sns_permission" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${module.folder_lock_lambda.function_arn}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.s3_events.arn}"
 }
 
 ################################################################################
@@ -505,6 +620,7 @@ resource "aws_lambda_permission" "batch_failure" {
 #   name        = "${var.stack_name}_capture_batch_job_success"
 #   description = "Capture Batch Job Success"
 
+
 #   event_pattern = <<PATTERN
 # {
 #   "detail-type": [
@@ -522,10 +638,12 @@ resource "aws_lambda_permission" "batch_failure" {
 # PATTERN
 # }
 
+
 # resource "aws_cloudwatch_event_target" "batch_success" {
 #   rule      = "${aws_cloudwatch_event_rule.batch_success.name}"
 #   target_id = "${var.stack_name}_send_batch_success_to_slack_lambda"
 #   arn       = "${module.notify_slack_lambda.function_arn}"
+
 
 #   input_transformer = {
 #     input_paths = {
@@ -534,10 +652,12 @@ resource "aws_lambda_permission" "batch_failure" {
 #       status = "$.detail.status"
 #     }
 
+
 #     # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
 #     input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
 #   }
 # }
+
 
 # resource "aws_lambda_permission" "batch_success" {
 #   statement_id  = "${var.stack_name}_allow_batch_success_to_invoke_slack_lambda"
@@ -546,3 +666,4 @@ resource "aws_lambda_permission" "batch_failure" {
 #   principal     = "events.amazonaws.com"
 #   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
 # }
+

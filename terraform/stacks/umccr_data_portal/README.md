@@ -6,7 +6,6 @@ This stack to deploys the AWS resources for the UMCCR data portal.
 
 ```bash
 $ terraform init .
-$ terraform workspace new prod
 $ terraform workspace select prod
 $ terraform apply
 $ terraform output -json > out.json # Optional
@@ -25,8 +24,23 @@ $ terraform output -json > out.json # Optional
 - S3 primary data: `${var.s3_primary_data_bucket[terraform.workspace]}`
 - LIMS bucket (storing the csv):`${var.lims_bucket[terraform.workspace]}`
 
-#### 4. Github Webhooks
+#### 4. VPC
+- Default VPC in the current region: `${data.aws_vpc.default}` (and subnets and security groups)
+
+#### 5. Github Webhooks
+
 A `GITHUB_TOKEN` env variable is required.
+
+IMPORTANT: If `GITHUB_TOKEN` env var is not defined, it is prompted by Terraform, *BUT*, it will result in a failure similar to this:
+
+```shell
+    * aws_codepipeline.codepipeline_apis: 1 error occurred:
+    * aws_codepipeline.codepipeline_apis: Error creating CodePipeline: InvalidActionDeclarationException: Action configuration for action 'Source' is missing required configuration 'OAuthToken'
+    status code: 400, request id: 9f703a62-9d75-409f-9cc8-3d208546d2b1
+```
+
+TODO: Find out why the user input is not properly sanitized?
+
 In order for terraform to create GitHub webhooks, the personal access token
 should have `admin:repo_hook` scope at least, and the associated account should
 be admin-level user for both repositories (`data-portal-apis` and `data-portal-client`).
@@ -80,7 +94,7 @@ be admin-level user for both repositories (`data-portal-apis` and `data-portal-c
 - CodePipeline (deploying the APIs): 
     1. Github repo (https://github.com/umccr/data-portal-apis) (through GitHub webhook)
     2. CodeBuild (mainly `serverless create-domain` and `serverless deploy`)
-- The custom domain (`api.data-portal.{stage}.umccr.org`) for APIs is deployed through the Serverless frameowork as above, and its certificate is created by Terraform
+- The custom domain (`api.data.{stage}.umccr.org`) for APIs is deployed through the Serverless frameowork as above, and its certificate is created by Terraform
 (see `Others` section)
 
 ### 3. Others

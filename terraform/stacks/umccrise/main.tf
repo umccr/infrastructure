@@ -103,12 +103,13 @@ module "compute_env" {
   stack_name            = "${var.stack_name}"
   compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
   image_id              = "${var.umccrise_image_id}"
-  instance_types        = ["m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "r3.4xlarge", "m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
+  instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
   min_vcpus             = 0
   max_vcpus             = 160
+  use_spot              = "false"
   spot_bid_percent      = "100"
 }
 
@@ -132,12 +133,6 @@ resource "aws_batch_job_definition" "umccrise_standard" {
   container_properties = "${file("jobs/umccrise_job.json")}"
 }
 
-resource "aws_batch_job_definition" "sleeper" {
-  name                 = "${var.stack_name}_sleeper_${terraform.workspace}"
-  type                 = "container"
-  container_properties = "${file("jobs/sleeper_job.json")}"
-}
-
 ################################################################################
 # custom policy for the EC2 instances of the compute env
 
@@ -145,7 +140,8 @@ data "template_file" "additionalEc2InstancePolicy" {
   template = "${file("${path.module}/policies/ec2-instance-role.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+    ro_buckets = "${jsonencode(var.workspace_umccrise_ro_buckets[terraform.workspace])}"
+    wd_buckets = "${jsonencode(var.workspace_umccrise_wd_buckets[terraform.workspace])}"
   }
 }
 
@@ -162,7 +158,7 @@ data "template_file" "lambda" {
   template = "${file("${path.module}/policies/umccrise-lambda.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_umccrise_buckets[terraform.workspace])}"
+    resources = "${jsonencode(var.workspace_umccrise_ro_buckets[terraform.workspace])}"
   }
 }
 
@@ -189,11 +185,13 @@ module "lambda" {
 
   environment {
     variables {
-      JOBNAME        = "umccrise"
+      JOBNAME_PREFIX = "${var.stack_name}"
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
       DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
       REFDATA_BUCKET = "${var.workspace_umccrise_refdata_bucket[terraform.workspace]}"
+      UMCCRISE_MEM   = "${var.umccrise_mem[terraform.workspace]}"
+      UMCCRISE_VCPUS = "${var.umccrise_vcpus[terraform.workspace]}"
     }
   }
 
@@ -201,58 +199,6 @@ module "lambda" {
     service = "${var.stack_name}"
     name    = "${var.stack_name}"
     stack   = "${var.stack_name}"
-  }
-}
-
-################################################################################
-
-module "trigger_umccrise_s3_lambda" {
-  # based on: https://github.com/claranet/terraform-aws-lambda
-  source = "../../modules/lambda"
-
-  function_name = "trigger_umccrise_s3_${terraform.workspace}"
-  description   = "Lambda for triggering UMCCRISE via s3"
-  handler       = "trigger_umccrise_s3.lambda_handler"
-  runtime       = "python3.6"
-  timeout       = 3
-
-  environment { 
-    variables {
-      UMCCRISE_MEM             = "${var.umccrise_mem[terraform.workspace]}"
-      UMCCRISE_VCPUS           = "${var.umccrise_vcpus[terraform.workspace]}"
-      UMCCRISE_FUNCTION_NAME   = "${module.lambda.function_name}"
-    }
-  }
-
-  source_path = "${path.module}/lambdas/trigger_umccrise_s3.py"
-
-  attach_policy = true
-  policy        = "${aws_iam_policy.lambda.arn}"
-
-  tags = {
-    service = "${var.stack_name}"
-    name    = "${var.stack_name}"
-    stack   = "${var.stack_name}"
-  }
-}
-
-resource "aws_lambda_permission" "allow-exec-bucket" {
-statement_id = "AllowExecutionFromS3Bucket"
-action = "lambda:InvokeFunction"
-function_name = "${module.trigger_umccrise_s3_lambda.function_arn}"
-principal = "s3.amazonaws.com"
-source_arn = "arn:aws:s3:::${var.workspace_umccrise_data_bucket[terraform.workspace]}"
-}
-
-resource "aws_s3_bucket_notification" "bucket_notification" {
-  depends_on = ["aws_lambda_permission.allow-exec-bucket"]
-  bucket = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
-
-  lambda_function {
-    lambda_function_arn = "${module.trigger_umccrise_s3_lambda.function_arn}"
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = ""
-    filter_suffix       = "upload_complete"
   }
 }
 
@@ -349,6 +295,53 @@ resource "aws_lambda_permission" "batch_success" {
   function_name = "${var.workspace_slack_lambda_arn[terraform.workspace]}"
   principal     = "events.amazonaws.com"
   source_arn    = "${aws_cloudwatch_event_rule.batch_success.arn}"
+}
+
+resource "aws_cloudwatch_event_rule" "batch_runnable" {
+  name        = "${var.stack_name}_capture_batch_job_submit_${terraform.workspace}"
+  description = "Capture Batch Job Submissions"
+
+  event_pattern = <<PATTERN
+{
+  "detail-type": [
+    "Batch Job State Change"
+  ],
+  "source": [
+    "aws.batch"
+  ],
+  "detail": {
+    "status": [
+      "RUNNABLE"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "batch_runnable" {
+  rule      = "${aws_cloudwatch_event_rule.batch_runnable.name}"
+  target_id = "${var.stack_name}_send_batch_runnable_to_slack_lambda_${terraform.workspace}"
+  arn       = "${var.workspace_slack_lambda_arn[terraform.workspace]}"                       # NOTE: the terraform datasource aws_lambda_function appends the version of the lambda to the ARN, which does not seem to work with this! Hence supply the ARN directly.
+
+  input_transformer = {
+    input_paths = {
+      jobid  = "$.detail.jobId"
+      job    = "$.detail.jobName"
+      title  = "$.detail-type"
+      status = "$.detail.status"
+    }
+
+    # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
+    input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
+  }
+}
+
+resource "aws_lambda_permission" "batch_runnable" {
+  statement_id  = "${var.stack_name}_allow_batch_runnable_to_invoke_slack_lambda_${terraform.workspace}"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.workspace_slack_lambda_arn[terraform.workspace]}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.batch_runnable.arn}"
 }
 
 ################################################################################

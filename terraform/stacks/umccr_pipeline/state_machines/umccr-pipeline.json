@@ -215,7 +215,7 @@
               "Type": "Task",
               "Resource": "${wait_for_async_action_activity_arn}",
               "ResultPath": "$.script_result",
-              "TimeoutSeconds": 36005,
+              "TimeoutSeconds": 72005,
               "End": true
             }
           }
@@ -364,77 +364,12 @@
     "Notify checksums for fastqs complete": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
-      "Next": "Asynchronous sync runfolder to Spartan S3",
-      "TimeoutSeconds": 12,
-      "Parameters": {
-        "topic": "UMCCR pipeline",
-        "title.$": "$.runfolder",
-        "message": "Fastq checksums complete. Starting runfolder sync to Spartan S3..."
-      },
-      "ResultPath": "$.lambda_result"
-    },
-    "Asynchronous sync runfolder to Spartan S3": {
-      "Type": "Parallel",
-      "Next": "Notify runfolder sync to Spartan S3 complete",
-      "OutputPath": "$[1]",
-      "Branches": [
-        {
-          "StartAt": "Start runfolder sync to Spartan S3",
-          "States": {
-            "Start runfolder sync to Spartan S3": {
-              "Type": "Task",
-              "Resource": "${pipeline_lambda_arn}",
-              "Parameters": {
-                "script_execution": "sync_runfolder_to_s3_spartan",
-                "input.$": "$"
-              },
-              "TimeoutSeconds": 12,
-              "End": true,
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "States.ALL"
-                  ],
-                  "IntervalSeconds": 3,
-                  "MaxAttempts": 2,
-                  "BackoffRate": 1.5
-                }
-              ]
-            }
-          }
-        },
-        {
-          "StartAt": "Wait for runfolder sync to Spartan S3",
-          "States": {
-            "Wait for runfolder sync to Spartan S3": {
-              "Type": "Task",
-              "Resource": "${wait_for_async_action_activity_arn}",
-              "ResultPath": "$.script_result",
-              "TimeoutSeconds": 10805,
-              "End": true
-            }
-          }
-        }
-      ],
-      "Catch": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "ResultPath": "$.error_info",
-          "Next": "Notify Failure"
-        }
-      ]
-    },
-    "Notify runfolder sync to Spartan S3 complete": {
-      "Type": "Task",
-      "Resource": "${slack_notify_lambda_arn}",
       "Next": "Asynchronous sync fastqs to Spartan S3",
       "TimeoutSeconds": 12,
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Runfolder sync to Spartan S3 complete. Starting fastq sync to Spartan S3..."
+        "message": "Fastq checksums complete. Starting fastq sync to Spartan S3..."
       },
       "ResultPath": "$.lambda_result"
     },

@@ -38,7 +38,6 @@ variable "ec2_additional_policy" {
   description = "Additional policies the EC2 instances of the batch compute env should carry. In addtision to the default AmazonEC2ContainerServiceforEC2Role"
 }
 
-
 # Definitions for the parameters below on: https://docs.aws.amazon.com/batch/latest/userguide/Batch_GetStarted.html
 variable "max_vcpus" {
   type        = "string"
@@ -56,4 +55,10 @@ variable "spot_bid_percent" {
   type        = "string"
   description = "The percent to bid for on a SPOT fleet"
   default     = 50
+}
+
+variable "use_spot" {
+  type        = "string"
+  description = "Flag whether or not to use spot instances for the compute environment"
+  default     = "true"
 }

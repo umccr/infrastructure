@@ -66,7 +66,7 @@ EOF
 }
 
 resource "aws_iam_policy" "aws_ec2_ssm" {
-  name   = "aws_ec2_ssm${var.workspace_name_suffix[terraform.workspace]}"
+  name   = "aws_ec2_ssm_${terraform.workspace}"
   path   = "/"
   policy = "${file("policies/aws_ec2_ssm.json")}"
 }
@@ -103,7 +103,7 @@ data "template_file" "fastq_data_uploader" {
 }
 
 resource "aws_iam_policy" "fastq_data_uploader" {
-  name   = "fastq_data_uploader${var.workspace_name_suffix[terraform.workspace]}"
+  name   = "fastq_data_uploader_${terraform.workspace}"
   path   = "/"
   policy = "${data.template_file.fastq_data_uploader.rendered}"
 }
@@ -111,6 +111,43 @@ resource "aws_iam_policy" "fastq_data_uploader" {
 resource "aws_iam_role_policy_attachment" "fastq_data_uploader" {
   role       = "${aws_iam_role.fastq_data_uploader.name}"
   policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
+}
+
+##### operator
+resource "aws_iam_role" "operator" {
+  name                 = "${terraform.workspace}_operator"
+  path                 = "/"
+  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
+  max_session_duration = "43200"
+}
+
+data "template_file" "operator" {
+  template = "${file("policies/operator.json")}"
+
+  vars {
+    s3_buckets  = "${jsonencode(var.workspace_operator_write_buckets[terraform.workspace])}"
+    aws_account = "${data.aws_caller_identity.current.account_id}"
+    aws_region  = "${data.aws_region.current.name}"
+
+    umccrise_function_name   = "umccrise*"
+    wts_report_function_name = "wts_report*"
+  }
+}
+
+resource "aws_iam_policy" "operator" {
+  name   = "operator_${terraform.workspace}"
+  path   = "/"
+  policy = "${data.template_file.operator.rendered}"
+}
+
+resource "aws_iam_role_policy_attachment" "operator" {
+  role       = "${aws_iam_role.operator.name}"
+  policy_arn = "${aws_iam_policy.operator.arn}"
+}
+
+resource "aws_iam_role_policy_attachment" "operator_read_only" {
+  role       = "${aws_iam_role.operator.name}"
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
 ##### primary_data_reader
@@ -130,7 +167,7 @@ data "template_file" "primary_data_reader" {
 }
 
 resource "aws_iam_policy" "primary_data_reader" {
-  name   = "primary_data_reader${var.workspace_name_suffix[terraform.workspace]}"
+  name   = "primary_data_reader_${terraform.workspace}"
   path   = "/"
   policy = "${data.template_file.primary_data_reader.rendered}"
 }
@@ -158,7 +195,7 @@ data "template_file" "umccr_worker" {
 }
 
 resource "aws_iam_policy" "umccr_worker" {
-  name   = "umccr_worker${var.workspace_name_suffix[terraform.workspace]}"
+  name   = "umccr_worker_${terraform.workspace}"
   path   = "/"
   policy = "${data.template_file.umccr_worker.rendered}"
 }
@@ -287,20 +324,20 @@ resource "aws_s3_bucket" "primary_data" {
       days = 90
     }
 
-	expiration {
-		expired_object_delete_marker = true
-	}
+    expiration {
+      expired_object_delete_marker = true
+    }
 
-	abort_incomplete_multipart_upload_days = 7
+    abort_incomplete_multipart_upload_days = 7
   }
 
   lifecycle_rule {
-    id = "glacier_older_than_90_days_bams"
+    id      = "glacier_older_than_90_days_bams"
     enabled = "${terraform.workspace == "dev" ? false : true}"
 
     tags = {
-      "Filetype"      = "bam"
-      "Archive"       = "true"
+      "Filetype" = "bam"
+      "Archive"  = "true"
     }
 
     transition {
@@ -440,15 +477,6 @@ resource "aws_iam_role_policy_attachment" "admin_access_to_ops_admin_no_mfa_role
   policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
 }
 
-resource "aws_eip" "basespace_playground" {
-  count = "${terraform.workspace == "dev" ? 1 : 0}"
-
-  tags {
-    Name       = "basespace_playground_${terraform.workspace}"
-    deploy_env = "${terraform.workspace}"
-  }
-}
-
 ################################################################################
 # Dedicated user to generate long lived presigned URLs
 # See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
@@ -478,7 +506,7 @@ data "template_file" "fastq_data_reader" {
 }
 
 resource "aws_iam_policy" "fastq_data_reader" {
-  name   = "fastq_data_reader_${var.workspace_name_suffix[terraform.workspace]}"
+  name   = "fastq_data_reader_${terraform.workspace}"
   path   = "/"
   policy = "${data.template_file.fastq_data_reader.rendered}"
 }

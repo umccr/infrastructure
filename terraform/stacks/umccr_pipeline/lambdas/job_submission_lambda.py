@@ -45,6 +45,7 @@ HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")
 aws_profile = getSSMParam(SSM_PARAM_PREFIX + "aws_profile")
 aws_profile_spartan = getSSMParam(SSM_PARAM_PREFIX + "aws_profile_spartan")
 s3_sync_dest_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_dest_bucket")
+s3_raw_data_bucket = getSSMParam(SSM_PARAM_PREFIX + "s3_raw_data_bucket")
 
 
 def build_command(script_case, input_data):
@@ -75,7 +76,7 @@ def build_command(script_case, input_data):
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" python {samplesheet_check_script} {samplesheet_path}"
     elif script_case == "bcl2fastq":
-        execution_timneout = '36000'
+        execution_timneout = '72000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" {bcl2fastq_script} -R {runfolder_path} -n {runfolder} -o {bcl2fastq_out_path}"
     elif script_case == "create_runfolder_checksums":
@@ -86,26 +87,21 @@ def build_command(script_case, input_data):
         execution_timneout = '36000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" {checksum_script} bcl2fastq {bcl2fastq_out_path} {runfolder}"
-    elif script_case == "sync_runfolder_to_s3_spartan":
-        execution_timneout = '10800'
-        command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile_spartan}"
-        command += f" {s3_sync_script} -b {s3_sync_dest_bucket} -n {runfolder}"
-        command += f" -d {runfolder} -s {runfolder_path} -x Data/* -x Thumbnail_Images/*"
     elif script_case == "sync_fastqs_to_s3_spartan":
         execution_timneout = '36000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile_spartan}"
         command += f" {s3_sync_script} -b {s3_sync_dest_bucket} -n {runfolder}"
-        command += f" -d {runfolder}/{runfolder} -s {bcl2fastq_out_path} -f"
+        command += f" -d {runfolder} -s {bcl2fastq_out_path} -f"
     elif script_case == "sync_runfolder_to_s3":
         execution_timneout = '10800'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
-        command += f" {s3_sync_script} -b {s3_sync_dest_bucket} -n {runfolder}"
-        command += f" -d {runfolder} -s {runfolder_path} -x Data/* -x Thumbnail_Images/*"
+        command += f" {s3_sync_script} -b {s3_raw_data_bucket} -n {runfolder}"
+        command += f" -d {runfolder} -s {runfolder_path} -x Thumbnail_Images/*"
     elif script_case == "sync_fastqs_to_s3":
         execution_timneout = '36000'
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" {s3_sync_script} -b {s3_sync_dest_bucket} -n {runfolder}"
-        command += f" -d {runfolder}/{runfolder} -s {bcl2fastq_out_path} -f"
+        command += f" -d {runfolder} -s {bcl2fastq_out_path} -f"
     elif script_case == "google_lims_update":
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV}"

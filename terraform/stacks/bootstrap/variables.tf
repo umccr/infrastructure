@@ -2,22 +2,6 @@ variable "stack_name" {
   default = "bootstrap"
 }
 
-variable "vault_instance_type" {
-  default = "t2.micro"
-}
-
-variable "vault_instance_spot_price" {
-  default = "0.0045"
-}
-
-variable "vault_availability_zone" {
-  default = "ap-southeast-2a"
-}
-
-variable "vault_sub_domain" {
-  default = "vault"
-}
-
 variable "tf_bucket" {
   type = "string"
   default = "arn:aws:s3:::umccr-terraform-states"
@@ -25,20 +9,6 @@ variable "tf_bucket" {
 
 ################################################################################
 ## workspace variables
-
-variable "workspace_name_suffix" {
-  default = {
-    prod = "_prod"
-    dev  = "_dev"
-  }
-}
-
-variable "workspace_deploy_env" {
-  default = {
-    prod = "prod"
-    dev  = "dev"
-  }
-}
 
 # due to a restriction in Terraform, we cannot dynamically define bucket configurations
 # see: https://github.com/terraform-providers/terraform-provider-aws/issues/4418
@@ -63,6 +33,23 @@ variable "workspace_fastq_data_uploader_buckets" {
   default = {
     prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*", "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-raw-sequence-data-prod", "arn:aws:s3:::umccr-raw-sequence-data-prod/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*", "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*"]
     dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*", "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-raw-sequence-data-dev", "arn:aws:s3:::umccr-raw-sequence-data-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
+  }
+}
+
+variable "workspace_operator_write_buckets" {
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*",
+            "arn:aws:s3:::umccr-raw-sequence-data-prod", "arn:aws:s3:::umccr-raw-sequence-data-prod/*",
+            "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
+            "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*",
+            "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*",
+            "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*"]
+    dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*",
+            "arn:aws:s3:::umccr-raw-sequence-data-dev", "arn:aws:s3:::umccr-raw-sequence-data-dev/*",
+            "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*",
+            "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
   }
 }
 

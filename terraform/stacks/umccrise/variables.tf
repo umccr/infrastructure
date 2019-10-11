@@ -31,6 +31,15 @@ variable "workspace_umccrise_data_bucket" {
   }
 }
 
+variable "workspace_umccrise_temp_bucket" {
+  type = "map"
+
+  default = {
+    prod = "umccr-temp"
+    dev  = "umccr-umccrise-dev"
+  }
+}
+
 variable "workspace_umccrise_refdata_bucket" {
   type = "map"
 
@@ -40,12 +49,27 @@ variable "workspace_umccrise_refdata_bucket" {
   }
 }
 
-variable "workspace_umccrise_buckets" {
+variable "workspace_umccrise_ro_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-umccrise-prod", "arn:aws:s3:::umccr-umccrise-prod/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-umccrise-dev", "arn:aws:s3:::umccr-umccrise-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
+    prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
+            "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*",
+            "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*",
+            "arn:aws:s3:::umccr-umccrise-dev", "arn:aws:s3:::umccr-umccrise-dev/*",
+            "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
+  }
+}
+
+variable "workspace_umccrise_wd_buckets" {
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/umccrised/*",
+            "arn:aws:s3:::umccr-temp/*/umccrised/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev/*/umccrised/*",
+            "arn:aws:s3:::umccr-umccrise-dev/*/umccrised/*"]
   }
 }
 

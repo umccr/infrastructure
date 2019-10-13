@@ -19,8 +19,11 @@ setuptools.setup(
     packages=setuptools.find_packages(where="stacks"),
 
     install_requires=[
-        "aws-cdk.core",
-        "aws-cdk.aws-lambda"
+        "aws_cdk.core",
+        "aws_cdk.aws_lambda",
+        "aws_cdk.aws_lambda_event_sources",
+        "aws_cdk.aws_sns",
+        "aws_cdk.aws_iam"
     ],
 
     python_requires=">=3.6",

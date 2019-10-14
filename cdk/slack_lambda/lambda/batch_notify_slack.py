@@ -77,12 +77,12 @@ def lambda_handler(event, context):
         batch_job_ts = event_detail.get('createdAt')
         batch_job_definition = event_detail.get('jobDefinition')
         batch_job_definition_short = batch_job_definition.split('/')[1]
-        batch_job_definition_short_name = batch_job_definition_short.split(':')[0]
 
         batch_container = event_detail.get('container')
         container_image = batch_container.get('image')
         container_vcpu = batch_container.get('vcpus')
         container_mem = batch_container.get('memory')
+        log_stream_name = batch_container.get('logStreamName')
 
         slack_sender = "AWS Batch job status change"
         slack_topic = f"Job Name: {batch_job_name}"
@@ -92,7 +92,7 @@ def lambda_handler(event, context):
                 "color": slack_color,
                 "pretext": f"{batch_job_name}: {batch_job_status}",
                 "title": f"JobID: {batch_job_id}",
-                "title_link": f"https://{event_region}.console.aws.amazon.com/cloudwatch/home?region={event_region}#logEventViewer:group=/aws/batch/job;stream={batch_job_definition_short_name}/default/{batch_job_id}",
+                "title_link": f"https://{event_region}.console.aws.amazon.com/cloudwatch/home?region={event_region}#logEventViewer:group=/aws/batch/job;stream={log_stream_name}",
                 "text": "Batch Job Attributes:",
                 "fields": [
                     {

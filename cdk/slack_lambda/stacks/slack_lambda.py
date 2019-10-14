@@ -3,6 +3,8 @@ from aws_cdk import (
     aws_iam as _iam,
     aws_sns as _sns,
     aws_sns_subscriptions as _sns_subs,
+    aws_events as _events,
+    aws_events_targets as _events_targets,
     core
 )
 
@@ -74,3 +76,18 @@ class BatchLambdaStack(core.Stack):
             },
             role=lambda_role
         )
+
+        rule = _events.Rule(
+            self,
+            'BatchEventToSlackLambda'
+        )
+        rule.add_event_pattern(
+            source=['aws.batch'],
+            detail_type=['Batch Job State Change'],
+            detail={'status': [
+                'FAILED',
+                'SUCCEEDED',
+                'RUNNABLE'
+            ]}
+        )
+        rule.add_target(_events_targets.LambdaFunction(handler=function))

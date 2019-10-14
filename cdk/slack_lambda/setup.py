@@ -21,8 +21,8 @@ setuptools.setup(
     install_requires=[
         "aws_cdk.core",
         "aws_cdk.aws_lambda",
-        "aws_cdk.aws_lambda_event_sources",
         "aws_cdk.aws_sns",
+        "aws_cdk.aws_sns_subscriptions",
         "aws_cdk.aws_iam"
     ],
 

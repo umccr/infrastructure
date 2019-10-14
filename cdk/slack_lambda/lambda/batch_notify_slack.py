@@ -8,6 +8,9 @@ slack_channel = os.environ.get("SLACK_CHANNEL")
 GREEN = 'good'
 RED = 'danger'
 BLUE = '#439FE0'
+GRAY = '#dddddd'
+BLACK = '#000000'
+
 
 ssm_client = boto3.client('ssm')
 
@@ -57,17 +60,20 @@ def lambda_handler(event, context):
     if event.get('source') == 'aws.batch' and event.get('detail-type') == 'Batch Job State Change':
         print("Processing Batch event...")
         event_detail = event.get('detail')
+        aws_account = event.get('account')
         event_region = event.get('region')
 
         batch_job_name = event_detail.get('jobName')
         batch_job_id = event_detail.get('jobId')
-        batch_job_status = event_detail.get('status')
-        if batch_job_status == 'SUCCEEDED':
+        batch_job_status = event_detail.get('status').lower()
+        if batch_job_status == 'succeeded':
             slack_color = GREEN
-        elif batch_job_status == 'FAILED':
+        elif batch_job_status == 'failed':
             slack_color = RED
-        else:
+        elif batch_job_status == 'runnable':
             slack_color = BLUE
+        else:
+            slack_color = GRAY
         batch_job_ts = event_detail.get('createdAt')
         batch_job_definition = event_detail.get('jobDefinition')
         batch_job_definition_short = batch_job_definition.split('/')[1]
@@ -108,6 +114,11 @@ def lambda_handler(event, context):
                         "title": "Job Memory",
                         "value": container_mem,
                         "short": True
+                    },
+                    {
+                        "title": "AWS Account",
+                        "value": aws_account,
+                        "short": True
                     }
                 ],
                 "footer": "AWS Batch Job",
@@ -120,7 +131,7 @@ def lambda_handler(event, context):
 
     # Forward the data to Slack
     try:
-        print(f"Slack message: sender: ({slack_sender}), topic: ({slack_topic}) and attachments: {json.dumps(slack_attachment)}")
+        print(f"Sender: ({slack_sender}), topic: ({slack_topic}) and attachments: {json.dumps(slack_attachment)}")
         response = call_slack_webhook(slack_sender, slack_topic, slack_attachment)
         print(f"Response status: {response}")
         return event

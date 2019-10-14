@@ -59,11 +59,13 @@ def lambda_handler(event, context):
     print(f"FunctionName: {context.function_name}")
 
     # we expect events of a defined format
+    # NOTE: IAP NES TES status:  "Pending", "Running", "Completed", "Failed", "TimedOut", "Aborted"
     records = event.get('Records')
     if len(records) == 1:
         record = records[0]
         if record.get('EventSource') == 'aws:sns' and record.get('Sns'):
             sns_record = record.get('Sns')
+            aws_account = sns_record.get('TopicArn').split(':')[4]
             sns_record_date = parse(sns_record.get('Timestamp'))
 
             sns_msg = json.loads(sns_record.get('Message'))
@@ -88,7 +90,7 @@ def lambda_handler(event, context):
                 slack_color = GRAY
             elif action == 'updated' and status == 'completed':
                 slack_color = GREEN
-            elif action == 'updated' and (status == 'aborted' or status == 'failed'):
+            elif action == 'updated' and (status == 'aborted' or status == 'failed' or status == 'timedout'):
                 slack_color = RED
             else:
                 slack_color = BLACK
@@ -132,6 +134,11 @@ def lambda_handler(event, context):
                             "title": "Task Created By",
                             "value": task_created_by,
                             "short": True
+                        },
+                        {
+                            "title": "AWS Account",
+                            "value": aws_account,
+                            "short": True
                         }
                     ],
                     "footer": "IAP TES Task",
@@ -146,7 +153,7 @@ def lambda_handler(event, context):
 
     # Forward the data to Slack
     try:
-        print(f"Slack message: sender: ({slack_sender}), topic: ({slack_topic}) and attachments: {json.dumps(slack_attachment)}")
+        print(f"Slack sender: ({slack_sender}), topic: ({slack_topic}) and attachments: {json.dumps(slack_attachment)}")
         response = call_slack_webhook(slack_sender, slack_topic, slack_attachment)
         print(f"Response status: {response}")
         return event

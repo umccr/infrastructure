@@ -3,6 +3,11 @@
     "Statement": [
       {
         "Effect": "Allow",
+        "Action": "s3:ListBucket",
+        "Resource": ${resources}
+      },
+      {
+        "Effect": "Allow",
         "Action": [
           "batch:ListJobs",
           "batch:DescribeJobs",

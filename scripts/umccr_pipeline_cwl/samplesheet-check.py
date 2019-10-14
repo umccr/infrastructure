@@ -6,7 +6,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import collections
 from sample_sheet import SampleSheet  # https://github.com/clintval/sample-sheet
-from gspread_pandas import Spread
+from gspread_pandas import Spread, conf
 
 
 import warnings
@@ -58,10 +58,10 @@ regex_sample_name = re.compile(sample_name_int + sample_name_ext + topup_exp)
 regex_sample_ctl = re.compile(sample_control + sample_name_ext)
 
 
-if DEPLOY_ENV == 'prod':
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-else:
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
+#if DEPLOY_ENV == 'prod':
+#    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+#else:
+#    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
 
 
 def getLogger():
@@ -71,10 +71,10 @@ def getLogger():
     # create a logging format
     formatter = logging.Formatter('%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s')
 
-    # create a file handler
-    file_handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
+    # create a file handler - commnenting this out as in cwl we'll read-in from the stdout.
+    #file_handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
+    #file_handler.setLevel(logging.DEBUG)
+    #file_handler.setFormatter(formatter)
 
     # create a console handler
     console_handler = logging.StreamHandler()
@@ -82,7 +82,7 @@ def getLogger():
     console_handler.setFormatter(formatter)
 
     # add the handlers to the logger
-    new_logger.addHandler(file_handler)
+    #new_logger.addHandler(file_handler)
     new_logger.addHandler(console_handler)
 
     return new_logger
@@ -103,7 +103,8 @@ def str_compare(a, b):
 
 def import_library_sheet_from_google(year):
     global library_tracking_spreadsheet_df
-    spread = Spread(lab_spreadsheet_id)
+    c = conf.get_config(conf_dir=sys.argv[2])
+    spread = Spread(lab_spreadsheet_id, config=c)
     library_tracking_spreadsheet_df = spread.sheet_to_df(sheet='2019', index=0, header_rows=1, start_row=1)
     hit = library_tracking_spreadsheet_df.iloc[0]
     logger.debug(f"First record: {hit}")
@@ -401,6 +402,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate data for LIMS spreadsheet.')
     parser.add_argument('samplesheet',
                         help="The samplesheet to process.")
+    parser.add_argument('gspread_config',
+                        help="The gspread pandas config directory")
     parser.add_argument('--check-only', action='store_true',
                         help="Only run the checks, do not split the samplesheet.")
 

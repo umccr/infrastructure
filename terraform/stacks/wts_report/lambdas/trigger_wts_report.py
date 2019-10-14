@@ -27,6 +27,7 @@ def lambda_handler(event, context):
     job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
 
     try:
+        s3 = boto3.client('s3')
         response_wts = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=data_wts_dir)
         print("S3 list response: " + json.dumps(response_wts, indent=2, sort_keys=True, default=str))
         if not response_wts.get('Contents') or len(response_wts['Contents']) < 1:

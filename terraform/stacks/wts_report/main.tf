@@ -144,6 +144,10 @@ resource "aws_iam_policy" "additionalEc2InstancePolicy" {
 
 data "template_file" "trigger_lambda" {
   template = "${file("${path.module}/policies/wts_report_trigger_lambda.json")}"
+
+  vars {
+    resources = "${jsonencode(var.workspace_wts_report_ro_buckets[terraform.workspace])}"
+  }
 }
 
 resource "aws_iam_policy" "trigger_lambda" {

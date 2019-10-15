@@ -6,8 +6,9 @@ from dateutil.parser import parse
 
 slack_host = os.environ.get("SLACK_HOST")
 slack_channel = os.environ.get("SLACK_CHANNEL")
-GREEN = 'good'
-RED = 'danger'
+# Colours
+GREEN = '#36a64f'
+RED = '#ff0000'
 BLUE = '#439FE0'
 GRAY = '#dddddd'
 BLACK = '#000000'
@@ -17,6 +18,32 @@ ssm_client = boto3.client('ssm')
 headers = {
     'Content-Type': 'application/json',
 }
+
+
+def getAwsAccountName(id):
+    if id == '472057503814':
+        return 'prod'
+    elif id == '843407916570':
+        return 'dev (new)'
+    elif id == '620123204273':
+        return 'dev (old)'
+    elif id == '602836945884':
+        return 'agha'
+    else:
+        return id
+
+
+def getCreatorFromId(id):
+    if id == 'c9688651-7872-3753-8146-ffa41c177aa1':
+        return f"{id} (Vlad Saveliev)"
+    elif id == '567d89e4-de8b-3688-a733-d2a979eb510e':
+        return f"{id} (Peter Diakumis)"
+    elif id == '7eec7332-f780-3edc-bb70-c4f711398f1c':
+        return f"{id} (Roman Vals)"
+    elif id == '8abf754b-e94f-3841-b44b-75d10d33588b':
+        return f"{id} (Sehrish Kanwal)"
+    else:
+        return f"{id} (unknown)"
 
 
 def getSSMParam(name):
@@ -132,12 +159,12 @@ def lambda_handler(event, context):
                         },
                         {
                             "title": "Task Created By",
-                            "value": task_created_by,
+                            "value": getCreatorFromId(task_created_by),
                             "short": True
                         },
                         {
                             "title": "AWS Account",
-                            "value": aws_account,
+                            "value": getAwsAccountName(aws_account),
                             "short": True
                         }
                     ],

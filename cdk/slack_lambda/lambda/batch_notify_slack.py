@@ -5,18 +5,31 @@ import http.client
 
 slack_host = os.environ.get("SLACK_HOST")
 slack_channel = os.environ.get("SLACK_CHANNEL")
-GREEN = 'good'
-RED = 'danger'
+# Colours
+GREEN = '#36a64f'
+RED = '#ff0000'
 BLUE = '#439FE0'
 GRAY = '#dddddd'
 BLACK = '#000000'
-
 
 ssm_client = boto3.client('ssm')
 
 headers = {
     'Content-Type': 'application/json',
 }
+
+
+def getAwsAccountName(id):
+    if id == '472057503814':
+        return 'prod'
+    elif id == '843407916570':
+        return 'dev (new)'
+    elif id == '620123204273':
+        return 'dev (old)'
+    elif id == '602836945884':
+        return 'agha'
+    else:
+        return id
 
 
 def getSSMParam(name):
@@ -74,7 +87,7 @@ def lambda_handler(event, context):
             slack_color = BLUE
         else:
             slack_color = GRAY
-        batch_job_ts = event_detail.get('createdAt')
+        batch_job_ts = int(event_detail.get('createdAt') / 1000)
         batch_job_definition = event_detail.get('jobDefinition')
         batch_job_definition_short = batch_job_definition.split('/')[1]
 
@@ -117,7 +130,7 @@ def lambda_handler(event, context):
                     },
                     {
                         "title": "AWS Account",
-                        "value": aws_account,
+                        "value": getAwsAccountName(aws_account),
                         "short": True
                     }
                 ],

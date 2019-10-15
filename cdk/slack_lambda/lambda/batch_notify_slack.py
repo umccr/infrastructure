@@ -54,8 +54,7 @@ def call_slack_webhook(sender, topic, attachments):
         "icon_emoji": ":aws_logo:",
         "attachments": attachments
     }
-    print("Slack POST data:")
-    print(post_data)
+    print(f"Slack POST data: {json.dumps(post_data)}")
 
     connection.request("POST", slack_webhook_endpoint, json.dumps(post_data), headers)
     response = connection.getresponse()
@@ -96,6 +95,7 @@ def lambda_handler(event, context):
         container_vcpu = batch_container.get('vcpus')
         container_mem = batch_container.get('memory')
         log_stream_name = batch_container.get('logStreamName')
+        print(f"Log stream name: {log_stream_name}")
 
         slack_sender = "AWS Batch job status change"
         slack_topic = f"Job Name: {batch_job_name}"
@@ -103,9 +103,8 @@ def lambda_handler(event, context):
             {
                 "fallback": f"Job {batch_job_name} {batch_job_status}",
                 "color": slack_color,
-                "pretext": f"{batch_job_name}: {batch_job_status}",
+                "pretext": f"Status: {batch_job_status}",
                 "title": f"JobID: {batch_job_id}",
-                "title_link": f"https://{event_region}.console.aws.amazon.com/cloudwatch/home?region={event_region}#logEventViewer:group=/aws/batch/job;stream={log_stream_name}",
                 "text": "Batch Job Attributes:",
                 "fields": [
                     {
@@ -138,6 +137,11 @@ def lambda_handler(event, context):
                 "ts": batch_job_ts
             }
         ]
+        if log_stream_name:
+            print("Adding CW link")
+            slack_attachment[0]["title_link"] = f"https://{event_region}.console.aws.amazon.com/cloudwatch/home?region={event_region}#logEventViewer:group=/aws/batch/job;stream={log_stream_name}"
+        else:
+            print("Not adding CW link")
 
     else:
         raise ValueError("Unexpected event format!")

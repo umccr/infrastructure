@@ -68,6 +68,7 @@ def call_slack_webhook(sender, topic, attachments):
         "icon_emoji": ":aws_logo:",
         "attachments": attachments
     }
+    print(f"Slack POST data: {json.dumps(post_data)}")
 
     connection.request("POST", slack_webhook_endpoint, json.dumps(post_data), headers)
     response = connection.getresponse()

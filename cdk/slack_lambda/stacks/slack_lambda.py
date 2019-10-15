@@ -13,7 +13,7 @@ class IapLambdaStack(core.Stack):
 
     illumina_iap_account = '079623148045'
 
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, slack_channel: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         lambda_role = _iam.Role(
@@ -34,7 +34,7 @@ class IapLambdaStack(core.Stack):
             code=_lambda.Code.asset('lambda'),
             environment={
                 "SLACK_HOST": "hooks.slack.com",
-                "SLACK_CHANNEL": "#arteria-dev"
+                "SLACK_CHANNEL": slack_channel
             },
             role=lambda_role
         )
@@ -51,7 +51,7 @@ class IapLambdaStack(core.Stack):
 
 class BatchLambdaStack(core.Stack):
 
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, slack_channel: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         lambda_role = _iam.Role(
@@ -72,7 +72,7 @@ class BatchLambdaStack(core.Stack):
             code=_lambda.Code.asset('lambda'),
             environment={
                 "SLACK_HOST": "hooks.slack.com",
-                "SLACK_CHANNEL": "#arteria-dev"
+                "SLACK_CHANNEL": slack_channel
             },
             role=lambda_role
         )

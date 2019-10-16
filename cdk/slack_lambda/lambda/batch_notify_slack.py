@@ -101,9 +101,10 @@ def lambda_handler(event, context):
         slack_topic = f"Job Name: {batch_job_name}"
         slack_attachment = [
             {
+                "mrkdwn_in": ["pretext"],
                 "fallback": f"Job {batch_job_name} {batch_job_status}",
                 "color": slack_color,
-                "pretext": f"Status: {batch_job_status}",
+                "pretext": f"Status: *{batch_job_status.upper()}*",
                 "title": f"JobID: {batch_job_id}",
                 "text": "Batch Job Attributes:",
                 "fields": [

@@ -25,6 +25,12 @@ BatchLambdaStack(
 )
 BatchLambdaStack(
     app,
+    "batch-slack-lambda-dev-old",
+    env={'account': '620123204273', 'region': 'ap-southeast-2'},
+    slack_channel='#arteria-dev'
+)
+BatchLambdaStack(
+    app,
     "batch-slack-lambda-prod",
     env={'account': '472057503814', 'region': 'ap-southeast-2'},
     slack_channel='#biobots'

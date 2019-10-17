@@ -26,3 +26,16 @@ aws batch describe-job-definitions \
 ```
 
 Each AWS Batch umccrise job will overwrite any existing output in the `umccrised` directory at the same level as the bcbio results. Rerunning a job will therefore result in the loss of the previous results.
+
+
+# Testing in `dev`
+For testing purposes one can run `umccrise` in the `dev` account accessing `prod` data.
+NOTE: the `resultBucket` defaults to the `dataBucket`. The `dev` account does not have write access to the `prod` buckets, so if the `dataBucket` is overwritten to read from `prod` (while running in `dev`), the `resultBucket` has to be explicitly set to a writable bucket in the `dev` account.
+
+```bash
+aws lambda invoke \
+    --function-name umccrise_lambda_prod \
+    --payload '{ "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "dataBucket": "umccr-primary-data-prod", "resultBucket": "umccr-primary-data-dev"}' \
+    /tmp/lambda.output
+
+```

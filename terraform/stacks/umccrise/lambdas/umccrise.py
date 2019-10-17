@@ -5,9 +5,11 @@ import boto3
 batch_client = boto3.client('batch')
 s3 = boto3.client('s3')
 
-# TODO: make the job name an input parameter
-# TODO: make more generic
-#       i.e. parse/expect different input parameters depending on job definition/type
+
+def job_name_form_s3(bucket, path):
+    # Construct a meaningful default job name from bucket and S3 prefix
+    # taking care of special characters that would otherwise cause issues downstream
+    return bucket + "---" + path.replace('/', '_').replace('.', '_')
 
 
 def lambda_handler(event, context):
@@ -27,9 +29,10 @@ def lambda_handler(event, context):
     container_mem = event['memory'] if event.get('memory') else os.environ.get('UMCCRISE_MEM')
     container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('UMCCRISE_VCPUS')
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
+    result_bucket = event['resultBucket'] if event.get('resultBucket') else os.environ.get('DATA_BUCKET')
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     result_dir = event['resultDir']
-    job_name = event['jobName'] if event.get('jobName') else data_bucket + "---" + result_dir.replace('/', '_').replace('.', '_')
+    job_name = event['jobName'] if event.get('jobName') else job_name_form_s3(data_bucket, result_dir)
     job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
     print("resultDir: %s  in data bucket: %s" % (result_dir, data_bucket))
 
@@ -49,6 +52,7 @@ def lambda_handler(event, context):
         container_overrides['environment'] = [
             {'name': 'S3_INPUT_DIR', 'value': result_dir},
             {'name': 'S3_DATA_BUCKET', 'value': data_bucket},
+            {'name': 'S3_RESULT_BUCKET', 'value': result_bucket},
             {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket},
             {'name': 'CONTAINER_VCPUS', 'value': container_vcpus},
             {'name': 'CONTAINER_MEM', 'value': container_mem}

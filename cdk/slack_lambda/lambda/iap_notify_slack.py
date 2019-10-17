@@ -144,6 +144,11 @@ def lambda_handler(event, context):
                             "short": True
                         },
                         {
+                            "title": "Action Status",
+                            "value": status.upper(),
+                            "short": True
+                        },
+                        {
                             "title": "Action Date",
                             "value": stratus_action_date,
                             "short": True

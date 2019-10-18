@@ -29,7 +29,7 @@ def lambda_handler(event, context):
     container_mem = event['memory'] if event.get('memory') else os.environ.get('UMCCRISE_MEM')
     container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('UMCCRISE_VCPUS')
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
-    result_bucket = event['resultBucket'] if event.get('resultBucket') else os.environ.get('DATA_BUCKET')
+    result_bucket = event['resultBucket'] if event.get('resultBucket') else data_bucket
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     result_dir = event['resultDir']
     job_name = event['jobName'] if event.get('jobName') else job_name_form_s3(data_bucket, result_dir)

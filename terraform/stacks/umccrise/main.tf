@@ -102,7 +102,7 @@ module "compute_env" {
   name_suffix           = "_${terraform.workspace}"
   stack_name            = "${var.stack_name}"
   compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
-  image_id              = "${var.umccrise_image_id}"
+  image_id              = "${var.workspace_umccrise_image_id[terraform.workspace]}"
   instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
@@ -188,8 +188,8 @@ module "lambda" {
       JOBNAME_PREFIX = "${var.stack_name}"
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
+      REFDATA_BUCKET = "${var.umccrise_refdata_bucket}"
       DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
-      REFDATA_BUCKET = "${var.workspace_umccrise_refdata_bucket[terraform.workspace]}"
       UMCCRISE_MEM   = "${var.umccrise_mem[terraform.workspace]}"
       UMCCRISE_VCPUS = "${var.umccrise_vcpus[terraform.workspace]}"
     }
@@ -200,97 +200,6 @@ module "lambda" {
     name    = "${var.stack_name}"
     stack   = "${var.stack_name}"
   }
-}
-
-
-################################################################################
-# AWS API gateway for lambda
-
-resource "aws_api_gateway_rest_api" "lambda_rest_api" {
-  name        = "lambda"
-  description = "Example API Gateway"
-}
-
-resource "aws_api_gateway_resource" "lambda_resource" {
-  rest_api_id = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-  parent_id   = "${aws_api_gateway_rest_api.lambda_rest_api.root_resource_id}"
-  path_part   = "{proxy+}"
-}
-
-resource "aws_api_gateway_method" "lambda_proxy" {
-  rest_api_id   = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-  resource_id   = "${aws_api_gateway_resource.lambda_resource.id}"
-  http_method   = "ANY"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "lambda_integration" {
-  rest_api_id = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-  resource_id = "${aws_api_gateway_method.lambda_proxy.resource_id}"
-  http_method = "${aws_api_gateway_method.lambda_proxy.http_method}"
-
-  integration_http_method = "${aws_api_gateway_method.lambda_proxy.http_method}"
-  type                    = "AWS_PROXY"
-  uri                     = "${module.lambda.function_invoke_arn}"
-
-  passthrough_behavior = "WHEN_NO_TEMPLATES"
-}
-
-########## 
-# Unfortunately the proxy resource cannot match an empty path at the root of the API. 
-# To handle that, a similar configuration must be applied to the root resource that 
-# is built in to the REST API object:
-resource "aws_api_gateway_method" "proxy_root" {
-  rest_api_id   = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-  resource_id   = "${aws_api_gateway_rest_api.lambda_rest_api.root_resource_id}"
-  http_method   = "ANY"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "lambda_root" {
-  rest_api_id = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-  resource_id = "${aws_api_gateway_method.proxy_root.resource_id}"
-  http_method = "${aws_api_gateway_method.proxy_root.http_method}"
-
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = "${module.lambda.function_invoke_arn}"
-}
-
-##########
-
-# resource "aws_api_gateway_method_response" "200" {
-#   rest_api_id     = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-#   resource_id     = "${aws_api_gateway_resource.lambda_resource.id}"
-#   http_method     = "${aws_api_gateway_method.lambda_proxy.http_method}"
-#   status_code     = "200"
-#   response_models = {
-#     "application/json" = "Empty"
-#   }
-# }
-
-# resource "aws_api_gateway_integration_response" "lambda_integration_response" {
-#   rest_api_id     = "${aws_api_gateway_rest_api.lambda_rest_api.id}"
-#   resource_id     = "${aws_api_gateway_resource.lambda_resource.id}"
-#   http_method     = "${aws_api_gateway_method.lambda_proxy.http_method}"
-#   status_code     = "${aws_api_gateway_method_response.200.status_code}"
-#   response_templates {
-#     "application/json" = ""
-#   }
-#   depends_on  = ["aws_api_gateway_integration.lambda_integration"]
-# }
-
-resource "aws_lambda_permission" "lambda" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = "${module.lambda.function_name}"
-  principal     = "apigateway.amazonaws.com"
-
-  # The /*/* portion grants access from any method on any resource
-  # within the API Gateway "REST API".
-  # source_arn = "${aws_api_gateway_deployment.example.execution_arn}/*/*"
-  # source_arn = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.lambda_rest_api.id}/*/${aws_api_gateway_method.lambda_proxy.http_method}/lambda"
-  source_arn = "${aws_api_gateway_rest_api.lambda_rest_api.execution_arn}/*/*/*"
 }
 
 ################################################################################

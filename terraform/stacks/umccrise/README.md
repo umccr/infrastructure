@@ -34,7 +34,7 @@ NOTE: the `resultBucket` defaults to the `dataBucket`. The `dev` account does no
 
 ```bash
 aws lambda invoke \
-    --function-name umccrise_lambda_prod \
+    --function-name umccrise_lambda_dev \
     --payload '{ "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "dataBucket": "umccr-primary-data-prod", "resultBucket": "umccr-primary-data-dev"}' \
     /tmp/lambda.output
 

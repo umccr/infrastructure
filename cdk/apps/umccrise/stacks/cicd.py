@@ -1,8 +1,7 @@
 from aws_cdk import (
     core,
     aws_codebuild as cb,
-    aws_codecommit as cc,
-    aws_codepipeline as cp,
+    aws_ecr as ecr,
     aws_iam as iam,
     aws_s3 as s3,
 )
@@ -20,6 +19,8 @@ class CICDStack(core.Stack):
                                         privileged=True,
                                         compute_type=cb.ComputeType.MEDIUM);
 
+        ecr_repo = ecr.Repository(self, id="umccr", repository_name="umccr");
+
         cb_project = cb.Project(self, id = "umccrise",
                     environment = build_env,
                     timeout = core.Duration.hours(3),
@@ -29,15 +30,15 @@ class CICDStack(core.Stack):
                         repo = "umccrise",
                         clone_depth = 1,
                         webhook = False # XXX: Switch to manual for now until we deploy secrets manager
-                    ),
-                )
+                    )
+        );
 
         # Tackle IAM permissions
         # https://stackoverflow.com/questions/38587325/aws-ecr-getauthorizationtoken/54806087
-        cb_project.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonEC2ContainerRegistryPowerUser'))
-        refdata.grant_read(cb_project)
+        cb_project.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonEC2ContainerRegistryPowerUser'));
+        refdata.grant_read(cb_project);
 
-app = core.App()
-CICDStack(app, "UmccriseCICDStack")
+app = core.App();
+CICDStack(app, "UmccriseCICDStack");
 
 app.synth()

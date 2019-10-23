@@ -28,7 +28,7 @@ class CICDStack(core.Stack):
                         owner = "umccr",
                         repo = "umccrise",
                         clone_depth = 1,
-                        webhook = True
+                        webhook = False # XXX: Switch to manual for now until we deploy secrets manager
                     ),
                 )
 

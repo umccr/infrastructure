@@ -10,7 +10,7 @@ from aws_cdk import (
 
 class BatchStack(core.Stack):
 
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         refdata_bucket = s3.Bucket.from_bucket_attributes(
@@ -61,12 +61,14 @@ class BatchStack(core.Stack):
         primary_data_bucket.grant_read_write(batch_instance_role)
         misc_bucket.grant_read_write(batch_instance_role)
 
+        # Turn the instance role into a Instance Profile
         iam.CfnInstanceProfile(
             self,
             'BatchInstanceProfile',
             roles=[batch_instance_role.role_name]
         )
 
+        # TODO: roll out across all AZs? (Will require more subnets, NATs, ENIs, etc...)
         vpc = ec2.Vpc(
             self,
             'UmccrVpc',
@@ -74,6 +76,9 @@ class BatchStack(core.Stack):
             max_azs=1
         )
 
+        # TODO: Replace with proper CDK construct once available
+        # TODO: Uses public subnet and default security group
+        # TODO: Define custom AMI for compute env instances
         batch_comp_env = batch.CfnComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
@@ -84,6 +89,7 @@ class BatchStack(core.Stack):
                 'maxvCpus': 128,
                 'minvCpus': 0,
                 'desiredvCpus': 0,
+                'imageId': 'ami-0e3451906ffc529a0',
                 'spotIamFleetRole': spotfleet_role.role_arn,
                 'instanceRole': batch_instance_role.role_name,
                 'instanceTypes': ['optimal'],
@@ -92,6 +98,9 @@ class BatchStack(core.Stack):
             }
         )
 
+        # TODO: Replace with proper CDK construct once available
+        # TODO: job_queue_name could result in a clash, but is currently necessary
+        #       as we need a reference for the ENV variables of the lambda
         job_queue = batch.CfnJobQueue(
             self,
             'UmccriseJobQueue',
@@ -103,13 +112,14 @@ class BatchStack(core.Stack):
             job_queue_name='umccrise_job_queue'
         )
 
-        # TODO: batch job definition
+        # TODO: Replace with proper CDK construct once available
+        # TODO: Same reference issue as with job queue name
         job_definition = batch.CfnJobDefinition(
             self,
             'UmccriseJobDefinition',
             type='container',
             container_properties={
-                "image": "umccr/umccrise:0.15.15",
+                "image": props['container_image'],
                 "vcpus": 2,
                 "memory": 2048,
                 "command": [

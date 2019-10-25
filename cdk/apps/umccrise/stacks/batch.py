@@ -13,23 +13,23 @@ class BatchStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        refdata_bucket = s3.Bucket.from_bucket_attributes(
-            self,
-            'reference_data',
-            bucket_name='umccr-refdata-prod'
-        )
+        ro_buckets = set()
+        for bucket in props['ro_buckets']:
+            tmp_bucket = s3.Bucket.from_bucket_name(
+                self,
+                bucket,
+                bucket_name=bucket
+            )
+            ro_buckets.add(tmp_bucket)
 
-        primary_data_bucket = s3.Bucket.from_bucket_attributes(
-            self,
-            'primary_data',
-            bucket_name='umccr-primary-data-prod'
-        )
-
-        misc_bucket = s3.Bucket.from_bucket_attributes(
-            self,
-            'temp_data',
-            bucket_name='umccr-temp'
-        )
+        rw_buckets = set()
+        for bucket in props['rw_buckets']:
+            tmp_bucket = s3.Bucket.from_bucket_name(
+                self,
+                bucket,
+                bucket_name=bucket
+            )
+            rw_buckets.add(tmp_bucket)
 
         batch_service_role = iam.Role(
             self,
@@ -57,9 +57,10 @@ class BatchStack(core.Stack):
                 iam.ServicePrincipal('ecs.amazonaws.com')
             )
         )
-        refdata_bucket.grant_read(batch_instance_role)
-        primary_data_bucket.grant_read_write(batch_instance_role)
-        misc_bucket.grant_read_write(batch_instance_role)
+        for bucket in ro_buckets:
+            bucket.grant_read(batch_instance_role)
+        for bucket in rw_buckets:
+            bucket.grant_read_write(batch_instance_role)
 
         # Turn the instance role into a Instance Profile
         iam.CfnInstanceProfile(
@@ -85,11 +86,11 @@ class BatchStack(core.Stack):
             type='MANAGED',
             service_role=batch_service_role.role_arn,
             compute_resources={
-                'type': 'SPOT',
+                'type': props['compute_env_type'],
                 'maxvCpus': 128,
                 'minvCpus': 0,
                 'desiredvCpus': 0,
-                'imageId': 'ami-0e3451906ffc529a0',
+                'imageId': props['compute_env_ami'],
                 'spotIamFleetRole': spotfleet_role.role_arn,
                 'instanceRole': batch_instance_role.role_name,
                 'instanceTypes': ['optimal'],
@@ -167,10 +168,13 @@ class BatchStack(core.Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')
             ]
         )
-        primary_data_bucket.grant_read(lambda_role)
-        misc_bucket.grant_read(lambda_role)
 
-        function = lmbda.Function(
+        for bucket in ro_buckets:
+            bucket.grant_read(lambda_role)
+        for bucket in rw_buckets:
+            bucket.grant_read(lambda_role)
+
+        lmbda.Function(
             self,
             'UmccriseLambda',
             handler='umccrise.lambda_handler',
@@ -180,8 +184,8 @@ class BatchStack(core.Stack):
                 'JOBNAME_PREFIX': "UMCCRISE_",
                 'JOBQUEUE': job_queue.job_queue_name,
                 'JOBDEF': job_definition.job_definition_name,
-                'REFDATA_BUCKET': refdata_bucket.bucket_name,
-                'DATA_BUCKET': primary_data_bucket.bucket_name,
+                'REFDATA_BUCKET': props['refdata_bucket'],
+                'DATA_BUCKET': props['data_bucket'],
                 'UMCCRISE_MEM': '50000',
                 'UMCCRISE_VCPUS': '16'
             },

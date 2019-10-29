@@ -364,8 +364,10 @@ def main(samplesheet_file_path, check_only):
     has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
     has_metadata_error = checkMetadataCorrespondence(original_sample_sheet)
     # Only fail on metadata or id errors
-    if has_header_error or has_id_error or has_index_error or has_metadata_error:
-        raise ValueError(f"Validation detected errors. Please review the error logs!")
+    if has_index_error:
+        print("Index errors detected. Note: the pipeline will ignore those, please make sure to review those errors!")
+    if has_header_error or has_id_error or has_metadata_error:
+        raise ValueError("Pipeline breaking validation detected errors. Please review the error logs!")
 
     # Split and write individual SampleSheets, based on indexes and technology (10X)
     if not check_only:

@@ -184,8 +184,9 @@ def checkMetadataCorrespondence(samplesheet):
         # check sample ID/Name match
         ss_sn = column_values[sample_id_column_name].item() + '_' + column_values[library_id_column_name].item()
         if ss_sn != ss_sample_id:
-            logger.warn(f"Sample_ID of SampleSheet ({ss_sample_id}) does not match " +
-                        f"SampleID/LibraryID of metadata ({ss_sn})")
+            has_error = True
+            logger.error(f"Sample_ID of SampleSheet ({ss_sample_id}) does not match " +
+                         f"SampleID/LibraryID of metadata ({ss_sn})")
 
         # exclude 10X samples for now, as they usually don't comply
         if column_values[type_column_name].item() != '10X':

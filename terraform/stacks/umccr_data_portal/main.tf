@@ -562,9 +562,18 @@ resource "aws_iam_role" "codebuild_apis_role" {
   assume_role_policy = "${data.template_file.codebuild_apis_role_assume_role_policy.rendered}"
 }
 
+data "aws_caller_identity" "current" {}
+
 # IAM policy specific for the apis side 
 data "template_file" "codebuild_apis_policy" {
   template = "${file("policies/codebuild_apis_policy.json")}"
+
+  vars {
+    subnet_id = "${aws_subnet.backend_private_1.id}",
+
+    region = "${data.aws_region.current.name}",
+    account_id = "${data.aws_caller_identity.current.account_id}"
+  }
 }
 
 resource "aws_iam_policy" "codebuild_apis_policy" {
@@ -761,6 +770,19 @@ resource "aws_codebuild_project" "codebuild_apis" {
     }
   }
 
+  # Put it under the lambda VPC allowing for testing
+  vpc_config {
+    vpc_id = "${aws_vpc.backend_vpc.id}"
+
+    subnets = [
+      "${aws_subnet.backend_private_1.id}",
+    ]
+
+    security_group_ids = [
+      "${aws_security_group.codebuild_apis_security_group.id}",
+    ]
+  }
+
   source {
     type            = "GITHUB"
     location        = "https://github.com/${local.org_name}/${local.github_repo_apis}.git"
@@ -871,9 +893,8 @@ resource "aws_vpc_endpoint" "ssm_access" {
   ]
 
   subnet_ids = [
-    "${aws_subnet.backend_main_1.id}",
-    "${aws_subnet.backend_main_2.id}",
-    "${aws_subnet.backend_main_3.id}",
+    "${aws_subnet.backend_private_2.id}",
+    "${aws_subnet.backend_private_3.id}",
   ]
 
   private_dns_enabled = true
@@ -890,8 +911,61 @@ resource "aws_vpc_endpoint" "lims_access" {
   ]
 }
 
-# Subnet in the VPC
-resource "aws_subnet" "backend_main_1" {
+resource "aws_internet_gateway" "backend_gw" {
+  vpc_id = "${aws_vpc.backend_vpc.id}"
+}
+
+# Elastic IP to be used for the NAT Gateway
+resource "aws_eip" "backend_nat_eip" {
+  vpc = true
+}
+
+# NAT Gateway is required for CodeBuild so it can reach public endpoints
+# NAT Gateway sits in the public subnet
+resource "aws_nat_gateway" "backend_nat_gw" {
+  allocation_id = "${aws_eip.backend_nat_eip.id}"
+  subnet_id = "${aws_subnet.backend_public.id}"
+
+  depends_on = ["aws_internet_gateway.backend_gw"]
+}
+
+resource "aws_subnet" "backend_public" {
+  vpc_id            = "${aws_vpc.backend_vpc.id}"
+  cidr_block        = "10.0.0.0/24"
+  availability_zone = "ap-southeast-2a"
+
+  timeouts {
+    // https://www.terraform.io/docs/providers/aws/r/subnet.html
+    delete = "45m"
+  }
+}
+
+# Connect public subnet to internet gateway
+resource "aws_route_table" "backend_public" {
+  vpc_id = "${aws_vpc.backend_vpc.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.backend_gw.id}"
+  }
+}
+
+resource "aws_route_table_association" "backend_public" {
+  route_table_id = "${aws_route_table.backend_public.id}"
+  subnet_id = "${aws_subnet.backend_public.id}"
+}
+
+# Route table for private subnets
+resource "aws_route_table" "backend_private" {
+  vpc_id = "${aws_vpc.backend_vpc.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = "${aws_nat_gateway.backend_nat_gw.id}"
+  }
+}
+
+resource "aws_subnet" "backend_private_1" {
   vpc_id            = "${aws_vpc.backend_vpc.id}"
   cidr_block        = "10.0.1.0/24"
   availability_zone = "ap-southeast-2a"
@@ -902,7 +976,12 @@ resource "aws_subnet" "backend_main_1" {
   }
 }
 
-resource "aws_subnet" "backend_main_2" {
+resource "aws_route_table_association" "backend_private_1" {
+  route_table_id = "${aws_route_table.backend_private.id}"
+  subnet_id = "${aws_subnet.backend_private_1.id}"
+}
+
+resource "aws_subnet" "backend_private_2" {
   vpc_id            = "${aws_vpc.backend_vpc.id}"
   cidr_block        = "10.0.2.0/24"
   availability_zone = "ap-southeast-2b"
@@ -913,7 +992,12 @@ resource "aws_subnet" "backend_main_2" {
   }
 }
 
-resource "aws_subnet" "backend_main_3" {
+resource "aws_route_table_association" "backend_private_2" {
+  route_table_id = "${aws_route_table.backend_private.id}"
+  subnet_id = "${aws_subnet.backend_private_2.id}"
+}
+
+resource "aws_subnet" "backend_private_3" {
   vpc_id            = "${aws_vpc.backend_vpc.id}"
   cidr_block        = "10.0.3.0/24"
   availability_zone = "ap-southeast-2c"
@@ -923,6 +1007,12 @@ resource "aws_subnet" "backend_main_3" {
     delete = "45m"
   }
 }
+
+resource "aws_route_table_association" "backend_private_3" {
+  route_table_id = "${aws_route_table.backend_private.id}"
+  subnet_id = "${aws_subnet.backend_private_3.id}"
+}
+
 
 # Security group for lambda functions
 resource "aws_security_group" "lambda_security_group" {
@@ -945,17 +1035,38 @@ resource "aws_security_group" "lambda_security_group" {
   }
 }
 
+# Use a seperate security group for CodeBuild for apis
+resource "aws_security_group" "codebuild_apis_security_group" {
+  vpc_id      = "${aws_vpc.backend_vpc.id}"
+  name        = "${local.stack_name_us}_codebuild_apis"
+  description = "Security group for codebuild for backend (apis)"
+
+  # No ingress traffic allowed to your builds
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # Security group for RDS
 resource "aws_security_group" "rds_security_group" {
   vpc_id      = "${aws_vpc.backend_vpc.id}"
   name        = "${local.stack_name_us}_rds"
   description = "Allow inbound traffic for RDS MySQL"
 
+  # Allow access from lambda functions and codebuild for apis
   ingress {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = ["${aws_security_group.lambda_security_group.id}"]
+
+    # Allowing both lambda functions and codebuild (intergation tests) to access RDS
+    security_groups = [
+      "${aws_security_group.lambda_security_group.id}",
+      "${aws_security_group.codebuild_apis_security_group.id}",
+    ]
   }
 
   egress {
@@ -971,9 +1082,8 @@ resource "aws_db_subnet_group" "rds" {
   name = "${local.stack_name_us}_db_subnet_group"
 
   subnet_ids = [
-    "${aws_subnet.backend_main_1.id}",
-    "${aws_subnet.backend_main_2.id}",
-    "${aws_subnet.backend_main_3.id}",
+    "${aws_subnet.backend_private_2.id}",
+    "${aws_subnet.backend_private_3.id}",
   ]
 }
 

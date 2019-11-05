@@ -184,8 +184,9 @@ def checkMetadataCorrespondence(samplesheet):
         # check sample ID/Name match
         ss_sn = column_values[sample_id_column_name].item() + '_' + column_values[library_id_column_name].item()
         if ss_sn != ss_sample_id:
-            logger.warn(f"Sample_ID of SampleSheet ({ss_sample_id}) does not match " +
-                        f"SampleID/LibraryID of metadata ({ss_sn})")
+            has_error = True
+            logger.error(f"Sample_ID of SampleSheet ({ss_sample_id}) does not match " +
+                         f"SampleID/LibraryID of metadata ({ss_sn})")
 
         # exclude 10X samples for now, as they usually don't comply
         if column_values[type_column_name].item() != '10X':
@@ -364,8 +365,10 @@ def main(samplesheet_file_path, check_only):
     has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
     has_metadata_error = checkMetadataCorrespondence(original_sample_sheet)
     # Only fail on metadata or id errors
-    if has_header_error or has_id_error or has_index_error or has_metadata_error:
-        raise ValueError(f"Validation detected errors. Please review the error logs!")
+    if has_index_error:
+        print("Index errors detected. Note: the pipeline will ignore those, please make sure to review those errors!")
+    if has_header_error or has_id_error or has_metadata_error:
+        raise ValueError("Pipeline breaking validation detected errors. Please review the error logs!")
 
     # Split and write individual SampleSheets, based on indexes and technology (10X)
     if not check_only:

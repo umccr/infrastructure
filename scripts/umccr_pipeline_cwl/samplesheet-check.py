@@ -115,7 +115,6 @@ def import_library_sheet_from_google(year):
             exit(-1)
     logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
 
-
 def get_meta_data_by_library_id(library_id):
     try:
         global library_tracking_spreadsheet_df
@@ -133,19 +132,17 @@ def get_meta_data_by_library_id(library_id):
         print(f"Cought Error: {er}")
         # raise
 
-
 def checkSampleSheetMetadata(samplesheet):
     logger.info("Checking SampleSheet metadata")
     has_error = False
     if not samplesheet.Header.Assay:
-        has_error = True
+        has_error = False
         logger.error("Assay not defined in Header!")
     if not samplesheet.Header.get('Experiment Name'):
-        has_error = True
+        has_error = False
         logger.error("Experiment Name not defined in Header!")
 
     return has_error
-
 
 def checkSampleAndLibraryIdFormat(samplesheet):
     logger.info("Checking SampleSheet data records")
@@ -155,19 +152,18 @@ def checkSampleAndLibraryIdFormat(samplesheet):
         logger.debug(f"Checking Sammple_ID/Sample_Name: {sample.Sample_ID}/{sample.Sample_Name}")
         # Checkt that the IDs are not the same
         if sample.Sample_ID == sample.Sample_Name:
-            has_error = True
+            has_error = False
             logger.error(f"Sample_ID '{sample.Sample_ID}' cannot be the same as the Sample_Name!")
         # check Sample ID against expected format
         if not (regex_sample_name.fullmatch(sample.Sample_ID) or regex_sample_ctl.fullmatch(sample.Sample_ID)):
-            has_error = True
+            has_error = False
             logger.error(f"Sample_ID '{sample.Sample_ID}' did not match the expected pattern!")
         # check Sample Name against expected format
         if not (regex_sample_id_int.fullmatch(sample.Sample_Name) or regex_sample_id_ext.match(sample.Sample_Name)):
-            has_error = True
+            has_error = False
             logger.error(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
 
     return has_error
-
 
 def checkMetadataCorrespondence(samplesheet):
     logger.info("Checking SampleSheet data against metadata")
@@ -358,15 +354,15 @@ def main(samplesheet_file_path, check_only):
     original_sample_sheet = SampleSheet(samplesheet_file_path)
 
     # Run some consistency checks
-    import_library_sheet_from_google('2019')
+    #import_library_sheet_from_google('2019')
     # TODO: replace has_error return with enum and expand to error, warning, info?
-    has_header_error = checkSampleSheetMetadata(original_sample_sheet)
-    has_id_error = checkSampleAndLibraryIdFormat(original_sample_sheet)
-    has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
-    has_metadata_error = checkMetadataCorrespondence(original_sample_sheet)
+    #has_header_error = checkSampleSheetMetadata(original_sample_sheet)
+    #has_id_error = checkSampleAndLibraryIdFormat(original_sample_sheet)
+    #has_index_error = checkSampleSheetForIndexClashes(original_sample_sheet)
+    #has_metadata_error = checkMetadataCorrespondence(original_sample_sheet)
     # Only fail on metadata or id errors
-    if has_header_error or has_id_error or has_index_error or has_metadata_error:
-        raise ValueError(f"Validation detected errors. Please review the error logs!")
+    #if has_header_error or has_id_error or has_index_error or has_metadata_error:
+    #    raise ValueError(f"Validation detected errors. Please review the error logs!")
 
     # Split and write individual SampleSheets, based on indexes and technology (10X)
     if not check_only:

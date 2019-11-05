@@ -51,8 +51,8 @@ variable "workspace_refdata_bucket" {
   type = "map"
 
   default = {
-    prod = "umccr-refdata-prod/WTS-report/data"
-    dev  = "umccr-misc-temp/WTS-report/data"
+    prod = "umccr-refdata-prod"
+    dev  = "umccr-misc-temp"
   }
 }
 

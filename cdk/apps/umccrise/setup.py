@@ -6,22 +6,28 @@ with open("README.md") as fp:
 
 
 setuptools.setup(
-    name="cdk",
+    name="umccrise_cdk",
     version="0.0.1",
 
-    description="An empty CDK Python app",
+    description="An CDK Python app to deploy the stack for UMCCRise",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
     author="author",
 
-    package_dir={"": "cdk"},
-    packages=setuptools.find_packages(where="cdk"),
+    package_dir={"": "stacks"},
+    packages=setuptools.find_packages(where="stacks"),
 
     install_requires=[
         "aws-cdk.core",
-        "aws-cdk.aws-codebuild",
-        "aws-cdk.aws-codepipeline"
+        "aws_cdk.aws_lambda",
+        "aws_cdk.aws_batch",
+        "aws_cdk.aws_iam",
+        "aws_cdk.aws_s3",
+        "aws_cdk.aws_ec2",
+        "aws_cdk.aws_codebuild",
+        "aws_cdk.aws_codecommit",
+        "aws_cdk.aws_codepipeline"
     ],
 
     python_requires=">=3.6",

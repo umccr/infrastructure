@@ -103,7 +103,7 @@ module "compute_env" {
   stack_name            = "${var.stack_name}"
   compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
   image_id              = "${var.workspace_umccrise_image_id[terraform.workspace]}"
-  instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge", "m5.8xlarge"]
+  instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"

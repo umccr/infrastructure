@@ -22,7 +22,7 @@ def lambda_handler(event, context):
     ref_dataset = event['refDataset'] if event.get('refDataset') else os.environ.get('REF_DATASET')
 
     data_wts_dir = event['dataDirWTS']
-    data_wgs_dir = event['dataDirWGS']
+    data_wgs_dir = event['dataDirWGS'] if event.get('dataDirWGS') else ""
     job_name = data_bucket + "---" + data_wts_dir.replace('/', '_').replace('.', '_')
     job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
 
@@ -37,14 +37,15 @@ def lambda_handler(event, context):
                 'message': f"Provided S3 path ({data_wts_dir}) does not exist in bucket {data_bucket}!"
             }
 
-        response_wgs = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=data_wgs_dir)
-        print("S3 list response: " + json.dumps(response_wgs, indent=2, sort_keys=True, default=str))
-        if not response_wgs.get('Contents') or len(response_wgs['Contents']) < 1:
-            return {
-                'statusCode': 400,
-                'error': 'Bad parameter',
-                'message': f"Provided S3 path ({data_wgs_dir}) does not exist in bucket {data_bucket}!"
-            }
+        if event.get('dataDirWGS'):
+            response_wgs = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=data_wgs_dir)
+            print("S3 list response: " + json.dumps(response_wgs, indent=2, sort_keys=True, default=str))
+            if not response_wgs.get('Contents') or len(response_wgs['Contents']) < 1:
+                return {
+                    'statusCode': 400,
+                    'error': 'Bad parameter',
+                    'message': f"Provided S3 path ({data_wgs_dir}) does not exist in bucket {data_bucket}!"
+                }
 
     # create and submit a Batch job request
         container_overrides['environment'] = [

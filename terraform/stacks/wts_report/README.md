@@ -10,13 +10,13 @@ NOTE: IN the normal case both WGS and WTS should be available.
 # invoke the WTS report lambda
 aws lambda invoke \
     --function-name wts_report_trigger_lambda_prod  \
-    --payload '{"dataDirWGS":"wts-report-test/WGS/2019-09-26/umccrised/SAMPLE123", "dataDirWTS":"wts-report-test/WTS/2019-09-26/final/SAMPLE123"}'
+    --payload '{"dataDirWGS":"wts-report-test/WGS/2019-09-26/umccrised/SAMPLE123", "dataDirWTS":"wts-report-test/WTS/2019-09-26/final/SAMPLE123"}' \
     /tmp/lambda.output
 
 # to run on data in the temp bucket or to change memory/cpu requirements
 aws lambda invoke \
     --function-name wts_report_trigger_lambda_prod  \
-    --payload '{"dataDirWGS":"wts-report-test/WGS/2019-09-26/umccrised/SAMPLE123", "dataDirWTS":"wts-report-test/WTS/2019-09-26/final/SAMPLE123", "dataBucket":"umccr-temp", "memory":"32000", "vcpus":"8", "refDataset":"PANCAN"}'
+    --payload '{"dataDirWGS":"wts-report-test/WGS/2019-09-26/umccrised/SAMPLE123", "dataDirWTS":"wts-report-test/WTS/2019-09-26/final/SAMPLE123", "dataBucket":"umccr-temp", "memory":"32000", "vcpus":"8", "refDataset":"PANCAN"}' \
     /tmp/lambda.output
 
 # to list the umccr/wtsreport Docker container version used in the Batch job

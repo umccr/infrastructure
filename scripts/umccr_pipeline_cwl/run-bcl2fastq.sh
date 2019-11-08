@@ -20,10 +20,9 @@ FLAG_UMI="--no-lane-splitting -r 4 -p 24 -w 4 --barcode-mismatches 1 --mask-shor
 function write_log {
   msg="$(date +'%Y-%m-%d %H:%M:%S.%N') $script_name: $1"
   if test "$DEPLOY_ENV" = "prod"; then
-    echo "$msg" >> $DIR/${script_name}.log
+    echo "$msg" >> ${script_name}.log
   else
-    echo "$msg" >> $DIR/${script_name}.dev.log
-    echo "$msg"
+    echo "$msg" >> ${script_name}.dev.log
   fi
 }
 

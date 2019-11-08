@@ -4,12 +4,12 @@ set -eo pipefail
 ################################################################################
 # Constants
 
-docker_image="umccr/multiqc:1.1"
+docker_image="umccr/multiqc:1.2"
 CASE_BCL2FASTQ="bcl2fastq"
 CASE_INTEROP="interop"
 fastq_base_path="/storage/shared/bcl2fastq_output"
 bcl_base_path="/storage/shared/raw/Baymax"
-qc_base_path="/storage/shared/dev/multiQC"
+qc_base_path="/storage/shared/multiQC"
 qc_report_path="$qc_base_path/Reports"
 qc_data_path="$qc_base_path/Data"
 qc_fastq_source_path="$qc_base_path/Data"
@@ -33,12 +33,23 @@ function write_log {
 
 function backup_qc_source_data {
     run_id=$1
-    cmd="rsync -ah ${bcl_base_path}/${run_id} ${qc_data_path} --exclude Thumbnail_Images --exclude Data --exclude Recipe --exclude Logs --exclude Config --exclude *Complete.txt"
-    write_log "INFO: running command: $cmd"
-    eval "$cmd"
-    cmd="rsync -ah ${fastq_base_path}/${run_id}/Stats_custom.* ${qc_data_path}/${run_id}/"
-    write_log "INFO: running command: $cmd"
-    eval "$cmd"
+    source_dir=${bcl_base_path}/${run_id}
+    if test -e $source_dir; then
+        cmd="rsync -ah $source_dir ${qc_data_path} --exclude Thumbnail_Images --exclude Data --exclude Recipe --exclude Logs --exclude Config --exclude *Complete.txt"
+        write_log "INFO: running command: $cmd"
+        eval "$cmd"
+    else
+        write_log "INFO: Source data directory ($source_dir) does not exist. Assuming data is already present."
+    fi
+
+    source_dir=${fastq_base_path}/${run_id}
+    if test -e $source_dir; then
+        cmd="rsync -ah ${fastq_base_path}/${run_id}/Stats_custom.* ${qc_data_path}/${run_id}/"
+        write_log "INFO: running command: $cmd"
+        eval "$cmd"
+    else
+        write_log "INFO: Source data directory ($source_dir) does not exist. Assuming data is already present."
+    fi
 }
 
 ################################################################################

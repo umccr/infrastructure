@@ -27,3 +27,9 @@ aws batch describe-job-definitions \
 ```
 
 Each AWS Batch wts_report job will overwrite any existing output in the `wts-report` directory. Rerunning a job will therefore result in the loss of the previous results.
+
+# List batch jobs
+aws batch list-jobs
+
+# Terminate a job
+aws batch terminate-job --job-id 6b90c9af-832e-4aa8-ab0c-e78201f479b4 --reason "Wrong parameters provided"

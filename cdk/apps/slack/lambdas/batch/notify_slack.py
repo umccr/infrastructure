@@ -90,6 +90,18 @@ def lambda_handler(event, context):
         batch_job_definition = event_detail.get('jobDefinition')
         batch_job_definition_short = batch_job_definition.split('/')[1]
 
+        status_message = f"Status: *{batch_job_status.upper()}*"
+        # inspect the status reason in case of failure
+        if batch_job_status == 'failed':
+            status_reason = event_detail.get('statusReason')
+            if not status_reason:
+                attempts = event_detail.get('attempts')
+                if attempts and len(attempts) > 0:
+                    # assume one attempt (may need to be revised in future)
+                    status_reason = attempts[0].get('statusReason')
+            if status_reason:
+                status_message += f" reason: {status_reason}"
+
         batch_container = event_detail.get('container')
         container_image = batch_container.get('image')
         container_vcpu = batch_container.get('vcpus')
@@ -104,7 +116,7 @@ def lambda_handler(event, context):
                 "mrkdwn_in": ["pretext"],
                 "fallback": f"Job {batch_job_name} {batch_job_status}",
                 "color": slack_color,
-                "pretext": f"Status: *{batch_job_status.upper()}*",
+                "pretext": status_message,
                 "title": f"JobID: {batch_job_id}",
                 "text": "Batch Job Attributes:",
                 "fields": [

@@ -14,7 +14,8 @@
         {
             "Effect": "Allow",
             "Action": [
-                "logs:CreateExportTask"
+                "logs:CreateExportTask",
+                "batch:TerminateJob"
             ],
             "Resource": "*"
         },

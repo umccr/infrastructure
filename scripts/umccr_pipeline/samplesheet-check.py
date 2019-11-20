@@ -46,16 +46,17 @@ source_values = ['Blood', 'Cell_line', 'FFPE', 'FNA', 'Organoid', 'RNA', 'Tissue
 
 
 # Regex pattern for Sample ID/Name
-topup_exp = '(?:_topup\d?)?'
-sample_name_int = '(?:PRJ|CCR|MDX)\d{6}'
-sample_name_ext = '(_.+)?'
-sample_control = '(?:NTC|PTC)'
-sample_id_int = 'L\d{7}'
-sample_id_ext = 'L' + sample_name_int
-regex_sample_id_int = re.compile(sample_id_int + topup_exp)
-regex_sample_id_ext = re.compile(sample_id_ext + topup_exp)
-regex_sample_name = re.compile(sample_name_int + sample_name_ext + topup_exp)
-regex_sample_ctl = re.compile(sample_control + sample_name_ext)
+topup_exp = '(?:_topup\d?)'
+sample_id = '(?:PRJ|CCR|MDX)\d{6}'
+sample_control = '(?:NTC|PTC)_\w+'
+library_id_int = 'L\d{7}'
+library_id_ext = 'L' + sample_id
+library_id = '(?:' + library_id_int + '|' + library_id_ext + ')' + topup_exp + '?'
+
+regex_sample_id = re.compile(sample_id + '_' + library_id)
+regex_sample_id_ctl = re.compile(sample_control + library_id)
+regex_sample_name = re.compile(library_id)
+regex_topup = re.compile(topup_exp)
 
 
 if DEPLOY_ENV == 'prod':
@@ -104,7 +105,7 @@ def str_compare(a, b):
 def import_library_sheet_from_google(year):
     global library_tracking_spreadsheet_df
     spread = Spread(lab_spreadsheet_id)
-    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet='2019', index=0, header_rows=1, start_row=1)
+    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet=year, index=0, header_rows=1, start_row=1)
     hit = library_tracking_spreadsheet_df.iloc[0]
     logger.debug(f"First record: {hit}")
     for column_name in metadata_column_names:
@@ -119,18 +120,17 @@ def get_meta_data_by_library_id(library_id):
     try:
         global library_tracking_spreadsheet_df
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
-        # We expect exactly one matching record, not more, not less!
-        if len(hit) == 1:
-            logger.debug(f"Unique entry found for sample ID {library_id}")
-        else:
-            raise ValueError(f"No unique ({len(hit)}) entry found for sample ID {library_id}")
+    except (KeyError, NameError, TypeError, Exception) as er:
+        logger.error(f"Error trying to find library ID {library_id}! Error: {er}")
 
-        return hit
-    except Exception as e:
-        raise ValueError(f"Could not find entry for sample {library_id}! Exception {e}")
-    except (KeyError, NameError, TypeError) as er:
-        print(f"Cought Error: {er}")
-        # raise
+    # We expect exactly one matching record, not more, not less!
+    if len(hit) == 1:
+        logger.debug(f"Unique entry found for sample ID {library_id}")
+    elif len(hit) > 1:
+        logger.error(f"Multiple entries for library ID {library_id}!")
+    else:
+        logger.error(f"No entry for library ID {library_id}")
+    return hit
 
 
 def checkSampleSheetMetadata(samplesheet):
@@ -157,11 +157,11 @@ def checkSampleAndLibraryIdFormat(samplesheet):
             has_error = True
             logger.error(f"Sample_ID '{sample.Sample_ID}' cannot be the same as the Sample_Name!")
         # check Sample ID against expected format
-        if not (regex_sample_name.fullmatch(sample.Sample_ID) or regex_sample_ctl.fullmatch(sample.Sample_ID)):
+        if not (regex_sample_id.fullmatch(sample.Sample_ID) or regex_sample_id_ctl.fullmatch(sample.Sample_ID)):
             has_error = True
             logger.error(f"Sample_ID '{sample.Sample_ID}' did not match the expected pattern!")
         # check Sample Name against expected format
-        if not (regex_sample_id_int.fullmatch(sample.Sample_Name) or regex_sample_id_ext.match(sample.Sample_Name)):
+        if not regex_sample_name.fullmatch(sample.Sample_Name):
             has_error = True
             logger.error(f"Sample_Name '{sample.Sample_Name}' did not match the expected pattern!")
 
@@ -179,6 +179,9 @@ def checkMetadataCorrespondence(samplesheet):
 
         # Make sure the ID exists and is unique
         column_values = get_meta_data_by_library_id(ss_sample_name)
+        if len(column_values) != 1:
+            has_error = False
+            continue
         logger.debug(f"Retrieved values: {column_values} for sample {ss_sample_name}.")
 
         # check sample ID/Name match
@@ -212,6 +215,13 @@ def checkMetadataCorrespondence(samplesheet):
             if p_name != sample.Sample_Project:
                 logger.warn(f"Project of SampleSheet ({sample.Sample_Project}) does not match " +
                             f"ProjectName of metadata ({p_name})")
+
+        # check that the primary library for the topup exists
+        if regex_topup.search(sample.Sample_Name):
+            orig_library_id = regex_topup.sub('', sample.Sample_Name)
+            if len(get_meta_data_by_library_id(orig_library_id)) != 1:
+                logger.error(f"Couldn't find library {orig_library_id} for topup {sample.Sample_Name}")
+                has_error = True
 
     return has_error
 

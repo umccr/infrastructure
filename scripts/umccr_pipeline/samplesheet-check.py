@@ -27,16 +27,30 @@ type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
 phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
 source_column_name = 'Source'  # tissue, FFPE, ...
 quality_column_name = 'Quality'  # Good, Poor, Borderline
-metadata_column_names = (library_id_column_name,
-                         subject_id_column_name,
-                         sample_id_column_name,
-                         sample_name_column_name,
-                         project_name_column_name,
-                         project_owner_column_name,
-                         type_column_name,
-                         phenotype_column_name,
-                         source_column_name,
-                         quality_column_name)
+metadata_column_names = (
+    library_id_column_name,
+    subject_id_column_name,
+    sample_id_column_name,
+    sample_name_column_name,
+    project_name_column_name,
+    project_owner_column_name,
+    type_column_name,
+    phenotype_column_name,
+    source_column_name,
+    quality_column_name)
+val_phenotype_column_name = "PhenotypeValues"
+val_quality_column_name = "QualityValues"
+val_source_column_name = "SourceValues"
+val_type_column_name = "TypeValues"
+val_project_name_column_name = "ProjectNameValues"
+val_project_owner_column_name = "ProjectOwnerValues"
+metadata_validation_column_names = (
+    val_phenotype_column_name,
+    val_quality_column_name,
+    val_source_column_name,
+    val_type_column_name,
+    val_project_name_column_name,
+    val_project_owner_column_name)
 
 # TODO: retrieve allowed values from metadata sheet
 type_values = ['WGS', 'WTS', '10X', 'TSO', 'Exome', 'ctDNA', 'TSO_RNA', 'TSO_DNA', 'other']
@@ -116,6 +130,20 @@ def import_library_sheet_from_google(year):
     logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
 
 
+def import_library_sheet_validation_from_google():
+    global validation_df
+    spread = Spread(lab_spreadsheet_id)
+    validation_df = spread.sheet_to_df(sheet='Validation', index=0, header_rows=1, start_row=1)
+    hit = validation_df.iloc[0]
+    logger.debug(f"First record of validation data: {hit}")
+    for column_name in metadata_validation_column_names:
+        logger.debug(f"Checking for column name {column_name}...")
+        if column_name not in hit:
+            logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
+            exit(-1)
+    logger.info(f"Loaded library tracking sheet validation data.")
+
+
 def get_meta_data_by_library_id(library_id):
     try:
         global library_tracking_spreadsheet_df
@@ -171,6 +199,7 @@ def checkSampleAndLibraryIdFormat(samplesheet):
 def checkMetadataCorrespondence(samplesheet):
     logger.info("Checking SampleSheet data against metadata")
     has_error = False
+    global validation_df
 
     for sample in samplesheet:
         ss_sample_name = sample.Sample_Name  # SampleSheet Sample_Name == LIMS LibraryID
@@ -210,11 +239,18 @@ def checkMetadataCorrespondence(samplesheet):
             # check project name: WARN if not consistent
             p_name = column_values[project_name_column_name].item()
             p_owner = column_values[project_owner_column_name].item()
-            if p_owner != '':
-                p_name = p_owner + '_' + p_name
-            if p_name != sample.Sample_Project:
-                logger.warn(f"Project of SampleSheet ({sample.Sample_Project}) does not match " +
-                            f"ProjectName of metadata ({p_name})")
+            if p_owner == '':
+                has_error = True
+                logger.error(f"No project owner found for sample {sample.Sample_ID}")
+            if len(validation_df[validation_df[val_project_owner_column_name] == p_owner]) != 1:
+                has_error = True
+                logger.error(f"Project owner {p_owner} not found in allowed values!")
+            if p_name == '':
+                has_error = True
+                logger.error(f"No project name found for sample {sample.Sample_ID}")
+            if len(validation_df[validation_df[val_project_name_column_name] == p_name]) != 1:
+                has_error = True
+                logger.error(f"Project name {p_name} not found in allowed values!")
 
         # check that the primary library for the topup exists
         if regex_topup.search(sample.Sample_Name):
@@ -369,6 +405,7 @@ def main(samplesheet_file_path, check_only):
 
     # Run some consistency checks
     import_library_sheet_from_google('2019')
+    import_library_sheet_validation_from_google()
     # TODO: replace has_error return with enum and expand to error, warning, info?
     has_header_error = checkSampleSheetMetadata(original_sample_sheet)
     has_id_error = checkSampleAndLibraryIdFormat(original_sample_sheet)

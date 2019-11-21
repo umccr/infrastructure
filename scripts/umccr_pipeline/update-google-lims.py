@@ -52,18 +52,43 @@ results_column_name = 'Results'
 trello_column_name = 'Trello'
 notes_column_name = 'Notes'
 todo_column_name = 'ToDo'
-
-column_names = (subject_id_column_name, subject_ext_id_column_name, type_column_name,
-                phenotype_column_name, source_column_name, quality_column_name)
+column_names = (
+    subject_id_column_name,
+    subject_ext_id_column_name,
+    type_column_name,
+    phenotype_column_name,
+    source_column_name,
+    project_name_column_name,
+    project_owner_column_name,
+    quality_column_name)
 
 # column headers of the LIMS spreadsheet
-sheet_column_headers = (illumina_id_column_name, run_column_name, timestamp_column_name, subject_id_column_name,
-                        sample_id_column_name, library_id_column_name, subject_ext_id_column_name,
-                        sample_ext_id_column_name, library_ext_id_column_name, sample_name_column_name,
-                        project_owner_column_name, project_name_column_name, type_column_name, assay_column_name,
-                        phenotype_column_name, source_column_name, quality_column_name, topup_column_name,
-                        secondary_analysis_column_name, fastq_column_name, number_fastqs_column_name,
-                        results_column_name, trello_column_name, notes_column_name, todo_column_name)
+sheet_column_headers = (
+    illumina_id_column_name,
+    run_column_name,
+    timestamp_column_name,
+    subject_id_column_name,
+    sample_id_column_name,
+    library_id_column_name,
+    subject_ext_id_column_name,
+    sample_ext_id_column_name,
+    library_ext_id_column_name,
+    sample_name_column_name,
+    project_owner_column_name,
+    project_name_column_name,
+    type_column_name,
+    assay_column_name,
+    phenotype_column_name,
+    source_column_name,
+    quality_column_name,
+    topup_column_name,
+    secondary_analysis_column_name,
+    fastq_column_name,
+    number_fastqs_column_name,
+    results_column_name,
+    trello_column_name,
+    notes_column_name,
+    todo_column_name)
 
 # define argument defaults
 if DEPLOY_ENV == 'prod':
@@ -349,8 +374,8 @@ if __name__ == "__main__":
                                 es_id,
                                 '-',
                                 sample.Sample_ID,
-                                '-',
-                                sample.Sample_Project,
+                                column_values[project_owner_column_name],
+                                column_values[project_name_column_name],
                                 column_values[type_column_name],
                                 '-',
                                 column_values[phenotype_column_name],

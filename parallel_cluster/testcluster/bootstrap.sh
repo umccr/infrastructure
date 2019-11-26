@@ -3,13 +3,21 @@ USER="ec2-user"
 
 function bootstrap_all {
     echo "Common setup"
-    yum install -y curl
+    yum update -y
+    yum install -y curl tmux
+    echo "Install docker"
+    yum -y install docker
+    amazon-linux-extras install docker
+    service docker start
+    usermod -a -G docker ec2-user
     echo "Common setup done."
 }
 
 function bootstrap_master {
     echo "Create the sinteractive convenience script"
-    tee /usr/local/bin/sinteractive <<'EOF'
+    # NOTE: PATH is overwritten by some other process,
+    # so we put it somewhere that's generally accessible
+    tee /usr/bin/sinteractive <<'EOF'
 #!/bin/bash
 if [ "${SHELL}" != "/bin/tcsh" ]
 then
@@ -18,17 +26,17 @@ else
   exec srun $* --pty -u ${SHELL} -i
 fi
 EOF
-    chmod 755 /usr/local/bin/sinteractive
+    chmod 755 /usr/bin/sinteractive
 }
 
 function bootstrap_fleet {
     echo "Installing packages ${@} ..."
     yum -y install "${@}"
-    echo "Packages installed"
 }
 
 ################################################################################
 ##### bootstrapping cluster instances
+echo "Bootstrapping instance!"
 
 # log arguments
 echo "bootstrap script has $# arguments"

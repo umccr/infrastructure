@@ -1,15 +1,15 @@
-[aws]
+ [aws]
 aws_region_name = ap-southeast-2
 
 [global]
-cluster_template = default
+cluster_template = onboarding
 update_check     = true
-sanity_check     = true
+sanity_check     = false
 
 
-[cluster default]
+[cluster onboarding]
 key_name              = flo_test
-vpc_settings          = public
+vpc_settings          = onboarding
 efs_settings          = customfs
 s3_read_resource      = *
 master_instance_type  = t2.micro
@@ -18,11 +18,30 @@ post_install          = s3://umccr-onboarding-test/parallel_cluster/testcluster/
 post_install_args     = "R wget"
 ec2_iam_role          = parallelcluster-ec2-instance-role
 scheduler             = slurm
-initial_queue_size    = 0
+initial_queue_size    = 1
 
-[vpc public]
+[cluster dev]
+key_name              = flo-parallel-cluster
+vpc_settings          = dev
+efs_settings          = customfs
+s3_read_resource      = *
+master_instance_type  = t2.micro
+compute_instance_type = t2.micro
+post_install          = s3://umccr-misc-temp/parallel_cluster/testcluster/bootstrap.sh
+post_install_args     = "R wget"
+ec2_iam_role          = parallelcluster-ec2-instance-role
+scheduler             = slurm
+initial_queue_size    = 1
+
+
+[vpc onboarding]
 vpc_id           = vpc-efc2e688
 master_subnet_id = subnet-dcf44a84
+
+[vpc dev]
+vpc_id           = vpc-6ceacc0b
+master_subnet_id = subnet-5549721c
+
 
 [aliases]
 ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}

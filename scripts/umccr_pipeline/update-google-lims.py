@@ -58,6 +58,7 @@ column_names = (
     type_column_name,
     phenotype_column_name,
     source_column_name,
+    assay_column_name,
     project_name_column_name,
     project_owner_column_name,
     quality_column_name)
@@ -102,7 +103,6 @@ else:
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
     lims_spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
 
-library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
 lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
 runfolder_name_expected_length = 29
 fastq_hpc_base_dir = 's3://umccr-fastq-data-prod/'
@@ -141,24 +141,6 @@ def getLogger():
     new_logger.addHandler(console_handler)
 
     return new_logger
-
-
-# deprecated!
-def import_library_sheet(year):
-    # TODO: error handling
-    try:
-        global library_tracking_spreadsheet_df
-        library_tracking_spreadsheet_df = pandas.read_excel(library_tracking_spreadsheet, year)
-        hit = library_tracking_spreadsheet_df.iloc[0]
-        logger.debug(f"First record: {hit}")
-        for column_name in column_names:
-            logger.debug(f"Checking for column name {column_name}...")
-            if column_name not in hit:
-                logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
-                exit(-1)
-        logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
-    except Exception as e:
-        logger.error(f"Failed to load library tracking data from: {library_tracking_spreadsheet}")
 
 
 def import_library_sheet_from_google(year):
@@ -377,7 +359,7 @@ if __name__ == "__main__":
                                 column_values[project_owner_column_name],
                                 column_values[project_name_column_name],
                                 column_values[type_column_name],
-                                '-',
+                                column_values[assay_column_name],
                                 column_values[phenotype_column_name],
                                 column_values[source_column_name],
                                 column_values[quality_column_name],

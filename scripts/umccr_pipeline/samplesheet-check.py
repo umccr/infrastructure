@@ -52,13 +52,6 @@ metadata_validation_column_names = (
     val_project_name_column_name,
     val_project_owner_column_name)
 
-# TODO: retrieve allowed values from metadata sheet
-type_values = ['WGS', 'WTS', '10X', 'TSO', 'Exome', 'ctDNA', 'TSO_RNA', 'TSO_DNA', 'other']
-phenotype_values = ['normal', 'tumor', 'negative-control']
-quality_values = ['Good', 'Poor', 'Borderline']
-source_values = ['Blood', 'Cell_line', 'FFPE', 'FNA', 'Organoid', 'RNA', 'Tissue', 'Water', 'Buccal']
-
-
 # Regex pattern for Sample ID/Name
 topup_exp = '(?:_topup\d?)'
 sample_id = '(?:PRJ|CCR|MDX)\d{6}'
@@ -227,14 +220,14 @@ def checkMetadataCorrespondence(samplesheet):
                 logger.warn(f"No subject ID for {ss_sample_id}")
 
             # check controlled vocab: phenotype, type, source, quality: WARN if not present
-            if column_values[type_column_name].item() not in type_values:
+            if column_values[type_column_name].item() not in validation_df[val_type_column_name].values:
                 logger.warn(f"Unsupported Type '{column_values[type_column_name].item()}' for {ss_sample_id}")
-            if column_values[phenotype_column_name].item() not in phenotype_values:
+            if column_values[phenotype_column_name].item() not in validation_df[val_phenotype_column_name].values:
                 logger.warn(f"Unsupproted Phenotype '{column_values[phenotype_column_name].item()}' for {ss_sample_id}")
-            if column_values[quality_column_name].item() not in quality_values:
-                logger.warn(f"Unsupproted Quality '{column_values[quality_column_name].item()}'' for {ss_sample_id}")
-            if column_values[source_column_name].item() not in source_values:
-                logger.warn(f"Unsupproted Source '{column_values[source_column_name].item()}'' for {ss_sample_id}")
+            if column_values[quality_column_name].item() not in validation_df[val_quality_column_name].values:
+                logger.warn(f"Unsupproted Quality '{column_values[quality_column_name].item()}' for {ss_sample_id}")
+            if column_values[source_column_name].item() not in validation_df[val_source_column_name].values:
+                logger.warn(f"Unsupproted Source '{column_values[source_column_name].item()}' for {ss_sample_id}")
 
             # check project name: WARN if not consistent
             p_name = column_values[project_name_column_name].item()

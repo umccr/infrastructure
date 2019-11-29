@@ -2,6 +2,7 @@
 from aws_cdk import core
 from stacks.cicd import CICDStack
 from stacks.batch import BatchStack
+from stacks.iap_tes import IapTesStack
 
 
 batch_dev_props = {
@@ -26,6 +27,19 @@ batch_prod_props = {
     'data_bucket': 'umccr-primary-data-prod'
 }
 
+iap_tes_dev_props = {
+    'namespace': 'umccrise-iap-tes-dev',
+    'iap_api_base_url': 'aps2.platform.illumina.com',
+    'task_id': 'tdn.3c6ef303643245bfa39542c7493ee0ea',
+    'task_version_id': 'tvn.8ba13f1312144a8682020ae71a4ab9ce',
+    'ssm_param_name': '/iap/jwt-token',
+    'ssm_param_version': 1,
+    'gds_refdata_folder': 'gds://genomes/umccrise2/',
+    'gds_output_folder': 'gds://romanvg/umccrise/output',
+    'gds_log_folder': 'gds://romanvg/logs',
+    'umccrise_image_name': '843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccr',
+    'umccrise_image_tag': 'NOTAG-2a64459695'
+}
 
 app = core.App()
 
@@ -45,6 +59,12 @@ BatchStack(
     batch_prod_props['namespace'],
     batch_prod_props,
     env={'account': '472057503814', 'region': 'ap-southeast-2'}
+)
+IapTesStack(
+    app,
+    iap_tes_dev_props['namespace'],
+    iap_tes_dev_props,
+    env={'account': '843407916570', 'region': 'ap-southeast-2'}
 )
 
 app.synth()

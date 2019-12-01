@@ -4,7 +4,7 @@ set -eo pipefail
 ################################################################################
 # Constants
 
-docker_image="umccr/multiqc:1.2"
+docker_image="umccr/multiqc:1.2.2"
 CASE_BCL2FASTQ="bcl2fastq"
 CASE_INTEROP="interop"
 fastq_base_path="/storage/shared/bcl2fastq_output"

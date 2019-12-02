@@ -29,10 +29,13 @@ def getSSMParam(name):
 
 def call_endpoint(base_url, endpoint, headers, body):
     print(f"POST data: {json.dumps(body)}")
+    print("Establishing connection...")
     conn = http.client.HTTPSConnection(host=base_url)
+    print("Sending request...")
     conn.request("POST", endpoint, json.dumps(body), headers=headers)
+    print("Retrieving response...")
     response = conn.getresponse()
-    print(f"Response status: {response.status}")
+    print(f"Received response with status: {response.status}")
     print(f"Response reason: {response.reason}")
     print(f"Response msg: {response.msg}")
     conn.close()
@@ -63,7 +66,7 @@ def lambda_handler(event, context):
     token = getSSMParam(ssm_parameter_name)
     print(f"Retrieved JWT token: {token[:10]}..{token[-10:]}")
     headers = {
-        'Authorization': f",Bearer {token}",
+        'Authorization': f"Bearer {token}",
         'Content-Type': 'application/json',
         'cache-control': 'no-cache'
     }

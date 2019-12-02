@@ -28,6 +28,7 @@ class IapTesStack(core.Stack):
             runtime=lmbda.Runtime.PYTHON_3_7,
             code=lmbda.Code.from_asset('lambdas/iap_tes'),
             role=lambda_role,
+            timeout=core.Duration.seconds(20),
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],

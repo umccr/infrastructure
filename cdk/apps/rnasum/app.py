@@ -12,8 +12,8 @@ iap_tes_dev_props = {
     'ssm_param_name': '/iap/jwt-token',
     'ssm_param_version': 1,
     'rnasum_image_name': 'umccr/rnasum',
-    'rnasum_image_tag': '0.2.9',
-    'gds_refdata_folder': 'gds://umccr-refdata-dev/RNAsum/',
+    'rnasum_image_tag': '0.3',
+    'gds_refdata_folder': 'gds://umccr-refdata-dev/RNAsum/data/',
     'gds_log_folder': 'gds://teslogs/RNAsum/',
     'ref_data_name': 'PANCAN'
 }

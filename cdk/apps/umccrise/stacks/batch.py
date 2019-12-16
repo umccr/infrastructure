@@ -9,6 +9,7 @@ from aws_cdk import (
 
 
 class BatchStack(core.Stack):
+    # Loosely based on https://msimpson.co.nz/BatchSpot/
 
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -102,6 +103,7 @@ class BatchStack(core.Stack):
         # TODO: Replace with proper CDK construct once available
         # TODO: job_queue_name could result in a clash, but is currently necessary
         #       as we need a reference for the ENV variables of the lambda
+        #       Could/Should append a unique element/string.
         job_queue = batch.CfnJobQueue(
             self,
             'UmccriseJobQueue',

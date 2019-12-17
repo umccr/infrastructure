@@ -50,11 +50,7 @@ def post_to_endpoint(base_url, endpoint, headers, body):
 
 
 def get_sample_name_from_wts_folder(folder):
-    m = re.search(subject_pattern, folder)
-    if m:
-        return m.group(1)
-    else:
-        return "NoSubjectIdFound"
+    return os.path.basename(os.path.normpath(folder))
 
 
 def get_output_folder_from_wts_folder(folder):
@@ -68,18 +64,19 @@ def lambda_handler(event, context):
     # Log the received event in CloudWatch
     print(f"Received event: {json.dumps(event)}")
 
-    # get mandatory and non-default parameters
+    # get mandatory WTS GDS path
     if not event.get('gdsWtsDataFolder'):
         return {
             'status': 'error',
             'message': 'Requried parameter gdsWtsDataFolder missing'
         }
-    gds_wts_data_folder = event['gdsWtsDataFolder'].strip('/')
+    gds_wts_data_folder = event['gdsWtsDataFolder']
     sample_name = get_sample_name_from_wts_folder(gds_wts_data_folder)
     print(f"Extracted sample name: {sample_name}")
     gds_default_output_folder = get_output_folder_from_wts_folder(gds_wts_data_folder)
     print(f"Extracted default output folder: {gds_default_output_folder}")
 
+    # get the WGS path if present and decide whether to run WTG/WGS or WTS only
     if event.get('gdsWgsDataFolder'):
         has_wgs = True
         gds_wgs_data_folder = event['gdsWgsDataFolder']

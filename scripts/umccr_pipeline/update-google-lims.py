@@ -55,6 +55,10 @@ todo_column_name = 'ToDo'
 column_names = (
     subject_id_column_name,
     subject_ext_id_column_name,
+    sample_ext_id_column_name,
+    sample_id_column_name,
+    sample_name_column_name,
+    library_id_column_name,
     type_column_name,
     phenotype_column_name,
     source_column_name,
@@ -346,16 +350,20 @@ if __name__ == "__main__":
                 s_id, es_id = split_at(sample.Sample_ID, '_', 1)
             print(f"Split SampleID {sample.Sample_ID} into intID {s_id} and extID {es_id}")
             print(f"Inserting values {column_values}")
+            # double check LibraryID
+            if not sample.Sample_Name == column_values[library_id_column_name]:
+                raise ValueError(f"Library IDs did not match. Samplesheet: {sample.Sample_Name} " +
+                                 f"Tracking sheet: {column_values[library_id_column_name]}")
             lims_data_rows.add((runfolder,
                                 run_number,
                                 run_timestamp,
                                 column_values[subject_id_column_name],
-                                s_id,
-                                sample.Sample_Name,
+                                column_values[sample_id_column_name],
+                                column_values[library_id_column_name],
                                 column_values[subject_ext_id_column_name],
-                                es_id,
+                                column_values[sample_ext_id_column_name],
                                 '-',
-                                sample.Sample_ID,
+                                column_values[sample_name_column_name],
                                 column_values[project_owner_column_name],
                                 column_values[project_name_column_name],
                                 column_values[type_column_name],

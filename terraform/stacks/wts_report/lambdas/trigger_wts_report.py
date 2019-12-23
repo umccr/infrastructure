@@ -20,6 +20,7 @@ def lambda_handler(event, context):
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     ref_dataset = event['refDataset'] if event.get('refDataset') else os.environ.get('REF_DATASET')
+    genome_build = event['genomeBuild'] if event.get('genomeBUild') else os.environ.get('GENOME_BUILD')
 
     data_wts_dir = event['dataDirWTS']
     data_wgs_dir = event['dataDirWGS'] if event.get('dataDirWGS') else ""
@@ -53,7 +54,8 @@ def lambda_handler(event, context):
             {'name': 'S3_WGS_INPUT_DIR', 'value': data_wgs_dir},
             {'name': 'S3_DATA_BUCKET', 'value': data_bucket},
             {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket},
-            {'name': 'REF_DATASET', 'value': ref_dataset}
+            {'name': 'REF_DATASET', 'value': ref_dataset},
+            {'name': 'GENOME_BUILD', 'value': genome_build}
         ]
 
         if container_mem:

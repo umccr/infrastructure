@@ -18,6 +18,7 @@ def lambda_handler(event, context):
     container_mem = event['memory'] if event.get('memory') else os.environ.get('JOB_MEM')
     container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('JOB_VCPUS')
     data_bucket = event['dataBucket'] if event.get('dataBucket') else os.environ.get('DATA_BUCKET')
+    result_bucket = event['resultBucket'] if event.get('resultBucket') else data_bucket
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
     ref_dataset = event['refDataset'] if event.get('refDataset') else os.environ.get('REF_DATASET')
     genome_build = event['genomeBuild'] if event.get('genomeBUild') else os.environ.get('GENOME_BUILD')
@@ -53,6 +54,7 @@ def lambda_handler(event, context):
             {'name': 'S3_WTS_INPUT_DIR', 'value': data_wts_dir},
             {'name': 'S3_WGS_INPUT_DIR', 'value': data_wgs_dir},
             {'name': 'S3_DATA_BUCKET', 'value': data_bucket},
+            {'name': 'S3_RESULT_BUCKET', 'value': result_bucket},
             {'name': 'S3_REFDATA_BUCKET', 'value': refdata_bucket},
             {'name': 'REF_DATASET', 'value': ref_dataset},
             {'name': 'GENOME_BUILD', 'value': genome_build}

@@ -19,6 +19,8 @@ warnings.simplefilter("ignore")
 ################################################################################
 # CONSTANTS
 
+SHEET_NAME_RUNS = 'Sheet1'
+SHEET_NAME_FAILED = 'Failed Runs'
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
 if not DEPLOY_ENV:
     raise ValueError("DEPLOY_ENV needs to be set!")
@@ -206,20 +208,19 @@ def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run):
     creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
     client = gspread.authorize(creds)
 
-    if failed_run:
-        sheet = client.open_by_key(lims_spreadsheet_id).worksheet('Failed Runs')
-    else:
-        sheet = client.open_by_key(lims_spreadsheet_id).sheet1
+    params = {
+        'valueInputOption': 'USER_ENTERED'
+    }
+    body = {
+        'majorDimension': 'ROWS',
+        'values': list(data_rows)
+    }
 
-    next_row = next_available_row(sheet)
-    for row in data_rows:
-        try:
-            sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
-            next_row += 1
-        except Exception as e:
-            logger.error(f"Caught exception {e} trying to instert row {row}. Trying again...")
-            sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
-            next_row += 1
+    spreadsheet = client.open_by_key(lims_spreadsheet_id)
+    if failed_run:
+        spreadsheet.values_append(SHEET_NAME_FAILED, params, body)
+    else:
+        spreadsheet.values_append(SHEET_NAME_RUNS, params, body)
 
 
 def split_at(s, c, n):

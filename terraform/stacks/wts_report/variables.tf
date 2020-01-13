@@ -74,10 +74,10 @@ variable "workspace_wts_report_wd_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/wts-report/*",
-            "arn:aws:s3:::umccr-temp/*/wts-report/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/wts-report/*",
-            "arn:aws:s3:::umccr-misc-temp/*/wts-report/*"]
+    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/RNAsum/*",
+            "arn:aws:s3:::umccr-temp/*/RNAsum/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/RNAsum/*",
+            "arn:aws:s3:::umccr-misc-temp/*/RNAsum/*"]
   }
 }
 

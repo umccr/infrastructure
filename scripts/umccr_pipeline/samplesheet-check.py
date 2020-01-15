@@ -446,8 +446,12 @@ def main(samplesheet_file_path, check_only):
     logger.info("All done.")
 
 
+# global variables
+# TODO: should be refactored in proper class variables
+library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
+logger = getLogger()
+
 if __name__ == "__main__":
-    logger = getLogger()
     logger.info(f"Invocation with parameters: {sys.argv[1:]}")
 
     if DEPLOY_ENV == "prod":
@@ -472,9 +476,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     samplesheet_file_path = args.samplesheet
     check_only = True if args.check_only else False
-
-    # global variables
-    # TODO: should be refactored in proper class variables
-    library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
 
     main(samplesheet_file_path=samplesheet_file_path, check_only=check_only)

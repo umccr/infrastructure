@@ -78,14 +78,12 @@ fi
 backup_qc_source_data "$runfolder"
 
 
-# TODO: run both cases
-
+if test "$DEPLOY_ENV" = "prod"; then
 # Create QC report from bcl2fastq output
     write_log "INFO: Generating report for $CASE_BCL2FASTQ"
     # construct the base directory and make sure it exists
     bcl2fastq_stats_base_path="$qc_fastq_source_path/$runfolder"
-    if test ! -d "$bcl2fastq_stats_base_path"
-    then
+    if test ! -d "$bcl2fastq_stats_base_path"; then
         write_log "ERROR: Directory does not exist: $bcl2fastq_stats_base_path"
         exit 1
     fi
@@ -111,8 +109,7 @@ backup_qc_source_data "$runfolder"
     write_log "INFO: Generating report for $CASE_INTEROP"
     # construct the base directory and make sure it exists
     interop_base_path="$qc_bcl_source_path/$runfolder"
-    if test ! -d "$interop_base_path"
-    then
+    if test ! -d "$interop_base_path"; then
         write_log "ERROR: Directory does not exist: $interop_base_path"
         exit 1
     fi
@@ -123,5 +120,8 @@ backup_qc_source_data "$runfolder"
     if test "$DEPLOY_ENV" = "prod"; then
         eval "$cmd"
     fi
+else
+    write_log "INFO: Test run, skipping actual work"
+fi
 
 write_log "INFO: All done."

@@ -46,6 +46,10 @@ def getCreatorFromId(id):
         return f"{id} (Florian Reisinger)"
     elif id == '57a99faa-ae79-33f8-9736-454a36b06a43':
         return f"{id} (Service User)"
+    elif id == 'ef928f99-662d-3e9f-8476-303131e9a58a':
+        return f"{id} (Karey Cheong)"
+    elif id == '6696900a-96ea-372a-bc00-ca6bbe19bf7b':
+        return f"{id} (Kym Pham)"
     else:
         return f"{id} (unknown)"
 

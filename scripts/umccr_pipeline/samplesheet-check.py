@@ -67,12 +67,14 @@ regex_sample_name = re.compile(library_id)
 regex_topup = re.compile(topup_exp)
 
 
-if DEPLOY_ENV == 'prod':
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-    lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
-else:
+if DEPLOY_ENV == 'dev':
+    print("DEV")
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
     lab_spreadsheet_id = '1Pgz13btHOJePiImo-NceA8oJKiQBbkWI5D2dLdKpPiY'  # Lab metadata tracking sheet (dev)
+else:
+    print("PROD")
+    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+    lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
 
 
 def getLogger():

@@ -10,6 +10,8 @@ class CICDStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        # As semver dictates: https://regex101.com/r/Ly7O1x/3/
+        semver_tag_regex = r'^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
         refdata = s3.Bucket.from_bucket_attributes(
             self, 'reference_data',
             bucket_name='umccr-refdata-dev'
@@ -29,7 +31,8 @@ class CICDStack(core.Stack):
                         owner = "umccr",
                         repo = "umccrise",
                         clone_depth = 1,
-                        webhook = False # XXX: Switch to manual for now until we deploy secrets manager
+                        webhook = True,
+                        webhook_filters=[ cb.FilterGroup.in_event_of(cb.EventAction.PUSH).and_tag_is(semver_tag_regex) ]
                     )
         );
 

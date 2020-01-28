@@ -53,13 +53,10 @@ aws cloudformation describe-stacks \
     --query 'Stacks[].[StackStatus,StackName,Parameters[?ParameterKey==`userName`]]'
 
 
-# start session
-# NOTE: the argument piping does currently not work! The session starts, but is immediately terminated. Issue submitted to AWS support.
-aws ec2 describe-instances \
+# for convenience: save instance ID in env variable
+export IID=$(aws ec2 describe-instances \
     --query "Reservations[*].Instances[*].[InstanceId]" \
-    --filters 'Name=tag:Creator,Values=vsaveliev' \
-    --filters 'Name=tag:aws:cloudformation:stack-name,Values=vlad-1TB-2' \
-    | jq '.[][][]' \
-    | xargs -I {} aws ssm start-session \
-    --target {}
+    --filters Name=tag:Creator,Values=$USER Name=instance-state-name,Values=running "Name=tag:aws:cloudformation:stack-name,Values=$STACK_NAME" \
+    | jq -r '.[][][]') && \
+    aws ssm start-session --target $IID
 ```

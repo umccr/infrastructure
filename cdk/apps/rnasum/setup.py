@@ -6,10 +6,10 @@ with open("README.md") as fp:
 
 
 setuptools.setup(
-    name="umccrise_cdk",
+    name="rnasum_cdk",
     version="0.0.1",
 
-    description="An CDK Python app to deploy the stack for UMCCRise",
+    description="An CDK Python app to deploy the stack for RNAsum",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
@@ -19,14 +19,8 @@ setuptools.setup(
     packages=setuptools.find_packages(where="stacks"),
 
     install_requires=[
-        "aws_cdk.aws_batch",
-        "aws_cdk.aws_codebuild",
-        "aws_cdk.aws_codecommit",
-        "aws_cdk.aws_codepipeline",
-        "aws_cdk.aws_ec2",
         "aws_cdk.aws_iam",
         "aws_cdk.aws_lambda",
-        "aws_cdk.aws_s3",
         "aws_cdk.aws_ssm",
         "aws-cdk.core"
     ],

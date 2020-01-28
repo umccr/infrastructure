@@ -14,6 +14,14 @@
         {
             "Effect": "Allow",
             "Action": [
+                "logs:CreateExportTask",
+                "batch:TerminateJob"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
                 "s3:PutObject",
                 "s3:RestoreObject",
                 "s3:GetObject",

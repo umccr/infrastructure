@@ -4,11 +4,16 @@ set -eo pipefail
 ################################################################################
 # Constants
 
+docker_image="umccr/multiqc:1.2.2"
 CASE_BCL2FASTQ="bcl2fastq"
 CASE_INTEROP="interop"
-fastq_data_base_path="/storage/shared/bcl2fastq_output"
-bcl_data_base_path="/storage/shared/raw/Baymax"
-qc_output_base_path="/storage/shared/dev/multiQC"
+fastq_base_path="/storage/shared/bcl2fastq_output"
+bcl_base_path="/storage/shared/raw/Baymax"
+qc_base_path="/storage/shared/multiQC"
+qc_report_path="$qc_base_path/Reports"
+qc_data_path="$qc_base_path/Data"
+qc_fastq_source_path="$qc_base_path/Data"
+qc_bcl_source_path="$qc_base_path/Data"
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -26,6 +31,26 @@ function write_log {
     echo "$msg"
 }
 
+function backup_qc_source_data {
+    run_id=$1
+    source_dir=${bcl_base_path}/${run_id}
+    if test -e $source_dir; then
+        cmd="rsync -ah $source_dir ${qc_data_path} --exclude Thumbnail_Images --exclude Data --exclude Recipe --exclude Logs --exclude Config --exclude *Complete.txt"
+        write_log "INFO: running command: $cmd"
+        eval "$cmd"
+    else
+        write_log "INFO: Source data directory ($source_dir) does not exist. Assuming data is already present."
+    fi
+
+    source_dir=${fastq_base_path}/${run_id}
+    if test -e $source_dir; then
+        cmd="rsync -ah ${fastq_base_path}/${run_id}/Stats_custom.* ${qc_data_path}/${run_id}/"
+        write_log "INFO: running command: $cmd"
+        eval "$cmd"
+    else
+        write_log "INFO: Source data directory ($source_dir) does not exist. Assuming data is already present."
+    fi
+}
 
 ################################################################################
 # Actual start of script
@@ -42,25 +67,23 @@ fi
 write_log "INFO: Invocation with parameters: $*"
 
 
-# check input arguments
-use_case=$1
-if test "$use_case" != "$CASE_BCL2FASTQ" && test "$use_case" != "$CASE_INTEROP"; then
-    write_log "ERROR: Unsupported use case $use_case. Supported are: $CASE_BCL2FASTQ and $CASE_INTEROP."
-    exit 1
-fi
-runfolder=$2
+runfolder=$1
 # runfolder format check
 if [[ ! $runfolder =~ ^[0-9]{6}_A00130_[0-9]{4}_.{10}$ ]]; then
     write_log "ERROR: Runfolder does not match expected pattern!"
     exit 1
 fi
 
-if test "$use_case" == "$CASE_BCL2FASTQ"; then
+# Backup data for QC reports
+backup_qc_source_data "$runfolder"
+
+
+if test "$DEPLOY_ENV" = "prod"; then
+# Create QC report from bcl2fastq output
     write_log "INFO: Generating report for $CASE_BCL2FASTQ"
     # construct the base directory and make sure it exists
-    bcl2fastq_stats_base_path="$fastq_data_base_path/$runfolder"
-    if test ! -d "$bcl2fastq_stats_base_path"
-    then
+    bcl2fastq_stats_base_path="$qc_fastq_source_path/$runfolder"
+    if test ! -d "$bcl2fastq_stats_base_path"; then
         write_log "ERROR: Directory does not exist: $bcl2fastq_stats_base_path"
         exit 1
     fi
@@ -75,30 +98,30 @@ if test "$use_case" == "$CASE_BCL2FASTQ"; then
     done
     shopt -u nullglob
 
-    cmd="docker run --rm --user 1002 -v $fastq_data_base_path/$runfolder/:/$runfolder/:ro -v $qc_output_base_path/:/output/ umccr/multiqc multiqc -f -m bcl2fastq $fldr_list -o /output/${runfolder}/ -n ${runfolder}_bcl2fastq_qc.html --title \"UMCCR MultiQC report (bcl2fastq) for $runfolder\""
+    cmd="docker run --rm --user 1002 -v $bcl2fastq_stats_base_path/:/$runfolder/:ro -v $qc_report_path/:/output/ $docker_image multiqc -f -m bcl2fastq $fldr_list -o /output/${runfolder}/ -n ${runfolder}_bcl2fastq_qc.html --title \"UMCCR MultiQC report (bcl2fastq) for $runfolder\""
     write_log "INFO: Running command: $cmd"
     if test "$DEPLOY_ENV" = "prod"; then
         eval "$cmd"
     fi
-fi
 
 
-if test "$use_case" == "$CASE_INTEROP"; then
+# Create QC reports from raw data
     write_log "INFO: Generating report for $CASE_INTEROP"
     # construct the base directory and make sure it exists
-    interop_base_path="$bcl_data_base_path/$runfolder"
-    if test ! -d "$interop_base_path"
-    then
+    interop_base_path="$qc_bcl_source_path/$runfolder"
+    if test ! -d "$interop_base_path"; then
         write_log "ERROR: Directory does not exist: $interop_base_path"
         exit 1
     fi
 
 
-    cmd="docker run --rm --user 1002 -v $interop_base_path/:/$runfolder/:ro -v $qc_output_base_path/:/output/ umccr/multiqc bash -c 'interop_index-summary --csv=1 /${runfolder}/ > /tmp/interop_index-summary.csv; interop_summary --csv=1 /${runfolder}/ > /tmp/interop_summary.csv; multiqc -m interop /tmp/interop*.csv -o /output/${runfolder}/ -n ${runfolder}_interop_qc.html --title \"UMCCR MultiQC report (interop) for $runfolder\"'"
+    cmd="docker run --rm --user 1002 -v $interop_base_path/:/$runfolder/:ro -v $qc_report_path/:/output/ $docker_image bash -c 'interop_index-summary --csv=1 /${runfolder}/ > /tmp/interop_index-summary.csv; interop_summary --csv=1 /${runfolder}/ > /tmp/interop_summary.csv; multiqc -m interop /tmp/interop*.csv -o /output/${runfolder}/ -n ${runfolder}_interop_qc.html --title \"UMCCR MultiQC report (interop) for $runfolder\"'"
     write_log "INFO: Running command: $cmd"
     if test "$DEPLOY_ENV" = "prod"; then
         eval "$cmd"
     fi
+else
+    write_log "INFO: Test run, skipping actual work"
 fi
 
 write_log "INFO: All done."

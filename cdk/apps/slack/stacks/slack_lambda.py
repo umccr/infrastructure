@@ -29,9 +29,9 @@ class IapLambdaStack(core.Stack):
         function = _lambda.Function(
             self,
             'IapSlackLambda',
-            handler='iap_notify_slack.lambda_handler',
+            handler='notify_slack.lambda_handler',
             runtime=_lambda.Runtime.PYTHON_3_7,
-            code=_lambda.Code.asset('lambda'),
+            code=_lambda.Code.asset('lambdas/iap'),
             environment={
                 "SLACK_HOST": "hooks.slack.com",
                 "SLACK_CHANNEL": slack_channel
@@ -67,9 +67,9 @@ class BatchLambdaStack(core.Stack):
         function = _lambda.Function(
             self,
             'BatchSlackLambda',
-            handler='batch_notify_slack.lambda_handler',
+            handler='notify_slack.lambda_handler',
             runtime=_lambda.Runtime.PYTHON_3_7,
-            code=_lambda.Code.asset('lambda'),
+            code=_lambda.Code.asset('lambdas/batch'),
             environment={
                 "SLACK_HOST": "hooks.slack.com",
                 "SLACK_CHANNEL": slack_channel

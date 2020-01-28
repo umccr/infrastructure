@@ -1,5 +1,5 @@
 {
-    "image": "umccr/wtsreport:0.2.2",
+    "image": "umccr/rnasum:0.3.1",
     "vcpus": 2,
     "memory": 2048,
     "command": [

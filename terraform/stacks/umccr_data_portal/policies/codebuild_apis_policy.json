@@ -16,11 +16,41 @@
                 "apigateway:GET",
                 "apigateway:PUT",
                 "apigateway:SetWebACL",
+                "apigateway:UpdateRestApiPolicy",
                 "acm:*",
                 "route53:*",
-                "waf-regional:*"
+                "waf-regional:*",
+                "ssm:*"
             ],
             "Resource": "*"
+        },
+                {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface",
+                "ec2:DescribeDhcpOptions",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeVpcs"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterfacePermission"
+            ],
+            "Resource": "arn:aws:ec2:${region}:${account_id}:network-interface/*",
+            "Condition": {
+                "StringEquals": {
+                    "ec2:Subnet": [
+                        "arn:aws:ec2:${region}:${account_id}:subnet/${subnet_id}"
+                    ],
+                    "ec2:AuthorizedService": "codebuild.amazonaws.com"
+                }
+            }
         }
     ]
 }

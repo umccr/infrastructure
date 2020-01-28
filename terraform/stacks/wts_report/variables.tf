@@ -51,8 +51,8 @@ variable "workspace_refdata_bucket" {
   type = "map"
 
   default = {
-    prod = "umccr-refdata-prod/WTS-report/data"
-    dev  = "umccr-misc-temp/WTS-report/data"
+    prod = "umccr-refdata-prod"
+    dev  = "umccr-misc-temp"
   }
 }
 
@@ -74,10 +74,10 @@ variable "workspace_wts_report_wd_buckets" {
   type = "map"
 
   default = {
-    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/wts-report/*",
-            "arn:aws:s3:::umccr-temp/*/wts-report/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/wts-report/*",
-            "arn:aws:s3:::umccr-misc-temp/*/wts-report/*"]
+    prod = ["arn:aws:s3:::umccr-primary-data-prod/*/RNAsum/*",
+            "arn:aws:s3:::umccr-temp/*/RNAsum/*"]
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/RNAsum/*",
+            "arn:aws:s3:::umccr-misc-temp/*/RNAsum/*"]
   }
 }
 

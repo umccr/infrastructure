@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from aws_cdk import core
 from stacks.iap_tes import IapTesStack
+from stacks.cicd import CICDStack
 
 
 iap_tes_dev_props = {
@@ -27,4 +28,9 @@ IapTesStack(
     env={'account': '843407916570', 'region': 'ap-southeast-2'}
 )
 
+CICDStack(
+    app,
+    "cicd",
+    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+)
 app.synth()

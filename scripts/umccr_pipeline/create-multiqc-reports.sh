@@ -47,6 +47,9 @@ function backup_qc_source_data {
         cmd="rsync -ah ${fastq_base_path}/${run_id}/Stats_custom.* ${qc_data_path}/${run_id}/"
         write_log "INFO: running command: $cmd"
         eval "$cmd"
+        cmd="rsync -ah ${fastq_base_path}/${run_id}/Reports_custom.* ${qc_data_path}/${run_id}/"
+        write_log "INFO: running command: $cmd"
+        eval "$cmd"
     else
         write_log "INFO: Source data directory ($source_dir) does not exist. Assuming data is already present."
     fi

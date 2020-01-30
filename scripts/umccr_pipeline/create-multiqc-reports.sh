@@ -82,7 +82,7 @@ backup_qc_source_data "$runfolder"
 
 
 if test "$DEPLOY_ENV" = "prod"; then
-# Create QC report from bcl2fastq output
+    # Create QC report from bcl2fastq output
     write_log "INFO: Generating report for $CASE_BCL2FASTQ"
     # construct the base directory and make sure it exists
     bcl2fastq_stats_base_path="$qc_fastq_source_path/$runfolder"
@@ -103,12 +103,9 @@ if test "$DEPLOY_ENV" = "prod"; then
 
     cmd="docker run --rm --user 1002 -v $bcl2fastq_stats_base_path/:/$runfolder/:ro -v $qc_report_path/:/output/ $docker_image multiqc -f -m bcl2fastq $fldr_list -o /output/${runfolder}/ -n ${runfolder}_bcl2fastq_qc.html --title \"UMCCR MultiQC report (bcl2fastq) for $runfolder\""
     write_log "INFO: Running command: $cmd"
-    if test "$DEPLOY_ENV" = "prod"; then
-        eval "$cmd"
-    fi
+    eval "$cmd"
 
-
-# Create QC reports from raw data
+    # Create QC reports from raw data
     write_log "INFO: Generating report for $CASE_INTEROP"
     # construct the base directory and make sure it exists
     interop_base_path="$qc_bcl_source_path/$runfolder"
@@ -117,14 +114,20 @@ if test "$DEPLOY_ENV" = "prod"; then
         exit 1
     fi
 
-
+    # Run the docker container to generate the reports
     cmd="docker run --rm --user 1002 -v $interop_base_path/:/$runfolder/:ro -v $qc_report_path/:/output/ $docker_image bash -c 'interop_index-summary --csv=1 /${runfolder}/ > /tmp/interop_index-summary.csv; interop_summary --csv=1 /${runfolder}/ > /tmp/interop_summary.csv; multiqc -m interop /tmp/interop*.csv -o /output/${runfolder}/ -n ${runfolder}_interop_qc.html --title \"UMCCR MultiQC report (interop) for $runfolder\"'"
     write_log "INFO: Running command: $cmd"
-    if test "$DEPLOY_ENV" = "prod"; then
-        eval "$cmd"
-    fi
+    eval "$cmd"
+
 else
     write_log "INFO: Test run, skipping actual work"
+fi
+
+if test "$DEPLOY_ENV" = "prod"; then
+    # Copy bcl2fastq report for Lab
+    cmd="cp $qc_base_path/Reports/${runfolder}/${runfolder}_bcl2fastq_qc.html $qc_base_path/Reports-Lab/"
+    write_log "INFO: running command: $cmd"
+    eval "$cmd"
 fi
 
 write_log "INFO: All done."

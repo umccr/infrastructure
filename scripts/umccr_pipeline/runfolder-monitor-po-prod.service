@@ -1,0 +1,16 @@
+[Unit]
+Description=Monitor runfolders in prod env
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User=limsadmin
+Restart=on-failure
+RestartSec=10
+Environment="AWS_PROFILE=umccr_pipeline_prod"
+ExecStart=/home/limsadmin/.miniconda3/envs/pipeline/bin/python /opt/Pipeline/prod/scripts/runfolder-inotify-monitor.py /storage/shared/raw/Po bootstrap_slack_lambda_prod arn:aws:states:ap-southeast-2:472057503814:stateMachine:umccr_pipeline_state_machine_prod
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

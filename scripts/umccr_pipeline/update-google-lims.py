@@ -4,12 +4,12 @@ import argparse
 import re
 import csv
 from glob import glob
-import pandas
 from datetime import datetime
 from sample_sheet import SampleSheet
 import logging
 from logging.handlers import RotatingFileHandler
 import gspread  # maybe move to https://github.com/aiguofer/gspread-pandas
+from gspread_pandas import Spread
 from oauth2client.service_account import ServiceAccountCredentials
 
 import warnings
@@ -18,42 +18,103 @@ warnings.simplefilter("ignore")
 ################################################################################
 # CONSTANTS
 
+SHEET_NAME_RUNS = 'Sheet1'
+SHEET_NAME_FAILED = 'Failed Runs'
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
 if not DEPLOY_ENV:
     raise ValueError("DEPLOY_ENV needs to be set!")
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-library_tracking_spreadsheet = "/storage/shared/dev/UMCCR_Library_Tracking_MetaData.xlsx"
-# The column names should be kept in sync between the lab internal library tracking sheet and the Google LIMS
-sample_id_column_name = 'SampleID'  # is the library ID
-sample_name_column_name = 'SampleName'  # is the lab-external sample/library ID
-assay_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
+# The column names of the Google LIMS (in order!)
+# Names and values should be kept in sync between the lab internal library tracking sheet and the Google LIMS
+illumina_id_column_name = 'IlluminaID'
+run_column_name = 'Run'
+timestamp_column_name = 'Timestamp'
+subject_id_column_name = 'SubjectID'  # the internal ID for the subject/patient
+sample_id_column_name = 'SampleID'  # the internal ID for the sample
+library_id_column_name = 'LibraryID'  # the internal ID for the library
+subject_ext_id_column_name = 'ExternalSubjectID'  # the external (provided) ID for the subject/patient
+sample_ext_id_column_name = 'ExternalSampleID'  # is the external (provided) sample ID
+library_ext_id_column_name = 'ExternalLibraryID'  # is the external (provided) library ID
+sample_name_column_name = 'SampleName'  # the sample name assigned by the lab
+project_owner_column_name = 'ProjectOwner'
+project_name_column_name = 'ProjectName'
+type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
+assay_column_name = 'Assay'
 phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
-quality_column_name = 'Quality'  # Good, Poor, Borderline
-subject_column_name = 'SubjectID'  # ID for the subject/patient
 source_column_name = 'Source'  # tissue, FFPE, ...
-column_names = (subject_column_name, assay_column_name, phenotype_column_name, source_column_name, quality_column_name)
+quality_column_name = 'Quality'  # Good, Poor, Borderline
+topup_column_name = 'Topup'
+secondary_analysis_column_name = 'SecondaryAnalysis'
+fastq_column_name = 'FASTQ'
+number_fastqs_column_name = 'NumberFASTQS'
+results_column_name = 'Results'
+trello_column_name = 'Trello'
+notes_column_name = 'Notes'
+todo_column_name = 'ToDo'
+# List of column names expected to be found in the tracking sheet
+metadata_column_names = (
+    subject_id_column_name,
+    subject_ext_id_column_name,
+    sample_id_column_name,
+    sample_ext_id_column_name,
+    sample_name_column_name,
+    library_id_column_name,
+    type_column_name,
+    phenotype_column_name,
+    source_column_name,
+    assay_column_name,
+    project_name_column_name,
+    project_owner_column_name,
+    quality_column_name)
+
 
 # column headers of the LIMS spreadsheet
-sheet_column_headers = ("IlluminaID", "Run", "Timestamp", sample_id_column_name, sample_name_column_name,
-                        "Project", subject_column_name, assay_column_name, phenotype_column_name, source_column_name, 
-                        quality_column_name, "Secondary Analysis", "FASTQ", "Number FASTQs", "Results", "Trello",
-                        "Notes", "ToDo")
+sheet_column_headers = (
+    illumina_id_column_name,
+    run_column_name,
+    timestamp_column_name,
+    subject_id_column_name,
+    sample_id_column_name,
+    library_id_column_name,
+    subject_ext_id_column_name,
+    sample_ext_id_column_name,
+    library_ext_id_column_name,
+    sample_name_column_name,
+    project_owner_column_name,
+    project_name_column_name,
+    type_column_name,
+    assay_column_name,
+    phenotype_column_name,
+    source_column_name,
+    quality_column_name,
+    topup_column_name,
+    secondary_analysis_column_name,
+    fastq_column_name,
+    number_fastqs_column_name,
+    results_column_name,
+    trello_column_name,
+    notes_column_name,
+    todo_column_name)
 
 # define argument defaults
 if DEPLOY_ENV == 'prod':
     raw_data_base_dir = '/storage/shared/raw/Baymax'
     bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-    spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
+    lims_spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
+    lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
 else:
     raw_data_base_dir = '/storage/shared/dev/Baymax'
     bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
-    spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
+    lims_spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
+    lab_spreadsheet_id = '1Pgz13btHOJePiImo-NceA8oJKiQBbkWI5D2dLdKpPiY'  # Lab metadata tracking sheet (dev)
+
+# lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
 runfolder_name_expected_length = 29
-fastq_hpc_base_dir = '/data/cephfs/punim0010/data/Pipeline/prod/Fastq'
+fastq_hpc_base_dir = 's3://umccr-fastq-data-prod/'
 csv_outdir = '/tmp'
 write_csv = False
 creds_file = "/home/limsadmin/.google/google-lims-updater-b50921f70155.json"
@@ -91,56 +152,45 @@ def getLogger():
     return new_logger
 
 
-def import_library_sheet(year):
-    # TODO: error handling
+def get_year_from_lib_id(library_id):
+    # TODO: check library ID format and make sure we have proper years
+    if library_id.startswith('LPRJ'):
+        return '20' + library_id[4:6]
+    else:
+        return '20' + library_id[1:3]
+
+
+def get_library_sheet_from_google(year):
+    logger.info(f"Loading tracking data for year {year}")
+    spread = Spread(lab_spreadsheet_id)
+    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet=year, index=0, header_rows=1, start_row=1)
+    hit = library_tracking_spreadsheet_df.iloc[0]
+    logger.debug(f"First record: {hit}")
+    for column_name in metadata_column_names:
+        logger.debug(f"Checking for column name {column_name}...")
+        if column_name not in hit:
+            logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
+            exit(-1)
+    logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
+    return library_tracking_spreadsheet_df
+
+
+def get_meta_data_by_library_id(library_id):
+    year = get_year_from_lib_id(library_id)
+    library_tracking_spreadsheet_df = library_tracking_spreadsheet.get(year)
     try:
-        global library_tracking_spreadsheet_df
-        library_tracking_spreadsheet_df = pandas.read_excel(library_tracking_spreadsheet, year)
-        hit = library_tracking_spreadsheet_df.iloc[0]
-        logger.debug(f"First record: {hit}")
-        for column_name in column_names:
-            logger.debug(f"Checking for column name {column_name}...")
-            if column_name not in hit:
-                logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
-                exit(-1)
-        logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
-    except Exception as e:
-        logger.error(f"Failed to load library tracking data from: {library_tracking_spreadsheet}")
+        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
+    except (KeyError, NameError, TypeError, Exception) as er:
+        logger.error(f"Error trying to find library ID {library_id}! Error: {er}")
 
-
-def get_meta_data(sample_id, sample_name):
-    # TODO: this should be rewritten once we agreed on a definitive strategy/naming convention
-    result = {}
-    try:
-        global library_tracking_spreadsheet_df
-        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[sample_id_column_name] == sample_id]
-        # We expect exactly one matching record, not more, not less!
-        if len(hit) != 1:
-            logger.error(f"No hit for Sample ID {sample_id}!")
-            raise ValueError(f"No hit for Sample ID {sample_id}!")
-
-        # assert that we really have the right ID
-        found_sample_id = hit[sample_id_column_name].values[0]
-        if found_sample_id != sample_id:
-            raise ValueError(f"Sample IDs given/found do not match: {sample_id}/{found_sample_id}!")
-
-        # Check if the coresponding sample name matches
-        found_sample_name = hit[sample_name_column_name].values[0]
-        if found_sample_name != sample_name:
-            # Log, but ignore as we have a match on the unique sample ID
-            logger.warning(f"Ignoring given/found sample name mismatch: {sample_name}/{found_sample_name}!")
-
-        for column_name in column_names:
-            if not hit[column_name].isnull().values[0]:
-                result[column_name] = hit[column_name].values[0]
-            else:
-                result[column_name] = '-'
-    except Exception as e:
-        logger.error(f"Could not find entry for sample {sample_id}! Exception: {e}")
-
-    logger.info(f"Using values: {result} for sample {sample_id}.")
-
-    return result
+    # We expect exactly one matching record, not more, not less!
+    if len(hit) == 1:
+        logger.debug(f"Unique entry found for sample ID {library_id}")
+    elif len(hit) > 1:
+        logger.error(f"Multiple entries for library ID {library_id}!")
+    else:
+        logger.error(f"No entry for library ID {library_id}")
+    return hit
 
 
 def write_csv_file(output_file, column_headers, data_rows):
@@ -156,22 +206,31 @@ def next_available_row(worksheet):
     return len(str_list)+1
 
 
-def write_to_google_lims(keyfile, spreadsheet_id, data_rows, failed_run):
-    # follow example from: 
+def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run):
+    # follow example from:
     # https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
     scope = ['https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
     client = gspread.authorize(creds)
 
-    if failed_run:
-        sheet = client.open_by_key(spreadsheet_id).worksheet('Failed Runs')
-    else:
-        sheet = client.open_by_key(spreadsheet_id).sheet1
+    params = {
+        'valueInputOption': 'USER_ENTERED'
+    }
+    body = {
+        'majorDimension': 'ROWS',
+        'values': list(data_rows)
+    }
 
-    next_row = next_available_row(sheet)
-    for row in data_rows:
-        sheet.insert_row(values=row, index=next_row, value_input_option='USER_ENTERED')
-        next_row += 1
+    spreadsheet = client.open_by_key(lims_spreadsheet_id)
+    if failed_run:
+        spreadsheet.values_append(SHEET_NAME_FAILED, params, body)
+    else:
+        spreadsheet.values_append(SHEET_NAME_RUNS, params, body)
+
+
+def split_at(s, c, n):
+    words = s.split(c)
+    return c.join(words[:n]), c.join(words[n:])
 
 
 if __name__ == "__main__":
@@ -199,9 +258,9 @@ if __name__ == "__main__":
                         default=csv_outdir)
     parser.add_argument('--write-csv', action='store_true',
                         help="Use this flag to write a CSV file.")
-    parser.add_argument('--spreadsheet-id',
+    parser.add_argument('--lims-spreadsheet-id',
                         help="The name of the Google LIMS spreadsheet.",
-                        default=spreadsheet_id)
+                        default=lims_spreadsheet_id)
     parser.add_argument('--creds-file',
                         help="The Google credentials file to grant access to the spreadsheet.",
                         default=creds_file)
@@ -222,8 +281,8 @@ if __name__ == "__main__":
         csv_outdir = args.csv_outdir
     if args.write_csv:
         write_csv = True
-    if args.spreadsheet_id:
-        spreadsheet_id = args.spreadsheet_id
+    if args.lims_spreadsheet_id:
+        lims_spreadsheet_id = args.lims_spreadsheet_id
     if args.creds_file:
         creds_file = args.creds_file
     if args.skip_lims_update:
@@ -251,7 +310,11 @@ if __name__ == "__main__":
 
     # load the library tracking sheet for the run year
     logger.debug("Loading library tracking data.")
-    import_library_sheet(run_year)
+    # global variables
+    # TODO: should be refactored in proper class variables
+    library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
+    for year in ('2019', '2020'):  # TODO: this could be determined scanning though all SampleSheets
+        library_tracking_spreadsheet[year] = get_library_sheet_from_google(year)
 
     ################################################################################
     # Generate LIMS records from SampleSheet
@@ -276,32 +339,56 @@ if __name__ == "__main__":
         samples = SampleSheet(samplesheet).samples
         logger.info(f"Found {len(samples)} samples.")
         for sample in samples:
-            logger.debug(f"Looking up data for sammple ID; {sample.Sample_Name} and external ID: {sample.Sample_ID}")
-            # SampleSheet: sammple ID=Name and Name=ID compared to metadata/LIMS sheets (swapped for legacy reasons)
-            column_values = get_meta_data(sample.Sample_Name, sample.Sample_ID)
+            logger.debug(f"Looking up metadata with {sample.Sample_Name} for samplesheet.Sample_ID (UMCCR SampleID); " +
+                         f"{sample.Sample_ID} and samplesheet.sample_Name (UMCCR LibraryID): {sample.Sample_Name}")
+            column_values = get_meta_data_by_library_id(sample.Sample_Name)
 
-            if sample.Sample_Name == sample.Sample_ID:
-                # This should not happen any more
-                fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
-                                             sample.Sample_Name + "*.fastq.gz")
-                fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
-                                                 sample.Sample_Name + "*.fastq.gz")
-            else:
-                fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
-                                             sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
-                fastq_hpc_pattern = os.path.join(fastq_hpc_base_dir, runfolder, runfolder, sample.Sample_Project,
-                                                 sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
+            fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
+                                         sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
+            s3_fastq_pattern = os.path.join(fastq_hpc_base_dir, runfolder, sample.Sample_Project,
+                                            sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
 
             logger.debug('Looking for FASTQs: ' + fastq_pattern)
-            logger.debug('Setting FASTQ dest: ' + fastq_hpc_pattern)
             fastq_file_paths = glob(fastq_pattern)
             if len(fastq_file_paths) < 1:
                 logger.warn(f"Found no FASTQ files for sample {sample.Sample_ID}!")
-            lims_data_rows.add((runfolder, run_number, run_timestamp, sample.Sample_Name, sample.Sample_ID,
-                                sample.Sample_Project, column_values[subject_column_name],
-                                column_values[assay_column_name], column_values[phenotype_column_name],
-                                column_values[source_column_name], column_values[quality_column_name],
-                                "-", fastq_hpc_pattern, len(fastq_file_paths), "-", "-", "-", ""))
+
+            # splitting the combined sample name
+            if sample.Sample_ID.startswith('NTC') or sample.Sample_ID.startswith('PTC'):
+                s_id, es_id = split_at(sample.Sample_ID, '_', 2)
+            else:
+                s_id, es_id = split_at(sample.Sample_ID, '_', 1)
+            print(f"Split SampleID {sample.Sample_ID} into intID {s_id} and extID {es_id}")
+            print(f"Inserting values {column_values}")
+            # double check LibraryID
+            if not sample.Sample_Name == column_values[library_id_column_name].item():
+                raise ValueError(f"Library IDs did not match. Samplesheet: {sample.Sample_Name} " +
+                                 f"Tracking sheet: {column_values[library_id_column_name].item()}")
+            lims_data_rows.add((runfolder,
+                                run_number,
+                                run_timestamp,
+                                column_values[subject_id_column_name].item(),
+                                column_values[sample_id_column_name].item(),
+                                column_values[library_id_column_name].item(),
+                                column_values[subject_ext_id_column_name].item(),
+                                column_values[sample_ext_id_column_name].item(),
+                                '-',
+                                column_values[sample_name_column_name].item(),
+                                column_values[project_owner_column_name].item(),
+                                column_values[project_name_column_name].item(),
+                                column_values[type_column_name].item(),
+                                column_values[assay_column_name].item(),
+                                column_values[phenotype_column_name].item(),
+                                column_values[source_column_name].item(),
+                                column_values[quality_column_name].item(),
+                                '-',
+                                '-',
+                                s3_fastq_pattern,
+                                len(fastq_file_paths),
+                                '-',
+                                '-',
+                                '-',
+                                '-'))
 
     ################################################################################
     # write the data into a CSV file
@@ -316,8 +403,8 @@ if __name__ == "__main__":
     if skip_lims_update:
         logger.warn("Skipping Google LIMS update!")
     else:
-        logger.info(f"Writing {len(lims_data_rows)} records to Google LIMS {spreadsheet_id}")
-        write_to_google_lims(keyfile=creds_file, spreadsheet_id=spreadsheet_id,
+        logger.info(f"Writing {len(lims_data_rows)} records to Google LIMS {lims_spreadsheet_id}")
+        write_to_google_lims(keyfile=creds_file, lims_spreadsheet_id=lims_spreadsheet_id,
                              data_rows=lims_data_rows, failed_run=failed_run)
 
     logger.info("All done.")

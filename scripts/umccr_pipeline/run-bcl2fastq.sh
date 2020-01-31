@@ -2,12 +2,6 @@
 set -eo pipefail
 
 ################################################################################
-# Activate a conda environment where the required resources are available
-
-. $HOME/.miniconda3/etc/profile.d/conda.sh
-conda activate pipeline
-
-################################################################################
 # Define constants/variables
 
 script_name=$(basename $0)
@@ -18,6 +12,7 @@ script_pid=$$
 
 FLAG_WGS="--no-lane-splitting"
 FLAG_10X="--no-lane-splitting --minimum-trimmed-read-length=8 --mask-short-adapter-reads=8 --ignore-missing-positions --ignore-missing-controls --ignore-missing-filter --ignore-missing-bcls"
+FLAG_UMI="--no-lane-splitting -r 4 -p 24 -w 4 --barcode-mismatches 1 --mask-short-adapter-reads 3 --use-bases-mask Y151,I8,Y10,Y151"
 
 ################################################################################
 # Define functions
@@ -51,7 +46,7 @@ write_log "INFO: Invocation with parameters: $*"
 
 if [[ $# -lt 6 ]]; then
   write_log "ERROR: Insufficient parameters"
-  echo "A minimum of 4 arguments are required!"
+  echo "A minimum of 3 arguments are required!"
   echo "  1) The runfolder directory [-R|--runfolder-dir]"
   echo "  2) The runfolder name [-n|--runfolder-name]"
   echo "  3) The output directory [-o|--output-dir]"

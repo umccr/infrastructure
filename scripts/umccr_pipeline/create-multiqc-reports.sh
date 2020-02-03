@@ -35,8 +35,9 @@ function write_log {
 
 function backup_qc_source_data {
     run_id=$1
-    # Get instrument ID from run ID and chose correct base path 
-    if [[ "$run_id" =~ "$runfolder_regex" ]]; then
+    # Get instrument ID from run ID and chose correct base path
+    # NOTE: no quotes around the regex!!
+    if [[ "$run_id" =~ $runfolder_regex ]]; then
         instrument_id="${BASH_REMATCH[2]}"
         write_log "DEBUG: Extracted instrument ID: $instrument_id"
     else
@@ -75,6 +76,7 @@ function backup_qc_source_data {
     fi
 }
 
+
 ################################################################################
 # Actual start of script
 
@@ -92,7 +94,8 @@ write_log "INFO: Invocation with parameters: $*"
 
 runfolder=$1
 # runfolder format check
-if [[ ! $runfolder =~ ^[0-9]{6}_A00130_[0-9]{4}_.{10}$ ]]; then
+# NOTE: no quotes around the regex!!
+if [[ ! "$runfolder" =~ $runfolder_regex ]]; then
     write_log "ERROR: Runfolder does not match expected pattern!"
     exit 1
 fi

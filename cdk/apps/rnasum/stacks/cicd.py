@@ -20,17 +20,17 @@ class CICDStack(core.Stack):
 
         build_env = cb.BuildEnvironment(build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
                                         privileged=True,
-                                        compute_type=cb.ComputeType.MEDIUM);
+                                        compute_type=cb.ComputeType.SMALL);
 
         ecr_repo = ecr.Repository(self, id="umccr", repository_name="umccr");
 
-        cb_project = cb.Project(self, id = "umccrise",
+        cb_project = cb.Project(self, id = "rnasum",
                     environment = build_env,
-                    timeout = core.Duration.hours(3),
+                    timeout = core.Duration.hours(1),
                     source = cb.Source.git_hub(
-                        identifier = "umccrise",
+                        identifier = "rnasum",
                         owner = "umccr",
-                        repo = "umccrise",
+                        repo = "rnasum",
                         clone_depth = 1,
                         webhook = True,
                         webhook_filters=[ cb.FilterGroup.in_event_of(cb.EventAction.PUSH).and_tag_is(semver_tag_regex) ]
@@ -43,6 +43,6 @@ class CICDStack(core.Stack):
         refdata.grant_read(cb_project);
 
 app = core.App();
-CICDStack(app, "UmccriseCICDStack");
+CICDStack(app, "CICDStack");
 
 app.synth()

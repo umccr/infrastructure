@@ -39,6 +39,7 @@ checksum_script = getSSMParam(SSM_PARAM_PREFIX + "checksum_script")
 hpc_sync_script = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_script")
 s3_sync_script = getSSMParam(SSM_PARAM_PREFIX + "s3_sync_script")
 lims_update_script = getSSMParam(SSM_PARAM_PREFIX + "lims_update_script")
+multiqc_script = getSSMParam(SSM_PARAM_PREFIX + "multiqc_script")
 stats_update_script = getSSMParam(SSM_PARAM_PREFIX + "stats_update_script")
 hpc_sync_dest_host = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_dest_host")
 HPC_SSH_USER = getSSMParam(SSM_PARAM_PREFIX + "hpc_sync_ssh_user")
@@ -106,6 +107,10 @@ def build_command(script_case, input_data):
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV}"
         command += f" python {lims_update_script} {runfolder}"
+    elif script_case == "create_multiqc_reports":
+        command += f" conda activate pipeline &&"
+        command += f" DEPLOY_ENV={DEPLOY_ENV}"
+        command += f" {multiqc_script} {runfolder}"
     elif script_case == "stats_sheet_update":
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV}"
@@ -138,8 +143,7 @@ def aws_session(role_arn=None, session_name='my_session'):
 
 
 def lambda_handler(event, context):
-
-    print("Received event: " + json.dumps(event, indent=2))
+    print(f"Received event: {json.dumps(event)}")
 
     ############################################################
     # initial checks

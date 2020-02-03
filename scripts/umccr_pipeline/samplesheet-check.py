@@ -15,7 +15,6 @@ warnings.simplefilter("ignore")
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
 SCRIPT = os.path.basename(__file__)
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
 
 subject_id_column_name = 'SubjectID'  # the internal ID for the subject/patient
 sample_id_column_name = 'SampleID'  # the internal ID for the sample
@@ -27,6 +26,7 @@ type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
 phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
 source_column_name = 'Source'  # tissue, FFPE, ...
 quality_column_name = 'Quality'  # Good, Poor, Borderline
+# List of column names expected to be found in the tracking sheet
 metadata_column_names = (
     library_id_column_name,
     subject_id_column_name,
@@ -44,6 +44,7 @@ val_source_column_name = "SourceValues"
 val_type_column_name = "TypeValues"
 val_project_name_column_name = "ProjectNameValues"
 val_project_owner_column_name = "ProjectOwnerValues"
+# List of column names expected to be found in the validation sheet (i.e. named ranges for allowed values)
 metadata_validation_column_names = (
     val_phenotype_column_name,
     val_quality_column_name,
@@ -66,10 +67,14 @@ regex_sample_name = re.compile(library_id)
 regex_topup = re.compile(topup_exp)
 
 
-if DEPLOY_ENV == 'prod':
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-else:
+if DEPLOY_ENV == 'dev':
+    print("DEV")
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
+    lab_spreadsheet_id = '1Pgz13btHOJePiImo-NceA8oJKiQBbkWI5D2dLdKpPiY'  # Lab metadata tracking sheet (dev)
+else:
+    print("PROD")
+    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
+    lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
 
 
 def getLogger():
@@ -96,9 +101,6 @@ def getLogger():
     return new_logger
 
 
-logger = getLogger()
-
-
 # method to count the differences between two strings
 # NOTE: strings have to be of equal length
 def str_compare(a, b):
@@ -109,8 +111,23 @@ def str_compare(a, b):
     return cnt
 
 
-def import_library_sheet_from_google(year):
-    global library_tracking_spreadsheet_df
+def get_year_from_lib_id(library_id):
+    # TODO: check library ID format and make sure we have proper years
+    if library_id.startswith('LPRJ'):
+        return '20' + library_id[4:6]
+    else:
+        return '20' + library_id[1:3]
+
+
+def get_years_from_samplesheet(samplesheet):
+    years = set()
+    for sample in samplesheet:
+        years.add(get_year_from_lib_id(sample.Sample_Name))
+    return years
+
+
+def get_library_sheet_from_google(year):
+    logger.info(f"Loading tracking data for year {year}")
     spread = Spread(lab_spreadsheet_id)
     library_tracking_spreadsheet_df = spread.sheet_to_df(sheet=year, index=0, header_rows=1, start_row=1)
     hit = library_tracking_spreadsheet_df.iloc[0]
@@ -121,6 +138,7 @@ def import_library_sheet_from_google(year):
             logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
             exit(-1)
     logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
+    return library_tracking_spreadsheet_df
 
 
 def import_library_sheet_validation_from_google():
@@ -138,8 +156,9 @@ def import_library_sheet_validation_from_google():
 
 
 def get_meta_data_by_library_id(library_id):
+    year = get_year_from_lib_id(library_id)
+    library_tracking_spreadsheet_df = library_tracking_spreadsheet.get(year)
     try:
-        global library_tracking_spreadsheet_df
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
     except (KeyError, NameError, TypeError, Exception) as er:
         logger.error(f"Error trying to find library ID {library_id}! Error: {er}")
@@ -388,7 +407,7 @@ def writeSammpleSheets(sample_list, sheet_path, template_sheet):
             exit_status = "failure"
 
         logger.debug(f"Created custom sample sheet: {new_sample_sheet_file}")
-    
+
     return exit_status
 
 
@@ -397,7 +416,10 @@ def main(samplesheet_file_path, check_only):
     original_sample_sheet = SampleSheet(samplesheet_file_path)
 
     # Run some consistency checks
-    import_library_sheet_from_google('2019')
+    years = get_years_from_samplesheet(original_sample_sheet)
+    logger.info(f"Samplesheet contains IDs from {len(years)} years: {years}")
+    for year in years:
+        library_tracking_spreadsheet[year] = get_library_sheet_from_google(year)
     import_library_sheet_validation_from_google()
     # TODO: replace has_error return with enum and expand to error, warning, info?
     has_header_error = checkSampleSheetMetadata(original_sample_sheet)
@@ -425,6 +447,11 @@ def main(samplesheet_file_path, check_only):
 
     logger.info("All done.")
 
+
+# global variables
+# TODO: should be refactored in proper class variables
+library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
+logger = getLogger()
 
 if __name__ == "__main__":
     logger.info(f"Invocation with parameters: {sys.argv[1:]}")

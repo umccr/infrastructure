@@ -4,7 +4,6 @@ import argparse
 import re
 import csv
 from glob import glob
-import pandas
 from datetime import datetime
 from sample_sheet import SampleSheet
 import logging
@@ -54,11 +53,12 @@ results_column_name = 'Results'
 trello_column_name = 'Trello'
 notes_column_name = 'Notes'
 todo_column_name = 'ToDo'
-column_names = (
+# List of column names expected to be found in the tracking sheet
+metadata_column_names = (
     subject_id_column_name,
     subject_ext_id_column_name,
-    sample_ext_id_column_name,
     sample_id_column_name,
+    sample_ext_id_column_name,
     sample_name_column_name,
     library_id_column_name,
     type_column_name,
@@ -68,6 +68,7 @@ column_names = (
     project_name_column_name,
     project_owner_column_name,
     quality_column_name)
+
 
 # column headers of the LIMS spreadsheet
 sheet_column_headers = (
@@ -103,13 +104,15 @@ if DEPLOY_ENV == 'prod':
     bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
     lims_spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
+    lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
 else:
     raw_data_base_dir = '/storage/shared/dev/Baymax'
     bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
     lims_spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
+    lab_spreadsheet_id = '1Pgz13btHOJePiImo-NceA8oJKiQBbkWI5D2dLdKpPiY'  # Lab metadata tracking sheet (dev)
 
-lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
+# lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
 runfolder_name_expected_length = 29
 fastq_hpc_base_dir = 's3://umccr-fastq-data-prod/'
 csv_outdir = '/tmp'
@@ -149,43 +152,45 @@ def getLogger():
     return new_logger
 
 
-def import_library_sheet_from_google(year):
-    global library_tracking_spreadsheet_df
+def get_year_from_lib_id(library_id):
+    # TODO: check library ID format and make sure we have proper years
+    if library_id.startswith('LPRJ'):
+        return '20' + library_id[4:6]
+    else:
+        return '20' + library_id[1:3]
+
+
+def get_library_sheet_from_google(year):
+    logger.info(f"Loading tracking data for year {year}")
     spread = Spread(lab_spreadsheet_id)
-    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet='2019', index=0, header_rows=1, start_row=1)
+    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet=year, index=0, header_rows=1, start_row=1)
     hit = library_tracking_spreadsheet_df.iloc[0]
     logger.debug(f"First record: {hit}")
-    for column_name in column_names:
+    for column_name in metadata_column_names:
         logger.debug(f"Checking for column name {column_name}...")
         if column_name not in hit:
             logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
             exit(-1)
     logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
+    return library_tracking_spreadsheet_df
 
 
 def get_meta_data_by_library_id(library_id):
-    result = {}
+    year = get_year_from_lib_id(library_id)
+    library_tracking_spreadsheet_df = library_tracking_spreadsheet.get(year)
     try:
-        global library_tracking_spreadsheet_df
-        print(f"Looking up {library_id} in metadata sheet for {library_id_column_name}")
         hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
-        # We expect exactly one matching record, not more, not less!
-        if len(hit) == 1:
-            logger.debug(f"Unique entry found for sample ID {library_id}")
-        else:
-            raise ValueError(f"No unique ({len(hit)}) entry found for sample ID {library_id}")
+    except (KeyError, NameError, TypeError, Exception) as er:
+        logger.error(f"Error trying to find library ID {library_id}! Error: {er}")
 
-        for column_name in column_names:
-            if hit[column_name].isnull().values[0] or len(hit[column_name].values[0]) < 1:
-                result[column_name] = '-'
-            else:
-                result[column_name] = hit[column_name].values[0]
-    except Exception as e:
-        logger.error(f"Could not find entry for sample {library_id}! Exception {e}")
-
-    logger.info(f"Using values: {result} for sample {library_id}.")
-
-    return result
+    # We expect exactly one matching record, not more, not less!
+    if len(hit) == 1:
+        logger.debug(f"Unique entry found for sample ID {library_id}")
+    elif len(hit) > 1:
+        logger.error(f"Multiple entries for library ID {library_id}!")
+    else:
+        logger.error(f"No entry for library ID {library_id}")
+    return hit
 
 
 def write_csv_file(output_file, column_headers, data_rows):
@@ -305,7 +310,11 @@ if __name__ == "__main__":
 
     # load the library tracking sheet for the run year
     logger.debug("Loading library tracking data.")
-    import_library_sheet_from_google(run_year)
+    # global variables
+    # TODO: should be refactored in proper class variables
+    library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
+    for year in ('2019', '2020'):  # TODO: this could be determined scanning though all SampleSheets
+        library_tracking_spreadsheet[year] = get_library_sheet_from_google(year)
 
     ################################################################################
     # Generate LIMS records from SampleSheet
@@ -352,26 +361,26 @@ if __name__ == "__main__":
             print(f"Split SampleID {sample.Sample_ID} into intID {s_id} and extID {es_id}")
             print(f"Inserting values {column_values}")
             # double check LibraryID
-            if not sample.Sample_Name == column_values[library_id_column_name]:
+            if not sample.Sample_Name == column_values[library_id_column_name].item():
                 raise ValueError(f"Library IDs did not match. Samplesheet: {sample.Sample_Name} " +
-                                 f"Tracking sheet: {column_values[library_id_column_name]}")
+                                 f"Tracking sheet: {column_values[library_id_column_name].item()}")
             lims_data_rows.add((runfolder,
                                 run_number,
                                 run_timestamp,
-                                column_values[subject_id_column_name],
-                                column_values[sample_id_column_name],
-                                column_values[library_id_column_name],
-                                column_values[subject_ext_id_column_name],
-                                column_values[sample_ext_id_column_name],
+                                column_values[subject_id_column_name].item(),
+                                column_values[sample_id_column_name].item(),
+                                column_values[library_id_column_name].item(),
+                                column_values[subject_ext_id_column_name].item(),
+                                column_values[sample_ext_id_column_name].item(),
                                 '-',
-                                column_values[sample_name_column_name],
-                                column_values[project_owner_column_name],
-                                column_values[project_name_column_name],
-                                column_values[type_column_name],
-                                column_values[assay_column_name],
-                                column_values[phenotype_column_name],
-                                column_values[source_column_name],
-                                column_values[quality_column_name],
+                                column_values[sample_name_column_name].item(),
+                                column_values[project_owner_column_name].item(),
+                                column_values[project_name_column_name].item(),
+                                column_values[type_column_name].item(),
+                                column_values[assay_column_name].item(),
+                                column_values[phenotype_column_name].item(),
+                                column_values[source_column_name].item(),
+                                column_values[quality_column_name].item(),
                                 '-',
                                 '-',
                                 s3_fastq_pattern,

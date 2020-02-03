@@ -25,13 +25,17 @@ Table of Contents
       - [vault](#vault)
 
 # infrastructure
-Repo for the UMCCR compute infrastructure as code
 
-**NOTE**: contains GIT submodules.
+Repo for the UMCCR compute infrastructure as code.
+
+We are making all our infrastructure code public based on referents like [18F](https://github.com/18F), [Fedora Infra](https://infrastructure.fedoraproject.org/cgit/ansible.git/tree/) and other opensource projects.  **Public funding, public code.**
+
+If you found some sensitive material such as keys, certificates that might been exposed by accident, please report to **services at umccr dot org** ASAP.
+
+**NOTE**: This repository contains GIT submodules.
 The submodules refer to a specific commit in the external repo and therefore you may not get the latest version of the code.
 
-You may want to clone it with:  
-`git clone --recurse-submodules https://github.com/umccr/infrastructure.git`
+You may want to clone it with: `git clone --recurse-submodules https://github.com/umccr/infrastructure.git`
 
 
 ## docker

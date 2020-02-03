@@ -68,7 +68,11 @@ metadata_column_names = (
     project_name_column_name,
     project_owner_column_name,
     quality_column_name)
-
+# Instrument ID mapping
+instrument_name = {
+    "A01052": "Po",
+    "A00130": "Baymax"
+}
 
 # column headers of the LIMS spreadsheet
 sheet_column_headers = (
@@ -100,13 +104,13 @@ sheet_column_headers = (
 
 # define argument defaults
 if DEPLOY_ENV == 'prod':
-    raw_data_base_dir = '/storage/shared/raw/Baymax'
+    raw_data_base_dir = '/storage/shared/raw'
     bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
     lims_spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
     lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
 else:
-    raw_data_base_dir = '/storage/shared/dev/Baymax'
+    raw_data_base_dir = '/storage/shared/dev'
     bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
     LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
     lims_spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
@@ -122,7 +126,7 @@ skip_lims_update = False
 failed_run = False
 
 # pre-compile regex patterns
-runfolder_pattern = re.compile('(\d{6})_.+_(\d{4})_.+')
+runfolder_pattern = re.compile('([12][0-9][01][0-9][0123][0-9])_(A01052|A00130)_([0-9]{4})_[A-Z0-9]{10}')
 
 
 ################################################################################
@@ -245,7 +249,7 @@ if __name__ == "__main__":
     parser.add_argument('runfolder',
                         help="The run/runfolder name.")
     parser.add_argument('--raw-data-base-dir',
-                        help="The path to raw data (where to find the sample sheet used).",
+                        help="The path to raw data (where to find the raw data folders, i.e. the runfolder).",
                         default=raw_data_base_dir)
     parser.add_argument('--bcl2fastq-base-dir',
                         help="The base path (where to find the bcl2fastq output).",
@@ -296,10 +300,10 @@ if __name__ == "__main__":
     if len(runfolder) != runfolder_name_expected_length:
         raise ValueError(f"Runfolder name {runfolder} did not match the expected \
                           length of {runfolder_name_expected_length} characters!")
-    # TODO: perhaps include other runfolder name syntax checks
     try:
         run_date = re.search(runfolder_pattern, runfolder).group(1)
-        run_no = re.search(runfolder_pattern, runfolder).group(2)
+        run_inst_id = re.search(runfolder_pattern, runfolder).group(2)
+        run_no = re.search(runfolder_pattern, runfolder).group(3)
     except AttributeError:
         raise ValueError(f"Runfolder name {runfolder} did not match expected format: {runfolder_pattern}")
 
@@ -307,6 +311,10 @@ if __name__ == "__main__":
     run_year = datetime.strptime(run_date, '%y%m%d').strftime('%Y')
     run_number = int(run_no)
     logger.info(f"Extracted run number/year/timestamp: {run_number}/{run_year}/{run_timestamp}")
+    logger.info(f"Extracted instrument ID: {run_inst_id} ({instrument_name[run_inst_id]})")
+
+    # set raw data base path according to instrument
+    runfolder_base_dir = os.path.join(raw_data_base_dir, instrument_name[run_inst_id])
 
     # load the library tracking sheet for the run year
     logger.debug("Loading library tracking data.")
@@ -323,10 +331,10 @@ if __name__ == "__main__":
 
     if failed_run:
         logger.info("Processing failed run. Using original sample sheet.")
-        samplesheet_path_pattern = os.path.join(raw_data_base_dir, runfolder, 'SampleSheet.csv')
+        samplesheet_path_pattern = os.path.join(runfolder_base_dir, runfolder, 'SampleSheet.csv')
     else:
         logger.info("Processing successful run. Using generated sample sheet(s).")
-        samplesheet_path_pattern = os.path.join(raw_data_base_dir, runfolder, 'SampleSheet.csv.custom.*')
+        samplesheet_path_pattern = os.path.join(runfolder_base_dir, runfolder, 'SampleSheet.csv.custom.*')
 
     samplesheet_paths = glob(samplesheet_path_pattern)
     if len(samplesheet_paths) < 1:

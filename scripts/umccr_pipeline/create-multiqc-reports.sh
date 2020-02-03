@@ -8,12 +8,14 @@ docker_image="umccr/multiqc:1.2.2"
 CASE_BCL2FASTQ="bcl2fastq"
 CASE_INTEROP="interop"
 fastq_base_path="/storage/shared/bcl2fastq_output"
-bcl_base_path="/storage/shared/raw/Baymax"
+bcl_base_path="/storage/shared/raw"
 qc_base_path="/storage/shared/multiQC"
 qc_report_path="$qc_base_path/Reports"
 qc_data_path="$qc_base_path/Data"
 qc_fastq_source_path="$qc_base_path/Data"
 qc_bcl_source_path="$qc_base_path/Data"
+
+runfolder_regex='([12][0-9][01][0-9][0123][0-9])_(A01052|A00130)_([0-9]{4})_[A-Z0-9]{10}'
 
 script=$(basename $0)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -33,7 +35,25 @@ function write_log {
 
 function backup_qc_source_data {
     run_id=$1
-    source_dir=${bcl_base_path}/${run_id}
+    # Get instrument ID from run ID and chose correct base path 
+    if [[ "$run_id" =~ "$runfolder_regex" ]]; then
+        instrument_id="${BASH_REMATCH[2]}"
+        write_log "DEBUG: Extracted instrument ID: $instrument_id"
+    else
+        write_log "ERROR: Runfolder did not match expected format!"
+        exit 2
+    fi
+
+    if [[ "$instrument_id" == "A01052" ]]; then
+        source_dir=${bcl_base_path}/Baymax/${run_id}
+    elif [[ "$instrument_id" == "A00130" ]]; then
+        source_dir=${bcl_base_path}/Po/${run_id}
+    else
+        write_log "ERROR: Unknown instrument"
+        exit 2
+    fi
+
+    write_log "INFO: Using runfolder base path: $source_dir"
     if test -e $source_dir; then
         cmd="rsync -ah $source_dir ${qc_data_path} --exclude Thumbnail_Images --exclude Data --exclude Recipe --exclude Logs --exclude Config --exclude *Complete.txt"
         write_log "INFO: running command: $cmd"

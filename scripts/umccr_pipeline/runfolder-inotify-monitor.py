@@ -7,6 +7,7 @@ import time
 import logging
 from logging.handlers import RotatingFileHandler
 from inotify_simple import INotify, flags
+from pathlib import Path
 
 DEPLOY_ENV = os.getenv('DEPLOY_ENV')
 SCRIPT = os.path.basename(__file__)
@@ -91,10 +92,21 @@ def start_pipeline(state_machine_arn, runfolder):
 def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
     wd_dir_map = {}
 
+    # Add root folder as watched folder
     root_wd = inotify_service.add_watch(monitored_path, WATCH_FLAGS)
     wd_dir_map[root_wd] = monitored_path
 
+    # Add all existing runfolders to the ones being watched
+    logger.info("Adding child folders of monitored root path...")
+    root_path = Path(monitored_path)
+    for child_path in root_path.iterdir():
+        if child_path.is_dir():
+            logger.info(f"Adding path to monitor: {child_path}")
+            ch_wd = inotify_service.add_watch(child_path, WATCH_FLAGS)
+            wd_dir_map[ch_wd] = child_path
+
     while 1:
+        # TODO: monitor for folder deletion events, to remove watches for removed runfolder?
         for event in inotify_service.read(read_delay=500):
             reported_flags = flags.from_mask(event.mask)
 

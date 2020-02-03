@@ -1,6 +1,7 @@
 import boto3
 import os
 import json
+import re
 
 SSM_DOC_NAME = os.environ.get("SSM_DOC_NAME")
 DEPLOY_ENV = os.environ.get("DEPLOY_ENV")
@@ -10,6 +11,15 @@ BASTION_SSM_ROLE_ARN = os.environ.get("BASTION_SSM_ROLE_ARN")
 
 ssm_client = boto3.client('ssm')
 states_client = boto3.client('stepfunctions')
+
+# pre-compile regex patterns
+runfolder_pattern = re.compile('([12][0-9][01][0-9][0123][0-9])_(A01052|A00130)_([0-9]{4})_[A-Z0-9]{10}')
+
+# Instrument ID mapping
+instrument_name = {
+    "A01052": "Po",
+    "A00130": "Baymax"
+}
 
 
 def getSSMParam(name):
@@ -61,8 +71,19 @@ def build_command(script_case, input_data):
     else:
         raise ValueError('A runfolder parameter is mandatory!')
 
-    runfolder_path = os.path.join(runfolder_base_path, runfolder)
+    # TODO: PO: extract instrument ID from runfolder and deduct runfolder base path
+    try:
+        run_date = re.search(runfolder_pattern, runfolder).group(1)
+        run_inst_id = re.search(runfolder_pattern, runfolder).group(2)
+        run_no = re.search(runfolder_pattern, runfolder).group(3)
+    except AttributeError:
+        raise ValueError(f"Runfolder name {runfolder} did not match expected format: {runfolder_pattern}")
+    print(f"Extracted date/instr_id/run_no from runfolder: {run_date}/{run_inst_id}/{run_no}")
+
+    runfolder_path = os.path.join(runfolder_base_path, instrument_name[run_inst_id], runfolder)
+    print(f"Using runfolder path: {runfolder_path}")
     bcl2fastq_out_path = os.path.join(bcl2fastq_base_path, runfolder)
+    print(f"Using fastq path: {bcl2fastq_out_path}")
 
     execution_timneout = '600'  # the (default) time (in sec) before the command is timed out
     command = f"su - limsadmin -c '"
@@ -72,7 +93,7 @@ def build_command(script_case, input_data):
         command += f" DEPLOY_ENV={DEPLOY_ENV}"
         command += f" {runfolder_check_script} {runfolder_path}"
     elif script_case == "samplesheet_check":
-        samplesheet_path = os.path.join(runfolder_base_path, runfolder, "SampleSheet.csv")
+        samplesheet_path = os.path.join(runfolder_path, "SampleSheet.csv")
         command += f" conda activate pipeline &&"
         command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" python {samplesheet_check_script} {samplesheet_path}"

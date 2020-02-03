@@ -46,9 +46,9 @@ function backup_qc_source_data {
     fi
 
     if [[ "$instrument_id" == "A01052" ]]; then
-        source_dir=${bcl_base_path}/Baymax/${run_id}
-    elif [[ "$instrument_id" == "A00130" ]]; then
         source_dir=${bcl_base_path}/Po/${run_id}
+    elif [[ "$instrument_id" == "A00130" ]]; then
+        source_dir=${bcl_base_path}/Baymax/${run_id}
     else
         write_log "ERROR: Unknown instrument"
         exit 2

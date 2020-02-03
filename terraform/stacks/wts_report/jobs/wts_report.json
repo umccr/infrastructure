@@ -1,5 +1,5 @@
 {
-    "image": "umccr/rnasum:0.3.1",
+    "image": "umccr/rnasum:0.3.2",
     "vcpus": 2,
     "memory": 2048,
     "command": [

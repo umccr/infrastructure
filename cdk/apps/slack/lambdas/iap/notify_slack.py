@@ -54,6 +54,8 @@ def getCreatorFromId(id):
         return f"{id} (Egan Lohman)"
     elif id == 'b2f0ff65-c77b-37bc-af87-68a89c2f8d27':
         return f"{id} (Alexis Lucattini)"
+    elif id == '46258763-7c48-3a1c-8c5f-04003bf74e5a':
+        return f"{id} (Alexis L. deprecated)"
     else:
         return f"{id} (unknown)"
 

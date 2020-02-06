@@ -22,8 +22,6 @@ class CICDStack(core.Stack):
                                         privileged=True,
                                         compute_type=cb.ComputeType.SMALL);
 
-        ecr_repo = ecr.Repository(self, id="umccr", repository_name="umccr");
-
         cb_project = cb.Project(self, id = "rnasum",
                     environment = build_env,
                     timeout = core.Duration.hours(1),

@@ -22,6 +22,8 @@ class CICDStack(core.Stack):
                                         privileged=True,
                                         compute_type=cb.ComputeType.MEDIUM);
 
+        # XXX: Decompose this into another stack since other CICD stacks do not
+        # need to create several ECR repositories, one for UMCCR (org-level) is enough.
         ecr_repo = ecr.Repository(self, id="umccr", repository_name="umccr");
 
         cb_project = cb.Project(self, id = "umccrise",

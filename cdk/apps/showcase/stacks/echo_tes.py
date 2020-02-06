@@ -34,6 +34,7 @@ class EchoTesStack(core.Stack):
                 'TASK_ID': props['task_id'],
                 'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_NAME': props['ssm_param_name'],
+                'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': props['image_name'],
                 'IMAGE_TAG': props['image_tag']
             }
@@ -41,7 +42,7 @@ class EchoTesStack(core.Stack):
 
         secret_value = ssm.StringParameter.from_secure_string_parameter_attributes(
             self,
-            "sJwtToken",
+            "JwtToken",
             parameter_name=props['ssm_param_name'],
             version=props['ssm_param_version']
         )

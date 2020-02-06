@@ -5,12 +5,13 @@ from stacks.echo_tes import EchoTesStack
 echo_tes_dev_props = {
     'namespace': 'echo-iap-tes-dev',
     'iap_api_base_url': 'aps2.platform.illumina.com',
-    'task_id': 'tdn.08d5b213e9d74c6b9996d37fcf18f5b0',
-    'task_version': 'tvn.fbfcd1166bfb4384a672ceeb786ebbe6',
+    'task_id': 'tdn.d4425331e3ba4779adafbf31176f0580',
+    'task_version': 'tvn.b4735419fbe4455eb2b91960e48921f9',
     'ssm_param_name': '/iap/jwt-token',
     'ssm_param_version': 1,
-    'image_name': 'umccr/rnasum',
-    'image_tag': '0.3'
+    'image_name': 'ubuntu',
+    'image_tag': 'latest',
+    'gds_log_folder': 'gds://teslogs/ShowCase/'
 }
 
 

@@ -20,8 +20,15 @@ class OrchestratorStack(core.Stack):
             ]
         )
 
-        callback_role = lambda_role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("AWSStepFunctionsFullAccess"))
+        callback_role = iam.Role(
+            self,
+            'CallbackTesLambdaRole',
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('AWSStepFunctionsFullAccess')
+            ]
+        )
 
         function = lmbda.Function(
             self,

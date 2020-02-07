@@ -45,5 +45,5 @@ def lambda_handler(event, context):
     if callback_token:
         sfn_client.send_task_success(
             taskToken=callback_token,
-            output='Task success'
+            output='{"status": "success"}'
         )

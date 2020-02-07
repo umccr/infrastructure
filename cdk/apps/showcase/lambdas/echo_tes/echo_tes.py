@@ -55,6 +55,7 @@ def lambda_handler(event, context):
     # overwrite defaults, if applicable
     image_name = event['imageName'] if event.get('imageName') else default_image_name
     image_tag = event['imageTag'] if event.get('imageTag') else default_image_tag
+    echoParameter = event['echoParameter'] if event.get('echoParameter') else "Hello world"
 
     # API token
     token = getSSMParam(ssm_parameter_name)
@@ -77,7 +78,7 @@ def lambda_handler(event, context):
             "imageName": image_name,
             "imageTag": image_tag,
             "gdsLogFolder": gds_log_folder,
-            "echoParameter": "Hello World"
+            "echoParameter": echoParameter
         }
     }
 

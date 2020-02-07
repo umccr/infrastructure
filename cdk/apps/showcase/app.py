@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from aws_cdk import core
-from stacks.echo_tes import EchoTesStack
+from stacks.orchestrator import OrchestratorStack
 
 echo_tes_dev_props = {
     'namespace': 'echo-iap-tes-dev',
@@ -17,7 +17,7 @@ echo_tes_dev_props = {
 
 app = core.App()
 
-EchoTesStack(
+OrchestratorStack(
     app,
     echo_tes_dev_props['namespace'],
     echo_tes_dev_props,

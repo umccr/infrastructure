@@ -20,6 +20,9 @@ class OrchestratorStack(core.Stack):
             ]
         )
 
+        callback_role = lambda_role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AWSStepFunctionsFullAccess"))
+
         function = lmbda.Function(
             self,
             'EchoTesLambda',
@@ -40,22 +43,41 @@ class OrchestratorStack(core.Stack):
             }
         )
 
+        callback_function = lmbda.Function(
+            self,
+            'CallbackLambda',
+            function_name='callback_iap_tes_lambda_dev',
+            handler='callback.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas/callback'),
+            role=callback_role,
+            timeout=core.Duration.seconds(20)
+        )
+
         secret_value = ssm.StringParameter.from_secure_string_parameter_attributes(
             self,
             "JwtToken",
             parameter_name=props['ssm_param_name'],
             version=props['ssm_param_version']
-        )
-        secret_value.grant_read(function)
+        ).grant_read(function)
 
         submit_lambda_task = sfn_tasks.RunLambdaTask(function, 
                                 integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
                                 payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar"})
+        second_lambda_task = sfn_tasks.RunLambdaTask(function, 
+                                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                                payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar2"})
 
         # TASK definitions
         tes_task = sfn.Task(
             self, "Submit TES",
             task= submit_lambda_task,
+            result_path="$.guid",
+        )
+        
+        tes_task2 = sfn.Task(
+            self, "Submit TES task 2",
+            task= second_lambda_task,
             result_path="$.guid",
         )
 
@@ -69,22 +91,12 @@ class OrchestratorStack(core.Stack):
             error="DescribeJob returned FAILED"
         )
 
-        wait_x = sfn.Wait(
-            self, "Wait X Seconds",
-            time=sfn.WaitTime.seconds_path('$.wait_time'),
-        )
-
         is_complete = sfn.Choice(
             self, "Job Complete?"
         )
 
         definition = tes_task \
-            .next(is_complete
-                .when(sfn.Condition.string_equals(
-                    "$.status", "FAILED"), job_failed) \
-                .when(sfn.Condition.string_equals(
-                    "$.status", "SUCCEEDED"), job_succeeded) \
-                .otherwise(wait_x))
+            .next(tes_task2)
 
         sfn.StateMachine(
             self, "StateMachine",

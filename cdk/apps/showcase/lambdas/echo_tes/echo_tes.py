@@ -7,7 +7,7 @@ import http.client
 
 iap_base_url = os.environ.get("IAP_API_BASE_URL")
 task_id = os.environ.get("TASK_ID")
-task_version_wts = os.environ.get("TASK_VERSION")
+task_version = os.environ.get("TASK_VERSION")
 ssm_parameter_name = os.environ.get("SSM_PARAM_NAME")
 default_image_name = os.environ.get("IMAGE_NAME")
 default_image_tag = os.environ.get("IMAGE_TAG")
@@ -71,10 +71,9 @@ def lambda_handler(event, context):
     # request endpoint and body (depending on use case)
     api_url = f"/v1/tasks/{task_id}/versions/{task_version}:launch"
     body = {
-        'name': 'showcase',
-        'description': f"showcase run for {sample_name} (WTS + WGS)",
+        'name': "SHOWCASE",
+        'description': task_callback_token,
         'arguments': {
-            "taskCallbackToken": task_callback_token
             "imageName": image_name,
             "imageTag": image_tag,
             "gdsLogFolder": gds_log_folder,

@@ -27,6 +27,13 @@ variable "workspace_seq_data_bucket_name" {
   }
 }
 
+variable "workspace_run_data_bucket_name" {
+  default = {
+    prod = "umccr-run-data-prod"
+    dev  = "umccr-run-data-dev"
+  }
+}
+
 variable "workspace_fastq_data_uploader_buckets" {
   type = "map"
 

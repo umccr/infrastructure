@@ -287,6 +287,38 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
   }
 }
 
+resource "aws_s3_bucket" "run-data" {
+  bucket = "${var.workspace_run_data_bucket_name[terraform.workspace]}"
+
+  versioning {
+    enabled = "${terraform.workspace == "prod" ? true : false}"
+  }
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  lifecycle_rule {
+    id      = "expire_old_version"
+    enabled = "${terraform.workspace == "dev" ? false : true}"
+
+    noncurrent_version_expiration {
+      days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
+}
+
 # S3 bucket to hold primary data
 resource "aws_s3_bucket" "primary_data" {
   bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"

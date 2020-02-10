@@ -3,6 +3,7 @@ import csv
 import json
 import boto3
 import http.client
+import urllib3
 
 # SFN task to read FASTQ list for a given sequencing run and map individual FASTQs to SampleIDs.
 # Splitting a run centric FASTQ list into sample centric FASTQ pairs.
@@ -28,8 +29,18 @@ def getSSMParam(name):
 def parse_fastq_list(csv_gds_url):
     aws_presigned_url = "stratus-gds-aps2.s3.ap-southeast-2.amazonaws.com"
     response = req_to_endpoint(aws_presigned_url, csv_gds_url, headers={'Content-Type': 'application/json'})
-    fastqs = csv.reader(response))
+    fastqs = csv.reader(response)
     yield fastqs
+
+
+def read_form_url(url):
+    http = urllib3.PoolManager()
+    r = http.request('GET', url)
+    data = r.data.decode('utf-8')
+    # data should be a single multiline string
+    print(f"Retrieved data: {data}")
+    # split the stirng on new line characters
+    return data.split('\n')
 
 
 def req_to_endpoint(base_url, endpoint, headers):
@@ -90,9 +101,33 @@ def lambda_handler(event, context):
 
     # XXX: Read from the API, **per run** FASTQ list from GDS
     run_id = event['run_id']
+    # Retrieve the URL of the FASTA list file for the run
     fastq_list_url = get_fastq_list(run_id, token)
 
-    fastq_dict = parse_fastq_list(fastq_list_url)
+    # Get the CSV content of the FASTQ list file
+    csv_data = read_form_url(fastq_list_url)
+    # header: ['RGID', 'RGSM', 'RGLB', 'Lane', 'Read1File', 'Read2File']
+    spamreader = csv.reader(csv_data)
+    foo_dict = dict()
+    for row in spamreader:
+        if len(row) > 1 and row[1] != 'RGSM':  # ignore empty lines and header
+            print(f"Row: {row}")
+            lib_id = row[1]
+            if lib_id not in foo_dict:
+                foo_dict[lib_id] = list()
+            fastq1 = row[4]
+            fastq2 = row[5]
+            foo_dict[lib_id].append(fastq1)
+            foo_dict[lib_id].append(fastq2)
+
+    print(foo_dict)
+
+    # TODO: create new FASTQ list files for each sample/library
+    # TODO: kick off parallel tasks, one for each FASTQ list file
+
+    # Parse the CSV file mapping sample/library to FASTQ files
+    # fastq_dict = parse_fastq_list(fastq_list_url)
+
     # XXX: Group the FASTQs from that FASTQ list, **per sample**
     # for fastq in fastqs:
     #     print(fastq)

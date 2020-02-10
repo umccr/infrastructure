@@ -22,6 +22,8 @@ setuptools.setup(
         "aws_cdk.aws_iam",
         "aws_cdk.aws_lambda",
         "aws_cdk.aws_ssm",
+        "aws_cdk.aws_stepfunctions",
+        "aws_cdk.aws_stepfunctions_tasks",
         "aws-cdk.core"
     ],
 

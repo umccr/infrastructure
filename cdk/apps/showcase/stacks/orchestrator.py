@@ -7,6 +7,7 @@ from aws_cdk import (
     core,
 )
 
+
 class OrchestratorStack(core.Stack):
     def __init__(self, app: core.App, id: str, props, **kwargs) -> None:
         super().__init__(app, id, **kwargs)
@@ -30,13 +31,13 @@ class OrchestratorStack(core.Stack):
             ]
         )
 
-        function = lmbda.Function(
+        echo_function = lmbda.Function(
             self,
             'EchoTesLambda',
             function_name='echo_iap_tes_lambda_dev',
             handler='echo_tes.lambda_handler',
             runtime=lmbda.Runtime.PYTHON_3_7,
-            code=lmbda.Code.from_asset('lambdas/echo_tes'),
+            code=lmbda.Code.from_asset('lambdas'),
             role=lambda_role,
             timeout=core.Duration.seconds(20),
             environment={
@@ -50,13 +51,28 @@ class OrchestratorStack(core.Stack):
             }
         )
 
+        sample_mapper_function = lmbda.Function(
+            self,
+            'SampleMapperLambda',
+            function_name='sample_mapper_lambda_dev',
+            handler='sample_mapper.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'SSM_PARAM_NAME': props['ssm_param_name']
+            }
+        )
+
         callback_function = lmbda.Function(
             self,
             'CallbackLambda',
             function_name='callback_iap_tes_lambda_dev',
             handler='callback.lambda_handler',
             runtime=lmbda.Runtime.PYTHON_3_7,
-            code=lmbda.Code.from_asset('lambdas/callback'),
+            code=lmbda.Code.from_asset('lambdas'),
             role=callback_role,
             timeout=core.Duration.seconds(20)
         )
@@ -66,41 +82,43 @@ class OrchestratorStack(core.Stack):
             "JwtToken",
             parameter_name=props['ssm_param_name'],
             version=props['ssm_param_version']
-        ).grant_read(function)
+        ).grant_read(echo_function)
 
-        submit_lambda_task = sfn_tasks.RunLambdaTask(function, 
-                                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-                                payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar"})
-        second_lambda_task = sfn_tasks.RunLambdaTask(function, 
-                                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-                                payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar2"})
+        submit_lambda_task = sfn_tasks.RunLambdaTask(
+            echo_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar"})
+        second_lambda_task = sfn_tasks.RunLambdaTask(
+            echo_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar2"})
 
         # TASK definitions
         tes_task = sfn.Task(
             self, "Submit TES",
-            task= submit_lambda_task,
+            task=submit_lambda_task,
             result_path="$.guid",
         )
         
         tes_task2 = sfn.Task(
             self, "Submit TES task 2",
-            task= second_lambda_task,
+            task=second_lambda_task,
             result_path="$.guid",
         )
 
-        job_succeeded = sfn.Succeed(
-            self, "Job Succeeded"
-        )
+        # job_succeeded = sfn.Succeed(
+        #     self, "Job Succeeded"
+        # )
 
-        job_failed = sfn.Fail(
-            self, "Job Failed",
-            cause="AWS Batch Job Failed",
-            error="DescribeJob returned FAILED"
-        )
+        # job_failed = sfn.Fail(
+        #     self, "Job Failed",
+        #     cause="AWS Batch Job Failed",
+        #     error="DescribeJob returned FAILED"
+        # )
 
-        is_complete = sfn.Choice(
-            self, "Job Complete?"
-        )
+        # is_complete = sfn.Choice(
+        #     self, "Job Complete?"
+        # )
 
         definition = tes_task \
             .next(tes_task2)

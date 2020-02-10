@@ -3,6 +3,7 @@ import boto3
 
 sfn_client = boto3.client('stepfunctions')
 
+
 def get_callback_token(sns_record):
     sns_msg = json.loads(sns_record.get('Message'))
     task_id = sns_msg['id']
@@ -15,9 +16,9 @@ def get_callback_token(sns_record):
     else:
         # ignore
         token = None
-        print(f"Not a showcase task: {name}")
+        print(f"Not a showcase task: {task_name}")
     print(f"Extracted callback token {token}")
-    
+
     return token
 
 

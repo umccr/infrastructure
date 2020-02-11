@@ -3,7 +3,7 @@ from aws_cdk import core
 from stacks.orchestrator import OrchestratorStack
 
 echo_tes_dev_props = {
-    'namespace': 'echo-iap-tes-dev',
+    'namespace': 'showcase-iap-tes-dev',
     'iap_api_base_url': 'aps2.platform.illumina.com',
     'task_id': 'tdn.d4425331e3ba4779adafbf31176f0580',
     'task_version': 'tvn.b4735419fbe4455eb2b91960e48921f9',

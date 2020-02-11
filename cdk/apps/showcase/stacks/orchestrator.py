@@ -31,41 +31,7 @@ class OrchestratorStack(core.Stack):
             ]
         )
 
-        echo_function = lmbda.Function(
-            self,
-            'EchoTesLambda',
-            function_name='echo_iap_tes_lambda_dev',
-            handler='echo_tes.lambda_handler',
-            runtime=lmbda.Runtime.PYTHON_3_7,
-            code=lmbda.Code.from_asset('lambdas'),
-            role=lambda_role,
-            timeout=core.Duration.seconds(20),
-            environment={
-                'IAP_API_BASE_URL': props['iap_api_base_url'],
-                'TASK_ID': props['task_id'],
-                'TASK_VERSION': props['task_version'],
-                'SSM_PARAM_NAME': props['ssm_param_name'],
-                'GDS_LOG_FOLDER': props['gds_log_folder'],
-                'IMAGE_NAME': props['image_name'],
-                'IMAGE_TAG': props['image_tag']
-            }
-        )
-
-        sample_mapper_function = lmbda.Function(
-            self,
-            'SampleMapperLambda',
-            function_name='sample_mapper_lambda_dev',
-            handler='sample_mapper.lambda_handler',
-            runtime=lmbda.Runtime.PYTHON_3_7,
-            code=lmbda.Code.from_asset('lambdas'),
-            role=lambda_role,
-            timeout=core.Duration.seconds(20),
-            environment={
-                'IAP_API_BASE_URL': props['iap_api_base_url'],
-                'SSM_PARAM_NAME': props['ssm_param_name']
-            }
-        )
-
+        # Lambda function to call back and complete SFN async tasks
         callback_function = lmbda.Function(
             self,
             'CallbackLambda',
@@ -77,32 +43,111 @@ class OrchestratorStack(core.Stack):
             timeout=core.Duration.seconds(20)
         )
 
+        samplesheet_mapper_function = lmbda.Function(
+            self,
+            'SampleSheetMapperTesLambda',
+            function_name='showcase_ss_mapper_iap_tes_lambda_dev',
+            handler='launch_tes_task.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'TASK_ID': props['task_id'],
+                'TASK_VERSION': props['task_version'],
+                'SSM_PARAM_JWT': props['ssm_param_name'],
+                'GDS_LOG_FOLDER': props['gds_log_folder'],
+                'IMAGE_NAME': props['image_name'],
+                'IMAGE_TAG': props['image_tag'],
+                'TES_TASK_NAME': 'SampleSheetMapper'
+            }
+        )
+
+        bcl_convert_function = lmbda.Function(
+            self,
+            'BclConvertTesLambda',
+            function_name='showcase_bcl_convert_iap_tes_lambda_dev',
+            handler='launch_tes_task.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'TASK_ID': props['task_id'],
+                'TASK_VERSION': props['task_version'],
+                'SSM_PARAM_JWT': props['ssm_param_name'],
+                'GDS_LOG_FOLDER': props['gds_log_folder'],
+                'IMAGE_NAME': props['image_name'],
+                'IMAGE_TAG': props['image_tag'],
+                'TES_TASK_NAME': 'BclConvert'
+            }
+        )
+
+        fastq_mapper_function = lmbda.Function(
+            self,
+            'FastqMapperTesLambda',
+            function_name='showcase_fastq_mapper_iap_tes_lambda_dev',
+            handler='launch_tes_task.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'TASK_ID': props['task_id'],
+                'TASK_VERSION': props['task_version'],
+                'SSM_PARAM_JWT': props['ssm_param_name'],
+                'GDS_LOG_FOLDER': props['gds_log_folder'],
+                'IMAGE_NAME': props['image_name'],
+                'IMAGE_TAG': props['image_tag'],
+                'TES_TASK_NAME': 'FastqMapper'
+            }
+        )
+
+        # IAP JWT access token stored in SSM Parameter Store
         secret_value = ssm.StringParameter.from_secure_string_parameter_attributes(
             self,
             "JwtToken",
             parameter_name=props['ssm_param_name'],
             version=props['ssm_param_version']
-        ).grant_read(echo_function)
+        )
+        secret_value.grant_read(samplesheet_mapper_function)
+        secret_value.grant_read(fastq_mapper_function)
+        secret_value.grant_read(bcl_convert_function)
 
+        # SFN task definitions
         submit_lambda_task = sfn_tasks.RunLambdaTask(
-            echo_function,
+            samplesheet_mapper_function,
             integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar"})
-        second_lambda_task = sfn_tasks.RunLambdaTask(
-            echo_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token, "echoParameter": "FooBar2"})
+            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
 
-        # TASK definitions
+        second_lambda_task = sfn_tasks.RunLambdaTask(
+            fastq_mapper_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
+
+        bcl_convert_lambda_task = sfn_tasks.RunLambdaTask(
+            bcl_convert_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
+
         tes_task = sfn.Task(
             self, "Submit TES",
             task=submit_lambda_task,
             result_path="$.guid",
         )
-        
+
         tes_task2 = sfn.Task(
             self, "Submit TES task 2",
             task=second_lambda_task,
+            result_path="$.guid",
+        )
+
+        tes_task3 = sfn.Task(
+            self, "Submit TES task 3",
+            task=bcl_convert_lambda_task,
             result_path="$.guid",
         )
 
@@ -121,9 +166,11 @@ class OrchestratorStack(core.Stack):
         # )
 
         definition = tes_task \
-            .next(tes_task2)
+            .next(tes_task2) \
+            .next(tes_task3)
 
         sfn.StateMachine(
-            self, "StateMachine",
+            self, 
+            "ShowcaseSfnStateMachine",
             definition=definition,
         )

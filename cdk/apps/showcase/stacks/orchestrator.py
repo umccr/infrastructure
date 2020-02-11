@@ -55,7 +55,7 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': props['task_version'],
+                'TASK_VERSION': 'tvn:0ee81865bf514b7bb7b7ea305c88191f',
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': props['image_name'],
@@ -76,11 +76,11 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': props['task_version'],
+                'TASK_VERSION': 'tvn.ab3e85f9aaf24890ad169fdab3825c0d',
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
-                'IMAGE_NAME': props['image_name'],
-                'IMAGE_TAG': props['image_tag'],
+                'IMAGE_NAME': '699120554104.dkr.ecr.us-east-1.amazonaws.com/public/dragen',
+                'IMAGE_TAG': '3.5.2',
                 'TES_TASK_NAME': 'BclConvert'
             }
         )
@@ -97,11 +97,11 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': props['task_version'],
+                'TASK_VERSION': 'tvn:f90aa88da2fe490fb6e6366b65abe267',
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
-                'IMAGE_NAME': props['image_name'],
-                'IMAGE_TAG': props['image_tag'],
+                'IMAGE_NAME': 'python',
+                'IMAGE_TAG': '3',
                 'TES_TASK_NAME': 'FastqMapper'
             }
         )
@@ -170,7 +170,7 @@ class OrchestratorStack(core.Stack):
             .next(tes_task3)
 
         sfn.StateMachine(
-            self, 
+            self,
             "ShowcaseSfnStateMachine",
             definition=definition,
         )

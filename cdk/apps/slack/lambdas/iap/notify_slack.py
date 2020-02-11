@@ -179,12 +179,14 @@ def slack_message_from_tes_runs(sns_record):
     task_name = sns_msg['name']
     task_status = sns_msg['status']
     task_description = sns_msg['description']
+    if 'SHOWCASE' in task_name:
+        task_description = 'SFN task callback token'
     task_crated_time = sns_msg['timeCreated']
     task_created_by = sns_msg['createdBy']
 
     action = stratus_action.lower()
     status = task_status.lower()
-    if action == "created":
+    if action == 'created':
         slack_color = BLUE
     elif action == 'updated' and (status == 'pending' or status == 'running'):
         slack_color = GRAY

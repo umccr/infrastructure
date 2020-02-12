@@ -85,4 +85,10 @@ def lambda_handler(event, context):
     # Retrieve the URL of the FASTA list file for the run
     fastq_lists = find_fastq_lists(run_id, jwt_token)
 
-    return fastq_lists
+    # Process file names to get sample/lib names
+    # (Depends on file naming conventions!)
+    sample_names = list()
+    for file_name in fastq_lists:
+        sample_names.append(os.path.splitext(file_name)[0])
+
+    return sample_names

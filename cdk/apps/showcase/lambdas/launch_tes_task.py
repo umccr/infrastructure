@@ -82,7 +82,7 @@ def lambda_handler(event, context):
     }
 
     if event.get('item'):
-        body['arguments']['sample_list_name'] = event.get('item')
+        body['arguments']['sample_name'] = event.get('item')
 
     # call the remote API
     status, data = send_request(

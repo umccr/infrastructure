@@ -56,8 +56,8 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                # 'TASK_VERSION': 'tvn:0ee81865bf514b7bb7b7ea305c88191f',
-                'TASK_VERSION': props['task_version'],
+                'TASK_VERSION': 'tvn:0ee81865bf514b7bb7b7ea305c88191f',
+                #'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': props['image_name'],
@@ -78,8 +78,8 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                # 'TASK_VERSION': 'tvn.ab3e85f9aaf24890ad169fdab3825c0d',
-                'TASK_VERSION': props['task_version'],
+                'TASK_VERSION': 'tvn.ab3e85f9aaf24890ad169fdab3825c0d',
+                #'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': '699120554104.dkr.ecr.us-east-1.amazonaws.com/public/dragen',
@@ -100,8 +100,8 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                # 'TASK_VERSION': 'tvn:f90aa88da2fe490fb6e6366b65abe267',
-                'TASK_VERSION': props['task_version'],
+                'TASK_VERSION': 'tvn:f90aa88da2fe490fb6e6366b65abe267',
+                #'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': 'python',

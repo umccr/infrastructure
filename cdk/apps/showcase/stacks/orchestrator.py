@@ -12,6 +12,7 @@ class OrchestratorStack(core.Stack):
     def __init__(self, app: core.App, id: str, props, **kwargs) -> None:
         super().__init__(app, id, **kwargs)
 
+        # IAM roles for the lambda functions
         lambda_role = iam.Role(
             self,
             'EchoTesLambdaRole',
@@ -55,7 +56,8 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': 'tvn:0ee81865bf514b7bb7b7ea305c88191f',
+                # 'TASK_VERSION': 'tvn:0ee81865bf514b7bb7b7ea305c88191f',
+                'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': props['image_name'],
@@ -76,7 +78,8 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': 'tvn.ab3e85f9aaf24890ad169fdab3825c0d',
+                # 'TASK_VERSION': 'tvn.ab3e85f9aaf24890ad169fdab3825c0d',
+                'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': '699120554104.dkr.ecr.us-east-1.amazonaws.com/public/dragen',
@@ -97,12 +100,72 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': 'tvn:f90aa88da2fe490fb6e6366b65abe267',
+                # 'TASK_VERSION': 'tvn:f90aa88da2fe490fb6e6366b65abe267',
+                'TASK_VERSION': props['task_version'],
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
                 'IMAGE_NAME': 'python',
                 'IMAGE_TAG': '3',
                 'TES_TASK_NAME': 'FastqMapper'
+            }
+        )
+
+        gather_samples_function = lmbda.Function(
+            self,
+            'GatherSamplesTesLambda',
+            function_name='showcase_gather_samples_iap_tes_lambda_dev',
+            handler='gather_samples.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'SSM_PARAM_JWT': props['ssm_param_name']
+            }
+        )
+
+        dragen_function = lmbda.Function(
+            self,
+            'DragenTesLambda',
+            function_name='showcase_dragen_iap_tes_lambda_dev',
+            handler='launch_tes_task.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'TASK_ID': props['task_id'],
+                # 'TASK_VERSION': '',
+                'TASK_VERSION': props['task_version'],
+                'SSM_PARAM_JWT': props['ssm_param_name'],
+                'GDS_LOG_FOLDER': props['gds_log_folder'],
+                'IMAGE_NAME': 'python',
+                'IMAGE_TAG': '3',
+                'TES_TASK_NAME': 'Dragen'
+            }
+        )
+
+        multiqc_function = lmbda.Function(
+            self,
+            'MultiQcTesLambda',
+            function_name='showcase_multiqc_iap_tes_lambda_dev',
+            handler='launch_tes_task.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'TASK_ID': props['task_id'],
+                # 'TASK_VERSION': '',
+                'TASK_VERSION': props['task_version'],
+                'SSM_PARAM_JWT': props['ssm_param_name'],
+                'GDS_LOG_FOLDER': props['gds_log_folder'],
+                'IMAGE_NAME': 'python',
+                'IMAGE_TAG': '3',
+                'TES_TASK_NAME': 'MultiQC'
             }
         )
 
@@ -114,17 +177,15 @@ class OrchestratorStack(core.Stack):
             version=props['ssm_param_version']
         )
         secret_value.grant_read(samplesheet_mapper_function)
-        secret_value.grant_read(fastq_mapper_function)
         secret_value.grant_read(bcl_convert_function)
+        secret_value.grant_read(fastq_mapper_function)
+        secret_value.grant_read(gather_samples_function)
+        secret_value.grant_read(dragen_function)
+        secret_value.grant_read(multiqc_function)
 
         # SFN task definitions
-        submit_lambda_task = sfn_tasks.RunLambdaTask(
+        samplesheet_mapper_lambda_task = sfn_tasks.RunLambdaTask(
             samplesheet_mapper_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
-
-        second_lambda_task = sfn_tasks.RunLambdaTask(
-            fastq_mapper_function,
             integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
             payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
 
@@ -133,41 +194,83 @@ class OrchestratorStack(core.Stack):
             integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
             payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
 
-        tes_task = sfn.Task(
-            self, "Submit TES",
-            task=submit_lambda_task,
+        fastq_mapper_lambda_task = sfn_tasks.RunLambdaTask(
+            fastq_mapper_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
+
+        gather_samples_lambda_task = sfn_tasks.InvokeFunction(
+            gather_samples_function,
+            payload={"runId.$": "$.runfolder"}
+        )
+
+        dragen_lambda_task = sfn_tasks.RunLambdaTask(
+            dragen_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token,
+                     "runId.$": "$.runfolder",
+                     "index.$": "$$.Map.Item.Index",
+                     "item.$": "$$.Map.Item.Value",
+                     })
+
+        multiqc_lambda_task = sfn_tasks.RunLambdaTask(
+            multiqc_function,
+            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+            payload={"taskCallbackToken": sfn.Context.task_token,
+                     "runId.$": "$.runfolder",
+                     "samples.$": "$.sample_ids"
+                     })
+
+        task_samplesheet_mapper = sfn.Task(
+            self, "SampleSheetMapper",
+            task=samplesheet_mapper_lambda_task,
             result_path="$.guid",
         )
 
-        tes_task2 = sfn.Task(
-            self, "Submit TES task 2",
-            task=second_lambda_task,
-            result_path="$.guid",
-        )
-
-        tes_task3 = sfn.Task(
-            self, "Submit TES task 3",
+        task_bcl_convert = sfn.Task(
+            self, "BclConvert",
             task=bcl_convert_lambda_task,
             result_path="$.guid",
         )
 
-        # job_succeeded = sfn.Succeed(
-        #     self, "Job Succeeded"
-        # )
+        task_fastq_mapper = sfn.Task(
+            self, "FastqMapper",
+            task=fastq_mapper_lambda_task,
+            result_path="$.guid",
+        )
 
-        # job_failed = sfn.Fail(
-        #     self, "Job Failed",
-        #     cause="AWS Batch Job Failed",
-        #     error="DescribeJob returned FAILED"
-        # )
+        task_gather_samples = sfn.Task(
+            self, "GatherSamples",
+            task=gather_samples_lambda_task,
+            result_path="$.sample_ids",
+        )
 
-        # is_complete = sfn.Choice(
-        #     self, "Job Complete?"
-        # )
+        task_dragen = sfn.Task(
+            self, "DragenTask",
+            task=dragen_lambda_task
+        )
 
-        definition = tes_task \
-            .next(tes_task2) \
-            .next(tes_task3)
+        task_multiqc = sfn.Task(
+            self, "MultiQcTask",
+            task=multiqc_lambda_task
+        )
+
+        scatter = sfn.Map(
+            self, "Scatter",
+            items_path="$.sample_ids",
+            parameters={
+                "index.$": "$$.Map.Item.Index",
+                "item.$": "$$.Map.Item.Value",
+                "runId.$": "$.runfolder"
+                }
+        ).iterator(task_dragen)
+
+        definition = task_samplesheet_mapper \
+            .next(task_bcl_convert) \
+            .next(task_fastq_mapper) \
+            .next(task_gather_samples) \
+            .next(scatter) \
+            .next(task_multiqc)
 
         sfn.StateMachine(
             self,

@@ -26,6 +26,7 @@ def get_callback_token(sns_record):
 
 
 def extract_token_status(event):
+    token = None
     records = event.get('Records')
     if len(records) == 1:
         record = records[0]
@@ -73,12 +74,12 @@ def lambda_handler(event, context):
     if status == SUCCESS:
         sfn_client.send_task_success(
             taskToken=callback_token,
-            output='{"status": "success"}'
+            output='"success"'
         )
     elif status == FAILURE:
         sfn_client.send_task_failure(
             taskToken=callback_token,
-            output='{"status": "success"}'
+            output='"failure"'
         )
     else:
         # do nothing

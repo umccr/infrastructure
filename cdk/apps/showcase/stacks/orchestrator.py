@@ -184,75 +184,64 @@ class OrchestratorStack(core.Stack):
         secret_value.grant_read(multiqc_function)
 
         # SFN task definitions
-        samplesheet_mapper_lambda_task = sfn_tasks.RunLambdaTask(
-            samplesheet_mapper_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
-
-        bcl_convert_lambda_task = sfn_tasks.RunLambdaTask(
-            bcl_convert_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
-
-        fastq_mapper_lambda_task = sfn_tasks.RunLambdaTask(
-            fastq_mapper_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token, "runId.$": "$.runfolder"})
-
-        gather_samples_lambda_task = sfn_tasks.InvokeFunction(
-            gather_samples_function,
-            payload={"runId.$": "$.runfolder"}
-        )
-
-        dragen_lambda_task = sfn_tasks.RunLambdaTask(
-            dragen_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token,
-                     "runId.$": "$.runfolder",
-                     "index.$": "$$.Map.Item.Index",
-                     "item.$": "$$.Map.Item.Value",
-                     })
-
-        multiqc_lambda_task = sfn_tasks.RunLambdaTask(
-            multiqc_function,
-            integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-            payload={"taskCallbackToken": sfn.Context.task_token,
-                     "runId.$": "$.runfolder",
-                     "samples.$": "$.sample_ids"
-                     })
-
         task_samplesheet_mapper = sfn.Task(
             self, "SampleSheetMapper",
-            task=samplesheet_mapper_lambda_task,
-            result_path="$.guid",
+            task=sfn_tasks.RunLambdaTask(
+                samplesheet_mapper_function,
+                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                payload={"taskCallbackToken": sfn.Context.task_token,
+                         "runId.$": "$.runfolder"}),
+            result_path="$.guid"
         )
 
         task_bcl_convert = sfn.Task(
             self, "BclConvert",
-            task=bcl_convert_lambda_task,
-            result_path="$.guid",
+            task=sfn_tasks.RunLambdaTask(
+                bcl_convert_function,
+                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                payload={"taskCallbackToken": sfn.Context.task_token,
+                         "runId.$": "$.runfolder"}),
+            result_path="$.guid"
         )
 
         task_fastq_mapper = sfn.Task(
             self, "FastqMapper",
-            task=fastq_mapper_lambda_task,
-            result_path="$.guid",
+            task=sfn_tasks.RunLambdaTask(
+                fastq_mapper_function,
+                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                payload={"taskCallbackToken": sfn.Context.task_token,
+                         "runId.$": "$.runfolder"}),
+            result_path="$.guid"
         )
 
         task_gather_samples = sfn.Task(
             self, "GatherSamples",
-            task=gather_samples_lambda_task,
-            result_path="$.sample_ids",
+            task=sfn_tasks.InvokeFunction(
+                gather_samples_function,
+                payload={"runId.$": "$.runfolder"}),
+            result_path="$.sample_ids"
         )
 
         task_dragen = sfn.Task(
             self, "DragenTask",
-            task=dragen_lambda_task
+            task=sfn_tasks.RunLambdaTask(
+                dragen_function,
+                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                payload={"taskCallbackToken": sfn.Context.task_token,
+                         "runId.$": "$.runId",
+                         "index.$": "$.index",
+                         "item.$": "$.item"}),
+            result_path="$.exit_status"
         )
 
         task_multiqc = sfn.Task(
             self, "MultiQcTask",
-            task=multiqc_lambda_task
+            task=sfn_tasks.RunLambdaTask(
+                multiqc_function,
+                integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                payload={"taskCallbackToken": sfn.Context.task_token,
+                         "runId.$": "$.runfolder",
+                         "samples.$": "$.sample_ids"})
         )
 
         scatter = sfn.Map(
@@ -261,8 +250,8 @@ class OrchestratorStack(core.Stack):
             parameters={
                 "index.$": "$$.Map.Item.Index",
                 "item.$": "$$.Map.Item.Value",
-                "runId.$": "$.runfolder"
-                }
+                "runId.$": "$.runfolder"},
+            result_path="$.mapresults"
         ).iterator(task_dragen)
 
         definition = task_samplesheet_mapper \

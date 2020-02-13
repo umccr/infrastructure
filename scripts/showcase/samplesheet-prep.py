@@ -12,6 +12,10 @@ parser.add_argument("--outputFile", "-o", type=str, required=True)
 
 args = parser.parse_args()
 
+# create output directory if it does not exist
+output_dir = os.path.dirname(args.outputFile)
+os.makedirs(output_dir, exist_ok=True)
+
 #read samplesheet except metadata. Assign metadata to  'samplesheet_metadata' df
 samplesheet_metadata = pd.read_csv(args.samplesheet, nrows=21, header=None)
 samplesheet = pd.read_csv(args.samplesheet, skiprows=21, header=0)

@@ -20,7 +20,15 @@ variable "s3_primary_data_bucket" {
         prod = "umccr-primary-data-prod"
         dev  = "umccr-primary-data-dev"
     }
-    description = "Name of the S3 bucket storing s3 keys data to be used by crawler "
+    description = "Name of the S3 bucket storing s3 primary data to be used by crawler "
+}
+
+variable "s3_run_data_bucket" {
+    default = {
+        prod = "umccr-run-data-prod"
+        dev  = "umccr-run-data-dev"
+    }
+    description = "Name of the S3 bucket storing s3 run data to be used by crawler "
 }
 
 # Terraform doesn't currently support configuraing google oauth credentials

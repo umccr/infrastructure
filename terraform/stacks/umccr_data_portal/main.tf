@@ -239,6 +239,10 @@ data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = "${var.s3_primary_data_bucket[terraform.workspace]}"
 }
 
+data "aws_s3_bucket" "s3_run_data_bucket" {
+  bucket = "${var.s3_run_data_bucket[terraform.workspace]}"
+}
+
 data "aws_s3_bucket" "lims_bucket" {
   bucket = "${var.lims_bucket[terraform.workspace]}"
 }
@@ -252,6 +256,7 @@ data "template_file" "sqs_s3_primary_data_event_policy" {
     sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
 
     s3_primary_data_bucket_arn = "${data.aws_s3_bucket.s3_primary_data_bucket.arn}"
+    s3_run_data_bucket_arn = "${data.aws_s3_bucket.s3_run_data_bucket.arn}"
   }
 }
 
@@ -261,9 +266,23 @@ resource "aws_sqs_queue" "s3_event_queue" {
   policy = "${data.template_file.sqs_s3_primary_data_event_policy.rendered}"
 }
 
-# Enable s3 event notification for the invevntory bucket --> SQS
+# Enable primary data bucket s3 event notification to SQS
 resource "aws_s3_bucket_notification" "s3_inventory_notification" {
   bucket = "${data.aws_s3_bucket.s3_primary_data_bucket.id}"
+
+  queue {
+    queue_arn = "${aws_sqs_queue.s3_event_queue.arn}"
+
+    events = [
+      "s3:ObjectCreated:*",
+      "s3:ObjectRemoved:*",
+    ]
+  }
+}
+
+# Enable run data bucket s3 event notification to SQS
+resource "aws_s3_bucket_notification" "s3_run_data_notification" {
+  bucket = "${data.aws_s3_bucket.s3_run_data_bucket.id}"
 
   queue {
     queue_arn = "${aws_sqs_queue.s3_event_queue.arn}"

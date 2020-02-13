@@ -39,9 +39,11 @@ def getCreatorFromId(id):
     elif id == '567d89e4-de8b-3688-a733-d2a979eb510e':
         return f"{id} (Peter Diakumis)"
     elif id == '1678890e-b107-3974-a47d-0bb532a64ad6':
+        return f"{id} (Roman Vals - unimelb)"
+    elif id == '9c925fa3-9b93-3f14-92a3-d35488ab1cc4':
         return f"{id} (Roman Vals)"
     elif id == '8abf754b-e94f-3841-b44b-75d10d33588b':
-        return f"{id} (Sehrish K. deprecated)"
+        return f"{id} (Sehrish unimelb)"
     elif id == 'd24913a8-676f-39f3-9250-7cf22fbc48c8':
         return f"{id} (Sehrish Kanwal)"
     elif id == '7eec7332-f780-3edc-bb70-c4f711398f1c':
@@ -57,7 +59,7 @@ def getCreatorFromId(id):
     elif id == 'b2f0ff65-c77b-37bc-af87-68a89c2f8d27':
         return f"{id} (Alexis Lucattini)"
     elif id == '46258763-7c48-3a1c-8c5f-04003bf74e5a':
-        return f"{id} (Alexis L. deprecated)"
+        return f"{id} (Alexis - unimelb)"
     else:
         return f"{id} (unknown)"
 

@@ -60,8 +60,8 @@ class OrchestratorStack(core.Stack):
                 # 'TASK_VERSION': 'tvn.b4735419fbe4455eb2b91960e48921f9',  # echo task
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
-                'IMAGE_NAME': 'python',
-                'IMAGE_TAG': '3',
+                'IMAGE_NAME': 'amancevice/pandas',
+                'IMAGE_TAG': '1.0.0-slim',
                 'TES_TASK_NAME': 'SampleSheetMapper'
             }
         )
@@ -104,8 +104,8 @@ class OrchestratorStack(core.Stack):
                 # 'TASK_VERSION': 'tvn.b4735419fbe4455eb2b91960e48921f9',  # echo task
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
-                'IMAGE_NAME': 'python',
-                'IMAGE_TAG': '3',
+                'IMAGE_NAME': 'amancevice/pandas',
+                'IMAGE_TAG': '1.0.0-slim',
                 'TES_TASK_NAME': 'FastqMapper'
             }
         )

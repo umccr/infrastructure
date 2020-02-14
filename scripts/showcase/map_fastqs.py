@@ -6,7 +6,7 @@ import pandas as pd
 
 #read inputs
 parser = argparse.ArgumentParser()
-parser.add_argument("--samplesheet", "-s", type=str, required=True)
+parser.add_argument("--samplesheet", "-i", type=str, required=True)
 parser.add_argument("--outputDir", "-o", type=str, required=True)
 
 args = parser.parse_args()

@@ -56,7 +56,7 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': 'tvn:0ee81865bf514b7bb7b7ea305c88191f',
+                'TASK_VERSION': 'tvn.0ee81865bf514b7bb7b7ea305c88191f',
                 # 'TASK_VERSION': 'tvn.b4735419fbe4455eb2b91960e48921f9',  # echo task
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
@@ -100,7 +100,7 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': 'tvn:f90aa88da2fe490fb6e6366b65abe267',
+                'TASK_VERSION': 'tvn.f90aa88da2fe490fb6e6366b65abe267',
                 # 'TASK_VERSION': 'tvn.b4735419fbe4455eb2b91960e48921f9',  # echo task
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
@@ -137,7 +137,7 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': 'tvn:096b39e90e4443abae0333e23fcabc61',
+                'TASK_VERSION': 'tvn.096b39e90e4443abae0333e23fcabc61',
                 # 'TASK_VERSION': 'tvn.b4735419fbe4455eb2b91960e48921f9',  # echo task
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],
@@ -159,7 +159,7 @@ class OrchestratorStack(core.Stack):
             environment={
                 'IAP_API_BASE_URL': props['iap_api_base_url'],
                 'TASK_ID': props['task_id'],
-                'TASK_VERSION': '983a0239483d4253a8a0531fa1de0376',
+                'TASK_VERSION': 'tvn.983a0239483d4253a8a0531fa1de0376',
                 # 'TASK_VERSION': 'tvn.b4735419fbe4455eb2b91960e48921f9',  # echo task
                 'SSM_PARAM_JWT': props['ssm_param_name'],
                 'GDS_LOG_FOLDER': props['gds_log_folder'],

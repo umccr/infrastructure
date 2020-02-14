@@ -21,4 +21,4 @@ df.set_index(keys="RGSM", drop=False, inplace=True)
 rgsms = df["RGSM"].unique().tolist()
 
 for rgsm in rgsms:
-    df.loc[df.RGSM==rgsm].to_csv(os.path.join(args.outputDir, rgsm+".csv"))
+    df.loc[df.RGSM==rgsm].to_csv(os.path.join(args.outputDir, rgsm+".csv"), index=False)

@@ -252,7 +252,7 @@ class OrchestratorStack(core.Stack):
                 "item.$": "$$.Map.Item.Value",
                 "runId.$": "$.runfolder"},
             result_path="$.mapresults",
-            max_concurrency=3
+            max_concurrency=20
         ).iterator(task_dragen)
 
         definition = task_samplesheet_mapper \

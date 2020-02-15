@@ -46,7 +46,7 @@ def find_fastq_lists(run_id: str, token: str):
     }
 
     # Retrieve the FASTQ list file from GDS
-    gds_fastqs: str = f"/v1/files?volume.name={GDS_FASTQ_VOLUME}&path=/{run_id}/{GDS_FASTQ_LIST_DIR}/*&pageSize=200"
+    gds_fastqs: str = f"/v1/files?volume.name={GDS_FASTQ_VOLUME}&path=/{run_id}/{GDS_FASTQ_LIST_DIR}/*&pageSize=200&include=totalItemCount"
     status, body = req_to_endpoint(base_url=IAP_BASE_URL, endpoint=gds_fastqs, headers=headers)
 
     if status == 200:
@@ -55,7 +55,7 @@ def find_fastq_lists(run_id: str, token: str):
 
         iap_file_list_json = json.loads(body)
         count = iap_file_list_json['itemCount']
-        total_count = iap_file_list_json['totalItemCount']
+        total_count = iap_file_list_json['totalItemCount'] if iap_file_list_json.get('totalItemCount') else 'unknown'
         print(f"itemCount: {count}")
         print(f"totalItemCount: {total_count}")
 

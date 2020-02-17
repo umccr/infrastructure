@@ -35,7 +35,7 @@ samplesheet.query("Sample_ID in @valid_samples", inplace=True)
 
 #Concatenate sample sheet metadata and modified samplesheet. Involves a hack to assign same header as 'samplesheet_metadata' df to 'samplesheet'
 samplesheet_header = pd.DataFrame(data=samplesheet.columns.tolist(), index=samplesheet_metadata.columns).transpose()
-samplesheet.columns = [0,1,2,3,4,5,6,7,8,9,10,11]
+samplesheet.columns = [0,1,2,3,4,5,6,7,8,9,10]
 samplesheet_WGS=pd.concat([samplesheet_metadata, samplesheet_header, samplesheet], axis=0, ignore_index=True)
 
 #write output to file

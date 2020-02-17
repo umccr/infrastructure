@@ -126,6 +126,7 @@ data "template_file" "operator" {
 
   vars {
     s3_buckets  = "${jsonencode(var.workspace_operator_write_buckets[terraform.workspace])}"
+    s3_delete_buckets = "${jsonencode(var.workspace_operator_delete_buckets[terraform.workspace])}"
     aws_account = "${data.aws_caller_identity.current.account_id}"
     aws_region  = "${data.aws_region.current.name}"
 

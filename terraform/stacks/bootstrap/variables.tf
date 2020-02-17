@@ -60,6 +60,18 @@ variable "workspace_operator_write_buckets" {
   }
 }
 
+variable "workspace_operator_delete_buckets" {
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-temp/*"]
+    dev  = ["arn:aws:s3:::umccr-fastq-data-dev/*",
+            "arn:aws:s3:::umccr-raw-sequence-data-dev/*",
+            "arn:aws:s3:::umccr-primary-data-dev/*",
+            "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
+  }
+}
+
 variable "workspace_pcgr_bucket_name" {
   default = {
     prod = "umccr-pcgr-prod"

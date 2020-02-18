@@ -2,6 +2,7 @@ from aws_cdk import (
     aws_lambda as lmbda,
     aws_iam as iam,
     aws_ssm as ssm,
+    aws_s3 as s3,
     aws_stepfunctions as sfn,
     aws_stepfunctions_tasks as sfn_tasks,
     core,
@@ -12,6 +13,12 @@ class OrchestratorStack(core.Stack):
     def __init__(self, app: core.App, id: str, props, **kwargs) -> None:
         super().__init__(app, id, **kwargs)
 
+        run_data_bucket_name = ''
+        run_data_bucket = s3.Bucket.from_bucket_name(
+                self,
+                run_data_bucket_name,
+                bucket_name=run_data_bucket_name)
+
         # IAM roles for the lambda functions
         lambda_role = iam.Role(
             self,
@@ -21,6 +28,16 @@ class OrchestratorStack(core.Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')
             ]
         )
+
+        copy_lambda_role = iam.Role(
+            self,
+            'CopyToS3LambdaRole',
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')
+            ]
+        )
+        run_data_bucket.grant_write(copy_lambda_role)
 
         callback_role = iam.Role(
             self,
@@ -33,7 +50,7 @@ class OrchestratorStack(core.Stack):
         )
 
         # Lambda function to call back and complete SFN async tasks
-        callback_function = lmbda.Function(
+        lmbda.Function(
             self,
             'CallbackLambda',
             function_name='callback_iap_tes_lambda_dev',
@@ -169,6 +186,23 @@ class OrchestratorStack(core.Stack):
             }
         )
 
+        copy_report_to_s3 = lmbda.Function(
+            self,
+            'CopyReportToS3Lambda',
+            function_name='showcase_copy_report_lambda_dev',
+            handler='copy_to_s3.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas'),
+            role=copy_lambda_role,
+            timeout=core.Duration.seconds(20),
+            environment={
+                'IAP_API_BASE_URL': props['iap_api_base_url'],
+                'SSM_PARAM_JWT': props['ssm_param_name'],
+                'GDS_RUN_VOLUME': props['gds_run_volume'],
+                'S3_RUN_BUCKET': props['s3_run_bucket']
+            }
+        )
+
         # IAP JWT access token stored in SSM Parameter Store
         secret_value = ssm.StringParameter.from_secure_string_parameter_attributes(
             self,
@@ -182,6 +216,7 @@ class OrchestratorStack(core.Stack):
         secret_value.grant_read(gather_samples_function)
         secret_value.grant_read(dragen_function)
         secret_value.grant_read(multiqc_function)
+        secret_value.grant_read(copy_report_to_s3)
 
         # SFN task definitions
         task_samplesheet_mapper = sfn.Task(
@@ -244,6 +279,14 @@ class OrchestratorStack(core.Stack):
                          "samples.$": "$.sample_ids"})
         )
 
+        task_copy_report_to_s3 = sfn.Task(
+            self, "CopyReportToS3",
+            task=sfn_tasks.InvokeFunction(
+                copy_report_to_s3,
+                payload={"runId.$": "$.runfolder"}),
+            result_path="$.copy_report"
+        )
+
         scatter = sfn.Map(
             self, "Scatter",
             items_path="$.sample_ids",
@@ -260,7 +303,8 @@ class OrchestratorStack(core.Stack):
             .next(task_fastq_mapper) \
             .next(task_gather_samples) \
             .next(scatter) \
-            .next(task_multiqc)
+            .next(task_multiqc) \
+            .next(task_copy_report_to_s3)
 
         sfn.StateMachine(
             self,

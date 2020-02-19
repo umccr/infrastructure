@@ -1,10 +1,10 @@
-# umccr_data_portal stack
+# UMCCR Data Portal Stack
 
-This stack to deploys the AWS resources for the UMCCR data portal.
+This stack deploys the AWS resources for the UMCCR data portal.
 
-## Data portal deployment quickstart
+## Quickstart
 
-1. For a fresh start, prepare prerequisites as described section below
+1. For a fresh start, **prepare prerequisites** as described section below
 2. Then _rinse and spin_ terraform as usual
     ```bash
     $ terraform init .
@@ -60,6 +60,11 @@ In order for terraform to create GitHub webhooks, the personal access token
 should have `admin:repo_hook` scope at least, and the associated account should
 be admin-level user for both repositories (`data-portal-apis` and `data-portal-client`).
 
+### Post Deployment
+
+#### Certificate Validation
+
+If `var.alias_domain` is configured for additional domain to alias `var.base_domain`, and the `var.alias_domain`'s Route53 hosted zone is in different account (e.g. bastion), then terraform script will just create/request the certificate in ACM and, it will be pending DNS validation. Please follow up with [DNS certificate validation through ACM Console UI](https://aws.amazon.com/blogs/security/easier-certificate-validation-using-dns-with-aws-certificate-manager/) to respective Route53 zones. See also notes on `var.certificate_validation` and `client_cert_dns` for further details.
 
 ## Stack Overview
 

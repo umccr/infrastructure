@@ -42,10 +42,30 @@ locals {
   codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
   codebuild_project_name_apis   = "data-portal-apis-${terraform.workspace}"
 
-  api_domain    = "api.${aws_acm_certificate.client_cert.domain_name}"
+  api_domain    = "api.${local.app_domain}"
   iam_role_path = "/${local.stack_name_us}/"
 
   app_domain = "${local.data_portal_domain_prefix}.${var.base_domain[terraform.workspace]}"
+
+  cert_subject_alt_names = {
+    prod = ["*.${local.app_domain}", "${var.alias_domain[terraform.workspace]}"]
+    dev  = ["*.${local.app_domain}"]
+  }
+
+  cloudfront_domain_aliases = {
+    prod = ["${local.app_domain}", "${var.alias_domain[terraform.workspace]}"]
+    dev  = ["${local.app_domain}"]
+  }
+
+  callback_urls = {
+    prod = ["https://${local.app_domain}", "https://${var.alias_domain[terraform.workspace]}"]
+    dev  = ["https://${local.app_domain}"]
+  }
+
+  oauth_redirect_url = {
+    prod = "https://${var.alias_domain[terraform.workspace]}"
+    dev  = "https://${local.app_domain}"
+  }
 
   org_name = "umccr"
 
@@ -106,11 +126,11 @@ resource "aws_cloudfront_distribution" "client_distribution" {
   }
 
   enabled             = true
-  aliases             = ["${local.app_domain}"]
+  aliases             = "${local.cloudfront_domain_aliases[terraform.workspace]}"
   default_root_object = "index.html"
 
   viewer_certificate {
-    acm_certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
+    acm_certificate_arn = "${aws_acm_certificate.client_cert.arn}"
     ssl_support_method  = "sni-only"
   }
 
@@ -182,13 +202,20 @@ resource "aws_acm_certificate" "client_cert" {
   domain_name       = "${local.app_domain}"
   validation_method = "DNS"
 
+  subject_alternative_names = "${local.cert_subject_alt_names[terraform.workspace]}"
+
   lifecycle {
     create_before_destroy = true
   }
 }
 
-# Certificate validation for client domain
+# Optional automatic certificate validation
+# If count = 0, cert will be just created and pending validation
+# Visit ACM Console UI and follow up to populate validation records in respective Route53 zones
+# See var.certificate_validation note
 resource "aws_acm_certificate_validation" "client_cert_dns" {
+  count = "${var.certificate_validation[terraform.workspace]}"
+
   provider                = "aws.use1"
   certificate_arn         = "${aws_acm_certificate.client_cert.arn}"
   validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
@@ -198,30 +225,6 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 
 ################################################################################
 # Back end configurations
-# The certificate for client domain, validating using DNS
-
-# ACM certificate for subdomain, supporting for custom API
-resource "aws_acm_certificate" "subdomain_cert" {
-  # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
-  provider          = "aws.use1"
-  domain_name       = "*.${local.app_domain}"
-  validation_method = "DNS"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  # Wait for our main certificate to be ready as it has the same validation CNAME
-  depends_on = ["aws_acm_certificate_validation.client_cert_dns"]
-}
-
-resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
-  provider        = "aws.use1"
-  certificate_arn = "${aws_acm_certificate.subdomain_cert.arn}"
-
-  # We can use the same one as client cert as this domain is a sub domain
-  validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
-}
 
 data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = "${var.s3_primary_data_bucket[terraform.workspace]}"
@@ -380,8 +383,8 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   user_pool_id                 = "${aws_cognito_user_pool.user_pool.id}"
   supported_identity_providers = ["Google"]
 
-  callback_urls = ["https://${local.app_domain}"]
-  logout_urls   = ["https://${local.app_domain}"]
+  callback_urls = "${local.callback_urls[terraform.workspace]}"
+  logout_urls   = "${local.callback_urls[terraform.workspace]}"
 
   generate_secret = false
 
@@ -690,12 +693,12 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "OAUTH_REDIRECT_IN_STAGE"
-      value = "${aws_cognito_user_pool_client.user_pool_client.callback_urls[0]}"
+      value = "${local.oauth_redirect_url[terraform.workspace]}"
     }
 
     environment_variable {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
-      value = "${aws_cognito_user_pool_client.user_pool_client.logout_urls[0]}"
+      value = "${local.oauth_redirect_url[terraform.workspace]}"
     }
 
     environment_variable {
@@ -783,6 +786,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "S3_EVENT_SQS_ARN"
       value = "${aws_sqs_queue.s3_event_queue.arn}"
+    }
+
+    environment_variable {
+      name  = "CERTIFICATE_ARN"
+      value = "${aws_acm_certificate.client_cert.arn}"
     }
   }
 

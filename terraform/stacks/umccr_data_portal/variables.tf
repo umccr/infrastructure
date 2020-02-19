@@ -7,6 +7,30 @@ variable "base_domain" {
     description = "Base domain for current stage"
 }
 
+variable "alias_domain" {
+    default = {
+        prod = "data.umccr.org"
+        dev  = ""
+    }
+    description = "Additional domains to alias base_domain"
+}
+
+# NOTE:
+# Automatic cert validation required to create records in hosted zone (zone_id), see [1]
+# Since subject alternate name compose of alias_domain, which is hosted in bastion account
+# so, it is not able to automatically create DNS validation record set this way
+# Therefore, cert will be just created and pending DNS validation
+# And requires manually add DNS records for validation, this can be done through ACM Console UI to respective Route53 zones
+# Need to be done once upon a fresh initial deployment
+# [1]: https://www.terraform.io/docs/providers/aws/r/acm_certificate_validation.html#alternative-domains-dns-validation-with-route-53
+variable "certificate_validation" {
+    default = {
+        prod = 0
+        dev  = 1
+    }
+    description = "Whether automatic validate the cert (1) or, to manually validate (0)"
+}
+
 variable "lims_bucket" {
     default = {
         prod = "umccr-data-google-lims-prod" 

@@ -4,30 +4,45 @@ This stack to deploys the AWS resources for the UMCCR data portal.
 
 ## Data portal deployment quickstart
 
-```bash
-$ terraform init .
-$ terraform workspace select prod
-$ terraform apply
-$ terraform output -json > out.json # Optional
+1. For a fresh start, prepare prerequisites as described section below
+2. Then _rinse and spin_ terraform as usual
+    ```bash
+    $ terraform init .
+    $ terraform workspace list
+    $ terraform workspace select dev
+    $ terraform plan
+    $ terraform apply
+    $ terraform output -json > out.json # Optional
+    ```
+
+### Prerequisites
+
+#### SSM Keys
+
+Need to create deployment environment specific secret parameters as follows.
+
+1. Django Secret Key: `/${local.stack_name_us}/${terraform.workspace}/django_secret_key`
+2. RDS DB Username: `/${local.stack_name_us}/${terraform.workspace}/rds_db_username`
+3. RDS DB Password: `/${local.stack_name_us}/${terraform.workspace}/rds_db_password`
+4. Google OAuth Client ID: `/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id`
+5. Google OAuth Client Secret: `/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret`
+
+e.g. For `dev` environment
+```
+aws ssm put-parameter --name '/data_portal/dev/django_secret_key' --type "SecureString" --value '<Django Secret Key>'
+aws ssm put-parameter --name '/data_portal/dev/rds_db_username' --type "SecureString" --value '<DB Admin Username>'
+aws ssm put-parameter --name '/data_portal/dev/rds_db_password' --type "SecureString" --value '<Secure Password>'
+aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_id' --type "SecureString" --value '<Client ID>'
+aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_secret' --type "SecureString" --value '<Client secret>'
 ```
 
-### External Dependencies
+You can check existing parameter, example as follows.
+```
+aws ssm get-parameter --name '/data_portal/dev/rds_db_password' | jq
+aws ssm get-parameter --name '/data_portal/dev/rds_db_password' --with-decryption | jq -r .Parameter.Value
+```
 
-#### 1. SSM Keys
-- Django secrete key: `/${local.stack_name_us}/django_secret_key`
-- RDS DB password: `/${local.stack_name_us}/rds_db_password`
-
-#### 2. Secrets Manager
-- Google app secret: `google_app_secret`
-
-#### 3. S3 Buckets
-- S3 primary data: `${var.s3_primary_data_bucket[terraform.workspace]}`
-- LIMS bucket (storing the csv):`${var.lims_bucket[terraform.workspace]}`
-
-#### 4. VPC
-- Default VPC in the current region: `${data.aws_vpc.default}` (and subnets and security groups)
-
-#### 5. Github Webhooks
+#### Github Webhooks
 
 A `GITHUB_TOKEN` env variable is required.
 

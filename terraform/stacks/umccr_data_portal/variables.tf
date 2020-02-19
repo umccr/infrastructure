@@ -31,16 +31,6 @@ variable "s3_run_data_bucket" {
     description = "Name of the S3 bucket storing s3 run data to be used by crawler "
 }
 
-# Terraform doesn't currently support configuraing google oauth credentials
-# https://github.com/terraform-providers/terraform-provider-google/issues/1287
-variable "google_app_id" {
-    default = {
-        prod = "1077202000373-d21cktrmves8u9e0mpmuosfld2gngv2s.apps.googleusercontent.com"
-        dev = "1077202000373-61vctlp83rjrr4i2aab89ms5fagbakdp.apps.googleusercontent.com"
-    }
-    description = "Client ID of Google OAuth 2.0"
-}
-
 variable "github_branch" {
     default = {
         prod = "master"

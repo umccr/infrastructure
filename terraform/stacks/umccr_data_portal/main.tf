@@ -29,16 +29,6 @@ provider "github" {
   organization = "umccr"
 }
 
-# Secrets manager
-data "aws_secretsmanager_secret_version" "secrets" {
-  secret_id = "data_portal"
-}
-
-# Secret helper for retrieving value from map (as we dont have jsondecode in v11)
-data "external" "secrets_helper" {
-  program = ["echo", "${data.aws_secretsmanager_secret_version.secrets.secret_string}"]
-}
-
 locals {
   # Stack name in under socre
   stack_name_us = "data_portal"
@@ -48,7 +38,7 @@ locals {
 
   client_s3_origin_id           = "clientS3"
   data_portal_domain_prefix     = "data"
-  google_app_secret             = "${data.external.secrets_helper.result["google_app_secret"]}"
+
   codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
   codebuild_project_name_apis   = "data-portal-apis-${terraform.workspace}"
 
@@ -61,8 +51,6 @@ locals {
 
   github_repo_client = "data-portal-client"
   github_repo_apis   = "data-portal-apis"
-
-  rds_db_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
   LAMBDA_IAM_ROLE_ARN            = "${aws_iam_role.lambda_apis_role.arn}"
   LAMBDA_SUBNET_IDS              = "${join(",", aws_db_subnet_group.rds.subnet_ids)}"
@@ -295,6 +283,15 @@ resource "aws_s3_bucket_notification" "s3_run_data_notification" {
 }
 
 # Cognito
+
+data "aws_ssm_parameter" "google_oauth_client_id" {
+  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
+}
+
+data "aws_ssm_parameter" "google_oauth_client_secret" {
+  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
+}
+
 resource "aws_cognito_user_pool" "user_pool" {
   name = "${local.stack_name_dash}-${terraform.workspace}"
 
@@ -310,9 +307,9 @@ resource "aws_cognito_identity_provider" "identity_provider" {
   provider_type = "Google"
 
   provider_details = {
-    authorize_scopes = "profile email openid"
-    client_id        = "${var.google_app_id[terraform.workspace]}"
-    client_secret    = "${local.google_app_secret}"
+    client_id        = "${data.aws_ssm_parameter.google_oauth_client_id.value}"
+    client_secret    = "${data.aws_ssm_parameter.google_oauth_client_secret.value}"
+    authorize_scopes = "openid profile email"
   }
 
   attribute_mapping = {
@@ -1113,8 +1110,8 @@ resource "aws_rds_cluster" "db" {
   skip_final_snapshot = true
 
   database_name   = "${local.stack_name_us}"
-  master_username = "admin"
-  master_password = "${local.rds_db_password}"
+  master_username = "${data.aws_ssm_parameter.rds_db_username.value}"
+  master_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
   vpc_security_group_ids = ["${aws_security_group.rds_security_group.id}"]
 
@@ -1127,19 +1124,23 @@ resource "aws_rds_cluster" "db" {
 }
 
 data "aws_ssm_parameter" "ssm_django_secret_key" {
-  name = "/${local.stack_name_us}/django_secret_key"
+  name = "/${local.stack_name_us}/${terraform.workspace}/django_secret_key"
 }
 
 data "aws_ssm_parameter" "rds_db_password" {
-  name = "/${local.stack_name_us}/rds_db_password"
+  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_password"
+}
+
+data "aws_ssm_parameter" "rds_db_username" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
 }
 
 # Composed database url for backend to use
 resource "aws_ssm_parameter" "ssm_full_db_url" {
-  name        = "/${local.stack_name_us}/full_db_url"
+  name        = "/${local.stack_name_us}/${terraform.workspace}/full_db_url"
   type        = "SecureString"
   description = "Database url used by the Django app"
-  value       = "mysql://${aws_rds_cluster.db.master_username}:${local.rds_db_password}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+  value       = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
 }
 
 ################################################################################

@@ -792,6 +792,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
       name  = "CERTIFICATE_ARN"
       value = "${aws_acm_certificate.client_cert.arn}"
     }
+
+    environment_variable {
+      name  = "WAF_NAME"
+      value = "${aws_wafregional_web_acl.api_web_acl.name}"
+    }
   }
 
   # Put it under the lambda VPC allowing for testing

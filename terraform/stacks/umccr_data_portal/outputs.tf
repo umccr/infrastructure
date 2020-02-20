@@ -89,3 +89,7 @@ output "S3_EVENT_SQS_ARN" {
 output "CERTIFICATE_ARN" {
     value = "${aws_acm_certificate.client_cert.arn}"
 }
+
+output "WAF_NAME" {
+    value = "${aws_wafregional_web_acl.api_web_acl.name}"
+}

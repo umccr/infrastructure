@@ -53,6 +53,7 @@ class BatchStack(core.Stack):
         batch_instance_role = iam.Role(
             self,
             'BatchInstanceRole',
+            role_name='UmccriseBatchInstanceRole',
             assumed_by=iam.CompositePrincipal(
                 iam.ServicePrincipal('ec2.amazonaws.com'),
                 iam.ServicePrincipal('ecs.amazonaws.com')
@@ -64,9 +65,10 @@ class BatchStack(core.Stack):
             bucket.grant_read_write(batch_instance_role)
 
         # Turn the instance role into a Instance Profile
-        iam.CfnInstanceProfile(
+        batch_instance_profile = iam.CfnInstanceProfile(
             self,
             'BatchInstanceProfile',
+            instance_profile_name='UmccriseBatchInstanceProfile',
             roles=[batch_instance_role.role_name]
         )
 
@@ -93,7 +95,7 @@ class BatchStack(core.Stack):
                 'desiredvCpus': 0,
                 'imageId': props['compute_env_ami'],
                 'spotIamFleetRole': spotfleet_role.role_arn,
-                'instanceRole': batch_instance_role.role_name,
+                'instanceRole': batch_instance_profile.instance_profile_name,
                 'instanceTypes': ['optimal'],
                 'subnets': [vpc.public_subnets[0].subnet_id],
                 'securityGroupIds': [vpc.vpc_default_security_group]
@@ -115,59 +117,13 @@ class BatchStack(core.Stack):
             job_queue_name='umccrise_job_queue'
         )
 
-        # TODO: Replace with proper CDK construct once available
-        # TODO: Same reference issue as with job queue name
-        job_definition = batch.CfnJobDefinition(
-            self,
-            'UmccriseJobDefinition',
-            type='container',
-            container_properties={
-                "image": props['container_image'],
-                "vcpus": 2,
-                "memory": 2048,
-                "command": [
-                    "/opt/container/umccrise-wrapper.sh",
-                    "Ref::vcpus"
-                ],
-                "volumes": [
-                    {
-                        "host": {
-                            "sourcePath": "/mnt"
-                        },
-                        "name": "work"
-                    },
-                    {
-                        "host": {
-                            "sourcePath": "/opt/container"
-                        },
-                        "name": "container"
-                    }
-                ],
-                "mountPoints": [
-                    {
-                        "containerPath": "/work",
-                        "readOnly": False,
-                        "sourceVolume": "work"
-                    },
-                    {
-                        "containerPath": "/opt/container",
-                        "readOnly": True,
-                        "sourceVolume": "container"
-                    }
-                ],
-                "readonlyRootFilesystem": False,
-                "privileged": True,
-                "ulimits": []
-            },
-            job_definition_name='umccrise_job_definition'
-        )
-
         lambda_role = iam.Role(
             self,
             'UmccriseLambdaRole',
             assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
             managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('AWSBatchFullAccess')  # TODO: restrict!
             ]
         )
 
@@ -179,13 +135,13 @@ class BatchStack(core.Stack):
         lmbda.Function(
             self,
             'UmccriseLambda',
+            function_name='umccrise_batch_lambda',
             handler='umccrise.lambda_handler',
             runtime=lmbda.Runtime.PYTHON_3_7,
             code=lmbda.Code.from_asset('lambdas/umccrise'),
             environment={
                 'JOBNAME_PREFIX': "UMCCRISE_",
                 'JOBQUEUE': job_queue.job_queue_name,
-                'JOBDEF': job_definition.job_definition_name,
                 'REFDATA_BUCKET': props['refdata_bucket'],
                 'DATA_BUCKET': props['data_bucket'],
                 'UMCCRISE_MEM': '50000',

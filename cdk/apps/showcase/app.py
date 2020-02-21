@@ -8,7 +8,9 @@ echo_tes_dev_props = {
     'task_id': 'tdn.d4425331e3ba4779adafbf31176f0580',
     'ssm_param_name': '/iap/jwt-token',
     'ssm_param_version': 1,
-    'gds_log_folder': 'gds://teslogs/ShowCase/'
+    'gds_log_folder': 'gds://teslogs/ShowCase/',
+    'gds_run_volume': 'gds://umccr-run-data-dev',
+    's3_run_bucket': 'umccr-run-data-dev'
 }
 
 

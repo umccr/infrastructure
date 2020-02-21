@@ -29,16 +29,6 @@ provider "github" {
   organization = "umccr"
 }
 
-# Secrets manager
-data "aws_secretsmanager_secret_version" "secrets" {
-  secret_id = "data_portal"
-}
-
-# Secret helper for retrieving value from map (as we dont have jsondecode in v11)
-data "external" "secrets_helper" {
-  program = ["echo", "${data.aws_secretsmanager_secret_version.secrets.secret_string}"]
-}
-
 locals {
   # Stack name in under socre
   stack_name_us = "data_portal"
@@ -48,21 +38,39 @@ locals {
 
   client_s3_origin_id           = "clientS3"
   data_portal_domain_prefix     = "data"
-  google_app_secret             = "${data.external.secrets_helper.result["google_app_secret"]}"
+
   codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
   codebuild_project_name_apis   = "data-portal-apis-${terraform.workspace}"
 
-  api_domain    = "api.${aws_acm_certificate.client_cert.domain_name}"
+  api_domain    = "api.${local.app_domain}"
   iam_role_path = "/${local.stack_name_us}/"
 
   app_domain = "${local.data_portal_domain_prefix}.${var.base_domain[terraform.workspace]}"
+
+  cert_subject_alt_names = {
+    prod = ["*.${local.app_domain}", "${var.alias_domain[terraform.workspace]}"]
+    dev  = ["*.${local.app_domain}"]
+  }
+
+  cloudfront_domain_aliases = {
+    prod = ["${local.app_domain}", "${var.alias_domain[terraform.workspace]}"]
+    dev  = ["${local.app_domain}"]
+  }
+
+  callback_urls = {
+    prod = ["https://${local.app_domain}", "https://${var.alias_domain[terraform.workspace]}"]
+    dev  = ["https://${local.app_domain}"]
+  }
+
+  oauth_redirect_url = {
+    prod = "https://${var.alias_domain[terraform.workspace]}"
+    dev  = "https://${local.app_domain}"
+  }
 
   org_name = "umccr"
 
   github_repo_client = "data-portal-client"
   github_repo_apis   = "data-portal-apis"
-
-  rds_db_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
   LAMBDA_IAM_ROLE_ARN            = "${aws_iam_role.lambda_apis_role.arn}"
   LAMBDA_SUBNET_IDS              = "${join(",", aws_db_subnet_group.rds.subnet_ids)}"
@@ -118,11 +126,11 @@ resource "aws_cloudfront_distribution" "client_distribution" {
   }
 
   enabled             = true
-  aliases             = ["${local.app_domain}"]
+  aliases             = "${local.cloudfront_domain_aliases[terraform.workspace]}"
   default_root_object = "index.html"
 
   viewer_certificate {
-    acm_certificate_arn = "${aws_acm_certificate_validation.client_cert_dns.certificate_arn}"
+    acm_certificate_arn = "${aws_acm_certificate.client_cert.arn}"
     ssl_support_method  = "sni-only"
   }
 
@@ -194,13 +202,20 @@ resource "aws_acm_certificate" "client_cert" {
   domain_name       = "${local.app_domain}"
   validation_method = "DNS"
 
+  subject_alternative_names = "${local.cert_subject_alt_names[terraform.workspace]}"
+
   lifecycle {
     create_before_destroy = true
   }
 }
 
-# Certificate validation for client domain
+# Optional automatic certificate validation
+# If count = 0, cert will be just created and pending validation
+# Visit ACM Console UI and follow up to populate validation records in respective Route53 zones
+# See var.certificate_validation note
 resource "aws_acm_certificate_validation" "client_cert_dns" {
+  count = "${var.certificate_validation[terraform.workspace]}"
+
   provider                = "aws.use1"
   certificate_arn         = "${aws_acm_certificate.client_cert.arn}"
   validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
@@ -210,30 +225,6 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 
 ################################################################################
 # Back end configurations
-# The certificate for client domain, validating using DNS
-
-# ACM certificate for subdomain, supporting for custom API
-resource "aws_acm_certificate" "subdomain_cert" {
-  # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
-  provider          = "aws.use1"
-  domain_name       = "*.${local.app_domain}"
-  validation_method = "DNS"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  # Wait for our main certificate to be ready as it has the same validation CNAME
-  depends_on = ["aws_acm_certificate_validation.client_cert_dns"]
-}
-
-resource "aws_acm_certificate_validation" "subdomain_cert_validation" {
-  provider        = "aws.use1"
-  certificate_arn = "${aws_acm_certificate.subdomain_cert.arn}"
-
-  # We can use the same one as client cert as this domain is a sub domain
-  validation_record_fqdns = ["${aws_route53_record.client_cert_validation.fqdn}"]
-}
 
 data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = "${var.s3_primary_data_bucket[terraform.workspace]}"
@@ -295,6 +286,15 @@ resource "aws_s3_bucket_notification" "s3_run_data_notification" {
 }
 
 # Cognito
+
+data "aws_ssm_parameter" "google_oauth_client_id" {
+  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
+}
+
+data "aws_ssm_parameter" "google_oauth_client_secret" {
+  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
+}
+
 resource "aws_cognito_user_pool" "user_pool" {
   name = "${local.stack_name_dash}-${terraform.workspace}"
 
@@ -310,9 +310,9 @@ resource "aws_cognito_identity_provider" "identity_provider" {
   provider_type = "Google"
 
   provider_details = {
-    authorize_scopes = "profile email openid"
-    client_id        = "${var.google_app_id[terraform.workspace]}"
-    client_secret    = "${local.google_app_secret}"
+    client_id        = "${data.aws_ssm_parameter.google_oauth_client_id.value}"
+    client_secret    = "${data.aws_ssm_parameter.google_oauth_client_secret.value}"
+    authorize_scopes = "openid profile email"
   }
 
   attribute_mapping = {
@@ -383,8 +383,8 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   user_pool_id                 = "${aws_cognito_user_pool.user_pool.id}"
   supported_identity_providers = ["Google"]
 
-  callback_urls = ["https://${local.app_domain}"]
-  logout_urls   = ["https://${local.app_domain}"]
+  callback_urls = "${local.callback_urls[terraform.workspace]}"
+  logout_urls   = "${local.callback_urls[terraform.workspace]}"
 
   generate_secret = false
 
@@ -693,12 +693,12 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "OAUTH_REDIRECT_IN_STAGE"
-      value = "${aws_cognito_user_pool_client.user_pool_client.callback_urls[0]}"
+      value = "${local.oauth_redirect_url[terraform.workspace]}"
     }
 
     environment_variable {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
-      value = "${aws_cognito_user_pool_client.user_pool_client.logout_urls[0]}"
+      value = "${local.oauth_redirect_url[terraform.workspace]}"
     }
 
     environment_variable {
@@ -786,6 +786,16 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "S3_EVENT_SQS_ARN"
       value = "${aws_sqs_queue.s3_event_queue.arn}"
+    }
+
+    environment_variable {
+      name  = "CERTIFICATE_ARN"
+      value = "${aws_acm_certificate.client_cert.arn}"
+    }
+
+    environment_variable {
+      name  = "WAF_NAME"
+      value = "${aws_wafregional_web_acl.api_web_acl.name}"
     }
   }
 
@@ -1113,8 +1123,8 @@ resource "aws_rds_cluster" "db" {
   skip_final_snapshot = true
 
   database_name   = "${local.stack_name_us}"
-  master_username = "admin"
-  master_password = "${local.rds_db_password}"
+  master_username = "${data.aws_ssm_parameter.rds_db_username.value}"
+  master_password = "${data.aws_ssm_parameter.rds_db_password.value}"
 
   vpc_security_group_ids = ["${aws_security_group.rds_security_group.id}"]
 
@@ -1127,19 +1137,23 @@ resource "aws_rds_cluster" "db" {
 }
 
 data "aws_ssm_parameter" "ssm_django_secret_key" {
-  name = "/${local.stack_name_us}/django_secret_key"
+  name = "/${local.stack_name_us}/${terraform.workspace}/django_secret_key"
 }
 
 data "aws_ssm_parameter" "rds_db_password" {
-  name = "/${local.stack_name_us}/rds_db_password"
+  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_password"
+}
+
+data "aws_ssm_parameter" "rds_db_username" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
 }
 
 # Composed database url for backend to use
 resource "aws_ssm_parameter" "ssm_full_db_url" {
-  name        = "/${local.stack_name_us}/full_db_url"
+  name        = "/${local.stack_name_us}/${terraform.workspace}/full_db_url"
   type        = "SecureString"
   description = "Database url used by the Django app"
-  value       = "mysql://${aws_rds_cluster.db.master_username}:${local.rds_db_password}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+  value       = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
 }
 
 ################################################################################

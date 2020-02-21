@@ -7,6 +7,30 @@ variable "base_domain" {
     description = "Base domain for current stage"
 }
 
+variable "alias_domain" {
+    default = {
+        prod = "data.umccr.org"
+        dev  = ""
+    }
+    description = "Additional domains to alias base_domain"
+}
+
+# NOTE:
+# Automatic cert validation required to create records in hosted zone (zone_id), see [1]
+# Since subject alternate name compose of alias_domain, which is hosted in bastion account
+# so, it is not able to automatically create DNS validation record set this way
+# Therefore, cert will be just created and pending DNS validation
+# And requires manually add DNS records for validation, this can be done through ACM Console UI to respective Route53 zones
+# Need to be done once upon a fresh initial deployment
+# [1]: https://www.terraform.io/docs/providers/aws/r/acm_certificate_validation.html#alternative-domains-dns-validation-with-route-53
+variable "certificate_validation" {
+    default = {
+        prod = 0
+        dev  = 1
+    }
+    description = "Whether automatic validate the cert (1) or, to manually validate (0)"
+}
+
 variable "lims_bucket" {
     default = {
         prod = "umccr-data-google-lims-prod" 
@@ -29,16 +53,6 @@ variable "s3_run_data_bucket" {
         dev  = "umccr-run-data-dev"
     }
     description = "Name of the S3 bucket storing s3 run data to be used by crawler "
-}
-
-# Terraform doesn't currently support configuraing google oauth credentials
-# https://github.com/terraform-providers/terraform-provider-google/issues/1287
-variable "google_app_id" {
-    default = {
-        prod = "1077202000373-d21cktrmves8u9e0mpmuosfld2gngv2s.apps.googleusercontent.com"
-        dev = "1077202000373-61vctlp83rjrr4i2aab89ms5fagbakdp.apps.googleusercontent.com"
-    }
-    description = "Client ID of Google OAuth 2.0"
 }
 
 variable "github_branch" {

@@ -65,9 +65,9 @@ Resources:
             amazon-linux-extras install epel -y
             yum install s3fs-fuse -y
             # Sync gridss data from s3 bucket
-            aws s3 sync s3://umccr-misc-temp/gridss_hg19_refdata/ /mnt/xvdh/hg19_gridss_ref_data/
+            aws s3 sync --quiet s3://umccr-misc-temp/gridss_hg19_refdata/ /mnt/xvdh/hg19_gridss_ref_data/
             # Load docker container
-            aws s3 cp s3://umccr-misc-temp/alexis_containers/gridss_purple_linx.tar.gz /mnt/xvdh/gridss_container.tar.gz
+            aws s3 cp --quiet s3://umccr-misc-temp/alexis_containers/gridss_purple_linx.tar.gz /mnt/xvdh/gridss_container.tar.gz
             docker load --input /mnt/xvdh/gridss_container.tar.gz
             # Delete container tarball
             rm /mnt/xvdh/gridss_container.tar.gz

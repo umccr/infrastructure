@@ -11,9 +11,9 @@ Resources:
         - !Ref instanceSecurityGroup
       SubnetId: !Ref instanceSubnet
       LaunchTemplate:
-        LaunchTemplateId: !Ref workerIstanceLauchTemplate
+        LaunchTemplateId: !Ref workerInstanceLauchTemplate
         Version: !GetAtt 
-          - workerIstanceLauchTemplate
+          - workerInstanceLauchTemplate
           - LatestVersionNumber
       Tags:
         - Key: Source
@@ -39,11 +39,18 @@ Resources:
             mount -a
             # change the owner so the user (via SSM) has access
             chown -R ssm-user /mnt/xvdh/
+            # Move docker home to larger disk space
+            # Move docker to larger diskspace
+            mv /var/lib/docker /mnt/xvdh/docker
+            # Link mount to docker container
+            ln -s /mnt/xvdh/docker /var/lib/docker
             # install docker
-            sudo yum update -y
-            sudo amazon-linux-extras install docker
-            sudo service docker start
-            sudo usermod -a -G docker ssm-user
+            yum update -y
+            amazon-linux-extras install docker
+            # Add default user to docker group
+            usermod -a -G docker ssm-user
+            # Start docker service
+            service docker start
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
@@ -127,7 +134,7 @@ Resources:
       Path: /worker/
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
-  workerIstanceLauchTemplate:
+  workerInstanceLauchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateData:

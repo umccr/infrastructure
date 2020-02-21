@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  workerInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      AvailabilityZone: ap-southeast-2a
+      IamInstanceProfile: !Ref workerInstanceProfile
+      ImageId: ami-0dc96254d5535925f
+      InstanceType: !Ref instanceTypeParameter
+      SecurityGroupIds:
+        - !Ref instanceSecurityGroup
+      SubnetId: !Ref instanceSubnet
+      LaunchTemplate:
+        LaunchTemplateId: !Ref workerInstanceLauchTemplate
+        Version: !GetAtt 
+          - workerInstanceLauchTemplate
+          - LatestVersionNumber
+      KeyName: alexis-dev
+      Tags:
+        - Key: Source
+          Value: CloudFormation
+        - Key: Creator
+          Value: !Ref userName
+        - Key: Env
+          Value: Test
+        - Key: Name
+          Value: Worker instance
+        - Key: Stack
+          Value: !Ref AWS::StackId
+        - Key: Project
+          Value: gridss-purple-linx
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash -xe
+            # create mount point directory
+            mkdir /mnt/xvdh
+            # create ext4 filesystem on new volume           
+            mkfs -t ext4 /dev/xvdh
+            # add an entry to fstab to mount volume during boot
+            echo "/dev/xvdh       /mnt/xvdh   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
+            # mount the volume on current boot
+            mount -a
+            # create a user folder for both users on this directory
+            mkdir /mnt/xvdh/ssm-user
+            mkdir /mnt/xvdh/ec2-user
+            # change the owner so the user (via SSM) has access
+            chown -R ssm-user /mnt/xvdh/ssm-user
+            chown -R ec2-user /mnt/xvdh/ec2-user
+            # install dev tools for later use
+            yum update -y -q
+            yum groups mark install "Development Tools"
+            yum update -y -q 
+            yum groupinstall -y 'Development Tools' 
+            # install docker
+            amazon-linux-extras install docker
+            # Move docker to larger diskspace
+            mv /var/lib/docker /mnt/xvdh/docker
+            # Link mount to docker container
+            ln -s /mnt/xvdh/docker /var/lib/docker
+            # Add users to docker
+            usermod -a -G docker ssm-user
+            usermod -a -G docker ec2-user
+            service docker start
+            # Install s3fuse from amazon
+            amazon-linux-extras install epel -y
+            yum install s3fs-fuse -y
+            # Sync gridss data from s3 bucket
+            aws s3 sync s3://umccr-misc-temp/gridss_hg19_refdata/ /mnt/xvdh/hg19_gridss_ref_data/
+            # Load docker container
+            aws s3 cp s3://umccr-misc-temp/alexis_containers/gridss_purple_linx.tar.gz /mnt/xvdh/gridss_container.tar.gz
+            docker load --input /mnt/xvdh/gridss_container.tar.gz
+            # Delete container tarball
+            rm /mnt/xvdh/gridss_container.tar.gz
+
+  workerInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /worker/
+      Roles:
+        - !Ref workerInstanceRole
+  workerInstancePolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}_instance_policy'
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'ssm:DescribeAssociation'
+              - 'ssm:GetDeployablePatchSnapshotForInstance'
+              - 'ssm:GetDocument'
+              - 'ssm:DescribeDocument'
+              - 'ssm:GetManifest'
+              - 'ssm:GetParameters'
+              - 'ssm:ListAssociations'
+              - 'ssm:ListInstanceAssociations'
+              - 'ssm:PutInventory'
+              - 'ssm:PutComplianceItems'
+              - 'ssm:PutConfigurePackageResult'
+              - 'ssm:UpdateAssociationStatus'
+              - 'ssm:UpdateInstanceAssociationStatus'
+              - 'ssm:UpdateInstanceInformation'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ssmmessages:CreateControlChannel'
+              - 'ssmmessages:CreateDataChannel'
+              - 'ssmmessages:OpenControlChannel'
+              - 'ssmmessages:OpenDataChannel'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ec2messages:AcknowledgeMessage'
+              - 'ec2messages:DeleteMessage'
+              - 'ec2messages:FailMessage'
+              - 'ec2messages:GetEndpoint'
+              - 'ec2messages:GetMessages'
+              - 'ec2messages:SendReply'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'cloudwatch:PutMetricData'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ec2:DescribeInstanceStatus'
+              - 'ec2:CreateTags'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeLogStreams'
+              - 'logs:PutLogEvents'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ec2messages:SendReply'
+            Resource: '*'
+      Roles:
+        - !Ref workerInstanceRole
+  workerInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /worker/
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+        - 'arn:aws:iam::843407916570:policy/alexis_mnt_test_write_policy'
+  workerInstanceLauchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateData:
+        InstanceMarketOptions:
+          MarketType: spot
+          SpotOptions:
+            MaxPrice: !Ref instanceMaxSpotPriceParameter
+  workerInstanceVolume:
+    Type: 'AWS::EC2::Volume'
+    Properties:
+      Size: !Ref instanceDiskSpaceParameter
+      AvailabilityZone: ap-southeast-2a
+      VolumeType: gp2
+  workerInstanceVolumeAttachment:
+    Type: 'AWS::EC2::VolumeAttachment'
+    Properties:
+      VolumeId: !Ref workerInstanceVolume
+      InstanceId: !Ref workerInstance
+      Device: /dev/xvdh
+Parameters:
+  instanceTypeParameter:
+    Description: 'Select one of t2.micro, t2.medium,...'
+    Type: String
+    Default: m4.large
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.8xlarge
+      - m5.12xlarge
+      - m5.16xlarge
+  instanceDiskSpaceParameter:
+    Description: 'The size of the local disk in GB (1-16000). Default: 100'
+    Type: Number
+    Default: 100
+  instanceSecurityGroup:
+    Description: 'The Security Group to use for this instance. Default: sg-c13f6abc (dev account)'
+    Type: String
+    Default: 'sg-c13f6abc'
+  instanceSubnet:
+    Description: 'The Subnet to place this instance in. Default: subnet-d93b35be (dev account)'
+    Type: String
+    Default: 'subnet-d93b35be'
+  instanceMaxSpotPriceParameter:
+    Description: 'Set the max spot price (hourly) for the selected instance type. Default: 0.05'
+    Type: String
+    Default: '0.04'
+  userName:
+    Description: 'This name will be set as the Creator tag value'
+    Type: String
+    Default: ssm-user

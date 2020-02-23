@@ -10,6 +10,12 @@ variable "umccrise_refdata_bucket" {
   default = "umccr-refdata-prod"
 }
 
+variable "job_definition_name" {
+  description ="The JobDefinition name the stack is allowed to register"
+  default = "umccrise"
+}
+
+
 ################################################################################
 ## workspace variables
 

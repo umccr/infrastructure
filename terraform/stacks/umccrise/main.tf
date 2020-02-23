@@ -159,6 +159,7 @@ data "template_file" "lambda" {
 
   vars {
     resources = "${jsonencode(var.workspace_umccrise_ro_buckets[terraform.workspace])}"
+    job_definition_arn = "arn:aws:batch:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:job-definition/${var.job_definition_name}"
   }
 }
 

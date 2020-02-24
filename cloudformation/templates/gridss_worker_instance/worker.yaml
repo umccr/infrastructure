@@ -32,6 +32,8 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
             #!/bin/bash -xe
+            # Set time/logs to melbourne time
+            ln -sf /usr/share/zoneinfo/Australia/Melbourne /etc/localtime
             # create mount point directory
             mkdir /mnt/xvdh
             # create ext4 filesystem on new volume           
@@ -65,12 +67,13 @@ Resources:
             amazon-linux-extras install epel -y
             yum install s3fs-fuse -y
             # Sync gridss data from s3 bucket
-            aws s3 sync --quiet s3://umccr-misc-temp/gridss_hg19_refdata/ /mnt/xvdh/hg19_gridss_ref_data/
-            # Load docker container
-            aws s3 cp --quiet s3://umccr-misc-temp/alexis_containers/gridss_purple_linx.tar.gz /mnt/xvdh/gridss_container.tar.gz
-            docker load --input /mnt/xvdh/gridss_container.tar.gz
-            # Delete container tarball
-            rm /mnt/xvdh/gridss_container.tar.gz
+            aws s3 sync --quiet s3://umccr-misc-temp/gridss_hg19_refdata/hg19/ /mnt/xvdh/hg19_gridss_ref_data/
+            # Install container registry helper
+            yum install amazon-ecr-credential-helper -y
+            # Add configuration to docker config
+            su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
+            # Pull the gridss-purple-linx container image from the ECR
+            su - "ec2-user" -c 'docker pull 843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/gridss-purple-linx:2.7.3'
 
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
@@ -156,6 +159,7 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
         - 'arn:aws:iam::843407916570:policy/alexis_mnt_test_write_policy'
+        - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
   workerInstanceLauchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:

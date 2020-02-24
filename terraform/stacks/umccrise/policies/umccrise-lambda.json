@@ -22,6 +22,13 @@
         "lambda:InvokeAsync"
       ],
       "Resource": "*"
+      },
+      {
+      "Effect": "Allow",
+      "Action": [
+        "batch:RegisterJobDefinition"
+      ],
+      "Resource": "arn:aws:batch:ap-southeast-2:843407916570:job-definition/umccrise"
       }
     ]
   }

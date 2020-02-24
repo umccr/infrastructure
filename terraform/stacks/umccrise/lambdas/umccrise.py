@@ -1,9 +1,50 @@
 import os
-import json
 import boto3
 
+
+JOB_DEF_NAME = 'umccrise'
+IMAGE_NAME = 'umccr/umccrise'
 batch_client = boto3.client('batch')
 s3 = boto3.client('s3')
+
+batch_job_container_props = {
+    # 'image': 'umccr/umccrise:0.15.15',  # this will be set on-demand
+    'vcpus': 2,
+    'memory': 2048,
+    'command': [
+        '/opt/container/umccrise-wrapper.sh',
+        'Ref::vcpus'
+    ],
+    'volumes': [
+        {
+            'host': {
+                'sourcePath': '/mnt'
+            },
+            'name': 'work'
+        },
+        {
+            'host': {
+                'sourcePath': '/opt/container'
+            },
+            'name': 'container'
+        }
+    ],
+    'mountPoints': [
+        {
+            'containerPath': '/work',
+            'readOnly': False,
+            'sourceVolume': 'work'
+        },
+        {
+            'containerPath': '/opt/container',
+            'readOnly': True,
+            'sourceVolume': 'container'
+        }
+    ],
+    'readonlyRootFilesystem': False,
+    'privileged': True,
+    'ulimits': []
+}
 
 
 def job_name_form_s3(bucket, path):
@@ -14,7 +55,7 @@ def job_name_form_s3(bucket, path):
 
 def lambda_handler(event, context):
     # Log the received event
-    print("Received event: " + json.dumps(event, indent=2))
+    print(f"Received event: {event}")
     # Get parameters for the SubmitJob call
     # http://docs.aws.amazon.com/batch/latest/APIReference/API_SubmitJob.html
 
@@ -24,7 +65,7 @@ def lambda_handler(event, context):
     parameters = event['parameters'] if event.get('parameters') else {}
     depends_on = event['dependsOn'] if event.get('dependsOn') else []
     job_queue = event['jobQueue'] if event.get('jobQueue') else os.environ.get('JOBQUEUE')
-    job_definition = event['jobDefinition'] if event.get('jobDefinition') else os.environ.get('JOBDEF')
+    image_version = event['imageVersion']
 
     container_mem = event['memory'] if event.get('memory') else os.environ.get('UMCCRISE_MEM')
     container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('UMCCRISE_VCPUS')
@@ -34,11 +75,11 @@ def lambda_handler(event, context):
     result_dir = event['resultDir']
     job_name = event['jobName'] if event.get('jobName') else job_name_form_s3(data_bucket, result_dir)
     job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
-    print("resultDir: %s  in data bucket: %s" % (result_dir, data_bucket))
+    print(f"resultDir: {result_dir}  in data bucket: {data_bucket}")
 
     try:
-        response = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=result_dir)
-        print("S3 list response: " + json.dumps(response, indent=2, sort_keys=True, default=str))
+        response = s3.list_objects(Bucket=data_bucket, MaxKeys=3, Prefix=result_dir)
+        # print("S3 list response: " + json.dumps(response, indent=2, sort_keys=True, default=str))
         if not response.get('Contents') or len(response['Contents']) < 1:
             return {
                 'statusCode': 400,
@@ -63,27 +104,38 @@ def lambda_handler(event, context):
             container_overrides['vcpus'] = int(container_vcpus)
             parameters['vcpus'] = container_vcpus
 
-        print("jobName: " + job_name)
-        print("jobQueue: " + job_queue)
-        print("parameters: ")
-        print(parameters)
-        print("dependsOn: ")
-        print(depends_on)
-        print("containerOverrides: ")
-        print(container_overrides)
-        print("jobDefinition: ")
-        print(job_definition)
+        print(f"jobName: {job_name}")
+        print(f"jobQueue: {job_queue}")
+        print(f"parameters: {parameters}")
+        print(f"dependsOn: {depends_on}")
+        print(f"containerOverrides: {container_overrides}")
+
+        # Set the container image version as requested
+        batch_job_container_props['image'] = f"{IMAGE_NAME}:{image_version}"
+        # register a job definition with those parameters
+        print("INFO: Registering job definition")
+        reg_response = batch_client.register_job_definition(
+            jobDefinitionName=JOB_DEF_NAME,
+            type='container',
+            parameters=parameters,
+            containerProperties=batch_job_container_props,
+        )
+        job_def_name = reg_response['jobDefinitionName']  # TODO: should be the same as JOB_DEF_NAME
+        job_def_revision = reg_response['revision']
+        job_definition = f"{job_def_name}:{job_def_revision}"
+
+        print(f"Using jobDefinition: {job_definition}")
         response = batch_client.submit_job(
             dependsOn=depends_on,
             containerOverrides=container_overrides,
             jobDefinition=job_definition,
             jobName=job_name,
             jobQueue=job_queue,
-            parameters=parameters
+            parameters=parameters  # probably not needed, as we're not overwriting anything
         )
 
         # Log response from AWS Batch
-        print("Batch submit job response: " + json.dumps(response, indent=2))
+        print(f"Batch submit job response: {response}")
         # Return the jobId
         event['jobId'] = response['jobId']
         return event

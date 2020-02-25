@@ -5,6 +5,12 @@ from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
 
 
+cicd_dev_props = {
+    'namespace': 'cicd-dev',
+    'refdata_bucket': 'umccr-refdata-prod',
+    'data_bucket': 'umccr-primary-data-prod'
+}
+
 batch_dev_props = {
     'namespace': 'umccrise-batch-dev',
     'container_image': 'umccr/umccrise:0.15.15',
@@ -46,7 +52,8 @@ app = core.App()
 
 CICDStack(
     app,
-    "umccrise-cicd",
+    cicd_dev_props['namespace'],
+    cicd_dev_props,
     env={'account': '843407916570', 'region': 'ap-southeast-2'}
 )
 BatchStack(

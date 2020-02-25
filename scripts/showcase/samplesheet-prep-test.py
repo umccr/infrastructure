@@ -4,6 +4,10 @@ import csv
 import pandas as pd
 import argparse
 
+#to avoid 'a value is trying to be set on a copy of a slice from a DataFrame' warning. The warning is produced when renaming columns
+# in subset of 'samplesheet` dataframes for wgs and wts samples, inside for loop 
+pd.options.mode.chained_assignment = None
+
 #read inputs
 parser = argparse.ArgumentParser() 
 parser.add_argument("--samplesheet", "-s", type=str, required=True)

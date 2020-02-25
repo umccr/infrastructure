@@ -41,9 +41,8 @@ class CICDStack(core.Stack):
                         webhook_filters=[ cb.FilterGroup.in_event_of(cb.EventAction.PUSH).and_tag_is(semver_tag_regex) ]
                     )
         );
-        # XXX: Decompose this into another stack since other CICD stacks do not
-        # need to create several ECR repositories, one for UMCCR (org-level) is enough.
-        ecr_repo = ecr.Repository(self, id="umccr", repository_name="umccr");
+        # create an ECR repo for umccrise
+        ecr_repo = ecr.Repository(self, id="umccrise", repository_name="umccrise");
         
         # Tackle IAM permissions
         # https://stackoverflow.com/questions/38587325/aws-ecr-getauthorizationtoken/54806087

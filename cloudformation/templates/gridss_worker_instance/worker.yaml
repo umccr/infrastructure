@@ -32,6 +32,11 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
             #!/bin/bash -xe
+            # Set vars
+            ACCOUNT_ID="${AWS::AccountId}"
+            REGION="${AWS::Region}"
+            GRIDSS_IMAGE_NAME="gridss-purple-linx"
+            GRIDSS_IMAGE_TAG="2.7.3"
             # Set time/logs to melbourne time
             ln -sf /usr/share/zoneinfo/Australia/Melbourne /etc/localtime
             # create mount point directory
@@ -62,10 +67,8 @@ Resources:
             # Add users to docker
             usermod -a -G docker ssm-user
             usermod -a -G docker ec2-user
+            # Start docker container
             service docker start
-            # Install s3fuse from amazon
-            amazon-linux-extras install epel -y
-            yum install s3fs-fuse -y
             # Sync gridss data from s3 bucket
             aws s3 sync --quiet s3://umccr-misc-temp/gridss_hg19_refdata/hg19/ /mnt/xvdh/hg19_gridss_ref_data/
             # Install container registry helper
@@ -73,7 +76,7 @@ Resources:
             # Add configuration to docker config
             su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
             # Pull the gridss-purple-linx container image from the ECR
-            su - "ec2-user" -c 'docker pull 843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/gridss-purple-linx:2.7.3'
+            su - "ec2-user" -c "docker pull ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${GRIDSS_IMAGE_NAME}:${GRIDSS_IMAGE_TAG}"
 
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
@@ -158,7 +161,6 @@ Resources:
       Path: /worker/
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
-        - 'arn:aws:iam::843407916570:policy/alexis_mnt_test_write_policy'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
   workerInstanceLauchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'

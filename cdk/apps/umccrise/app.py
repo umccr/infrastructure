@@ -1,14 +1,30 @@
 #!/usr/bin/env python3
 from aws_cdk import core
-from stacks.cicd import CICDStack
+from stacks.cicd import CICDStack, CICDPipelineStack, CommonStack
 from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
 
+dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
+prod_env = {'account': '472057503814', 'region': 'ap-southeast-2'}
+umccrise_ecr_repo = 'umccrise'
+
+common_dev_props = {
+    'namespace': 'umccrise-common-dev',
+    'umccrise_ecr_repo': umccrise_ecr_repo,
+}
 
 cicd_dev_props = {
-    'namespace': 'cicd-dev',
+    'namespace': 'umccrise-cicd-dev'
+}
+
+cicd_pipeline_dev_props = {
+    'namespace': 'umccrise-cicd-pipeline-dev',
     'refdata_bucket': 'umccr-refdata-prod',
-    'data_bucket': 'umccr-primary-data-prod'
+    'data_bucket': 'umccr-primary-data-prod',
+    'ecr_repo': umccrise_ecr_repo,
+    'github_repo': 'umccrise',
+    'github_repo_owner': 'umccr',
+    'github_branch': 'master'
 }
 
 batch_dev_props = {
@@ -50,29 +66,45 @@ iap_tes_dev_props = {
 
 app = core.App()
 
+# We don't want certain resources to get deleted when we destroy a stack, so
+# we generate them in a separate common stack
+# I.e. it would be unfortunate if a ECR repo would be deleted, just because
+# the CI/CD stack was removed.
+CommonStack(
+    app,
+    common_dev_props['namespace'],
+    common_dev_props,
+    env=dev_env
+)
 CICDStack(
     app,
     cicd_dev_props['namespace'],
     cicd_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
+)
+CICDPipelineStack(
+    app,
+    cicd_pipeline_dev_props['namespace'],
+    cicd_pipeline_dev_props,
+    env=dev_env
 )
 BatchStack(
     app,
     batch_dev_props['namespace'],
     batch_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
 )
 BatchStack(
     app,
     batch_prod_props['namespace'],
     batch_prod_props,
-    env={'account': '472057503814', 'region': 'ap-southeast-2'}
+    env=prod_env
 )
 IapTesStack(
     app,
     iap_tes_dev_props['namespace'],
     iap_tes_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
 )
 
 app.synth()

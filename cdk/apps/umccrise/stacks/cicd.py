@@ -93,7 +93,8 @@ class CICDPipelineStack(core.Stack):
         artifact_bucket = s3.Bucket(
             self,
             'UmccriseCdkBucket',
-            bucket_name=f"umccr-{props['namespace']}"
+            bucket_name=f"umccr-{props['namespace']}",
+            removal_policy=core.RemovalPolicy.DESTROY
         )
 
         # CodeBuild environment and CodePipeline artifact

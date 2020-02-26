@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_s3 as s3,
 )
 
+
 class CICDStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -20,31 +21,37 @@ class CICDStack(core.Stack):
 
         build_env = cb.BuildEnvironment(build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
                                         privileged=True,
-                                        compute_type=cb.ComputeType.MEDIUM);
+                                        compute_type=cb.ComputeType.MEDIUM)
 
-        # XXX: Decompose this into another stack since other CICD stacks do not
-        # need to create several ECR repositories, one for UMCCR (org-level) is enough.
-        ecr_repo = ecr.Repository(self, id="umccr", repository_name="umccr");
+        # create an ECR repo to deploy the created image to (defined in build spec)
+        ecr.Repository(self, id="umccr", repository_name="umccr")
 
-        cb_project = cb.Project(self, id = "umccrise",
-                    environment = build_env,
-                    timeout = core.Duration.hours(3),
-                    source = cb.Source.git_hub(
-                        identifier = "umccrise",
-                        owner = "umccr",
-                        repo = "umccrise",
-                        clone_depth = 1,
-                        webhook = True,
-                        webhook_filters=[ cb.FilterGroup.in_event_of(cb.EventAction.PUSH).and_tag_is(semver_tag_regex) ]
-                    )
-        );
+        cb_project = cb.Project(
+            self,
+            id="umccrise",
+            environment=build_env,
+            timeout=core.Duration.hours(3),
+            source=cb.Source.git_hub(
+                identifier="umccrise",
+                owner="umccr",
+                repo="umccrise",
+                clone_depth=1,
+                webhook=True,
+                webhook_filters=[
+                    cb.FilterGroup.in_event_of(cb.EventAction.PUSH).and_tag_is(semver_tag_regex)
+                ]
+            )
+        )
 
         # Tackle IAM permissions
         # https://stackoverflow.com/questions/38587325/aws-ecr-getauthorizationtoken/54806087
-        cb_project.role.add_managed_policy(iam.ManagedPolicy.from_aws_managed_policy_name('AmazonEC2ContainerRegistryPowerUser'));
-        refdata.grant_read(cb_project);
+        cb_project.role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name('AmazonEC2ContainerRegistryPowerUser')
+        )
+        refdata.grant_read(cb_project)
 
-app = core.App();
-CICDStack(app, "UmccriseCICDStack");
+
+app = core.App()
+CICDStack(app, "UmccriseCICDStack")
 
 app.synth()

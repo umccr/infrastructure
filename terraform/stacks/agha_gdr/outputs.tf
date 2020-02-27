@@ -183,6 +183,20 @@ output "minw_secret_access_key" {
 }
 
 
+# boxcroft
+output "boxcroft_username" {
+  value = "${module.boxcroft.username}"
+}
+
+output "boxcroft_access_key" {
+  value = "${module.boxcroft.access_key}"
+}
+
+output "boxcroft_secret_access_key" {
+  value = "${module.boxcroft.encrypted_secret_access_key}"
+}
+
+
 
 # output for serivce user: agha_bot_user
 output "agha_bot_user_username" {

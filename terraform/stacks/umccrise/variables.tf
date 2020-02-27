@@ -43,7 +43,7 @@ variable "workspace_umccrise_data_bucket" {
 
   default = {
     prod = "umccr-primary-data-prod"
-    dev  = "umccr-primary-data-dev"
+    dev  = "umccr-primary-data-dev2"
   }
 }
 
@@ -64,7 +64,7 @@ variable "workspace_umccrise_ro_buckets" {
             "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*",
             "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*",
             "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*",
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev2", "arn:aws:s3:::umccr-primary-data-dev2/*",
             "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*",
             "arn:aws:s3:::umccr-refdata-dev", "arn:aws:s3:::umccr-refdata-dev/*",
             "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
@@ -79,7 +79,7 @@ variable "workspace_umccrise_wd_buckets" {
   default = {
     prod = ["arn:aws:s3:::umccr-primary-data-prod/*/umccrised/*",
             "arn:aws:s3:::umccr-temp/*/umccrised/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev/*/umccrised/*",
+    dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/umccrised/*",
             "arn:aws:s3:::umccr-umccrise-dev/*/umccrised/*"]
   }
 }

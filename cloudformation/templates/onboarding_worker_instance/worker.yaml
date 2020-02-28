@@ -11,9 +11,9 @@ Resources:
         - !Ref instanceSecurityGroup
       SubnetId: !Ref instanceSubnet
       LaunchTemplate:
-        LaunchTemplateId: !Ref workerInstanceLaunchTemplate
+        LaunchTemplateId: !Ref workerIstanceLauchTemplate
         Version: !GetAtt 
-          - workerInstanceLaunchTemplate
+          - workerIstanceLauchTemplate
           - LatestVersionNumber
       Tags:
         - Key: Source
@@ -39,18 +39,11 @@ Resources:
             mount -a
             # change the owner so the user (via SSM) has access
             chown -R ssm-user /mnt/xvdh/
-            # Move docker home to larger disk space
-            # Move docker to larger diskspace
-            mv /var/lib/docker /mnt/xvdh/docker
-            # Link mount to docker container
-            ln -s /mnt/xvdh/docker /var/lib/docker
             # install docker
-            yum update -y
-            amazon-linux-extras install docker
-            # Add default user to docker group
-            usermod -a -G docker ssm-user
-            # Start docker service
-            service docker start
+            sudo yum update -y
+            sudo amazon-linux-extras install docker
+            sudo service docker start
+            sudo usermod -a -G docker ssm-user
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
@@ -134,7 +127,7 @@ Resources:
       Path: /worker/
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
-  workerInstanceLaunchTemplate:
+  workerIstanceLauchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateData:
@@ -178,13 +171,13 @@ Parameters:
     Type: Number
     Default: 100
   instanceSecurityGroup:
-    Description: 'The Security Group to use for this instance. Default: sg-c13f6abc (dev account)'
+    Description: 'The Security Group to use for this instance. Default: sg-8c8330f1 (onboarding account)'
     Type: String
-    Default: 'sg-c13f6abc'
+    Default: 'sg-8c8330f1'
   instanceSubnet:
-    Description: 'The Subnet to place this instance in. Default: subnet-d93b35be (dev account)'
+    Description: 'The Subnet to place this instance in. Default: subnet-4d1d2404 (onboarding account)'
     Type: String
-    Default: 'subnet-d93b35be'
+    Default: 'subnet-4d1d2404'
   instanceMaxSpotPriceParameter:
     Description: 'Set the max spot price (hourly) for the selected instance type. Default: 0.05'
     Type: String

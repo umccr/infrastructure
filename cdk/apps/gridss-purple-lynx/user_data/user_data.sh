@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Set vars
 REF_DATA_BUCKET="s3://umccr-misc-temp/gridss_hg19_refdata/hg19/"
 REF_DATA_DIR="/mnt/xvdh/hg19_gridss_ref_data/"

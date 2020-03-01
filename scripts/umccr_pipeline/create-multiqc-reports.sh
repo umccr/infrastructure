@@ -7,6 +7,7 @@ set -eo pipefail
 docker_image="umccr/multiqc:1.2.2"
 CASE_BCL2FASTQ="bcl2fastq"
 CASE_INTEROP="interop"
+rundata_s3_path="s3://umccr-run-data-prod/QC-Reports"
 fastq_base_path="/storage/shared/bcl2fastq_output"
 bcl_base_path="/storage/shared/raw"
 qc_base_path="/storage/shared/multiQC"
@@ -138,19 +139,22 @@ if test "$DEPLOY_ENV" = "prod"; then
     fi
 
     # Run the docker container to generate the reports
-    cmd="docker run --rm --user 1002 -v $interop_base_path/:/$runfolder/:ro -v $qc_report_path/:/output/ $docker_image bash -c 'interop_index-summary --csv=1 /${runfolder}/ > /tmp/interop_index-summary.csv; interop_summary --csv=1 /${runfolder}/ > /tmp/interop_summary.csv; multiqc -m interop /tmp/interop*.csv -o /output/${runfolder}/ -n ${runfolder}_interop_qc.html --title \"UMCCR MultiQC report (interop) for $runfolder\"'"
+    cmd="docker run --rm --user 1002 -v $interop_base_path/:/$runfolder/:ro -v $qc_report_path/:/output/ $docker_image bash -c 'interop_index-summary --csv=1 /${runfolder}/ > /tmp/interop_index-summary.csv; interop_summary --csv=1 /${runfolder}/ > /tmp/interop_summary.csv; multiqc -f -m interop /tmp/interop*.csv -o /output/${runfolder}/ -n ${runfolder}_interop_qc.html --title \"UMCCR MultiQC report (interop) for $runfolder\"'"
     write_log "INFO: Running command: $cmd"
     eval "$cmd"
 
-else
-    write_log "INFO: Test run, skipping actual work"
-fi
-
-if test "$DEPLOY_ENV" = "prod"; then
     # Copy bcl2fastq report for Lab
     cmd="cp $qc_base_path/Reports/${runfolder}/${runfolder}_bcl2fastq_qc.html $qc_base_path/Reports-Lab/"
     write_log "INFO: running command: $cmd"
     eval "$cmd"
+
+    # Copy MultiQC report data to S3
+    cmd="aws s3 sync $qc_base_path/Reports/${runfolder}/ ${rundata_s3_path}/${runfolder}"
+    write_log "INFO: running command: $cmd"
+    eval "$cmd"
+
+else
+    write_log "INFO: Test run, skipping actual work"
 fi
 
 write_log "INFO: All done."

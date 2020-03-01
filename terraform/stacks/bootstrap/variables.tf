@@ -34,29 +34,37 @@ variable "workspace_run_data_bucket_name" {
   }
 }
 
-variable "workspace_fastq_data_uploader_buckets" {
-  type = "map"
-
-  default = {
-    prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*", "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*", "arn:aws:s3:::umccr-raw-sequence-data-prod", "arn:aws:s3:::umccr-raw-sequence-data-prod/*", "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*", "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*"]
-    dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*", "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*", "arn:aws:s3:::umccr-raw-sequence-data-dev", "arn:aws:s3:::umccr-raw-sequence-data-dev/*", "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
-  }
-}
-
 variable "workspace_operator_write_buckets" {
   type = "map"
 
   default = {
     prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*",
-            "arn:aws:s3:::umccr-raw-sequence-data-prod", "arn:aws:s3:::umccr-raw-sequence-data-prod/*",
             "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
-            "arn:aws:s3:::umccr-umccrise-refdata-prod", "arn:aws:s3:::umccr-umccrise-refdata-prod/*",
             "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*",
             "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*"]
     dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*",
-            "arn:aws:s3:::umccr-raw-sequence-data-dev", "arn:aws:s3:::umccr-raw-sequence-data-dev/*",
             "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*",
-            "arn:aws:s3:::umccr-umccrise-refdata-dev", "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
+            "arn:aws:s3:::umccr-refdata-dev", "arn:aws:s3:::umccr-refdata-dev/*",
+            "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*"]
+  }
+}
+
+variable "workspace_umccr_pipeline_write_buckets" {
+  type = "map"
+
+  default = {
+    prod = ["arn:aws:s3:::umccr-fastq-data-prod", "arn:aws:s3:::umccr-fastq-data-prod/*",
+            "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
+            "arn:aws:s3:::umccr-raw-sequence-data-prod", "arn:aws:s3:::umccr-raw-sequence-data-prod/*",
+            "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*",
+            "arn:aws:s3:::umccr-run-data-prod", "arn:aws:s3:::umccr-run-data-prod/*",
+            "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*"]
+    dev  = ["arn:aws:s3:::umccr-fastq-data-dev", "arn:aws:s3:::umccr-fastq-data-dev/*",
+            "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*",
+            "arn:aws:s3:::umccr-raw-sequence-data-dev", "arn:aws:s3:::umccr-raw-sequence-data-dev/*",
+            "arn:aws:s3:::umccr-refdata-dev", "arn:aws:s3:::umccr-refdata-dev/*",
+            "arn:aws:s3:::umccr-run-data-dev", "arn:aws:s3:::umccr-run-data-dev/*",
+            "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*"]
   }
 }
 
@@ -66,8 +74,10 @@ variable "workspace_operator_delete_buckets" {
   default = {
     prod = ["arn:aws:s3:::umccr-temp/*"]
     dev  = ["arn:aws:s3:::umccr-fastq-data-dev/*",
-            "arn:aws:s3:::umccr-raw-sequence-data-dev/*",
             "arn:aws:s3:::umccr-primary-data-dev/*",
+            "arn:aws:s3:::umccr-raw-sequence-data-dev/*",
+            "arn:aws:s3:::umccr-refdata-dev/*",
+            "arn:aws:s3:::umccr-run-data-dev/*",
             "arn:aws:s3:::umccr-umccrise-refdata-dev/*"]
   }
 }

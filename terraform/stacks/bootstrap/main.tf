@@ -98,7 +98,7 @@ data "template_file" "fastq_data_uploader" {
   template = "${file("policies/fastq_data_uploader.json")}"
 
   vars {
-    resources = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
+    resources = "${jsonencode(var.workspace_operator_write_buckets[terraform.workspace])}"
   }
 }
 
@@ -220,7 +220,7 @@ data "template_file" "umccr_pipeline" {
   vars {
     aws_account            = "${data.aws_caller_identity.current.account_id}"
     aws_region             = "${data.aws_region.current.name}"
-    s3_buckets             = "${jsonencode(var.workspace_fastq_data_uploader_buckets[terraform.workspace])}"
+    s3_buckets             = "${jsonencode(var.workspace_umccr_pipeline_write_buckets[terraform.workspace])}"
     activity_name          = "${var.workspace_pipeline_activity_name[terraform.workspace]}"
     slack_lambda_name      = "${var.workspace_slack_lambda_name[terraform.workspace]}"
     submission_lambda_name = "${var.workspace_submission_lambda_name[terraform.workspace]}"

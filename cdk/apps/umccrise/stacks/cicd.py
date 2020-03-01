@@ -66,9 +66,15 @@ class CICDStack(core.Stack):
 
 
 class CICDPipelineStack(core.Stack):
+    # NOTE: current limitations make the use of CodePiple inpractical:
+    # - CodePipeline GitHub webhook triggers for one branch only
+    # - and no support for regular expression filtering (like in CodeBuild)
+    # -> Furture work to unify CodeBuild and CodePipeline on that issue is planned, but no ETA available.
+
     def __init__(self, app: core.App, id: str, props, **kwargs) -> None:
         super().__init__(app, id, **kwargs)
 
+        # Inspiration taken from: https://github.com/1Strategy/cdk-serverless-pipeline-starter-template/blob/master/serverless_pipeline/serverless_pipeline_stack.py
         # Reference data bucket
         refdata = s3.Bucket.from_bucket_attributes(
             self,

@@ -30,8 +30,8 @@ cicd_pipeline_dev_props = {
 batch_dev_props = {
     'namespace': 'umccrise-batch-dev',
     'container_image': 'umccr/umccrise:0.15.15',
-    # 'compute_env_ami': 'ami-0e3451906ffc529a0',  # umccrise AMI
-    'compute_env_ami': 'ami-05c621ca32de56e7a',  # Amazon ECS optimised Linux 2 AMI
+    'compute_env_ami': 'ami-0e3451906ffc529a0',  # umccrise AMI
+    # 'compute_env_ami': 'ami-05c621ca32de56e7a',  # Amazon ECS optimised Linux 2 AMI
     'compute_env_type': 'SPOT',
     'ro_buckets': ['umccr-refdata-prod', 'umccr-primary-data-prod', 'umccr-temp', 'umccr-refdata-dev'],
     'rw_buckets': ['umccr-primary-data-dev2', 'umccr-misc-temp'],

@@ -7,42 +7,40 @@ from aws_cdk import (
     core
 )
 
-user_data_script = """MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
+# user_data_script = """MIME-Version: 1.0
+# Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
 
---==MYBOUNDARY==
-Content-Type: text/x-shellscript; charset="us-ascii"
+# --==MYBOUNDARY==
+# Content-Type: text/x-shellscript; charset="us-ascii"
 
-#!/bin/bash
-echo Hello
+# #!/bin/bash
+# echo Hello
 
---==MYBOUNDARY==--"""
+# --==MYBOUNDARY==--"""
 
-user_data_script4 = """
-Content-Type: multipart/mixed; boundary="//"
-MIME-Version: 1.0
+# user_data_script4 = """
+# MIME-Version: 1.0
+# Content-Type: multipart/mixed; boundary="//"
 
---//
-Content-Type: text/x-shellscript; charset="us-ascii"
-MIME-Version: 1.0
-
-#!/bin/bash
-/bin/echo "Hello World" >> /tmp/testfile.txt
---//
-"""
+# --//
+# Content-Type: text/x-shellscript; charset="us-ascii"
+# #!/bin/bash
+# /bin/echo "Hello World" >> /tmp/testfile.txt
+# --//
+# """
 
 
-user_data_script2 = 'MIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="==MYBOUNDARY=="\n--==MYBOUNDARY==\nContent-Type: text/x-shellscript; charset="us-ascii"\n#!/bin/bash\necho Hello\necho ${foo}\n--==MYBOUNDARY==--\n'
+# user_data_script2 = 'MIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="==MYBOUNDARY=="\n--==MYBOUNDARY==\nContent-Type: text/x-shellscript; charset="us-ascii"\n#!/bin/bash\necho Hello\necho ${foo}\n--==MYBOUNDARY==--\n'
 
-user_data_script3 = [
-    'MIME-Version: 1.0',
-    'Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="',
-    '--==MYBOUNDARY==',
-    'Content-Type: text/x-shellscript; charset="us-ascii"',
-    '#!/bin/bash',
-    'echo Hello',
-    '--==MYBOUNDARY==--"""'
-]
+# user_data_script3 = [
+#     'MIME-Version: 1.0',
+#     'Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="',
+#     '--==MYBOUNDARY==',
+#     'Content-Type: text/x-shellscript; charset="us-ascii"',
+#     '#!/bin/bash',
+#     'echo Hello',
+#     '--==MYBOUNDARY==--'
+# ]
 
 
 class BatchStack(core.Stack):
@@ -122,32 +120,35 @@ class BatchStack(core.Stack):
             max_azs=1
         )
 
-        user_data = ec2.UserData.for_linux()
-        user_data.add_commands(core.Fn.base64(user_data_script4))
+#         user_data = ec2.UserData.for_linux()
+#         user_data.add_commands(user_data_script4)
 
-        launch_template = ec2.CfnLaunchTemplate(
-            self,
-            'UmccriseBatchComputeLaunchTemplate',
-            launch_template_name='UmccriseBatchComputeLaunchTemplate',
-            launch_template_data={
-                # 'userData': core.Fn.base64(user_data.render())
-                # 'userData': 'ZWNobyBGT09PT08K'
-                # 'userData': {
-                #     "Fn::Base64": {
-                #         "Fn::Join": [
-                #             "",
-                #             "#!/bin/bash\n",
-                #             "echo 'doing stuff'\n"
-                #         ]
-                #     }
-                # }
-                # 'userData': {'Fn::Base64': 'echo Hello'}
-                'userData': core.Fn.base64(user_data_script4)
-                # 'userData': core.Fn.base64(core.Fn.sub(body=user_data_script2, variables={'foo': 'World'}))
-                # 'userData': core.Fn.join(delimiter='\n', list_of_values=user_data_script3)
-                # TODO: try core.Fn.join()
-            }
-        )
+#         launch_template = ec2.CfnLaunchTemplate(
+#             self,
+#             'UmccriseBatchComputeLaunchTemplate',
+#             launch_template_name='UmccriseBatchComputeLaunchTemplate',
+#             launch_template_data={
+#                 # 'userData': core.Fn.base64(user_data.render())
+#                 # 'userData': core.Fn.base64(user_data.render())
+#                 # 'userData': 'ZWNobyBGT09PT08K'
+#                 'userData': 'TUlNRS1WZXJzaW9uOiAxLjAKQ29udGVudC1UeXBlOiBtdWx0aXBhcnQvbWl4ZWQ7IGJvdW5kYXJ5PSI9PU1ZQk9VTkRBUlk9PSIKCi0tPT1NWUJPVU5EQVJZPT0KQ29udGVudC1UeXBlOiB0ZXh0L3gtc2hlbGxzY3JpcHQ7IGNoYXJzZXQ9InVzLWFzY2lpIgoKIyEvYmluL2Jhc2gKZWNobyBIZWxsbyAKCi0tPT1NWUJPVU5EQVJZPT0tLQo='
+#                 # 'userData': user_data_script2
+#                 # 'userData': '#!/bin/bash\recho FOO'
+#     #             'userData': """Fn::Base64: !Sub |
+#     # #!/bin/bash
+#     # echo 'doing stuff'"""
+# #                 'userData': core.Fn.base64(
+# # """#!/bin/bash
+# # echo 'doing stuff'"""
+# #                 )
+#                 # 'userData': user_data_script4
+#                 # 'userData': {'Fn::Base64': 'echo Hello'}
+#                 # 'userData': core.Fn.base64(user_data_script4)
+#                 # 'userData': core.Fn.base64(core.Fn.sub(body=user_data_script2, variables={'foo': 'World'}))
+#                 # 'userData': core.Fn.base64(core.Fn.join(delimiter=';', list_of_values=['#!/bin/bash', 'echo Hello']))
+#                 # TODO: try core.Fn.join()
+#             }
+#         )
 
         # TODO: Replace with proper CDK construct once available
         # TODO: Uses public subnet and default security group
@@ -163,9 +164,9 @@ class BatchStack(core.Stack):
                 'minvCpus': 0,
                 'desiredvCpus': 0,
                 'imageId': props['compute_env_ami'],
-                'launchTemplate': {
-                    "launchTemplateName": launch_template.launch_template_name
-                },
+                # 'launchTemplate': {
+                #     "launchTemplateName": launch_template.launch_template_name
+                # },
                 'spotIamFleetRole': spotfleet_role.role_arn,
                 'instanceRole': batch_instance_profile.instance_profile_name,
                 'instanceTypes': ['optimal'],
@@ -174,6 +175,10 @@ class BatchStack(core.Stack):
                 'tags': {'Creator': 'Batch'}
             }
         )
+
+        # TODO: switch to abstracted constructs
+        # batch_comp_env_2 = batch.ComputeEnvironment()
+
 
         # TODO: Replace with proper CDK construct once available
         # TODO: job_queue_name could result in a clash, but is currently necessary

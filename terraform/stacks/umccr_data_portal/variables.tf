@@ -75,8 +75,24 @@ variable "lims_csv_file_key" {
 
 variable "rds_auto_pause" {
     default = {
-        prod = true,
-        dev = false
+        prod = false,
+        dev  = true
     }
-    description = "Whether we always keep serverless rds alive"
+    description = "Whether to keep RDS serverless alive or pause if no load"
+}
+
+variable "rds_min_capacity" {
+    default = {
+        prod = 2,
+        dev  = 1
+    }
+    description = "The minimum capacity in Aurora Capacity Units (ACUs)"
+}
+
+variable "rds_max_capacity" {
+    default = {
+        prod = 16,
+        dev  = 1
+    }
+    description = "The maximum capacity in Aurora Capacity Units (ACUs)"
 }

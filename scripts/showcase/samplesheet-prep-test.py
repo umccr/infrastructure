@@ -43,8 +43,6 @@ def initialise_logger():
     formatter = logging.Formatter(CONSOLE_LOGGER_STYLE)
     # tell the handler to use this format
     console.setFormatter(formatter)
-    # add the handler to the root logger
-    #logging.getLogger('').addHandler(console)
 
 
 def get_logger():
@@ -68,6 +66,7 @@ def get_args():
     """
     # Initialise parser
     parser = argparse.ArgumentParser()
+
     # Place arguments
     parser.add_argument("--samplesheet", "--sample-sheet", "-s", type=str, required=True, dest="sample_sheet")
     parser.add_argument("--trackingsheet", "--tracking-sheet", "-t", type=str, required=True, dest="tracking_sheet")
@@ -326,7 +325,8 @@ def add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df):
                         "Type": "Sample_Type"}).\
         query("Sample_ID in @sample_list")
 
-    slimmed_tracking_df['Type'] = slimmed_tracking_df['Sample_Type'].apply(lambda x: 'TSO' if x.startswith("TSO") else x)
+    slimmed_tracking_df['Type'] = slimmed_tracking_df['Sample_Type'].apply(lambda x:
+                                                                           'TSO' if x.startswith("TSO") else x)
 
     # Merge and return the data frames with the 'Type included
     return pd.merge(sample_sheet_df, slimmed_tracking_df, on='Sample_ID', how='left')

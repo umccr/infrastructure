@@ -9,6 +9,7 @@ ACCOUNT = "843407916570"  # Dev
 REGION = "ap-southeast-2"
 CREATOR_NAME = "Alexis Lucattini"
 
+# Set tags for container
 TAGS = {
     # Name is set to gridss-purple-lynx
     "Stack": "CDK",
@@ -16,6 +17,8 @@ TAGS = {
     "Creator": "Alexis Lucattini",
     "Environment": "dev"
 }
+
+# Set other globals
 
 # Initialise app
 app = core.App()

@@ -11,30 +11,6 @@ from aws_cdk import (
 Globals
 """
 
-# Import into an existing vpc
-VPC_ID = "vpc-6ceacc0b"  # default
-SECURITY_GROUP = "sg-00f2e54b0bc480afa"  # default
-SUBNET = "subnet-d52e978d"
-
-# Set the ec2 type
-EC2_TYPE = "m4.4xlarge"  # 16 vCPU & 64 GB of memory
-
-# Set your keyname
-KEY_NAME = "alexis-dev"
-
-# Image type
-MACHINE_IMAGE = ec2.GenericLinuxImage({
-    "ap-southeast-2": "ami-0dc96254d5535925f",  # Refer to an existing AMI type
-})
-
-# Set volume size
-VOLUME_SIZE = 100  # Size of ebs volume instance is mounted on in Gb
-VOLUME_MOUNT_POINT = "/dev/xvdh"  # This is then mounted as /mnt/xvdh
-
-# Gridss parameters
-GRIDSS_DOCKER_IMAGE_NAME = "gridss-purple-linx"
-GRIDSS_DOCKER_IMAGE_TAG = "2.7.3"
-
 
 # Class definition
 class GridssPurpleLynxStack(core.Stack):
@@ -62,9 +38,10 @@ class GridssPurpleLynxStack(core.Stack):
                         managed_policies=policies)
 
         # Get volume - contains a block device volume and a block device
-        ebs_vol = ec2.BlockDeviceVolume.ebs(volume_size=VOLUME_SIZE)
+        volume_params = self.node.try_get_context("VOLUME")
+        ebs_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(volume_params["SIZE"]))
         # Place volume on a block device with a set mount point
-        ebs_block_device = ec2.BlockDevice(device_name=VOLUME_MOUNT_POINT, volume=ebs_vol)
+        ebs_block_device = ec2.BlockDevice(device_name=volume_params["MOUNT_POINT"], volume=ebs_vol)
 
         # Run boot strap -
         """
@@ -78,7 +55,15 @@ class GridssPurpleLynxStack(core.Stack):
             user_data = ec2.UserData.custom(user_data_h.read())
 
         # Set instance type from ec2-type global variable
-        instance_type = ec2.InstanceType(instance_type_identifier=EC2_TYPE)
+        instance_type = ec2.InstanceType(instance_type_identifier=self.node.try_get_context("EC2_TYPE"))
+
+        # Get machine type
+        machine_image = ec2.GenericLinuxImage({
+              self.region: self.node.try_get_context("MACHINE_IMAGE"),  # Refer to an existing AMI type
+        })
+
+        # Get key from context
+        key_name = self.node.try_get_context("KEY_NAME")
 
         # The code that defines your stack goes here
         # We take all of the parameters we have and place this into the ec2 instance class
@@ -86,10 +71,10 @@ class GridssPurpleLynxStack(core.Stack):
                             id="gridss-ec2-id",
                             instance_type=instance_type,
                             instance_name="gridss-ec2-instance",
-                            machine_image=MACHINE_IMAGE,
+                            machine_image=machine_image,
                             vpc=vpc,
                             vpc_subnets=vpc_subnets,
-                            key_name=KEY_NAME,
+                            key_name=key_name,
                             role=role,
                             user_data=user_data,
                             block_devices=[ebs_block_device]

@@ -8,18 +8,22 @@ import re
 import logging
 
 # Globals
-HEADER_LINE_PRECURSOR = "[Data]"
-V2_COLUMN_CHANGES = {'I7_Index_ID': 'I7_Index', 'I5_Index_ID': 'I5_Index'}
+HEADER_LINE_PRECURSOR = "[Data]"  # Used to separate metadata from samplesheet info
+OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
+# Head rows that need to be changed for V2 sample sheets
 V2_METADATA_COLUMN_CHANGES = {"Adapter": "AdapterRead1"}
-VALID_SAMPLE_TYPES = {"TSO500": ["TSO"],
-                      "V2": ["WGS", "WTS"]}
-OMITTED_YEAR_SHEETS = ["2018"]
+# Column names that need to be changed for V2 sample sheets
+V2_COLUMN_CHANGES = {'I7_Index_ID': 'I7_Index', 'I5_Index_ID': 'I5_Index'}
+# Key - Method used to process samples of type 'value'
+# Value - list of sample types subject to the modification of type 'key'
+VALID_SAMPLE_TYPES = {"TSO500": ["TSO"],  # Add two extra columns
+                      "V2": ["WGS", "WTS"]}  # Change header and indexes
 
 # Set logs
 LOGGER_STYLE = '%(asctime)s - %(levelname)-8s - %(funcName)-20s - %(message)s'
 CONSOLE_LOGGER_STYLE = '%(funcName)-12s: %(levelname)-8s %(message)s'
 LOGGER_DATEFMT = '%y-%m-%d %H:%M:%S'
-THIS_SCRIPT_NAME = "SAMPLESHEET TESTER"
+THIS_SCRIPT_NAME = "SAMPLESHEET SPLITTER"
 
 
 def initialise_logger():
@@ -65,9 +69,9 @@ def get_args():
     # Initialise parser
     parser = argparse.ArgumentParser()
     # Place arguments
-    parser.add_argument("--samplesheet", "-s", type=str, required=True)
-    parser.add_argument("--trackingsheet", "-t", type=str, required=True)
-    parser.add_argument("--outputFile", "-o", type=str, required=True)
+    parser.add_argument("--samplesheet", "--sample-sheet", "-s", type=str, required=True, dest="sample_sheet")
+    parser.add_argument("--trackingsheet", "--tracking-sheet", "-t", type=str, required=True, dest="tracking_sheet")
+    parser.add_argument("--outputPath", "--output-path", "-o", type=str, required=True, dest="output_path")
 
     return parser.parse_args()
 
@@ -83,17 +87,17 @@ def check_args(args):
     """
 
     # Check samplesheet is a real file
-    if not Path(args.samplesheet).is_file():
+    if not Path(getattr(args, "sample_sheet")).is_file():
         logger.info("Sample sheet does not exist, exiting")
         sys.exit(1)
 
     # Check tracksheet is a real file
-    if not Path(args.trackingsheet).is_file():
+    if not Path(getattr(args, "tracking_sheet")).is_file():
         logger.info("Tracking sheet does not exist, exiting")
         sys.exit(1)
 
     # Check output file is writable
-    output_dir = os.path.dirname(os.path.normpath(args.outputFile))
+    output_dir = os.path.normpath(getattr(args, "output_path"))
     if not Path(output_dir).is_dir():
         logger.info("Creating output folder")
         create_output_dir(output_dir)
@@ -115,17 +119,10 @@ def get_start_row(sample_sheet):
     :return: An integer specifying which row the [Data] header is on.
     """
 
-    backslash_chars = '[]'
-    escaped_header_line = ''.join(["\\%s" % char if char in backslash_chars else char
-                                   for char in HEADER_LINE_PRECURSOR
-                                  ])
-
-    re_pattern = re.compile("^%s(,)*" % escaped_header_line)
-
     # Iterate through lines - return line number that contains the header line
     with open(sample_sheet, 'r') as samplesheet_fh:
         for line_number, line in enumerate(samplesheet_fh.readlines()):
-            if line.strip() == HEADER_LINE_PRECURSOR or re.match(re_pattern, line.strip()):
+            if line.strip().startswith(HEADER_LINE_PRECURSOR):
                 break
         else:
             logger.info("Could not find data line")
@@ -188,9 +185,10 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows):
     """
     sample_sheet_header_rows_new = []
     for row in sample_sheet_header_rows:
+        # Initialise new row
         new_row = row
-        for old, new in V2_METADATA_COLUMN_CHANGES.items():
-            new_row = re.sub(old + ",", new + ",", new_row)
+        for old_value, new_value in V2_METADATA_COLUMN_CHANGES.items():
+            new_row = re.sub(old_value + ",", new_value + ",", new_row)
         sample_sheet_header_rows_new.append(new_row)
     return sample_sheet_header_rows_new
 
@@ -301,74 +299,83 @@ def add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df):
     return pd.merge(sample_sheet_df, slimmed_tracking_df, on='Sample_ID', how='left')
 
 
-def write_sample_sheet(sample_sheet_df, sample_sheet_header_rows, sample_sheet_output_file):
-    """
-    Given a sample type, a full sample sheet df, and a header row, write out the sample,sheet as a csv file
-    """
-
-    with open(sample_sheet_output_file, 'w') as sample_sheet_output_h:
-        # Write out the header rows
-        sample_sheet_output_h.writelines(sample_sheet_header_rows)
-        # Write out [Data]
-        sample_sheet_output_h.write("{}\n".format(HEADER_LINE_PRECURSOR))
-        # Write out sample sheet
-        sample_sheet_df.\
-            to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
-
-    # Completed writing of header file
-
-
-def modify_sample_sheet(sample_sheet_df, sample_sheet_header_rows, sample_type):
+def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
     """
     Massive if else function based on the second parameter
     """
 
-    # Get mod strategy from sample_type
-    modification_strategy = [mod_strat for mod_strat, sample_types in VALID_SAMPLE_TYPES.items()
-                             if sample_type in sample_types]
+    # Convert VALID_SAMPLE_TYPES dict into a dataframe
+    valid_sample_types_df = pd.DataFrame.from_dict(VALID_SAMPLE_TYPES, orient='index').transpose()
+    """
+    example output:
+        TSO500  V2
+    0   TSO     WGS
+    1   None    WTS
+    """
 
-    if not len(modification_strategy) == 1:
+    # Get mod strategy from sample_type by finding columns in df that match the sample type
+    modification_strategies = valid_sample_types_df[valid_sample_types_df.eq(sample_type)].\
+        dropna(axis='columns', how='all').columns.tolist()
+
+    # Initialise modified content as original content
+    modify_sample_header_rows = sample_sheet_header_rows.copy()
+    modified_sample_sheet_df = sample_sheet_df.copy()
+
+    # Check length of matches
+    if len(modification_strategies) < 1:
         logger.warning("Warning we couldn't figure out what to do with "
                        "this dataset of type '{}', so we're leaving it as is".format(sample_type))
-        modification_strategy = None
-    else:
-        modification_strategy = modification_strategy[0]
+        # Perform basic reset of sample sheet
+        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type"])
+    elif len(modification_strategies) > 1:
+        logger.info("Found multiple modification strategies for {}. Completing in the following order: {}".format(
+            sample_type, ', '.join(modification_strategies)
+        ))
 
-    if modification_strategy == "TSO500":
-        # Add two extra columns to sample-sheet
-        modified_sample_sheet_df = convert_sample_sheet_to_tso500(sample_sheet_df)
-        # No changes to header rows required.
-        modify_sample_header_rows = sample_sheet_header_rows
-    elif modification_strategy == "V2":
-        # Add two extra columns to sample-sheet
-        modified_sample_sheet_df = convert_sample_sheet_to_v2(sample_sheet_df)
-        # No changes to header rows required.
-        modify_sample_header_rows = convert_sample_sheet_header_to_v2(sample_sheet_header_rows)
-    else:
-        # Perform basic reset
-        modified_sample_sheet_df = sample_sheet_df.drop(columns=["Sample_Type", "Type"])
-        modify_sample_header_rows = sample_sheet_header_rows
+    # Iterate through each 'strategy'
+    for modification_strategy in modification_strategies:
+        if modification_strategy == "TSO500":
+            # No changes to header rows required.
+            # Add two extra columns to sample-sheet
+            modified_sample_sheet_df = convert_sample_sheet_to_tso500(modified_sample_sheet_df)
+        elif modification_strategy == "V2":
+            # Rename adapter key
+            modify_sample_header_rows = convert_sample_sheet_header_to_v2(modify_sample_header_rows)
+            # Drop 'type' columns and rename indexes
+            modified_sample_sheet_df = convert_sample_sheet_to_v2(modified_sample_sheet_df)
+        else:
+            logger.error("Unsure what to do, matched a modification strategy "
+                         "but no indication on how to modify samplesheet")
+            sys.exit(1)
 
     return modified_sample_sheet_df, modify_sample_header_rows
 
 
-def write_sample_sheets(sample_sheet_df, sample_sheet_header_rows, sample_sheet_prefix='SampleSheet'):
+def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir):
     """
     Perform a group-by based on type, append this to the prefix and set as the output
     """
     logger.info("Writing out sample sheets")
     for sample_type, sample_sheet_type_df in sample_sheet_df.groupby('Type'):
         # Modify the sample-sheet
-        modified_sample_sheet_df, modified_sample_header_rows = modify_sample_sheet(sample_sheet_type_df,
-                                                                                    sample_sheet_header_rows,
+        modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(sample_sheet_header_rows,
+                                                                                    sample_sheet_type_df,
                                                                                     sample_type)
         # Set the output file name
-        output_file = '_'.join([sample_sheet_prefix, sample_type]) + ".csv"
+        output_file = sample_sheet_dir / "SampleSheet_{}.csv".format(sample_type)
 
         # Write out the sample sheet
         logger.info("Writing out type {} to {} - containing {} samples".format(
             sample_type, output_file, sample_sheet_type_df.shape[0]))
-        write_sample_sheet(modified_sample_sheet_df, modified_sample_header_rows, output_file)
+
+        # Write out sample sheet
+        with open(output_file, 'w') as sample_sheet_output_h:
+            # Write out the header rows
+            sample_sheet_output_h.writelines(sample_sheet_header_rows)
+            # Write out [Data]
+            sample_sheet_output_h.write("{}\n".format(HEADER_LINE_PRECURSOR))
+            # Write out sample sheet
+            sample_sheet_df.to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
 
 
 def main():
@@ -383,16 +390,16 @@ def main():
     check_args(args)
 
     # Read in the samplesheet
-    sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(args.samplesheet)
+    sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(getattr(args, "sample_sheet"))
 
     # Read in the tracking sheet
-    tracking_sheet_df = read_tracking_sheet(args.trackingsheet)
+    tracking_sheet_df = read_tracking_sheet(getattr(args, "tracking_sheet"))
 
     # Merge tracking sheet with sample sheet
     sample_sheet_df = add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df)
 
     # Write out the sample sheets
-    write_sample_sheets(sample_sheet_df, sample_sheet_header_rows, sample_sheet_prefix=args.outputFile)
+    write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir=getattr(args, "output_path"))
 
 
 if __name__ == "__main__":

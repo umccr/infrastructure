@@ -1,7 +1,7 @@
 # CloudFormation template for a worker instance
 This template is pre-configured with values (`SecurityGroup` and `Subnet`) specific to the `dev` account, but can be used against other accounts.
 
-This instance will have a volume of customisable size attached and mounted on `/mnt/xvdh`. The instance will also have access to AWS S3 (no bucket lising though):
+This instance will have a volume of customisable size attached and monted on `/mnt/xvdh`. The instance will also have access to AWS S3 (no bucket lising though):
 - read only access to selected `prod` buckets: `aws s3 ls s3://umccr-primary-data-prod/`
 - read/write access to `dev` buckets: `aws s3 cp /tmp/foo.txt s3://umccr-misc-temp/foo/`
 

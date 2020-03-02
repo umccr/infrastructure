@@ -11,10 +11,11 @@ Resources:
         - !Ref instanceSecurityGroup
       SubnetId: !Ref instanceSubnet
       LaunchTemplate:
-        LaunchTemplateId: !Ref workerInstanceLaunchTemplate
+        LaunchTemplateId: !Ref workerInstanceLauchTemplate
         Version: !GetAtt 
-          - workerInstanceLaunchTemplate
+          - workerInstanceLauchTemplate
           - LatestVersionNumber
+      KeyName: alexis-dev
       Tags:
         - Key: Source
           Value: CloudFormation
@@ -26,9 +27,18 @@ Resources:
           Value: Worker instance
         - Key: Stack
           Value: !Ref AWS::StackId
+        - Key: Project
+          Value: gridss-purple-linx
       UserData:
         Fn::Base64: !Sub |
             #!/bin/bash -xe
+            # Set vars
+            ACCOUNT_ID="${AWS::AccountId}"
+            REGION="${AWS::Region}"
+            GRIDSS_IMAGE_NAME="gridss-purple-linx"
+            GRIDSS_IMAGE_TAG="2.7.3"
+            # Set time/logs to melbourne time
+            ln -sf /usr/share/zoneinfo/Australia/Melbourne /etc/localtime
             # create mount point directory
             mkdir /mnt/xvdh
             # create ext4 filesystem on new volume           
@@ -37,20 +47,37 @@ Resources:
             echo "/dev/xvdh       /mnt/xvdh   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
             # mount the volume on current boot
             mount -a
+            # create a user folder for both users on this directory
+            mkdir /mnt/xvdh/ssm-user
+            mkdir /mnt/xvdh/ec2-user
             # change the owner so the user (via SSM) has access
-            chown -R ssm-user /mnt/xvdh/
-            # Move docker home to larger disk space
+            chown -R ssm-user /mnt/xvdh/ssm-user
+            chown -R ec2-user /mnt/xvdh/ec2-user
+            # install dev tools for later use
+            yum update -y -q
+            yum groups mark install "Development Tools"
+            yum update -y -q 
+            yum groupinstall -y 'Development Tools' 
+            # install docker
+            amazon-linux-extras install docker
             # Move docker to larger diskspace
             mv /var/lib/docker /mnt/xvdh/docker
             # Link mount to docker container
             ln -s /mnt/xvdh/docker /var/lib/docker
-            # install docker
-            yum update -y
-            amazon-linux-extras install docker
-            # Add default user to docker group
+            # Add users to docker
             usermod -a -G docker ssm-user
-            # Start docker service
+            usermod -a -G docker ec2-user
+            # Start docker container
             service docker start
+            # Sync gridss data from s3 bucket
+            aws s3 sync --quiet s3://umccr-misc-temp/gridss_hg19_refdata/hg19/ /mnt/xvdh/hg19_gridss_ref_data/
+            # Install container registry helper
+            yum install amazon-ecr-credential-helper -y
+            # Add configuration to docker config
+            su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
+            # Pull the gridss-purple-linx container image from the ECR
+            su - "ec2-user" -c "docker pull ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${GRIDSS_IMAGE_NAME}:${GRIDSS_IMAGE_TAG}"
+
   workerInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
     Properties:
@@ -134,7 +161,8 @@ Resources:
       Path: /worker/
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
-  workerInstanceLaunchTemplate:
+        - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
+  workerInstanceLauchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateData:
@@ -192,3 +220,4 @@ Parameters:
   userName:
     Description: 'This name will be set as the Creator tag value'
     Type: String
+    Default: ssm-user

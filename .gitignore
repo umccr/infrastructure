@@ -10,3 +10,5 @@ cdk.context.json
 __pycache__
 .vscode
 dev
+.idea/
+.dev

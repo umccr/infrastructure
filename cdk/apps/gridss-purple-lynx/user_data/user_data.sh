@@ -1,8 +1,22 @@
 #!/bin/bash
 
-# Set vars
+# AWS vars:
+ACCOUNT_ID="${Token[AWS::AccountId.0]}"
+REGION="${Token[AWS::Region.4]}"
+
+#ACCOUNT_ID="Ref: AWS::AccountId"
+#REGION="Ref: AWS::Region"
+
+# Ref vars
 REF_DATA_BUCKET="s3://umccr-misc-temp/gridss_hg19_refdata/hg19/"
 REF_DATA_DIR="/mnt/xvdh/hg19_gridss_ref_data/"
+
+# Gridss vars
+GRIDSS_DOCKER_IMAGE_NAME="gridss-purple-linx"
+GRIDSS_DOCKER_IMAGE_TAG="2.7.3"
+
+# ECR Container vars
+EC2_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${GRIDSS_DOCKER_IMAGE_NAME}:${GRIDSS_DOCKER_IMAGE_TAG}"
 
 ## Fix time
 # Set time/logs to melbourne time
@@ -54,3 +68,6 @@ yum install amazon-ecr-credential-helper -y
 
 # Add configuration to docker config - this logs us into docker for our ecr
 su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
+
+# Pull container from repo
+su - "ec2-user" -c "docker pull \"${EC2_REPO}\""

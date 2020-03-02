@@ -95,12 +95,6 @@ class GridssPurpleLynxStack(core.Stack):
                             block_devices=[ebs_block_device]
                             )
 
-        # Pull the gridss-purple-linx container image from the ECR
-        host.add_user_data("su - \"ec2-user\" -c \"docker pull \\\"%s.dkr.ecr.%s.amazonaws.com/%s:%s\\\"\"" % (core.Aws.ACCOUNT_ID,
-                                                                                                               core.Aws.REGION,
-                                                                                                               GRIDSS_DOCKER_IMAGE_NAME,
-                                                                                                               GRIDSS_DOCKER_IMAGE_TAG))
-
         # Return public IP address s.t we can ssh into it
         # Note that we may return an IP prior to the user_data shell script completing so not
         # all of our goodies may be here yet

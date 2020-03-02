@@ -348,7 +348,7 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
                          "but no indication on how to modify samplesheet")
             sys.exit(1)
 
-    return modified_sample_sheet_df, modify_sample_header_rows
+    return modify_sample_header_rows, modified_sample_sheet_df
 
 
 def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir):
@@ -371,11 +371,11 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
         # Write out sample sheet
         with open(output_file, 'w') as sample_sheet_output_h:
             # Write out the header rows
-            sample_sheet_output_h.writelines(sample_sheet_header_rows)
+            sample_sheet_output_h.writelines(modified_sample_header_rows)
             # Write out [Data]
             sample_sheet_output_h.write("{}\n".format(HEADER_LINE_PRECURSOR))
             # Write out sample sheet
-            sample_sheet_df.to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
+            modified_sample_sheet_df.to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
 
 
 def main():
@@ -390,16 +390,16 @@ def main():
     check_args(args)
 
     # Read in the samplesheet
-    sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(getattr(args, "sample_sheet"))
+    sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(Path(getattr(args, "sample_sheet")))
 
     # Read in the tracking sheet
-    tracking_sheet_df = read_tracking_sheet(getattr(args, "tracking_sheet"))
+    tracking_sheet_df = read_tracking_sheet(Path(getattr(args, "tracking_sheet")))
 
     # Merge tracking sheet with sample sheet
     sample_sheet_df = add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df)
 
     # Write out the sample sheets
-    write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir=getattr(args, "output_path"))
+    write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir=Path(getattr(args, "output_path")))
 
 
 if __name__ == "__main__":

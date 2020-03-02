@@ -35,7 +35,7 @@
                 "sqs:GetQueueUrl"
             ],
             "Resource": [
-                "arn:aws:sqs:ap-southeast-2:<aws_region>:parallelcluster-*"
+                "arn:aws:sqs:<aws_region>:<aws_account>:parallelcluster-*"
             ],
             "Effect": "Allow",
             "Sid": "SQSQueue"
@@ -61,7 +61,7 @@
                 "cloudformation:DescribeStackResource"
             ],
             "Resource": [
-                "arn:aws:cloudformation:ap-southeast-2:<aws_region>:stack/parallelcluster-*/*"
+                "arn:aws:cloudformation:<aws_region>:<aws_account>:stack/parallelcluster-*/*"
             ],
             "Effect": "Allow",
             "Sid": "CloudFormation"
@@ -75,7 +75,7 @@
                 "dynamodb:DescribeTable"
             ],
             "Resource": [
-                "arn:aws:dynamodb:ap-southeast-2:<aws_region>:table/parallelcluster-*"
+                "arn:aws:dynamodb:<aws_region>:<aws_account>:table/parallelcluster-*"
             ],
             "Effect": "Allow",
             "Sid": "DynamoDBTable"
@@ -115,7 +115,7 @@
                 "iam:PassRole"
             ],
             "Resource": [
-                "arn:aws:iam::<aws_region>:role/parallelcluster-*"
+                "arn:aws:iam::<aws_account>:role/parallelcluster-*"
             ],
             "Effect": "Allow",
             "Sid": "JobPassRole"

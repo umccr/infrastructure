@@ -182,6 +182,14 @@ def read_sample_sheet(sample_sheet):
 def convert_sample_sheet_header_to_v2(sample_sheet_header_rows):
     """
     Given a list of replacements, replace each line with it's replacement
+
+    Parameters
+    ----------
+    sample_sheet_header_rows : list of header rows
+
+    Returns
+    ----------
+    A list of header rows with modified content as per V2_METADATA_COLUMN_CHANGES
     """
     sample_sheet_header_rows_new = []
     for row in sample_sheet_header_rows:
@@ -196,6 +204,14 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows):
 def convert_sample_sheet_to_v2(sample_sheet_df):
     """
     Convert to samplesheet v2,
+
+    Parameters
+    ----------
+    sample_sheet_df : pd.DataFrame
+
+    Returns
+    -------
+    sample_sheet_df : pd.DataFrame where Type and Sample_Type have been dropped, and indexes renamed
     """
 
     sample_sheet_df = sample_sheet_df.\
@@ -207,6 +223,14 @@ def convert_sample_sheet_to_v2(sample_sheet_df):
 def convert_sample_sheet_to_tso500(sample_sheet_df):
     """
     Convert sample sheet to tso500 dataset
+
+    Parameters
+    ----------
+    sample_sheet_df : pd.DataFrame
+
+    Returns
+    --------
+    sample_sheet_df : pd.DataFrame with new columns Pair_ID and Sample_Type truncated
     """
 
     # Add the column ['Pair_ID']
@@ -277,7 +301,16 @@ def read_tracking_sheet(tracking_sheet):
 
 def add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df):
     """
-    Truncate the tracking_sheet_df to just the Sample_ID and the type, then run a merge on the two dataframes
+    Truncate the tracking_sheet_df to just the Sample_ID and the type, then run a merge on the two data frames
+
+    Parameters
+    ----------
+    tracking_sheet_df : pd.DataFrame with columns Type and Sample_ID (SampleSheet)
+    sample_sheet_df : pd.DataFrame
+
+    Returns
+    -------
+    sample_sheet_df : pd.DataFrame with the additional column 'Type'
     """
 
     # Get the list of samples in the sample sheet
@@ -301,10 +334,21 @@ def add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df):
 
 def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
     """
-    Massive if else function based on the second parameter
+    Massive if else function based on the third parameter (sample_type)
+
+    Parameters
+    ----------
+    sample_sheet_header_rows : list of rows used to create the sample sheet header
+    sample_sheet_df : pd.DataFrame with a unique sample index information per lane per row
+    sample_type : type of sample we use to modify the header or the sample sheet
+
+    Returns
+    -------
+    modify_sample_header_rows : list of rows used to create the header
+    modified_sample_sheet_df : pd.DataFrame modified as per sample_type below
     """
 
-    # Convert VALID_SAMPLE_TYPES dict into a dataframe
+    # Convert VALID_SAMPLE_TYPES dict into a data frame
     valid_sample_types_df = pd.DataFrame.from_dict(VALID_SAMPLE_TYPES, orient='index').transpose()
     """
     example output:
@@ -354,13 +398,21 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
 def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir):
     """
     Perform a group-by based on type, append this to the prefix and set as the output
+
+    Parameters
+    ----------
+    sample_sheet_header_rows : list of lines used to create the sample sheet header
+    sample_sheet_df : pd.DataFrame with sample information per row
+    sample_sheet_dir : Path output directory to put SampleSheet_<Type>.csv
     """
     logger.info("Writing out sample sheets")
     for sample_type, sample_sheet_type_df in sample_sheet_df.groupby('Type'):
         # Modify the sample-sheet
-        modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(sample_sheet_header_rows,
-                                                                                    sample_sheet_type_df,
-                                                                                    sample_type)
+        modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
+            sample_sheet_header_rows=sample_sheet_header_rows,
+            sample_sheet_df=sample_sheet_type_df,
+            sample_type=sample_type)
+
         # Set the output file name
         output_file = sample_sheet_dir / "SampleSheet_{}.csv".format(sample_type)
 
@@ -390,16 +442,19 @@ def main():
     check_args(args)
 
     # Read in the samplesheet
-    sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(Path(getattr(args, "sample_sheet")))
+    sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(sample_sheet=Path(getattr(args, "sample_sheet")))
 
     # Read in the tracking sheet
-    tracking_sheet_df = read_tracking_sheet(Path(getattr(args, "tracking_sheet")))
+    tracking_sheet_df = read_tracking_sheet(tracking_sheet=Path(getattr(args, "tracking_sheet")))
 
     # Merge tracking sheet with sample sheet
-    sample_sheet_df = add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df)
+    sample_sheet_df = add_sample_type_to_sample_sheet(tracking_sheet_df=tracking_sheet_df,
+                                                      sample_sheet_df=sample_sheet_df)
 
     # Write out the sample sheets
-    write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir=Path(getattr(args, "output_path")))
+    write_sample_sheets(sample_sheet_header_rows=sample_sheet_header_rows,
+                        sample_sheet_df=sample_sheet_df,
+                        sample_sheet_dir=Path(getattr(args, "output_path")))
 
 
 if __name__ == "__main__":

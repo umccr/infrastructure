@@ -81,6 +81,7 @@ def lambda_handler(event, context):
         response = s3.list_objects(Bucket=data_bucket, MaxKeys=3, Prefix=result_dir)
         # print("S3 list response: " + json.dumps(response, indent=2, sort_keys=True, default=str))
         if not response.get('Contents') or len(response['Contents']) < 1:
+            print(f"List request returned no result for path {result_dir} in bucket {data_bucket}")
             return {
                 'statusCode': 400,
                 'error': 'Bad parameter',

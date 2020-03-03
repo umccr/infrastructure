@@ -3,6 +3,7 @@
 import os
 import argparse
 import pandas as pd
+from pandas.api.types import CategoricalDtype
 from pathlib import Path
 import logging
 import sys
@@ -27,6 +28,9 @@ Method:
 OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
 OUTPUT_COLUMNS = ["RGID", "RGSM", "RGLB", "Lane", "Read1File", "Read2File"]
 METADATA_COLUMNS = ["Sample ID (SampleSheet)", "SampleID", "Phenotype"]
+VALID_PHENOTYPES = ["tumor", "normal"]
+PHENOTYPES_DTYPE = CategoricalDtype(categories=VALID_PHENOTYPES,
+                                    ordered=False)
 
 # Set logs
 LOGGER_STYLE = '%(asctime)s - %(levelname)-8s - %(funcName)-20s - %(message)s'
@@ -342,7 +346,10 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     merged_df = pd.merge(sample_sheet_df, slimmed_metadata_df,
                          on="RGSM", how='left')
 
-    # Check for missing phenotypes in samples
+    # Ensure Phenotype is either 'tumor' or 'normal'
+    merged_df["Phenotype"] = merged_df["Phenotype"].astype(PHENOTYPES_DTYPE)
+
+    # Check for missing phenotypes in samples - could be from an invalid merge or bad name
     if merged_df['Phenotype'].isna().any():
         logger.warning("Could not retrieve the phenotype information for samples {}".format(
             ', '.join(merged_df.query("Phenotype.isna()")['RGSM'].tolist())
@@ -353,8 +360,6 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
         logger.warning("Could not retrieve the SampleID information for samples {}".format(
             ', '.join(merged_df.query("SampleID.isna()")['RGSM'].tolist())
         ))
-
-    merged_df.dropna(subset=["SampleID", "Phenotype"], inplace=True)
 
     return merged_df
 

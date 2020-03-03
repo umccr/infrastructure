@@ -2,19 +2,13 @@
 
 # Subs
 # AWS vars:
-ACCOUNT_ID=${AWS::AccountId}
-REGION=${AWS::Region}
-
-# Ref vars
-REF_DATA_BUCKET="s3://umccr-misc-temp/gridss_hg19_refdata/hg19/"
-REF_DATA_DIR="/mnt/xvdh/hg19_gridss_ref_data/"
-
-# Gridss vars
-GRIDSS_DOCKER_IMAGE_NAME="gridss-purple-linx"
-GRIDSS_DOCKER_IMAGE_TAG="2.7.3"
+ACCOUNT_ID=${__ACCOUNT_ID__}
+REGION=${__REGION__}
 
 # ECR Container vars
-EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com/${!GRIDSS_DOCKER_IMAGE_NAME}:${!GRIDSS_DOCKER_IMAGE_TAG}"
+EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com/"
+# Write this to /etc/environment for all users
+echo "export EC2_REPO=${!EC2_REPO}" >> "/etc/environment"
 
 ## Fix time
 # Set time/logs to melbourne time
@@ -50,9 +44,11 @@ mkfs -t ext4 /dev/sdg
 echo "/dev/sdg       /data   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
 # mount the volume on current boot
 mount -a
+
 # create a user folder for both users on this directory
 mkdir /mnt/xvdh/ssm-user
 mkdir /mnt/xvdh/ec2-user
+
 # change the owner so the user (via SSM) has access
 chown -R ssm-user /mnt/xvdh/ssm-user
 chown -R ec2-user /mnt/xvdh/ec2-user
@@ -78,9 +74,4 @@ yum install amazon-ecr-credential-helper -y
 
 # Add configuration to docker config - this logs us into docker for our ecr
 su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
-
-# Sync gridss data from s3 bucket
-aws s3 sync --quiet "${!REF_DATA_BUCKET}" "${!REF_DATA_DIR}"
-
-# Pull container from repo
-su - "ec2-user" -c "docker pull \"${!EC2_REPO}\""
+su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'

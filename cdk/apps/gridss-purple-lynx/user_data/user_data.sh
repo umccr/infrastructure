@@ -1,11 +1,9 @@
 #!/bin/bash
 
+# Subs
 # AWS vars:
-ACCOUNT_ID="${Token[AWS::AccountId.0]}"
-REGION="${Token[AWS::Region.4]}"
-
-#ACCOUNT_ID="Ref: AWS::AccountId"
-#REGION="Ref: AWS::Region"
+ACCOUNT_ID=${AWS::AccountId}
+REGION=${AWS::Region}
 
 # Ref vars
 REF_DATA_BUCKET="s3://umccr-misc-temp/gridss_hg19_refdata/hg19/"
@@ -16,7 +14,7 @@ GRIDSS_DOCKER_IMAGE_NAME="gridss-purple-linx"
 GRIDSS_DOCKER_IMAGE_TAG="2.7.3"
 
 # ECR Container vars
-EC2_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${GRIDSS_DOCKER_IMAGE_NAME}:${GRIDSS_DOCKER_IMAGE_TAG}"
+EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com/${!GRIDSS_DOCKER_IMAGE_NAME}:${!GRIDSS_DOCKER_IMAGE_TAG}"
 
 ## Fix time
 # Set time/logs to melbourne time
@@ -60,14 +58,14 @@ usermod -a -G docker ec2-user
 # Start docker container
 service docker start
 
-# Sync gridss data from s3 bucket
-aws s3 sync --quiet "${REF_DATA_BUCKET}" "${REF_DATA_DIR}"
-
 # Install container registry helper
 yum install amazon-ecr-credential-helper -y
 
 # Add configuration to docker config - this logs us into docker for our ecr
 su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
 
+# Sync gridss data from s3 bucket
+aws s3 sync --quiet "${!REF_DATA_BUCKET}" "${!REF_DATA_DIR}"
+
 # Pull container from repo
-su - "ec2-user" -c "docker pull \"${EC2_REPO}\""
+su - "ec2-user" -c "docker pull \"${!EC2_REPO}\""

@@ -39,9 +39,10 @@ class GridssPurpleLynxStack(core.Stack):
 
         # Get volume - contains a block device volume and a block device
         volume_params = self.node.try_get_context("VOLUME")
-        ebs_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(volume_params["SIZE"]))
+        ebs_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("VOLUME_SIZE")))
         # Place volume on a block device with a set mount point
-        ebs_block_device = ec2.BlockDevice(device_name=volume_params["MOUNT_POINT"], volume=ebs_vol)
+        ebs_block_device = ec2.BlockDevice(device_name=self.node.try_get_context("VOLUME_MOUNT_POINT"),
+                                           volume=ebs_vol)
 
         # Run boot strap -
         """
@@ -51,8 +52,16 @@ class GridssPurpleLynxStack(core.Stack):
         3. Pulls the gridss container from our ECR (Elastic container repository)
         4. Imports the user data
         """
+
+        mappings = {"__ACCOUNT_ID__": str(self.account),
+                    "__REGION__": str(self.region)}
+
         with open("user_data/user_data.sh", 'r') as user_data_h:
-            user_data = ec2.UserData.custom(user_data_h.read())
+            # Use a substitution
+            user_data_sub = core.Fn.sub(user_data_h.read(), mappings)
+
+        # Import substitution object into user_data set
+        user_data = ec2.UserData.custom(user_data_sub)
 
         # Set instance type from ec2-type global variable
         instance_type = ec2.InstanceType(instance_type_identifier=self.node.try_get_context("EC2_TYPE"))

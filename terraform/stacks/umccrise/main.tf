@@ -190,7 +190,7 @@ module "lambda" {
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
       REFDATA_BUCKET = "${var.umccrise_refdata_bucket}"
-      DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+      INPUT_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
       UMCCRISE_MEM   = "${var.umccrise_mem[terraform.workspace]}"
       UMCCRISE_VCPUS = "${var.umccrise_vcpus[terraform.workspace]}"
     }

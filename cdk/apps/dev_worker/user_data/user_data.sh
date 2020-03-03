@@ -2,16 +2,19 @@
 
 # Subs
 # AWS vars:
-ACCOUNT_ID=${__ACCOUNT_ID__}
-REGION=${__REGION__}
+ACCOUNT_ID=${AWS::AccountId}
+REGION=${AWS::Region}
 
-# Other global vars
-IAP_DOWNLOAD_LINK="https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/latest/linux/iap"
+# Ref vars
+REF_DATA_BUCKET="s3://umccr-misc-temp/gridss_hg19_refdata/hg19/"
+REF_DATA_DIR="/mnt/xvdh/hg19_gridss_ref_data/"
+
+# Gridss vars
+GRIDSS_DOCKER_IMAGE_NAME="gridss-purple-linx"
+GRIDSS_DOCKER_IMAGE_TAG="2.7.3"
 
 # ECR Container vars
-EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com"
-# Write this to /etc/environment for all users
-echo "export EC2_REPO=${!EC2_REPO}" >> "/etc/profile.d/ec2_repo.sh"
+EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com/${!GRIDSS_DOCKER_IMAGE_NAME}:${!GRIDSS_DOCKER_IMAGE_TAG}"
 
 ## Fix time
 # Set time/logs to melbourne time
@@ -47,13 +50,12 @@ mkfs -t ext4 /dev/sdg
 echo "/dev/sdg       /data   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
 # mount the volume on current boot
 mount -a
-# Make the /data mount a communal playground for all users
-chown root:InstanceUser /data
-chmod 775 /data
-
-# Add each user to the instance user group so they have access to the /data mount
-usermod -a -G InstanceUser ec2-user
-usermod -a -G InstanceUser ssm-user
+# create a user folder for both users on this directory
+mkdir /mnt/xvdh/ssm-user
+mkdir /mnt/xvdh/ec2-user
+# change the owner so the user (via SSM) has access
+chown -R ssm-user /mnt/xvdh/ssm-user
+chown -R ec2-user /mnt/xvdh/ec2-user
 
 ## Update yum
 yum update -y -q
@@ -76,35 +78,9 @@ yum install amazon-ecr-credential-helper -y
 
 # Add configuration to docker config - this logs us into docker for our ecr
 su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
-su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
 
-# Download IAP and install into /usr/local/bin
-echo "Downloading IAP"
-(cd /usr/local/bin && \
-  wget "${!IAP_DOWNLOAD_LINK}" && \
-  chmod +x iap)
+# Sync gridss data from s3 bucket
+aws s3 sync --quiet "${!REF_DATA_BUCKET}" "${!REF_DATA_DIR}"
 
-# Installing anaconda
-echo "Installing anaconda"
-ANACONDA_VERSION=2020.02
-mkdir -p /opt
-wget --quiet https://repo.anaconda.com/archive/Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh
-bash Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh -b -p /opt/conda
-rm Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh
-
-# Update conda and clean up
-/opt/conda/bin/conda update --yes \
-  --name base \
-  --channel defaults \
-	conda
-conda clean --all --yes
-
-# Install jupyter so one can launch notebook
-conda install --yes --freeze-installed \
-  --channel anaconda \
-  jupyter
-conda clean --all --yes
-
-# Fix bashrc for ec2-user and ssm-user for access ready for conda
-su - "ec2-user" -c "/opt/conda/bin/conda init"
-su - "ssm-user" -c "/opt/conda/bin/conda init"
+# Pull container from repo
+su - "ec2-user" -c "docker pull \"${!EC2_REPO}\""

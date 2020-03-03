@@ -1,56 +1,58 @@
 
-# Dev worker project
+# Welcome to your CDK Python project!
 
-Deploy an ec2 instance with docker ready to go and logged into our ECR (Elastic container registry)
+This is a blank project for Python development with CDK.
 
-This repo is (partially) based on the cdk example provided [here](https://github.com/aws-samples/aws-cdk-examples/blob/master/python/existing-vpc-new-ec2-ebs-userdata/cdk_vpc_ec2)
+The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
+This project is set up like a standard Python project.  The initialization
+process also creates a virtualenv within this project, stored under the .env
+directory.  To create the virtualenv it assumes that there is a `python3`
+(or `python` for Windows) executable in your path with access to the `venv`
+package. If for any reason the automatic creation of the virtualenv fails,
+you can create the virtualenv manually.
 
-## Observe the cdk.json
-We have the following variables as default:
-* EC2_TYPE: m4.4xlarge
-* KEY_NAME: alexis-dev
-* MACHINE_IMAGE: ami-0dc96254d5535925f
-* VOLUME_SIZE: "100"
-* MOUNT_POINT: "/dev/xvdh"
+To manually create a virtualenv on MacOS and Linux:
 
-    
-## Setup the stack
-There are two main things under the stack script that  
-are characteristic to this workflow 
-1. Policies to allow pulling of containers from our ECR and S3 buckets.
-2. The user_data that mounts the EBS volume and installs docker
-
-## The user data
-We then have the `user_data` folder to run the setup on the ec2 instance.
-Our output returns a public IP of our ec2 instance that we can then ssh into via the ssm manager.  
-Since we run through the Fn.Sub to substitute variables into the user_data script as needed, all non-substituted variables must use the `${!VAR}` syntax.
-
-# CDK commands
-
-## Create the env
-```bash
-cdk init --language=python
+```
+$ python3 -m venv .env
 ```
 
-## Activate the env
-```bash
-source .env/bin/activate
-``` 
+After the init process completes and the virtualenv is created, you can use the following
+step to activate your virtualenv.
 
-## Validate the stack
-```bash
-cdk synth
+```
+$ source .env/bin/activate
 ```
 
-## Deploy the workflow
-```bash
-cdk deploy
+If you are a Windows platform, you would activate the virtualenv like this:
+
+```
+% .env\Scripts\activate.bat
 ```
 
-## Deploy the workflow with different parameters
-You can change any of the parameters seen in the `cdk.json` *context* attribute
-```bash
-cdk diff -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
-cdk deploy -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+Once the virtualenv is activated, you can install the required dependencies.
+
 ```
+$ pip install -r requirements.txt
+```
+
+At this point you can now synthesize the CloudFormation template for this code.
+
+```
+$ cdk synth
+```
+
+To add additional dependencies, for example other CDK libraries, just add
+them to your `setup.py` file and rerun the `pip install -r requirements.txt`
+command.
+
+## Useful commands
+
+ * `cdk ls`          list all stacks in the app
+ * `cdk synth`       emits the synthesized CloudFormation template
+ * `cdk deploy`      deploy this stack to your default AWS account/region
+ * `cdk diff`        compare deployed stack with current state
+ * `cdk docs`        open CDK documentation
+
+Enjoy!

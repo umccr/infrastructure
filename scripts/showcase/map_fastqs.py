@@ -10,7 +10,7 @@ import sys
 """
 Objective:
 Create a set of directories for each sample pair in the run containing
-1. A comma separated file for the tumour sample named (<sample_id>.tumour.csv)
+1. A comma separated file for the tumor sample named (<sample_id>.tumor.csv)
 2. A comma separated file for the normal sample named (<sample_id>.normal.csv)
 Each row in each file represents a fastq pair for a given lane.
 
@@ -25,6 +25,8 @@ Method:
 
 # Set globals
 OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
+OUTPUT_COLUMNS = ["RGID", "RGSM", "RGLB", "Lane", "Read1File", "Read2File"]
+METADATA_COLUMNS = ["Sample ID (SampleSheet)", "SampleID", "Phenotype"]
 
 # Set logs
 LOGGER_STYLE = '%(asctime)s - %(levelname)-8s - %(funcName)-20s - %(message)s'
@@ -49,7 +51,7 @@ class Sample:
 
         # Initialise other future attributes (helps with code completion)
         self.output_path = None  # Output path / sample name
-        self.tumour_df = None  # Data frame to write out tumour fastqs
+        self.tumor_df = None  # Data frame to write out tumor fastqs
         self.normal_df = None  # Data frame to write out normal fastqs
 
     def set_output_path(self, output_path):
@@ -71,34 +73,26 @@ class Sample:
         # Assign
         self.output_path = sample_output_path
 
-    def split_df_into_tumour_and_normal(self):
+    def split_df_into_tumor_and_normal(self):
         """
-        Given a sample_df, split into tumour and normal samples
+        Given a sample_df, split into tumor and normal samples
 
         Returns
         -------
-        tumour_df: pd.DataFrame
+        tumor_df: pd.DataFrame
         normal_df: pd.DataFrame
         """
 
-        # TODO is Phenotype the right column?
-        tumour_df = self.df.query("Phenotype=='tumour'").drop(columns='Phenotype')
-        normal_df = self.df.query("Phenotype=='normal'").drop(columns='Phenotype')
+        tumor_df = self.df.query("Phenotype=='tumor'").filter(items=OUTPUT_COLUMNS)
+        normal_df = self.df.query("Phenotype=='normal'").filter(items=OUTPUT_COLUMNS)
 
-        return tumour_df, normal_df
+        return tumor_df, normal_df
 
     def write_sample_csvs_to_file(self):
         """
-        Given an sample name, a tumour data frame, a normal data frame and an output path,
-        write a file called <output_path>/<sample_name>/<sample_name>_tumour.csv from the tumour data frame,
+        Given an sample name, a tumor data frame, a normal data frame and an output path,
+        write a file called <output_path>/<sample_name>/<sample_name>_tumor.csv from the tumor data frame,
         and a file called <output_path>/<sample_name>/<sample_name>_normal.csv from the normal data frame
-
-        Parameters
-        ----------
-        sample_name
-        tumour_df
-        normal_df
-        output_path: Path
 
         Returns
         -------
@@ -106,11 +100,11 @@ class Sample:
         """
 
         # Set output paths
-        tumour_output_path = self.output_path / "{}_tumour.csv".format(self.name)
+        tumor_output_path = self.output_path / "{}_tumor.csv".format(self.name)
         normal_output_path = self.output_path / "{}_normal.csv".format(self.name)
 
         # Write to csv
-        self.tumour_df.to_csv(tumour_output_path, index=False)
+        self.tumor_df.to_csv(tumor_output_path, index=False)
         self.normal_df.to_csv(normal_output_path, index=False)
 
 
@@ -226,11 +220,16 @@ def read_samplesheet(sample_sheet_path):
 
     Returns
     -------
-    sample_sheet_df:
-        # TODO add columns in output
+    sample_sheet_df: pd.Dataframe with the following columns
+        =========    =======================================
+        RGID         i7Index.i5Index.Lane
+        RGSM         Sample Name as on the sample sheet
+        RGLB         Library ID (Set to Unknown Library)
+        Lane         Lane ID
+        Read1File    Path to Read 1 File
+        Read2File    Path to Read 2 File
     """
-    # TODO is there a header?
-    sample_sheet_df = pd.read_csv(sample_sheet_path)
+    sample_sheet_df = pd.read_csv(sample_sheet_path, header=0)
 
     return sample_sheet_df
 
@@ -308,8 +307,8 @@ def update_sample_objects(samples, output_path):
     for sample in samples:
         # Set / create the output path for each sample
         sample.set_output_path(output_path)
-        # Assign the tumour df and the normal df for each sample
-        sample.tumour_df, sample.normal_df = sample.split_df_into_tumour_and_normal()
+        # Assign the tumor df and the normal df for each sample
+        sample.tumor_df, sample.normal_df = sample.split_df_into_tumor_and_normal()
 
 
 def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
@@ -317,17 +316,45 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     Merge sample sheet and tracking sheet
     Parameters
     ----------
-    sample_sheet_df
-    metadata_df
+    sample_sheet_df: pd.DataFrame
+    metadata_df: pd.DataFrame
 
     Returns
     -------
     merged_df: pd.DataFrame
-        Columns  # Explore columns
+        =========    =======================================
+        RGID         i7Index.i5Index.Lane
+        RGSM         Sample Name as on the sample sheet
+        RGLB         Library ID (Set to Unknown Library)
+        Lane         Lane ID
+        Read1File    Path to Read 1 File
+        Read2File    Path to Read 2 File
+        # Extended columns
+        SampleID     Identifier of the sample, may be useful if we're running with top ups
+        Phenotype    Either 'tumor' or 'normal'
 
     """
-    # TODO which columns are appropriate to bind on?
-    # TODO which columns from the metadata are needed to be extracted (and then dropped again when written out)
+    # Columns to keep
+
+    slimmed_metadata_df = metadata_df.filter(items=METADATA_COLUMNS).\
+                              rename(columns={"Sample ID (SampleSheet)": "RGSM"}),
+
+    merged_df = pd.merge(sample_sheet_df, slimmed_metadata_df,
+                         on="RGSM", how='left')
+
+    # Check for missing phenotypes in samples
+    if merged_df['Phenotype'].isna().any():
+        logger.warning("Could not retrieve the phenotype information for samples {}".format(
+            ', '.join(merged_df.query("Phenotype.isna()")['RGSM'].tolist())
+        ))
+
+    # Check for missing SampleIDs
+    if merged_df['SampleID'].isna().any():
+        logger.warning("Could not retrieve the SampleID information for samples {}".format(
+            ', '.join(merged_df.query("SampleID.isna()")['RGSM'].tolist())
+        ))
+
+    merged_df.dropna(subset=["SampleID", "Phenotype"], inplace=True)
 
     return merged_df
 
@@ -337,7 +364,7 @@ def write_data_frames(samples):
     Given a list of samples write out the data frames to their respective folders
     Parameters
     ----------
-    samples
+    samples: List of type Sample
 
     Returns
     -------
@@ -353,7 +380,6 @@ logger = get_logger()
 
 
 def main():
-
     args = get_args()
 
     args = check_args(args)
@@ -369,9 +395,8 @@ def main():
                                                       metadata_df=metadata_df)
 
     # Get samples (as sample objects)
-    # TODO determine right column to group by
     samples = [Sample(sample_name=sample_name, sample_df=sample_df)
-               for sample_name, sample_df in merged_df.groupby("SampleName")]
+               for sample_name, sample_df in merged_df.groupby("SampleID")]
 
     # Add sample attributes
     update_sample_objects(samples, output_path=args.output_path)

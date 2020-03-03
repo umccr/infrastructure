@@ -130,7 +130,7 @@ def build_command(script_case, input_data):
         command += f" python {lims_update_script} {runfolder}"
     elif script_case == "create_multiqc_reports":
         command += f" conda activate pipeline &&"
-        command += f" DEPLOY_ENV={DEPLOY_ENV}"
+        command += f" DEPLOY_ENV={DEPLOY_ENV} AWS_PROFILE={aws_profile}"
         command += f" {multiqc_script} {runfolder}"
     elif script_case == "stats_sheet_update":
         command += f" conda activate pipeline &&"

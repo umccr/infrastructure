@@ -11,9 +11,9 @@ Resources:
         - !Ref instanceSecurityGroup
       SubnetId: !Ref instanceSubnet
       LaunchTemplate:
-        LaunchTemplateId: !Ref workerInstanceLauchTemplate
+        LaunchTemplateId: !Ref workerInstanceLaunchTemplate
         Version: !GetAtt 
-          - workerInstanceLauchTemplate
+          - workerInstanceLaunchTemplate
           - LatestVersionNumber
       Tags:
         - Key: Source
@@ -134,7 +134,7 @@ Resources:
       Path: /worker/
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
-  workerInstanceLauchTemplate:
+  workerInstanceLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateData:

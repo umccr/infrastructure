@@ -1132,7 +1132,9 @@ resource "aws_rds_cluster" "db" {
   db_subnet_group_name = "${aws_db_subnet_group.rds.name}"
 
   scaling_configuration {
-    auto_pause = false
+    auto_pause   = "${var.rds_auto_pause[terraform.workspace]}"
+    min_capacity = "${var.rds_min_capacity[terraform.workspace]}"
+    max_capacity = "${var.rds_max_capacity[terraform.workspace]}"
   }
 }
 

@@ -11,8 +11,8 @@ import sys
 """
 Objective:
 Create a set of directories for each sample pair in the run containing
-1. A comma separated file for the tumor sample named (<sample_id>.tumor.csv)
-2. A comma separated file for the normal sample named (<sample_id>.normal.csv)
+1. A comma separated file for the tumor sample named (<subject_id>.tumor.csv)
+2. A comma separated file for the normal sample named (<subject_id>.normal.csv)
 Each row in each file represents a fastq pair for a given lane.
 
 Inputs:
@@ -27,7 +27,7 @@ Method:
 # Set globals
 OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
 OUTPUT_COLUMNS = ["RGID", "RGSM", "RGLB", "Lane", "Read1File", "Read2File"]
-METADATA_COLUMNS = ["Sample ID (SampleSheet)", "SampleID", "Phenotype"]
+METADATA_COLUMNS = ["Sample ID (SampleSheet)", "SubjectID", "Phenotype"]
 VALID_PHENOTYPES = ["tumor", "normal"]
 PHENOTYPES_DTYPE = CategoricalDtype(categories=VALID_PHENOTYPES,
                                     ordered=False)
@@ -39,22 +39,25 @@ LOGGER_DATEFMT = '%y-%m-%d %H:%M:%S'
 THIS_SCRIPT_NAME = "SAMPLESHEET SPLITTER"
 
 
-class Sample:
+class Subject:
 
-    def __init__(self, sample_name, sample_df):
+    def __init__(self, subject_id, sample_df):
         """
         Initialise the sample object
         Parameters
         ----------
-        sample_name: str Name of the sample
+        subject_id: str Name of the subject ID, matches 'SubjectID' in metadata file
         sample_df: pd.DataFrame
         """
 
-        self.name = sample_name
+        # Subject of origin
+        self.subject_id = subject_id
+
+        # Data frame with output information
         self.df = sample_df
 
         # Initialise other future attributes (helps with code completion)
-        self.output_path = None  # Output path / sample name
+        self.output_path = None  # Output path / subject id
 
     def set_output_path(self, output_path):
         """
@@ -67,19 +70,19 @@ class Sample:
         -------
         """
 
-        sample_output_path = output_path / self.name
+        subject_output_path = output_path / self.subject_id
 
         # Ensure path exists
-        sample_output_path.mkdir(exist_ok=True)
+        subject_output_path.mkdir(exist_ok=True)
 
         # Assign
-        self.output_path = sample_output_path
+        self.output_path = subject_output_path
 
     def write_sample_csvs_to_file(self):
         """
         Given an sample name, a tumor data frame, a normal data frame and an output path,
-        write a file called <output_path>/<sample_name>/<sample_name>_tumor.csv from the tumor data frame,
-        and a file called <output_path>/<sample_name>/<sample_name>_normal.csv from the normal data frame
+        write a file called <output_path>/<subject_id>/<subject_id>_tumor.csv from the tumor data frame,
+        and a file called <output_path>/<subject_id>/<subject_id>_normal.csv from the normal data frame
 
         Returns
         -------
@@ -87,12 +90,12 @@ class Sample:
         """
 
         # Run each to-csv via a group by
-        for phenotype, sample_phenotype_df in self.df.groupby("Phenotype"):
+        for phenotype, phenotype_df in self.df.groupby("Phenotype"):
             # Set output paths
-            output_path = self.output_path / "{}_{}.csv".format(self.name, phenotype)
+            output_path = self.output_path / "{}_{}.csv".format(self.subject_id, phenotype)
 
             # Write to csv
-            phenotype.filter(items=OUTPUT_COLUMNS).\
+            phenotype_df.filter(items=OUTPUT_COLUMNS).\
                 to_csv(output_path, index=False)
 
 
@@ -279,12 +282,12 @@ def read_tracking_sheet(tracking_sheet_path):
     return tracking_sheet_df
 
 
-def update_sample_objects(samples, output_path):
+def update_subject_objects(subject, output_path):
     """
-    Given a list of sample objects, run the necessary internal functions to update attributes
+    Given a list of subject objects, run the necessary internal functions to update attributes
     Parameters
     ----------
-    samples
+    subject
     output_path: Path
 
     Returns
@@ -292,9 +295,9 @@ def update_sample_objects(samples, output_path):
 
     """
 
-    for sample in samples:
-        # Set / create the output path for each sample
-        sample.set_output_path(output_path)
+    for subject in subject:
+        # Set / create the output path for each subject
+        subject.set_output_path(output_path)
 
 
 def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
@@ -322,26 +325,29 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     """
     # Columns to keep
 
-    slimmed_metadata_df = metadata_df.filter(items=METADATA_COLUMNS).\
-                              rename(columns={"Sample ID (SampleSheet)": "RGSM"}),
+    slimmed_metadata_df = metadata_df.filter(items=METADATA_COLUMNS)
 
     merged_df = pd.merge(sample_sheet_df, slimmed_metadata_df,
-                         on="RGSM", how='left')
+                         left_on="RGSM", right_on="Sample ID (SampleSheet)",
+                         how="left")
 
     # Ensure Phenotype is either 'tumor' or 'normal'
     merged_df["Phenotype"] = merged_df["Phenotype"].astype(PHENOTYPES_DTYPE)
 
+    # Check for missing SubjectIDs
+    if merged_df['SubjectID'].isna().any():
+        logger.warning("Could not retrieve the SubjectID information for samples {}".format(
+            ', '.join(merged_df.query("SubjectID.isna()")['Sample ID (SampleSheet)'].tolist())
+        ))
+
     # Check for missing phenotypes in samples - could be from an invalid merge or bad name
     if merged_df['Phenotype'].isna().any():
         logger.warning("Could not retrieve the phenotype information for samples {}".format(
-            ', '.join(merged_df.query("Phenotype.isna()")['RGSM'].tolist())
+            ', '.join(merged_df.query("Phenotype.isna()")['Sample ID (SampleSheet)'].tolist())
         ))
 
-    # Check for missing SampleIDs
-    if merged_df['SampleID'].isna().any():
-        logger.warning("Could not retrieve the SampleID information for samples {}".format(
-            ', '.join(merged_df.query("SampleID.isna()")['RGSM'].tolist())
-        ))
+    # Drop rows with missing values in any of the columns checked for above
+    merged_df.dropna(subset=["SubjectID", "Phenotype"], how='any', inplace=True)
 
     return merged_df
 
@@ -385,18 +391,18 @@ def main():
     merged_df = merge_sample_sheet_and_tracking_sheet(sample_sheet_df=sample_sheet_df,
                                                       metadata_df=metadata_df)
 
-    # Get samples (as sample objects)
+    # Get subjects (as Subject objects)
     logger.info("Initialising sample constructs")
-    samples = [Sample(sample_name=sample_name, sample_df=sample_df)
-               for sample_name, sample_df in merged_df.groupby("SampleID")]
+    subjects = [Subject(subject_id=sample_name, sample_df=sample_df)
+                for sample_name, sample_df in merged_df.groupby("SubjectID")]
 
-    # Add sample attributes
-    logger.info("Updating sample attributes")
-    update_sample_objects(samples, output_path=args.output_path)
+    # Add subject attributes
+    logger.info("Updating subject attributes")
+    update_subject_objects(subjects, output_path=args.output_path)
 
     # Write out dfs
-    logger.info("Writing out dataframes to output path")
-    write_data_frames(samples)
+    logger.info("Writing out data frames to output path")
+    write_data_frames(subjects)
 
 
 if __name__ == "__main__":

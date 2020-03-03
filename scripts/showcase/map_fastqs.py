@@ -55,8 +55,6 @@ class Sample:
 
         # Initialise other future attributes (helps with code completion)
         self.output_path = None  # Output path / sample name
-        self.tumor_df = None  # Data frame to write out tumor fastqs
-        self.normal_df = None  # Data frame to write out normal fastqs
 
     def set_output_path(self, output_path):
         """
@@ -77,21 +75,6 @@ class Sample:
         # Assign
         self.output_path = sample_output_path
 
-    def split_df_into_tumor_and_normal(self):
-        """
-        Given a sample_df, split into tumor and normal samples
-
-        Returns
-        -------
-        tumor_df: pd.DataFrame
-        normal_df: pd.DataFrame
-        """
-
-        tumor_df = self.df.query("Phenotype=='tumor'").filter(items=OUTPUT_COLUMNS)
-        normal_df = self.df.query("Phenotype=='normal'").filter(items=OUTPUT_COLUMNS)
-
-        return tumor_df, normal_df
-
     def write_sample_csvs_to_file(self):
         """
         Given an sample name, a tumor data frame, a normal data frame and an output path,
@@ -103,13 +86,14 @@ class Sample:
 
         """
 
-        # Set output paths
-        tumor_output_path = self.output_path / "{}_tumor.csv".format(self.name)
-        normal_output_path = self.output_path / "{}_normal.csv".format(self.name)
+        # Run each to-csv via a group by
+        for phenotype, sample_phenotype_df in self.df.groupby("Phenotype"):
+            # Set output paths
+            output_path = self.output_path / "{}_{}.csv".format(self.name, phenotype)
 
-        # Write to csv
-        self.tumor_df.to_csv(tumor_output_path, index=False)
-        self.normal_df.to_csv(normal_output_path, index=False)
+            # Write to csv
+            phenotype.filter(items=OUTPUT_COLUMNS).\
+                to_csv(output_path, index=False)
 
 
 def initialise_logger():
@@ -311,8 +295,6 @@ def update_sample_objects(samples, output_path):
     for sample in samples:
         # Set / create the output path for each sample
         sample.set_output_path(output_path)
-        # Assign the tumor df and the normal df for each sample
-        sample.tumor_df, sample.normal_df = sample.split_df_into_tumor_and_normal()
 
 
 def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
@@ -376,6 +358,7 @@ def write_data_frames(samples):
 
     """
     for sample in samples:
+        logger.info("Writing csvs for sample {}".format(sample.name))
         sample.write_sample_csvs_to_file()
 
 
@@ -385,28 +368,34 @@ logger = get_logger()
 
 
 def main():
+    logger.info("Getting args")
     args = get_args()
-
     args = check_args(args)
 
     # Read sample sheet
+    logger.info("Reading sample sheet")
     sample_sheet_df = read_samplesheet(sample_sheet_path=args.sample_sheet)
 
     # Read tracking sheet
+    logger.info("Reading tracking sheet")
     metadata_df = read_tracking_sheet(tracking_sheet_path=args.tracking_sheet)
 
     # Merge sample sheet and tracking sheet
+    logger.info("Merging sample sheet and tracking sheet")
     merged_df = merge_sample_sheet_and_tracking_sheet(sample_sheet_df=sample_sheet_df,
                                                       metadata_df=metadata_df)
 
     # Get samples (as sample objects)
+    logger.info("Initialising sample constructs")
     samples = [Sample(sample_name=sample_name, sample_df=sample_df)
                for sample_name, sample_df in merged_df.groupby("SampleID")]
 
     # Add sample attributes
+    logger.info("Updating sample attributes")
     update_sample_objects(samples, output_path=args.output_path)
 
     # Write out dfs
+    logger.info("Writing out dataframes to output path")
     write_data_frames(samples)
 
 

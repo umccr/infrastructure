@@ -27,7 +27,7 @@ Method:
 # Set globals
 OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
 OUTPUT_COLUMNS = ["RGID", "RGSM", "RGLB", "Lane", "Read1File", "Read2File"]
-METADATA_COLUMNS = ["Sample ID (SampleSheet)", "SubjectID", "Phenotype"]
+METADATA_COLUMNS = ["Sample_ID (SampleSheet)", "SubjectID", "Phenotype"]
 VALID_PHENOTYPES = ["tumor", "normal"]
 PHENOTYPES_DTYPE = CategoricalDtype(categories=VALID_PHENOTYPES,
                                     ordered=False)
@@ -91,6 +91,13 @@ class Subject:
 
         # Run each to-csv via a group by
         for phenotype, phenotype_df in self.df.groupby("Phenotype"):
+            # Since Phenotype is of type 'Categorical' we go through each level
+            # even if it's not present in the data frame.
+            # First check we've actually got at least one row before writing
+            if phenotype_df.shape[0] == 0:
+                # No rows for this phenotype, move on
+                continue
+
             # Set output paths
             output_path = self.output_path / "{}_{}.csv".format(self.subject_id, phenotype)
 
@@ -328,7 +335,7 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     slimmed_metadata_df = metadata_df.filter(items=METADATA_COLUMNS)
 
     merged_df = pd.merge(sample_sheet_df, slimmed_metadata_df,
-                         left_on="RGSM", right_on="Sample ID (SampleSheet)",
+                         left_on="RGSM", right_on="Sample_ID (SampleSheet)",
                          how="left")
 
     # Ensure Phenotype is either 'tumor' or 'normal'
@@ -337,13 +344,13 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     # Check for missing SubjectIDs
     if merged_df['SubjectID'].isna().any():
         logger.warning("Could not retrieve the SubjectID information for samples {}".format(
-            ', '.join(merged_df.query("SubjectID.isna()")['Sample ID (SampleSheet)'].tolist())
+            ', '.join(merged_df.query("SubjectID.isna()")['Sample_ID (SampleSheet)'].tolist())
         ))
 
     # Check for missing phenotypes in samples - could be from an invalid merge or bad name
     if merged_df['Phenotype'].isna().any():
         logger.warning("Could not retrieve the phenotype information for samples {}".format(
-            ', '.join(merged_df.query("Phenotype.isna()")['Sample ID (SampleSheet)'].tolist())
+            ', '.join(merged_df.query("Phenotype.isna()")['Sample_ID (SampleSheet)'].tolist())
         ))
 
     # Drop rows with missing values in any of the columns checked for above
@@ -352,20 +359,20 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     return merged_df
 
 
-def write_data_frames(samples):
+def write_data_frames(subjects):
     """
     Given a list of samples write out the data frames to their respective folders
     Parameters
     ----------
-    samples: List of type Sample
+    subjects: List of type Subject
 
     Returns
     -------
 
     """
-    for sample in samples:
-        logger.info("Writing csvs for sample {}".format(sample.name))
-        sample.write_sample_csvs_to_file()
+    for subject in subjects:
+        logger.info("Writing csvs for subject {}".format(subject.subject_id))
+        subject.write_sample_csvs_to_file()
 
 
 # Get logger
@@ -398,7 +405,7 @@ def main():
 
     # Add subject attributes
     logger.info("Updating subject attributes")
-    update_subject_objects(subjects, output_path=args.output_path)
+    update_subject_objects(subjects, output_path=args.output_dir)
 
     # Write out dfs
     logger.info("Writing out data frames to output path")

@@ -7,6 +7,7 @@ from pandas.api.types import CategoricalDtype
 from pathlib import Path
 import logging
 import sys
+import re
 
 """
 Objective:
@@ -27,7 +28,7 @@ Method:
 # Set globals
 OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
 OUTPUT_COLUMNS = ["RGID", "RGSM", "RGLB", "Lane", "Read1File", "Read2File"]
-METADATA_COLUMNS = ["Sample_ID (SampleSheet)", "SubjectID", "Phenotype"]
+METADATA_COLUMNS = ["LibraryID", "Sample_ID (SampleSheet)", "SampleID", "SubjectID", "Phenotype"]
 VALID_PHENOTYPES = ["tumor", "normal"]
 PHENOTYPES_DTYPE = CategoricalDtype(categories=VALID_PHENOTYPES,
                                     ordered=False)
@@ -37,6 +38,11 @@ LOGGER_STYLE = '%(asctime)s - %(levelname)-8s - %(funcName)-20s - %(message)s'
 CONSOLE_LOGGER_STYLE = '%(funcName)-12s: %(levelname)-8s %(message)s'
 LOGGER_DATEFMT = '%y-%m-%d %H:%M:%S'
 THIS_SCRIPT_NAME = "SAMPLESHEET SPLITTER"
+
+# Regexes
+CONTROL_REGEX_MATCH = r'^(?:NTC|PTC)_\w+$'  # https://regex101.com/r/rROljA/1
+LIBRARY_TOPUP_REGEX_MATCH = r'^L\d+_(?:topup)\d*$'  # https://regex101.com/r/przpgt/1
+
 
 
 class Subject:
@@ -341,6 +347,12 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
     # Ensure Phenotype is either 'tumor' or 'normal'
     merged_df["Phenotype"] = merged_df["Phenotype"].astype(PHENOTYPES_DTYPE)
 
+    # Check for missing SampleIDs - Positive controls sometimes don't have a sample ID
+    if merged_df['SampleID'].isna().any():
+        logger.warning("Could not retrieve the SubjectID information for samples {}".format(
+            ', '.join(merged_df.query("SubjectID.isna()")['Sample_ID (SampleSheet)'].tolist())
+        ))
+
     # Check for missing SubjectIDs
     if merged_df['SubjectID'].isna().any():
         logger.warning("Could not retrieve the SubjectID information for samples {}".format(
@@ -353,8 +365,17 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
             ', '.join(merged_df.query("Phenotype.isna()")['Sample_ID (SampleSheet)'].tolist())
         ))
 
+    # Remove controls (samples that start with PTC or NTC)
+    # See the regex magic here: https://regex101.com/r/rROljA/1
+    # Str contains explanation here: https://stackoverflow.com/a/44335734/6946787
+    # '~' does the negating.
+    merged_df.query("~SampleID.str.contains(@CONTROL_REGEX_MATCH, regex=True)", inplace=True)
+
+    # Remove top ups
+    merged_df.query("~LibraryID.str.contains(@LIBRARY_TOPUP_REGEX_MATCH, regex=True)", inplace=True)
+
     # Drop rows with missing values in any of the columns checked for above
-    merged_df.dropna(subset=["SubjectID", "Phenotype"], how='any', inplace=True)
+    merged_df.dropna(subset=["SampleID", "SubjectID", "Phenotype"], how='any', inplace=True)
 
     return merged_df
 

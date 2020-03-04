@@ -28,6 +28,11 @@ Since we run through the Fn.Sub to substitute variables into the user_data scrip
 
 # CDK commands
 
+## Create the env
+```bash
+cdk init --language=python
+```
+
 ## Activate the env
 ```bash
 source .env/bin/activate

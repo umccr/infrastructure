@@ -11,7 +11,6 @@ CREATOR_NAME = "Alexis Lucattini"
 
 # Set tags for container
 TAGS = {
-    # Name is set to gridss-purple-lynx
     "Stack": "DEV-CDK",
     "UseCase": "Testing-CDK",
     "Creator": "Alexis Lucattini",

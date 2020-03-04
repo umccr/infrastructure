@@ -1,15 +1,26 @@
 #!/usr/bin/env python3
 from aws_cdk import core
-from stacks.cicd import CICDStack
+from stacks.cicd import CICDStack, CommonStack
 from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
 
+dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
+prod_env = {'account': '472057503814', 'region': 'ap-southeast-2'}
+umccrise_ecr_repo = 'umccrise'
 
+common_dev_props = {
+    'namespace': 'umccrise-common-dev',
+    'umccrise_ecr_repo': umccrise_ecr_repo,
+}
+
+cicd_dev_props = {
+    'namespace': 'umccrise-cicd'
+}
 batch_dev_props = {
     'namespace': 'umccrise-batch-dev',
     'container_image': 'umccr/umccrise:0.15.15',
-    # 'compute_env_ami': 'ami-0e3451906ffc529a0',  # umccrise AMI
-    'compute_env_ami': 'ami-05c621ca32de56e7a',  # Amazon ECS optimised Linux 2 AMI
+    'compute_env_ami': 'ami-0e3451906ffc529a0',  # umccrise AMI
+    # 'compute_env_ami': 'ami-05c621ca32de56e7a',  # Amazon ECS optimised Linux 2 AMI
     'compute_env_type': 'SPOT',
     'ro_buckets': ['umccr-refdata-prod', 'umccr-primary-data-prod', 'umccr-temp', 'umccr-refdata-dev'],
     'rw_buckets': ['umccr-primary-data-dev2', 'umccr-misc-temp'],
@@ -43,29 +54,42 @@ iap_tes_dev_props = {
 }
 
 app = core.App()
+# NOTE: Don't rename stacks! CF can't track changes if the stack name changes.
+# To rename a stack: delete, rename and deploy
 
+# We don't want certain resources to get deleted when we destroy a stack, so
+# we generate them in a separate common stack
+# I.e. it would be unfortunate if a ECR repo would be deleted, just because
+# the CI/CD stack was removed.
+CommonStack(
+    app,
+    common_dev_props['namespace'],
+    common_dev_props,
+    env=dev_env
+)
 CICDStack(
     app,
-    "umccrise-cicd",
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    cicd_dev_props['namespace'],
+    cicd_dev_props,
+    env=dev_env
 )
 BatchStack(
     app,
     batch_dev_props['namespace'],
     batch_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
 )
 BatchStack(
     app,
     batch_prod_props['namespace'],
     batch_prod_props,
-    env={'account': '472057503814', 'region': 'ap-southeast-2'}
+    env=prod_env
 )
 IapTesStack(
     app,
     iap_tes_dev_props['namespace'],
     iap_tes_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
 )
 
 app.synth()

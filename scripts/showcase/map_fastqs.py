@@ -7,7 +7,6 @@ from pandas.api.types import CategoricalDtype
 from pathlib import Path
 import logging
 import sys
-import re
 
 """
 Objective:
@@ -147,13 +146,13 @@ def get_args():
     -------
     args:
         Attributes:
-            sample_sheet
+            fastq_csv
             output_dir
             tracking_sheet
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--samplesheet", "--sample-sheet", "-i",
-                        type=str, required=True, dest="sample_sheet",
+    parser.add_argument("--fastq-csv", "--fastq-csv", "-i",
+                        type=str, required=True, dest="fastq_csv",
                         help="The samplesheet output from the dragen bcl convert command")
     parser.add_argument("--trackingsheet", "--tracking-sheet", "-t",
                         type=str, required=True, dest="tracking_sheet",
@@ -174,7 +173,7 @@ def check_args(args):
     ----------
     args:
         Attributes:
-            sample_sheet: str
+            fastq_csv: str
             tracking_sheet: str
             output_dir: str
 
@@ -182,16 +181,16 @@ def check_args(args):
     -------
     args
         Attributes:
-            sample_sheet: Path (File)
+            fastq_csv: Path (File)
             tracking_sheet: Path (File)
             output_dir: Path (dir)
     """
     # Check samplesheet exists
-    sample_sheet_path = Path(os.path.normpath(getattr(args, "sample_sheet")))
-    setattr(args, "sample_sheet", sample_sheet_path)
-    if not sample_sheet_path.is_file():
+    fastq_csv_path = Path(os.path.normpath(getattr(args, "fastq_csv")))
+    setattr(args, "fastq_csv", fastq_csv_path)
+    if not fastq_csv_path.is_file():
         logger.error("Could not find sample sheet at {}, exiting".format(
-            sample_sheet_path))
+            fastq_csv_path))
         sys.exit(1)
 
     # Check tracking sheet exists
@@ -213,18 +212,18 @@ def check_args(args):
     return args
 
 
-def read_samplesheet(sample_sheet_path):
+def read_samplesheet(fastq_csv_path):
     """
     Read in the sample sheet (output from the dragen bcl convert)
 
 
     Parameters
     ----------
-    sample_sheet_path
+    fastq_csv_path
 
     Returns
     -------
-    sample_sheet_df: pd.Dataframe with the following columns
+    fastq_df: pd.Dataframe with the following columns
         =========    =======================================
         RGID         i7Index.i5Index.Lane
         RGSM         Sample Name as on the sample sheet
@@ -233,9 +232,9 @@ def read_samplesheet(sample_sheet_path):
         Read1File    Path to Read 1 File
         Read2File    Path to Read 2 File
     """
-    sample_sheet_df = pd.read_csv(sample_sheet_path, header=0)
+    fastq_df = pd.read_csv(fastq_csv_path, header=0)
 
-    return sample_sheet_df
+    return fastq_df
 
 
 def read_tracking_sheet(tracking_sheet_path):
@@ -313,12 +312,12 @@ def update_subject_objects(subject, output_path):
         subject.set_output_path(output_path)
 
 
-def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
+def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df):
     """
     Merge sample sheet and tracking sheet
     Parameters
     ----------
-    sample_sheet_df: pd.DataFrame
+    fastq_df: pd.DataFrame
     metadata_df: pd.DataFrame
 
     Returns
@@ -340,7 +339,7 @@ def merge_sample_sheet_and_tracking_sheet(sample_sheet_df, metadata_df):
 
     slimmed_metadata_df = metadata_df.filter(items=METADATA_COLUMNS)
 
-    merged_df = pd.merge(sample_sheet_df, slimmed_metadata_df,
+    merged_df = pd.merge(fastq_df, slimmed_metadata_df,
                          left_on="RGSM", right_on="Sample_ID (SampleSheet)",
                          how="left")
 
@@ -408,7 +407,7 @@ def main():
 
     # Read sample sheet
     logger.info("Reading sample sheet")
-    sample_sheet_df = read_samplesheet(sample_sheet_path=args.sample_sheet)
+    fastq_df = read_samplesheet(fastq_csv_path=args.fastq_csv)
 
     # Read tracking sheet
     logger.info("Reading tracking sheet")
@@ -416,8 +415,8 @@ def main():
 
     # Merge sample sheet and tracking sheet
     logger.info("Merging sample sheet and tracking sheet")
-    merged_df = merge_sample_sheet_and_tracking_sheet(sample_sheet_df=sample_sheet_df,
-                                                      metadata_df=metadata_df)
+    merged_df = merge_fastq_csv_and_tracking_sheet(fastq_df=fastq_df,
+                                                   metadata_df=metadata_df)
 
     # Get subjects (as Subject objects)
     logger.info("Initialising sample constructs")

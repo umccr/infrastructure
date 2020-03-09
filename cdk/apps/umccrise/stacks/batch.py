@@ -162,7 +162,7 @@ class BatchStack(core.Stack):
 
         # TODO: Replace with proper CDK construct once available
         # TODO: Uses public subnet and default security group
-        # TODO: Define custom AMI for compute env instances
+        # TODO: Add instance tagging
         batch_comp_env = batch.CfnComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
@@ -170,6 +170,7 @@ class BatchStack(core.Stack):
             service_role=batch_service_role.role_arn,
             compute_resources={
                 'type': props['compute_env_type'],
+                'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
                 'maxvCpus': 128,
                 'minvCpus': 0,
                 'desiredvCpus': 0,

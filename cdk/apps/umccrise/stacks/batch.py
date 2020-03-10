@@ -140,15 +140,16 @@ class BatchStack(core.Stack):
         #         ebs=ec2.CfnInstance.EbsProperty(volume_size=1024)
         #     )
         # ]
-        # bdm = [
-        #     {
-        #         'ebs': {
-        #             'DeleteOnTermination': True,
-        #             'VolumeSize': 1024,
-        #             'VolumeType': 'gp2'
-        #         }
-        #     }
-        # ]
+        bdm = [
+            {
+                'deviceName': '/dev/sdf',
+                'ebs': {
+                    'deleteOnTermination': True,
+                    'volumeSize': 1024,
+                    'volumeType': 'gp2'
+                }
+            }
+        ]
 
         launch_template = ec2.CfnLaunchTemplate(
             self,
@@ -156,7 +157,7 @@ class BatchStack(core.Stack):
             launch_template_name='UmccriseBatchComputeLaunchTemplate',
             launch_template_data={
                 'userData': core.Fn.base64(user_data_script),
-                # 'blockDeviceMappings': bdm
+                'blockDeviceMappings': bdm
             }
         )
 
@@ -170,7 +171,7 @@ class BatchStack(core.Stack):
             service_role=batch_service_role.role_arn,
             compute_resources={
                 'type': props['compute_env_type'],
-                'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
+                # 'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
                 'maxvCpus': 128,
                 'minvCpus': 0,
                 'desiredvCpus': 0,

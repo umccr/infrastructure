@@ -103,7 +103,7 @@ module "compute_env" {
   stack_name            = "${var.stack_name}"
   compute_env_name      = "${var.stack_name}_compute_env_${terraform.workspace}"
   image_id              = "${var.workspace_umccrise_image_id[terraform.workspace]}"
-  instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
+  instance_types        = ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge", "m5.8xlarge"]
   security_group_ids    = ["${aws_security_group.batch.id}"]
   subnet_ids            = ["${aws_subnet.batch.id}"]
   ec2_additional_policy = "${aws_iam_policy.additionalEc2InstancePolicy.arn}"
@@ -190,7 +190,7 @@ module "lambda" {
       JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
       JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
       REFDATA_BUCKET = "${var.umccrise_refdata_bucket}"
-      DATA_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+      INPUT_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
       UMCCRISE_MEM   = "${var.umccrise_mem[terraform.workspace]}"
       UMCCRISE_VCPUS = "${var.umccrise_vcpus[terraform.workspace]}"
     }

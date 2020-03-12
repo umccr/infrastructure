@@ -32,27 +32,31 @@ XXX
 3. Create an environment with python 3.6 installed, name it something like *samplesheet_launcher_py3.6*
 4. Activate the env and install the following programs through pip:
     * gspread
+    * gspread-pandas
     * sample-sheet
     * gooey
-    * git (can be installed through conda)
+    * git (installed through conda)
 5. Head to the conda prefix directory and create the following subdirectories:
     * `etc/conda/activate.d`
     * `secrets`
     * `git`
 6. Ask Florian or Alexis for the `google_secrets.json` secret key.
     * Place this in the folder `%CONDA_PREFIX%\secrets`
-7. Head to the conda prefix directory and create the subdirectories `etc\conda\activate.d`.
+    * `mkdir -p %CONDA_PREFIX%\secrets`
+    * `move %HOMEPATH%\Downloads\google_secrets.json %CONDA_PREFIX%\secrets\google_secrets.json`
+7. Head to the conda prefix directory and create the subdirectories:
+    * `mkdir -p %CONDA_PREFIX%\etc\conda\activate.d`.
     * In here we will create file called `env_vars.bat` with the following line:
-      *  `set GSPREAD_PANDAS_CONFIG_DIR=%CONDA_PREFIX%\secrets`
+      * `echo set GSPREAD_PANDAS_CONFIG_DIR=^%CONDA_PREFIX^%\secrets >> %CONDA_PREFIX%\etc\conda\activate.d\env_vars.bat`
 8. Download the [infrastructure repo](https://github.com/umccr/infrastructure) into the directory `%CONDA_PREFIX%\git`.
 9. Now create two one-liner `.bat` files on the Desktop using the scripts below
 
 9a: Samplesheet launcher
 ```commandline
-%windir%\system32\cmd.exe /k ""%CSIDL_PROFILE%\AppData\Local\Continuum\anaconda3\Scripts\activate.bat" "%CSIDL_PROFILE%\AppData\Local\Continuum\anaconda3\envs\samplesheet_launcher_py3.6" && python "%CSIDL_PROFILE%\AppData\Local\Continuum\anaconda3\envs\samplesheet_launcher_py3.6\git\infrastructure\scripts\umccr_pipeline\samplesheet-check-gui-wrapper.py" && exit"
+%windir%\system32\cmd.exe /k ""%HOMEPATH%\Anaconda3\Scripts\activate.bat" "%HOMEPATH%\Anaconda3\envs\samplesheet_launcher_py3.6" && python "%HOMEPATH%\Anaconda3\envs\samplesheet_launcher_py3.6\git\infrastructure\scripts\umccr_pipeline\samplesheet-check-gui-wrapper.py" && exit"
 ```
 
 9b: Update git repo
 ```commandline
-%windir%\system32\cmd.exe /k ""%CSIDL_PROFILE%\AppData\Local\Continuum\anaconda3\Scripts\activate.bat" "%CSIDL_PROFILE%\AppData\Local\Continuum\anaconda3\envs\samplesheet_launcher_py3.6" && cd "%CSIDL_PROFILE%\AppData\Local\Continuum\anaconda3\envs\samplesheet_launcher_py3.6\git\infrastructure" && git pull && exit"
+%windir%\system32\cmd.exe /k ""%HOMEPATH%\Anaconda3\Scripts\activate.bat" "%HOMEPATH%\Anaconda3\envs\samplesheet_launcher_py3.6" && cd "%HOMEPATH%\Anaconda3\envs\samplesheet_launcher_py3.6\git\infrastructure" && git pull && exit"
 ```

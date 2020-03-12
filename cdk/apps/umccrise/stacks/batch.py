@@ -177,7 +177,8 @@ class BatchStack(core.Stack):
                 'desiredvCpus': 0,
                 'imageId': props['compute_env_ami'],
                 'launchTemplate': {
-                    "launchTemplateName": launch_template.launch_template_name
+                    'launchTemplateName': launch_template.launch_template_name,
+                    'version': '$Latest'
                 },
                 'spotIamFleetRole': spotfleet_role.role_arn,
                 'instanceRole': batch_instance_profile.instance_profile_name,

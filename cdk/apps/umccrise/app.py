@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 from aws_cdk import core
-from stacks.cicd import CICDStack, CommonStack
+from stacks.common import CommonStack
+from stacks.cicd import CICDStack
 from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
+from stacks.slack import CodeBuildLambdaStack
 
 dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
 prod_env = {'account': '472057503814', 'region': 'ap-southeast-2'}
 umccrise_ecr_repo = 'umccrise'
+codebuild_project_name = 'umccrise_codebuild_project'
 
 common_dev_props = {
     'namespace': 'umccrise-common-dev',
@@ -14,8 +17,10 @@ common_dev_props = {
 }
 
 cicd_dev_props = {
-    'namespace': 'umccrise-cicd'
+    'namespace': 'umccrise-cicd',
+    'codebuild_project_name': codebuild_project_name
 }
+
 batch_dev_props = {
     'namespace': 'umccrise-batch-dev',
     'container_image': 'umccr/umccrise:0.15.15',
@@ -53,6 +58,13 @@ iap_tes_dev_props = {
     'umccrise_image_tag': 'NOTAG-2a64459695'
 }
 
+slack_dev_props = {
+    'namespace': 'umccrise-codebuild-slack-dev',
+    'slack_channel': '#arteria-dev',
+    'codebuild_project_name': codebuild_project_name,
+    'aws_account': dev_env['account']
+}
+
 app = core.App()
 # NOTE: Don't rename stacks! CF can't track changes if the stack name changes.
 # To rename a stack: delete, rename and deploy
@@ -61,7 +73,7 @@ app = core.App()
 # we generate them in a separate common stack
 # I.e. it would be unfortunate if a ECR repo would be deleted, just because
 # the CI/CD stack was removed.
-CommonStack(
+common = CommonStack(
     app,
     common_dev_props['namespace'],
     common_dev_props,
@@ -89,6 +101,13 @@ IapTesStack(
     app,
     iap_tes_dev_props['namespace'],
     iap_tes_dev_props,
+    env=dev_env
+)
+slack_dev_props['ecr_name'] = common.ecr_name
+CodeBuildLambdaStack(
+    app,
+    slack_dev_props['namespace'],
+    slack_dev_props,
     env=dev_env
 )
 

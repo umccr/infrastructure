@@ -43,7 +43,6 @@ CONTROL_REGEX_MATCH = r'^(?:NTC|PTC)_\w+$'  # https://regex101.com/r/rROljA/1
 LIBRARY_TOPUP_REGEX_MATCH = r'^L\d+_(?:topup)\d*$'  # https://regex101.com/r/przpgt/1
 
 
-
 class Subject:
 
     def __init__(self, subject_id, sample_df):
@@ -160,6 +159,15 @@ def get_args():
     parser.add_argument("--outputDir", "--output-dir", "-o",
                         type=str, required=True, dest="output_dir",
                         help="The output directory which will contain a list of subdirectories")
+    parser.add_argument("--keep-pairs-only",
+                        default=False, action='store_true',
+                        help="Only create folders for samples that hold at least one tumor and one normal sample")
+    parser.add_argument("--keep-top-ups",
+                        default=False, action='store_true',
+                        help="Keep top-up samples")
+    parser.add_argument("--keep-control-samples",
+                        default=False, action='store_true',
+                        help="Keep control samples (those starting with NTC and PTC)")
 
     args = parser.parse_args()
 
@@ -312,7 +320,7 @@ def update_subject_objects(subject, output_path):
         subject.set_output_path(output_path)
 
 
-def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df):
+def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, keep_pairs_only=False, keep_top_ups=False, keep_control_samples=False):
     """
     Merge sample sheet and tracking sheet
     Parameters
@@ -368,13 +376,35 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df):
     # See the regex magic here: https://regex101.com/r/rROljA/1
     # Str contains explanation here: https://stackoverflow.com/a/44335734/6946787
     # '~' does the negating.
-    merged_df.query("~SampleID.str.contains(@CONTROL_REGEX_MATCH, regex=True)", inplace=True)
 
-    # Remove top ups
-    merged_df.query("~LibraryID.str.contains(@LIBRARY_TOPUP_REGEX_MATCH, regex=True)", inplace=True)
+    if not keep_control_samples:
+        # Remove control samples
+        merged_df.query("~SampleID.str.contains(@CONTROL_REGEX_MATCH, regex=True)", inplace=True)
+
+    if not keep_top_ups:
+        # Remove top ups
+        merged_df.query("~LibraryID.str.contains(@LIBRARY_TOPUP_REGEX_MATCH, regex=True)", inplace=True)
 
     # Drop rows with missing values in any of the columns checked for above
     merged_df.dropna(subset=["SampleID", "SubjectID", "Phenotype"], how='any', inplace=True)
+
+    if keep_pairs_only:
+        # Only keep samples that have a tumor/normal complement for a given Subject ID
+        # Here we group by SubjectID, use nunique to find the number of unique items for Phenotype
+        # for each SubjectID
+        # Revert to frame and reset index, now column SubjectID is the subject ID and
+        # Phenotype represents the number of unique phenotypes for a given subject ID
+        # We rename the column for clarity
+        # Then select only subject IDs whose where the Phenotype column equals two
+        subjects_with_pairs = merged_df.groupby("SubjectID")['Phenotype'].nunique().\
+            to_frame().\
+            reset_index().\
+            rename(columns={"Phenotype": "NUniquePhenotypes"}).\
+            query("NUniquePhenotypes == 2")['SubjectID'].\
+            tolist()
+
+        # Now filter out the original merged_df using the subjects_with_pairs list
+        merged_df = merged_df.query("SubjectID in @subjects_with_pairs")
 
     return merged_df
 
@@ -416,7 +446,10 @@ def main():
     # Merge sample sheet and tracking sheet
     logger.info("Merging sample sheet and tracking sheet")
     merged_df = merge_fastq_csv_and_tracking_sheet(fastq_df=fastq_df,
-                                                   metadata_df=metadata_df)
+                                                   metadata_df=metadata_df,
+                                                   keep_pairs_only=args.keep_pairs_only,
+                                                   keep_top_ups=args.keep_top_ups,
+                                                   keep_control_samples=args.keep_control_samples)
 
     # Get subjects (as Subject objects)
     logger.info("Initialising sample constructs")

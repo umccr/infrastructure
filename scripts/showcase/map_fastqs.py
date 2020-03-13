@@ -159,15 +159,20 @@ def get_args():
     parser.add_argument("--outputDir", "--output-dir", "-o",
                         type=str, required=True, dest="output_dir",
                         help="The output directory which will contain a list of subdirectories")
-    parser.add_argument("--keep-pairs-only",
-                        default=False, action='store_true',
-                        help="Only create folders for samples that hold at least one tumor and one normal sample")
-    parser.add_argument("--keep-top-ups",
-                        default=False, action='store_true',
-                        help="Keep top-up samples")
-    parser.add_argument("--keep-control-samples",
-                        default=False, action='store_true',
-                        help="Keep control samples (those starting with NTC and PTC)")
+
+    # Add filter arguments to keep/rule out samples that don't fit the norm
+    filter_options_arguments = parser.add_argument_group()
+
+    filter_options_arguments.add_argument("--keep-single-samples",
+                                          default=False, action='store_true',
+                                          help="Keep samples even if it is missing either "
+                                               "the normal or tumor complement")
+    filter_options_arguments.add_argument("--keep-top-ups",
+                                          default=False, action='store_true',
+                                          help="Keep top-up samples")
+    filter_options_arguments.add_argument("--keep-control-samples",
+                                          default=False, action='store_true',
+                                          help="Keep control samples (those starting with NTC and PTC)")
 
     args = parser.parse_args()
 
@@ -320,7 +325,7 @@ def update_subject_objects(subject, output_path):
         subject.set_output_path(output_path)
 
 
-def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, keep_pairs_only=False, keep_top_ups=False, keep_control_samples=False):
+def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, keep_single_samples=False, keep_top_ups=False, keep_control_samples=False):
     """
     Merge sample sheet and tracking sheet
     Parameters
@@ -388,10 +393,10 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, keep_pairs_only=Fa
     # Drop rows with missing values in any of the columns checked for above
     merged_df.dropna(subset=["SampleID", "SubjectID", "Phenotype"], how='any', inplace=True)
 
-    if keep_pairs_only:
+    if not keep_single_samples:
         # Only keep samples that have a tumor/normal complement for a given Subject ID
-        # Here we group by SubjectID, use nunique to find the number of unique items for Phenotype
-        # for each SubjectID
+        # Here we group by SubjectID, use nunique to find the number of
+        # unique Phenotypes for each SubjectID
         # Revert to frame and reset index, now column SubjectID is the subject ID and
         # Phenotype represents the number of unique phenotypes for a given subject ID
         # We rename the column for clarity
@@ -447,7 +452,7 @@ def main():
     logger.info("Merging sample sheet and tracking sheet")
     merged_df = merge_fastq_csv_and_tracking_sheet(fastq_df=fastq_df,
                                                    metadata_df=metadata_df,
-                                                   keep_pairs_only=args.keep_pairs_only,
+                                                   keep_single_samples=args.keep_single_samples,
                                                    keep_top_ups=args.keep_top_ups,
                                                    keep_control_samples=args.keep_control_samples)
 

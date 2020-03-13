@@ -159,6 +159,15 @@ def get_args():
     parser.add_argument("--outputDir", "--output-dir", "-o",
                         type=str, required=True, dest="output_dir",
                         help="The output directory which will contain a list of subdirectories")
+    parser.add_argument("--keep-pairs-only",
+                        default=False, action='store_true',
+                        help="Only create folders for samples that hold at least one tumor and one normal sample")
+    parser.add_argument("--keep-top-ups",
+                        default=False, action='store_true',
+                        help="Keep top-up samples")
+    parser.add_argument("--keep-control-samples",
+                        default=False, action='store_true',
+                        help="Keep control samples (those starting with NTC and PTC)")
 
     # Add filter arguments to keep/rule out samples that don't fit the norm
     filter_options_arguments = parser.add_argument_group()

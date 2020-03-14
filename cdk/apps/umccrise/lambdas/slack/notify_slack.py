@@ -97,12 +97,7 @@ def slack_message_from_codebuild(message):
     build_id = message_detail.get('build-id')
     build_info = message_detail.get('additional-information')
 
-    build_id = build_info.get('build-id')
     commit_id = build_info.get('source-version')
-    # Get the container image tag that was build
-    image_tag = get_image_tag(commit_id)
-
-    print(f"build ID: {build_id}")
     build_log_stream = str(build_id).rpartition(':')[2]
     build_initiator = build_info.get('initiator')
     build_start_time = build_info.get('build-start-time')
@@ -111,10 +106,12 @@ def slack_message_from_codebuild(message):
         build_link = "https://console.aws.amazon.com/cloudwatch/home?region=ap-southeast-2#logEvent:" \
             f"group={build_log_group};stream={build_log_stream}"
 
+    image_tag = 'N/A'  # We can only have an image if the build succeeded
     if build_status == 'IN_PROGRESS':
         slack_color = BLUE
     elif build_status == 'SUCCEEDED':
         slack_color = GREEN
+        image_tag = get_image_tag(commit_id)
     elif build_status == 'FAILED':
         slack_color = RED
     else:

@@ -70,6 +70,14 @@ output "SSM_KEY_NAME_DJANGO_SECRET_KEY" {
     value = "${local.SSM_KEY_NAME_DJANGO_SECRET_KEY}"  
 }
 
+output "SSM_KEY_NAME_LIMS_SPREADSHEET_ID" {
+    value = "${local.SSM_KEY_NAME_LIMS_SPREADSHEET_ID}"
+}
+
+output "SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON" {
+    value = "${local.SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON}"
+}
+
 output "API_DOMAIN_NAME" {
     value = "${local.api_domain}"
 }

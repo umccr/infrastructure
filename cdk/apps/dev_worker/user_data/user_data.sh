@@ -75,3 +75,10 @@ yum install amazon-ecr-credential-helper -y
 # Add configuration to docker config - this logs us into docker for our ecr
 su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
 su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
+
+# Download IAP and install into /usr/local/bin
+echo "Downloading IAP"
+IAP_LINK="https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/latest/linux/iap"
+(cd /usr/local/bin && \
+  wget "${IAP_LINK}" && \
+  chmod +x iap)

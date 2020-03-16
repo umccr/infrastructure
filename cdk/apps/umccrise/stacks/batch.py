@@ -7,6 +7,8 @@ from aws_cdk import (
     core
 )
 
+# User data script to run on Batch worker instance start up
+# Main purpose: pull in umccrise wrapper script to execute in Batch job
 user_data_script = """MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
 
@@ -14,35 +16,16 @@ Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
 Content-Type: text/x-shellscript; charset="us-ascii"
 
 #!/bin/bash
-echo Hello
-
+set -euxo pipefail
+echo START CUSTOM USERDATA
+ls -al /opt/
+mkdir /opt/container
+curl --output /opt/container/umccrise-wrapper.sh https://raw.githubusercontent.com/umccr/workflows/master/umccrise/umccrise-wrapper.sh
+ls -al /opt/container/
+chmod 755 /opt/container/umccrise-wrapper.sh
+ls -al /opt/container/
+echo END CUSTOM USERDATA
 --==MYBOUNDARY==--"""
-
-user_data_script4 = """
-Content-Type: multipart/mixed; boundary="//"
-MIME-Version: 1.0
-
---//
-Content-Type: text/x-shellscript; charset="us-ascii"
-MIME-Version: 1.0
-
-#!/bin/bash
-/bin/echo "Hello World" >> /tmp/testfile.txt
---//
-"""
-
-
-user_data_script2 = 'MIME-Version: 1.0\nContent-Type: multipart/mixed; boundary="==MYBOUNDARY=="\n--==MYBOUNDARY==\nContent-Type: text/x-shellscript; charset="us-ascii"\n#!/bin/bash\necho Hello\necho ${foo}\n--==MYBOUNDARY==--\n'
-
-user_data_script3 = [
-    'MIME-Version: 1.0',
-    'Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="',
-    '--==MYBOUNDARY==',
-    'Content-Type: text/x-shellscript; charset="us-ascii"',
-    '#!/bin/bash',
-    'echo Hello',
-    '--==MYBOUNDARY==--"""'
-]
 
 
 class BatchStack(core.Stack):
@@ -51,6 +34,8 @@ class BatchStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        ################################################################################
+        # Set up permissions
         ro_buckets = set()
         for bucket in props['ro_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
@@ -100,6 +85,26 @@ class BatchStack(core.Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AmazonEC2ContainerServiceforEC2Role')
             ]
         )
+        batch_instance_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ec2:Describe*",
+                    "ec2:AttachVolume",
+                    "ec2:CreateVolume",
+                    "ec2:CreateTags",
+                    "ec2:ModifyInstanceAttribute"
+                ],
+                resources=["*"]
+            )
+        )
+        batch_instance_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ecs:ListClusters"
+                ],
+                resources=["*"]
+            )
+        )
         for bucket in ro_buckets:
             bucket.grant_read(batch_instance_role)
         for bucket in rw_buckets:
@@ -114,6 +119,9 @@ class BatchStack(core.Stack):
             roles=[batch_instance_role.role_name]
         )
 
+        ################################################################################
+        # Minimal networking
+        # TODO: use exiting common setup
         # TODO: roll out across all AZs? (Will require more subnets, NATs, ENIs, etc...)
         vpc = ec2.Vpc(
             self,
@@ -122,36 +130,40 @@ class BatchStack(core.Stack):
             max_azs=1
         )
 
-        user_data = ec2.UserData.for_linux()
-        user_data.add_commands(core.Fn.base64(user_data_script4))
+        ################################################################################
+        # Setup Batch compute resources
+
+        # TODO: configure BlockDevice to expand instance disk space (if needed?)
+        # block_device_mappings = [
+        #     ec2.CfnInstance.BlockDeviceMappingProperty(
+        #         device_name='/dev/sda1',
+        #         ebs=ec2.CfnInstance.EbsProperty(volume_size=1024)
+        #     )
+        # ]
+        bdm = [
+            {
+                'deviceName': '/dev/sdf',
+                'ebs': {
+                    'deleteOnTermination': True,
+                    'volumeSize': 1024,
+                    'volumeType': 'gp2'
+                }
+            }
+        ]
 
         launch_template = ec2.CfnLaunchTemplate(
             self,
             'UmccriseBatchComputeLaunchTemplate',
             launch_template_name='UmccriseBatchComputeLaunchTemplate',
             launch_template_data={
-                # 'userData': core.Fn.base64(user_data.render())
-                # 'userData': 'ZWNobyBGT09PT08K'
-                # 'userData': {
-                #     "Fn::Base64": {
-                #         "Fn::Join": [
-                #             "",
-                #             "#!/bin/bash\n",
-                #             "echo 'doing stuff'\n"
-                #         ]
-                #     }
-                # }
-                # 'userData': {'Fn::Base64': 'echo Hello'}
-                'userData': core.Fn.base64(user_data_script4)
-                # 'userData': core.Fn.base64(core.Fn.sub(body=user_data_script2, variables={'foo': 'World'}))
-                # 'userData': core.Fn.join(delimiter='\n', list_of_values=user_data_script3)
-                # TODO: try core.Fn.join()
+                'userData': core.Fn.base64(user_data_script),
+                'blockDeviceMappings': bdm
             }
         )
 
         # TODO: Replace with proper CDK construct once available
         # TODO: Uses public subnet and default security group
-        # TODO: Define custom AMI for compute env instances
+        # TODO: Add instance tagging
         batch_comp_env = batch.CfnComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
@@ -159,6 +171,7 @@ class BatchStack(core.Stack):
             service_role=batch_service_role.role_arn,
             compute_resources={
                 'type': props['compute_env_type'],
+                # 'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
                 'maxvCpus': 128,
                 'minvCpus': 0,
                 'desiredvCpus': 0,
@@ -189,6 +202,9 @@ class BatchStack(core.Stack):
             priority=10,
             job_queue_name='umccrise_job_queue'
         )
+
+        ################################################################################
+        # Set up job submission Lambda
 
         lambda_role = iam.Role(
             self,

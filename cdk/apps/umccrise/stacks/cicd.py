@@ -6,29 +6,41 @@ from aws_cdk import (
     aws_s3 as s3,
 )
 
+# As semver dictates: https://regex101.com/r/Ly7O1x/3/
+semver_tag_regex = '(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
 
-class CICDStack(core.Stack):
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
+
+class CommonStack(core.Stack):
+    def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # As semver dictates: https://regex101.com/r/Ly7O1x/3/
-        semver_tag_regex = '(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+        # create an ECR repo to deploy the created image to (defined in build spec)
+        ecr.Repository(
+            self,
+            id="UmccriseEcrRepo",
+            repository_name=props['umccrise_ecr_repo'],
+            removal_policy=core.RemovalPolicy.RETAIN
+        )
+
+
+class CICDStack(core.Stack):
+    def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
 
         refdata = s3.Bucket.from_bucket_attributes(
-            self, 'reference_data',
+            self,
+            'reference_data',
             bucket_name='umccr-refdata-dev'
         )
 
-        build_env = cb.BuildEnvironment(build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
-                                        privileged=True,
-                                        compute_type=cb.ComputeType.MEDIUM)
-
-        # create an ECR repo to deploy the created image to (defined in build spec)
-        ecr.Repository(self, id="umccr", repository_name="umccr")
+        build_env = cb.BuildEnvironment(
+            build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
+            privileged=True,
+            compute_type=cb.ComputeType.MEDIUM)
 
         cb_project = cb.Project(
             self,
-            id="umccrise",
+            id="UmccriseCodeBuildProject",
             environment=build_env,
             timeout=core.Duration.hours(3),
             source=cb.Source.git_hub(
@@ -49,9 +61,3 @@ class CICDStack(core.Stack):
             iam.ManagedPolicy.from_aws_managed_policy_name('AmazonEC2ContainerRegistryPowerUser')
         )
         refdata.grant_read(cb_project)
-
-
-app = core.App()
-CICDStack(app, "UmccriseCICDStack")
-
-app.synth()

@@ -9,13 +9,13 @@ The only required parameter is `resultDir`, the "directory" of the bcbio results
 # invoke the umccrise lambda
 aws lambda invoke \
     --function-name umccrise_lambda_prod \
-    --payload '{"imageVersion": "0.15.15", "resultDir": "Patients/SBJ00001/WGS/2019-03-20"}' \
+    --payload '{"imageVersion": "0.15.15", "inputDir": "Patients/SBJ00001/WGS/2019-03-20"}' \
     /tmp/lambda.output
 
 # to run on data in the temp bucket or to change memory/cpu requirements
 aws lambda invoke \
     --function-name umccrise_lambda_prod \
-    --payload '{"imageVersion": "0.15.15", "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "dataBucket": "umccr-temp", "memory": "50000", "vcpus": "16"}' \
+    --payload '{"imageVersion": "0.15.15", "inputDir": "Patients/SBJ00001/WGS/2019-03-20", "inputBucket": "umccr-temp", "memory": "50000", "vcpus": "16"}' \
     /tmp/lambda.output
 # NOTE: the jobid is stored in the output file /tmp/lambda.output
 
@@ -42,20 +42,20 @@ NOTE: the `resultBucket` defaults to the `dataBucket`. The `dev` account does no
 ```bash
 aws lambda invoke \
     --function-name umccrise_lambda_dev \
-    --payload '{"imageVersion": "0.15.15", "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "dataBucket": "umccr-primary-data-prod", "resultBucket": "umccr-primary-data-dev2"}' \
+    --payload '{"imageVersion": "0.15.15", "containerRepo": "DH", "inputDir": "Patients/SBJ00001/WGS/2019-03-20", "inputBucket": "umccr-primary-data-prod", "resultBucket": "umccr-primary-data-dev"}' \
     /tmp/lambda.output
-
 ```
 
 # Parameters
 
 Mandatory:
 - `imageVersion`: the version of the umccrise docker image to run
-- `resultDir`: the directory holding the analysis results, the path to run umccrise on
+- `inputDir`: the directory holding the analysis results, the path to run umccrise on
 
 Optional:
 - `memory`: the amount of memory to use (in MB), default: 2048
 - `vcpus`: the number of vCPUs to request, default: 2
-- `dataBucket`: the bucket from which to get the analysis results, e.g. input to umccrise, default: dependent on deployment `umccr-primary-data-prod` or `umccr-primary-data-dev`
+- `inputBucket`: the bucket from which to get the analysis results, e.g. input to umccrise, default: dependent on deployment `umccr-primary-data-prod` or `umccr-primary-data-dev`
 - `resultBucket`: the bucket where to write the umcrise results to, default: `dataBucket`
 - `refDataBucket`: the bucket from which to load reference data, default: `umccr-refdata-prod`
+- `containerRepo`: Can be set to `DH` to pull the `umccrise` image from DockerHub, default is to pull from ECR.

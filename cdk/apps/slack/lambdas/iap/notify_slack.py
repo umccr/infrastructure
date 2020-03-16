@@ -35,8 +35,12 @@ def getAwsAccountName(id):
 
 def getCreatorFromId(id):
     if id == 'c9688651-7872-3753-8146-ffa41c177aa1':
+        return f"{id} (Vlad Saveliev - unimelb)"
+    elif id == '590dfb6c-6e4f-3db8-9e23-2d1039821653':
         return f"{id} (Vlad Saveliev)"
     elif id == '567d89e4-de8b-3688-a733-d2a979eb510e':
+        return f"{id} (Peter - unimelb)"
+    elif id == 'bd68e368-7587-3e22-a30e-9a2e1714b7c1':
         return f"{id} (Peter Diakumis)"
     elif id == '1678890e-b107-3974-a47d-0bb532a64ad6':
         return f"{id} (Roman Valls - unimelb)"

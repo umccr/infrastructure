@@ -15,6 +15,7 @@
                 "s3:GetObjectVersionTagging",
                 "s3:PutObjectTagging",
                 "s3:PutObjectVersionTagging",
+                "s3:RestoreObject",
                 "logs:CreateLogStream",
                 "logs:PutLogEvents",
                 "ec2:DescribeInstances",

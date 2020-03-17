@@ -27,7 +27,7 @@ Method:
 # Set globals
 OMITTED_YEAR_SHEETS = ["2018"]  # Has a different number of columns to following years
 OUTPUT_COLUMNS = ["RGID", "RGSM", "RGLB", "Lane", "Read1File", "Read2File"]
-METADATA_COLUMNS = ["LibraryID", "Sample_ID (SampleSheet)", "SampleID", "SubjectID", "Phenotype"]
+METADATA_COLUMNS = ["LibraryID", "Sample_ID (SampleSheet)", "SampleID", "SubjectID", "Phenotype", "Type"]
 VALID_PHENOTYPES = ["tumor", "normal"]
 PHENOTYPES_DTYPE = CategoricalDtype(categories=VALID_PHENOTYPES,
                                     ordered=False)
@@ -120,7 +120,7 @@ class WholeGenomeTumourNormalSubject(Subject):
                 to_csv(output_path, index=False)
 
 
-class WholeTranscriptomeSubject(Subject):
+class WholeTranscriptomeTumourOnlySubject(Subject):
 
     def __init__(self, subject_id, sample_df):
         super().__init__(subject_id, sample_df)
@@ -195,7 +195,7 @@ def get_args():
                         type=str, required=True, dest="output_dir",
                         help="The output directory which will contain a list of sub directories")
     parser.add_argument("--sample-type", "-s",
-                        type=str, required=False, dest="sample_type", choices=["WGS-TUMOR-NORMAL", "WTS"],
+                        type=str, required=False, dest="sample_type", choices=["WGS-TUMOR-NORMAL", "WTS-TUMOR-ONLY"],
                         default=["WGS-TUMOR-NORMAL"],
                         help="Type of data to write csv files for")
 
@@ -277,19 +277,29 @@ def check_args(args):
 
     # Add in is_wgs, is_tn and is_wts flags
     sample_type = getattr(args, "sample_type", None)
-    if sample_type == 'WGS-TUMOR-NORMAL':
+    # Get sample type
+    if sample_type.startswith('WGS-'):
         setattr(args, "is_wgs", True)
-        setattr(args, "is_tn", True)
         setattr(args, "is_wts", False)
-    elif sample_type == 'WTS':
+    elif sample_type.startswith('WTS-'):
         setattr(args, "is_wgs", False)
-        setattr(args, "is_tn", False)
         setattr(args, "is_wts", True)
     else:
         logger.warning("Don't know what sample type this is, setting all to false")
-        setattr(args, "is_wgs", False)
-        setattr(args, "is_tn", False)
         setattr(args, "is_wts", False)
+        setattr(args, "is_wts", False)
+
+    # Get sample type
+    if sample_type.endswith('-TUMOR-NORMAL'):
+        setattr(args, "is_tn", True)
+        setattr(args, "is_to", False)
+    elif sample_type.endswith('-TUMOR-ONLY'):
+        setattr(args, "is_tn", False)
+        setattr(args, "is_to", True)
+    else:
+        logger.warning("Don't know what type of workflow we're using here, setting all to false")
+        setattr(args, "is_tn", False)
+        setattr(args, "is_to", False)
 
     return args
 
@@ -394,7 +404,7 @@ def update_subject_objects(subject, output_path):
         subject.set_output_path(output_path)
 
 
-def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_tn=False, is_wts=False,
+def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_tn=False, is_to=False, is_wts=False,
                                        keep_single_samples=False, keep_top_ups=False, keep_control_samples=False):
     """
     Merge sample sheet and tracking sheet
@@ -402,6 +412,7 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
     ----------
     is_wgs: Bool Is whole genome data (not currently used)
     is_tn: Bool Is for a tumour normal workflow
+    is_to: Bool Is for a tumour only workflow
     is_wts: Bool Is whole transcriptome data (currently mutually exclusive with tumour normal workflow)
     keep_single_samples: Bool Should we keep samples that are missing either the normal or tumour file
                               (valid only for tumour/normal sample types)
@@ -425,8 +436,8 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
         Phenotype    Either 'tumor' or 'normal'
 
     """
-    # Columns to keep
 
+    # Columns to keep
     slimmed_metadata_df = metadata_df.filter(items=METADATA_COLUMNS)
 
     merged_df = pd.merge(fastq_df, slimmed_metadata_df,
@@ -445,6 +456,23 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
             ', '.join(merged_df.query("SubjectID.isna()")['Sample_ID (SampleSheet)'].tolist())
         ))
 
+    # Filter by sample type
+    logger.info("Filtering data by subject type (WGS or WTS)")
+    if is_wgs:
+        merged_df = merged_df.query("Type=='WGS'")
+    elif is_wts:
+        merged_df = merged_df.query("Type=='WTS'")
+    else:
+        logger.error("Don't know what type of sample this is, it's not WGS or WTS")
+        sys.exit(1)
+
+    # Check we still have samples left
+    if merged_df.shape[0] == 0:
+        logger.warning("After filtering by the type of sample, we have no subjects left")
+        return merged_df
+
+    # Filter by workflow type
+    logger.info("Filtering data by workflow type (TUMOR-NORMAL or TUMOR-ONLY)")
     if is_tn:
         # Ensure Phenotype is either 'tumor' or 'normal'
         merged_df["Phenotype"] = merged_df["Phenotype"].astype(PHENOTYPES_DTYPE)
@@ -457,6 +485,16 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
 
         # Drop rows with missing values in any of the columns checked for above
         merged_df.dropna(subset=["SampleID", "SubjectID", "Phenotype"], how='any', inplace=True)
+    elif is_to:
+        pass
+    else:
+        logger.error("Have no idea what type of workflow this is for. Exiting")
+        sys.exit(1)
+
+    # Check we still have samples left
+    if merged_df.shape[0] == 0:
+        logger.warning("After filtering by the type of workflow, we have no subjects left")
+        return merged_df
 
     # Regardless of sample type, we check if we want to keep top ups or control samples
 
@@ -534,6 +572,7 @@ def main():
     merged_df = merge_fastq_csv_and_tracking_sheet(fastq_df=fastq_df,
                                                    metadata_df=metadata_df,
                                                    is_tn=args.is_tn,
+                                                   is_to=args.is_to,
                                                    is_wgs=args.is_wgs,
                                                    is_wts=args.is_wts,
                                                    keep_single_samples=args.keep_single_samples,
@@ -542,14 +581,14 @@ def main():
 
     # Get subjects (as Subject objects)
     logger.info("Initialising sample constructs")
-    if args.is_tn:
+    if args.is_tn and args.is_wgs:
         subjects = [WholeGenomeTumourNormalSubject(subject_id=sample_name, sample_df=sample_df)
                     for sample_name, sample_df in merged_df.groupby("SubjectID")]
-    elif args.is_wts:
-        subjects = [WholeTranscriptomeSubject(subject_id=sample_name, sample_df=sample_df)
+    elif args.is_wts and args.is_to:
+        subjects = [WholeTranscriptomeTumourOnlySubject(subject_id=sample_name, sample_df=sample_df)
                     for sample_name, sample_df in merged_df.groupby("SubjectID")]
     else:
-        logger.error("Not tumour normal or whole transcriptome, not sure how to implement fastq csvs")
+        logger.error("Not tumour normal wgs or tumour only wts, not sure how to implement fastq csvs")
         sys.exit(1)
 
     # Add subject attributes

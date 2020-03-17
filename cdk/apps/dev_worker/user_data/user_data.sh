@@ -5,6 +5,9 @@
 ACCOUNT_ID=${__ACCOUNT_ID__}
 REGION=${__REGION__}
 
+# Other global vars
+IAP_DOWNLOAD_LINK="https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/latest/linux/iap"
+
 # ECR Container vars
 EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com/"
 # Write this to /etc/environment for all users
@@ -63,7 +66,6 @@ su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-log
 
 # Download IAP and install into /usr/local/bin
 echo "Downloading IAP"
-IAP_LINK="https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/latest/linux/iap"
 (cd /usr/local/bin && \
-  wget "${IAP_LINK}" && \
+  wget "${!IAP_DOWNLOAD_LINK}" && \
   chmod +x iap)

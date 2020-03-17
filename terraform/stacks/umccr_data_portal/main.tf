@@ -77,6 +77,39 @@ locals {
   LAMBDA_SECURITY_GROUP_IDS      = "${aws_security_group.lambda_security_group.id}"
   SSM_KEY_NAME_FULL_DB_URL       = "${aws_ssm_parameter.ssm_full_db_url.name}"
   SSM_KEY_NAME_DJANGO_SECRET_KEY = "${data.aws_ssm_parameter.ssm_django_secret_key.name}"
+  SSM_KEY_NAME_LIMS_SPREADSHEET_ID = "${data.aws_ssm_parameter.ssm_lims_spreadsheet_id.name}"
+  SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON = "${data.aws_ssm_parameter.ssm_lims_service_account_json.name}"
+}
+
+################################################################################
+# Query for Pre-configured SSM Parameter Store
+
+data "aws_ssm_parameter" "google_oauth_client_id" {
+  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
+}
+
+data "aws_ssm_parameter" "google_oauth_client_secret" {
+  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
+}
+
+data "aws_ssm_parameter" "ssm_lims_spreadsheet_id" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/google/lims_spreadsheet_id"
+}
+
+data "aws_ssm_parameter" "ssm_lims_service_account_json" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/google/lims_service_account_json"
+}
+
+data "aws_ssm_parameter" "ssm_django_secret_key" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/django_secret_key"
+}
+
+data "aws_ssm_parameter" "rds_db_password" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_password"
+}
+
+data "aws_ssm_parameter" "rds_db_username" {
+  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
 }
 
 ################################################################################
@@ -286,14 +319,6 @@ resource "aws_s3_bucket_notification" "s3_run_data_notification" {
 }
 
 # Cognito
-
-data "aws_ssm_parameter" "google_oauth_client_id" {
-  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
-}
-
-data "aws_ssm_parameter" "google_oauth_client_secret" {
-  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
-}
 
 resource "aws_cognito_user_pool" "user_pool" {
   name = "${local.stack_name_dash}-${terraform.workspace}"
@@ -643,7 +668,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/standard:2.0"
+    image        = "aws/codebuild/standard:3.0"
     type         = "LINUX_CONTAINER"
 
     environment_variable {
@@ -730,7 +755,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/standard:2.0"
+    image        = "aws/codebuild/standard:3.0"
     type         = "LINUX_CONTAINER"
 
     environment_variable {
@@ -771,6 +796,16 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "SSM_KEY_NAME_FULL_DB_URL"
       value = "${local.SSM_KEY_NAME_FULL_DB_URL}"
+    }
+
+    environment_variable {
+      name  = "SSM_KEY_NAME_LIMS_SPREADSHEET_ID"
+      value = "${local.SSM_KEY_NAME_LIMS_SPREADSHEET_ID}"
+    }
+
+    environment_variable {
+      name  = "SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON"
+      value = "${local.SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON}"
     }
 
     environment_variable {
@@ -1136,18 +1171,6 @@ resource "aws_rds_cluster" "db" {
     min_capacity = "${var.rds_min_capacity[terraform.workspace]}"
     max_capacity = "${var.rds_max_capacity[terraform.workspace]}"
   }
-}
-
-data "aws_ssm_parameter" "ssm_django_secret_key" {
-  name = "/${local.stack_name_us}/${terraform.workspace}/django_secret_key"
-}
-
-data "aws_ssm_parameter" "rds_db_password" {
-  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_password"
-}
-
-data "aws_ssm_parameter" "rds_db_username" {
-  name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
 }
 
 # Composed database url for backend to use

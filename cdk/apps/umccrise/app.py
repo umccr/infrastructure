@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
 from aws_cdk import core
+from stacks.common import CommonStack
 from stacks.cicd import CICDStack
 from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
+from stacks.slack import CodeBuildLambdaStack
 
+dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
+prod_env = {'account': '472057503814', 'region': 'ap-southeast-2'}
+umccrise_ecr_repo = 'umccrise'
+codebuild_project_name = 'umccrise_codebuild_project'
+
+common_dev_props = {
+    'namespace': 'umccrise-common-dev',
+    'umccrise_ecr_repo': umccrise_ecr_repo,
+}
+
+cicd_dev_props = {
+    'namespace': 'umccrise-cicd',
+    'codebuild_project_name': codebuild_project_name
+}
 
 batch_dev_props = {
     'namespace': 'umccrise-batch-dev',
@@ -42,30 +58,57 @@ iap_tes_dev_props = {
     'umccrise_image_tag': 'NOTAG-2a64459695'
 }
 
-app = core.App()
+slack_dev_props = {
+    'namespace': 'umccrise-codebuild-slack-dev',
+    'slack_channel': '#arteria-dev',
+    'codebuild_project_name': codebuild_project_name,
+    'aws_account': dev_env['account']
+}
 
+app = core.App()
+# NOTE: Don't rename stacks! CF can't track changes if the stack name changes.
+# To rename a stack: delete, rename and deploy
+
+# We don't want certain resources to get deleted when we destroy a stack, so
+# we generate them in a separate common stack
+# I.e. it would be unfortunate if a ECR repo would be deleted, just because
+# the CI/CD stack was removed.
+common = CommonStack(
+    app,
+    common_dev_props['namespace'],
+    common_dev_props,
+    env=dev_env
+)
 CICDStack(
     app,
-    "umccrise-cicd",
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    cicd_dev_props['namespace'],
+    cicd_dev_props,
+    env=dev_env
 )
 BatchStack(
     app,
     batch_dev_props['namespace'],
     batch_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
 )
 BatchStack(
     app,
     batch_prod_props['namespace'],
     batch_prod_props,
-    env={'account': '472057503814', 'region': 'ap-southeast-2'}
+    env=prod_env
 )
 IapTesStack(
     app,
     iap_tes_dev_props['namespace'],
     iap_tes_dev_props,
-    env={'account': '843407916570', 'region': 'ap-southeast-2'}
+    env=dev_env
+)
+slack_dev_props['ecr_name'] = common.ecr_name
+CodeBuildLambdaStack(
+    app,
+    slack_dev_props['namespace'],
+    slack_dev_props,
+    env=dev_env
 )
 
 app.synth()

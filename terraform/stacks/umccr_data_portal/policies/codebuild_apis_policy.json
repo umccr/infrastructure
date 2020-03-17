@@ -20,7 +20,8 @@
                 "acm:*",
                 "route53:*",
                 "waf-regional:*",
-                "ssm:*"
+                "ssm:*",
+                "events:*"
             ],
             "Resource": "*"
         },

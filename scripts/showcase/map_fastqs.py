@@ -185,16 +185,16 @@ def get_args():
             tracking_sheet
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fastq-csv", "--fastq-csv", "-i",
+    parser.add_argument("--fastq-csv", "-i",
                         type=str, required=True, dest="fastq_csv",
                         help="The samplesheet output from the dragen bcl convert command")
-    parser.add_argument("--trackingsheet", "--tracking-sheet", "-t",
+    parser.add_argument("--tracking-sheet", "-t",
                         type=str, required=True, dest="tracking_sheet",
                         help="The metadata excel spreadsheet")
-    parser.add_argument("--outputDir", "--output-dir", "-o",
+    parser.add_argument("--output-dir", "-o",
                         type=str, required=True, dest="output_dir",
                         help="The output directory which will contain a list of sub directories")
-    parser.add_argument("--sample-type",
+    parser.add_argument("--sample-type", "-s",
                         type=str, required=False, dest="sample_type", choices=["WGS-TUMOR-NORMAL", "WTS"],
                         default=["WGS-TUMOR-NORMAL"],
                         help="Type of data to write csv files for")

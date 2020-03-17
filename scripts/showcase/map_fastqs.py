@@ -456,6 +456,21 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
             ', '.join(merged_df.query("SubjectID.isna()")['Sample_ID (SampleSheet)'].tolist())
         ))
 
+    # Regardless of sample type, we check if we want to keep top ups or control samples
+
+    # Remove controls (samples that start with PTC or NTC)
+    # See the regex magic here: https://regex101.com/r/rROljA/1
+    # Str contains explanation here: https://stackoverflow.com/a/44335734/6946787
+    # '~' does the negating.
+
+    if not keep_control_samples:
+        # Remove control samples
+        merged_df.query("~SampleID.str.contains(@CONTROL_REGEX_MATCH, regex=True)", inplace=True)
+
+    if not keep_top_ups:
+        # Remove top ups
+        merged_df.query("~LibraryID.str.contains(@LIBRARY_TOPUP_REGEX_MATCH, regex=True)", inplace=True)
+
     # Filter by sample type
     logger.info("Filtering data by subject type (WGS or WTS)")
     if is_wgs:
@@ -470,6 +485,7 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
     if merged_df.shape[0] == 0:
         logger.warning("After filtering by the type of sample, we have no subjects left")
         return merged_df
+
 
     # Filter by workflow type
     logger.info("Filtering data by workflow type (TUMOR-NORMAL or TUMOR-ONLY)")
@@ -495,21 +511,6 @@ def merge_fastq_csv_and_tracking_sheet(fastq_df, metadata_df, is_wgs=False, is_t
     if merged_df.shape[0] == 0:
         logger.warning("After filtering by the type of workflow, we have no subjects left")
         return merged_df
-
-    # Regardless of sample type, we check if we want to keep top ups or control samples
-
-    # Remove controls (samples that start with PTC or NTC)
-    # See the regex magic here: https://regex101.com/r/rROljA/1
-    # Str contains explanation here: https://stackoverflow.com/a/44335734/6946787
-    # '~' does the negating.
-
-    if not keep_control_samples:
-        # Remove control samples
-        merged_df.query("~SampleID.str.contains(@CONTROL_REGEX_MATCH, regex=True)", inplace=True)
-
-    if not keep_top_ups:
-        # Remove top ups
-        merged_df.query("~LibraryID.str.contains(@LIBRARY_TOPUP_REGEX_MATCH, regex=True)", inplace=True)
 
     # Removing single samples is only appropriate for tumour normal workflow
     if is_tn and not keep_single_samples:

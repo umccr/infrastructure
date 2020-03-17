@@ -194,8 +194,8 @@ def get_args():
     parser.add_argument("--output-dir", "-o",
                         type=str, required=True, dest="output_dir",
                         help="The output directory which will contain a list of sub directories")
-    parser.add_argument("--sample-type", "-s",
-                        type=str, required=False, dest="sample_type", choices=["WGS-TUMOR-NORMAL", "WTS-TUMOR-ONLY"],
+    parser.add_argument("--workflow-type", "-s",
+                        type=str, required=False, dest="workflow_type", choices=["WGS-TUMOR-NORMAL", "WTS-TUMOR-ONLY"],
                         default=["WGS-TUMOR-NORMAL"],
                         help="Type of data to write csv files for")
 
@@ -276,12 +276,12 @@ def check_args(args):
         output_path.mkdir()
 
     # Add in is_wgs, is_tn and is_wts flags
-    sample_type = getattr(args, "sample_type", None)
+    workflow_type = getattr(args, "workflow_type", None)
     # Get sample type
-    if sample_type.startswith('WGS-'):
+    if workflow_type.startswith('WGS-'):
         setattr(args, "is_wgs", True)
         setattr(args, "is_wts", False)
-    elif sample_type.startswith('WTS-'):
+    elif workflow_type.startswith('WTS-'):
         setattr(args, "is_wgs", False)
         setattr(args, "is_wts", True)
     else:
@@ -290,10 +290,10 @@ def check_args(args):
         setattr(args, "is_wts", False)
 
     # Get sample type
-    if sample_type.endswith('-TUMOR-NORMAL'):
+    if workflow_type.endswith('-TUMOR-NORMAL'):
         setattr(args, "is_tn", True)
         setattr(args, "is_to", False)
-    elif sample_type.endswith('-TUMOR-ONLY'):
+    elif workflow_type.endswith('-TUMOR-ONLY'):
         setattr(args, "is_tn", False)
         setattr(args, "is_to", True)
     else:

@@ -93,6 +93,8 @@ class DevWorkerStack(core.Stack):
                             user_data=user_data,
                             block_devices=[ebs_block_device]
                             )
+                            
+        host.node().
 
         # Return public IP address s.t we can ssh into it
         # Note that we may return an IP prior to the user_data shell script completing so not

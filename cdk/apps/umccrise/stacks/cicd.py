@@ -21,7 +21,7 @@ class CICDStack(core.Stack):
 
         build_env = cb.BuildEnvironment(build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
                                         privileged=True,
-                                        compute_type=cb.ComputeType.MEDIUM)
+                                        compute_type=cb.ComputeType.LARGE)
 
         # create an ECR repo to deploy the created image to (defined in build spec)
         ecr.Repository(self, id="umccr", repository_name="umccr")

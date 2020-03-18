@@ -213,20 +213,6 @@ def get_args():
                                           default=False, action='store_true',
                                           help="Keep control samples (those starting with NTC and PTC)")
 
-    # Add filter arguments to keep/rule out samples that don't fit the norm
-    filter_options_arguments = parser.add_argument_group()
-
-    filter_options_arguments.add_argument("--keep-single-samples",
-                                          default=False, action='store_true',
-                                          help="Keep samples even if it is missing either "
-                                               "the normal or tumor complement")
-    filter_options_arguments.add_argument("--keep-top-ups",
-                                          default=False, action='store_true',
-                                          help="Keep top-up samples")
-    filter_options_arguments.add_argument("--keep-control-samples",
-                                          default=False, action='store_true',
-                                          help="Keep control samples (those starting with NTC and PTC)")
-
     args = parser.parse_args()
 
     return args

@@ -197,6 +197,20 @@ output "boxcroft_secret_access_key" {
 }
 
 
+# sarah
+output "sarah_username" {
+  value = "${module.sarah.username}"
+}
+
+output "sarah_access_key" {
+  value = "${module.sarah.access_key}"
+}
+
+output "sarah_secret_access_key" {
+  value = "${module.sarah.encrypted_secret_access_key}"
+}
+
+
 
 # output for serivce user: agha_bot_user
 output "agha_bot_user_username" {

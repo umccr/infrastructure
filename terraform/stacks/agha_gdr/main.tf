@@ -364,6 +364,13 @@ module "boxcroft" {
   pgp_key  = "keybase:freisinger"
 }
 
+# Special user (sarah) for AGHA data manager
+module "sarah" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "sarah"
+  pgp_key  = "keybase:freisinger"
+}
+
 # groups
 resource "aws_iam_group" "admin" {
   name = "agha_gdr_admins"
@@ -413,6 +420,14 @@ resource "aws_iam_group_membership" "read_members" {
 ################################################################################
 # Create access policies
 
+data "template_file" "agha_staging_ro_policy" {
+  template = "${file("policies/bucket-ro-policy.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
+  }
+}
+
 data "template_file" "agha_staging_rw_policy" {
   template = "${file("policies/bucket-rw-policy.json")}"
 
@@ -443,6 +458,12 @@ data "template_file" "agha_store_list_policy" {
   vars {
     bucket_name = "${aws_s3_bucket.agha_gdr_store.id}"
   }
+}
+
+resource "aws_iam_policy" "agha_staging_ro_policy" {
+  name   = "agha_staging_ro_policy"
+  path   = "/"
+  policy = "${data.template_file.agha_staging_ro_policy.rendered}"
 }
 
 resource "aws_iam_policy" "agha_staging_rw_policy" {
@@ -497,6 +518,16 @@ resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
 # read group policies
 resource "aws_iam_group_policy_attachment" "read_store_rw_policy_attachment" {
   group      = "${aws_iam_group.read.name}"
+  policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
+}
+
+resource "aws_iam_user_policy_attachment" "ro_staging_sarah" {
+  user       = "${module.sarah.username}"
+  policy_arn = "${aws_iam_policy.agha_staging_ro_policy.arn}"
+}
+
+resource "aws_iam_user_policy_attachment" "ro_store_sarah" {
+  user       = "${module.sarah.username}"
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
 

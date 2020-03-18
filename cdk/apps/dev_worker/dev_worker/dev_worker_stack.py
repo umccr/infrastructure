@@ -69,6 +69,16 @@ class DevWorkerStack(core.Stack):
         # Get key name from context
         key_name = self.node.try_get_context("KEY_NAME")
 
+        # Spot pricing via ec2 fleet
+        spot_options = {"MaxPrice": self.node.try_get_context("MAX_SPOT_PRICE")}
+        market_options = {"MarketType": "spot",
+                          "SpotOptions": spot_options}
+        launch_template_data = {"InstanceMarketOptions": market_options}
+        launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate",
+                                                launch_template_name=self.node.try_get_context("LAUNCH_TEMPLATE_NAME"))
+
+        launch_template.add_property_override("LaunchTemplateData", launch_template_data)
+
         # The code that defines your stack goes here
         # We take all of the parameters we have and place this into the ec2 instance class
         host = ec2.Instance(self,

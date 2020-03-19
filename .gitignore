@@ -12,3 +12,5 @@ __pycache__
 dev
 .idea/
 .dev/
+dev/
+.dev

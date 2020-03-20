@@ -9,9 +9,9 @@ REGION=${__REGION__}
 IAP_DOWNLOAD_LINK="https://stratus-documentation-us-east-1-public.s3.amazonaws.com/cli/latest/linux/iap"
 
 # ECR Container vars
-EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com/"
+EC2_REPO="${!ACCOUNT_ID}.dkr.ecr.${!REGION}.amazonaws.com"
 # Write this to /etc/environment for all users
-echo "export EC2_REPO=${!EC2_REPO}" >> "/etc/environment"
+echo "export EC2_REPO=${!EC2_REPO}" >> "/etc/profile.d/ec2_repo.sh"
 
 ## Fix time
 # Set time/logs to melbourne time
@@ -47,14 +47,12 @@ mkfs -t ext4 /dev/sdg
 echo "/dev/sdg       /data   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
 # mount the volume on current boot
 mount -a
+# Make the /data mount a communal playground
+chown root:InstanceUser /data
 
-# create a user folder for both users on this directory
-mkdir /mnt/xvdh/ssm-user
-mkdir /mnt/xvdh/ec2-user
-
-# change the owner so the user (via SSM) has access
-chown -R ssm-user /mnt/xvdh/ssm-user
-chown -R ec2-user /mnt/xvdh/ec2-user
+# Add each user to the instance user group so they have access to the /data mount
+useradd -a -G InstanceUser ec2-user
+useradd -a -G InstanceUser ssm-user
 
 ## Update yum
 yum update -y -q
@@ -84,3 +82,28 @@ echo "Downloading IAP"
 (cd /usr/local/bin && \
   wget "${!IAP_DOWNLOAD_LINK}" && \
   chmod +x iap)
+
+# Installing anaconda
+echo "Installing anaconda"
+ANACONDA_VERSION=2020.02
+mkdir -p /opt
+wget --quiet https://repo.anaconda.com/archive/Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh
+bash Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh -b -p /opt/conda
+rm Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh
+
+# Update conda and clean up
+/opt/conda/bin/conda update --yes \
+  --name base \
+  --channel defaults \
+	conda
+conda clean --all --yes
+
+# Install jupyter so one can launch notebook
+conda install --yes --freeze-installed \
+  --channel anaconda \
+  jupyter
+conda clean --all --yes
+
+# Fix bashrc for ec2-user and ssm-user for access ready for conda
+su - "ec2-user" -c "/opt/conda/bin/conda init"
+su - "ssm-user" -c "/opt/conda/bin/conda init"

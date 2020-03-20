@@ -33,12 +33,17 @@ class DevWorkerStack(core.Stack):
                         assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
                         managed_policies=policies)
 
+        # Get a root ebs volume (we mount it on /dev/xvda1)
+        ebs_var_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("VAR_VOLUME_SIZE")))
+        # Place volume on a block device with the set mount point
+        ebs_var_block_device = ec2.BlockDevice(device_name="/dev/sdf",
+                                                volume=ebs_var_vol)
+
         # Get volume - contains a block device volume and a block device
-        volume_params = self.node.try_get_context("VOLUME")
-        ebs_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("VOLUME_SIZE")))
+        ebs_extended_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("EXTENDED_VOLUME_SIZE")))
         # Place volume on a block device with a set mount point
-        ebs_block_device = ec2.BlockDevice(device_name=self.node.try_get_context("VOLUME_MOUNT_POINT"),
-                                           volume=ebs_vol)
+        ebs_extended_block_device = ec2.BlockDevice(device_name="/dev/sdg",
+                                                    volume=ebs_extended_vol)
 
         # Run boot strap -
         """
@@ -76,11 +81,11 @@ class DevWorkerStack(core.Stack):
         launch_template_data = {"InstanceMarketOptions": market_options}
         launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate",
                                                 launch_template_name=self.node.try_get_context("LAUNCH_TEMPLATE_NAME"))
-
         launch_template.add_property_override("LaunchTemplateData", launch_template_data)
 
         # The code that defines your stack goes here
         # We take all of the parameters we have and place this into the ec2 instance class
+        # Except LaunchTemplate which is added as a property to the instance
         host = ec2.Instance(self,
                             id="dev_worker",
                             instance_type=instance_type,
@@ -91,8 +96,11 @@ class DevWorkerStack(core.Stack):
                             key_name=key_name,
                             role=role,
                             user_data=user_data,
-                            block_devices=[ebs_block_device]
+                            block_devices=[ebs_var_block_device, ebs_extended_block_device],
                             )
+
+        host.instance.add_property_override("LaunchTemplate", {"LaunchTemplateId": launch_template.ref,
+                                                               "Version": launch_template.attr_latest_version_number})
 
         # Return public IP address s.t we can ssh into it
         # Note that we may return an IP prior to the user_data shell script completing so not

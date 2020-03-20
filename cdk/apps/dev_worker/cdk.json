@@ -4,10 +4,10 @@
     "EC2_TYPE": "m4.4xlarge",
     "KEY_NAME": "alexis-dev",
     "MACHINE_IMAGE": "ami-0dc96254d5535925f",
-    "VOLUME_SIZE": "100",
-    "VOLUME_MOUNT_POINT": "/dev/xvdh",
+    "VAR_VOLUME_SIZE": "16",
+    "EXTENDED_VOLUME_SIZE": "100",
     "LAUNCH_TEMPLATE_NAME": "dev_worker_template",
     "INSTANCE_NAME": "dev_worker_instance_cdk",
-    "MAX_SPOT_PRICE": "0.20"
+    "MAX_SPOT_PRICE": "0.30"
   }
 }

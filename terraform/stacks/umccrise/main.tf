@@ -186,13 +186,14 @@ module "lambda" {
 
   environment {
     variables {
-      JOBNAME_PREFIX = "${var.stack_name}"
-      JOBQUEUE       = "${aws_batch_job_queue.umccr_batch_queue.arn}"
-      JOBDEF         = "${aws_batch_job_definition.umccrise_standard.arn}"
-      REFDATA_BUCKET = "${var.umccrise_refdata_bucket}"
-      INPUT_BUCKET    = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
-      UMCCRISE_MEM   = "${var.umccrise_mem[terraform.workspace]}"
-      UMCCRISE_VCPUS = "${var.umccrise_vcpus[terraform.workspace]}"
+      JOBNAME_PREFIX     = "${var.stack_name}"
+      JOBQUEUE           = "${aws_batch_job_queue.umccr_batch_queue.arn}"
+      JOBDEF             = "${aws_batch_job_definition.umccrise_standard.arn}"
+      REFDATA_BUCKET     = "${var.umccrise_refdata_bucket}"
+      INPUT_BUCKET       = "${var.workspace_umccrise_data_bucket[terraform.workspace]}"
+      UMCCRISE_MEM       = "${var.umccrise_mem[terraform.workspace]}"
+      UMCCRISE_VCPUS     = "${var.umccrise_vcpus[terraform.workspace]}"
+      IMAGE_CONFIGURABLE = "${terraform.workspace == "prod" ? "FALSE" : "TRUE"}"
     }
   }
 

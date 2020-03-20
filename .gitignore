@@ -9,7 +9,6 @@ cdk.context.json
 *cdk.egg-info
 __pycache__
 .vscode
-dev
 .idea/
-.dev
+.dev/
 dev/

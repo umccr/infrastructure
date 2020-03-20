@@ -9,6 +9,7 @@ from aws_cdk import (
 
 # User data script to run on Batch worker instance start up
 # Main purpose: pull in umccrise wrapper script to execute in Batch job
+# TODO: use variables (e.g. for device name)
 user_data_script = """MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
 
@@ -24,6 +25,12 @@ curl --output /opt/container/umccrise-wrapper.sh https://raw.githubusercontent.c
 ls -al /opt/container/
 chmod 755 /opt/container/umccrise-wrapper.sh
 ls -al /opt/container/
+echo Listing disk devices
+lsblk
+echo formatting and mounting disk
+# assuming the device is available under the requested name
+sudo mkfs -t xfs /dev/xvdf
+mount /dev/xvdf /mnt
 echo END CUSTOM USERDATA
 --==MYBOUNDARY==--"""
 
@@ -72,6 +79,7 @@ class BatchStack(core.Stack):
             ]
         )
 
+        # Create role for Batch instances
         batch_instance_role = iam.Role(
             self,
             'BatchInstanceRole',
@@ -109,7 +117,6 @@ class BatchStack(core.Stack):
             bucket.grant_read(batch_instance_role)
         for bucket in rw_buckets:
             bucket.grant_read_write(batch_instance_role)
-        # TODO: check if other permissions are needed (compare to Terraform)
 
         # Turn the instance role into a Instance Profile
         batch_instance_profile = iam.CfnInstanceProfile(
@@ -133,16 +140,10 @@ class BatchStack(core.Stack):
         ################################################################################
         # Setup Batch compute resources
 
-        # TODO: configure BlockDevice to expand instance disk space (if needed?)
-        # block_device_mappings = [
-        #     ec2.CfnInstance.BlockDeviceMappingProperty(
-        #         device_name='/dev/sda1',
-        #         ebs=ec2.CfnInstance.EbsProperty(volume_size=1024)
-        #     )
-        # ]
-        bdm = [
+        # Configure BlockDevice to expand instance disk space (if needed?)
+        block_device_mappings = [
             {
-                'deviceName': '/dev/sdf',
+                'deviceName': '/dev/xvdf',
                 'ebs': {
                     'deleteOnTermination': True,
                     'volumeSize': 1024,
@@ -157,13 +158,12 @@ class BatchStack(core.Stack):
             launch_template_name='UmccriseBatchComputeLaunchTemplate',
             launch_template_data={
                 'userData': core.Fn.base64(user_data_script),
-                'blockDeviceMappings': bdm
+                'blockDeviceMappings': block_device_mappings
             }
         )
 
         # TODO: Replace with proper CDK construct once available
         # TODO: Uses public subnet and default security group
-        # TODO: Add instance tagging
         batch_comp_env = batch.CfnComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
@@ -171,7 +171,7 @@ class BatchStack(core.Stack):
             service_role=batch_service_role.role_arn,
             compute_resources={
                 'type': props['compute_env_type'],
-                # 'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
+                'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
                 'maxvCpus': 128,
                 'minvCpus': 0,
                 'desiredvCpus': 0,
@@ -185,7 +185,7 @@ class BatchStack(core.Stack):
                 'instanceTypes': ['optimal'],
                 'subnets': [vpc.public_subnets[0].subnet_id],
                 'securityGroupIds': [vpc.vpc_default_security_group],
-                'tags': {'Creator': 'Batch'}
+                'tags': {'Creator': 'Batch', 'Name': 'BatchWorker'}
             }
         )
 

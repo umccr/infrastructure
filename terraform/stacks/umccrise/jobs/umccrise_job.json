@@ -1,5 +1,5 @@
 {
-    "image": "umccr/umccrise:0.15.15",
+    "image": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise:0.17.7-9aba6d53d5",
     "vcpus": 2,
     "memory": 2048,
     "command": [

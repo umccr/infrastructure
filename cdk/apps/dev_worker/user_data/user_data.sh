@@ -47,12 +47,13 @@ mkfs -t ext4 /dev/sdg
 echo "/dev/sdg       /data   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
 # mount the volume on current boot
 mount -a
-# Make the /data mount a communal playground
+# Make the /data mount a communal playground for all users
 chown root:InstanceUser /data
+chmod 775 /data
 
 # Add each user to the instance user group so they have access to the /data mount
-useradd -a -G InstanceUser ec2-user
-useradd -a -G InstanceUser ssm-user
+usermod -a -G InstanceUser ec2-user
+usermod -a -G InstanceUser ssm-user
 
 ## Update yum
 yum update -y -q

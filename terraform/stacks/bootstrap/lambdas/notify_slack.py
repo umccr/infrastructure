@@ -54,8 +54,8 @@ def lambda_handler(event, context):
         # SNS notification
         print("Received event records. Looking at first record only")
         record = event['Records'][0]  # assume we only have one record TODO: check for situations where we can have more
-        if record.get('EventSource'):
-            slack_sender = f"Message from {record['EventSource']}"
+        if record.get('EventSource') or record.get('eventSource'):
+            slack_sender = f"Message from {record['EventSource']}{record['eventSource']}"
         if record.get('Sns'):
             print("Extracted SNS record")
             sns_record = record.get('Sns')
@@ -81,6 +81,8 @@ def lambda_handler(event, context):
                     slack_message = "Unrecognised SNS notification format"
             else:
                 print("SNS record does not seem to contain a message")
+        elif record.get('s3'):
+            print("Got S3 event")
         else:
             print("No 'Sns' record found")
     elif event.get('source'):

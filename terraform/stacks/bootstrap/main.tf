@@ -365,7 +365,7 @@ resource "aws_s3_bucket" "primary_data" {
   }
 
   lifecycle_rule {
-    id      = "glacier_older_than_90_days_bams"
+    id      = "glacier_older_than_60_days_bams"
     enabled = "${terraform.workspace == "dev" ? false : true}"
 
     tags = {
@@ -374,34 +374,12 @@ resource "aws_s3_bucket" "primary_data" {
     }
 
     transition {
-      days          = 90
+      days          = 60
       storage_class = "DEEP_ARCHIVE"
     }
   }
 }
 
-# S3 bucket as Vault backend store
-resource "aws_s3_bucket" "vault" {
-  bucket = "${var.workspace_vault_bucket_name[terraform.workspace]}"
-  acl    = "private"
-
-  versioning {
-    enabled = true
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  tags {
-    Name        = "vault-data"
-    Environment = "${terraform.workspace}"
-  }
-}
 
 ## Slack notify Lambda #########################################################
 

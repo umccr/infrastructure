@@ -72,6 +72,19 @@ def getCreatorFromId(id):
         return f"{id} (unknown)"
 
 
+def getWgNameFromId(wid):
+    if wid == 'wid:e4730533-d752-3601-b4b7-8d4d2f6373de':
+        return 'development'
+    elif wid == 'wid:9c481003-f453-3ff2-bffa-ae153b1ee565':
+        return 'collab-illumina-dev'
+    elif wid == 'wid:acddbfda-4980-38ed-99fa-94fe79523959':
+        return 'clinical-genomics-workgroup'
+    elif wid == 'wid:4d2aae8c-41d3-302e-a814-cdc210e4c38b':
+        return 'production'
+    else:
+        return 'unknown'
+
+
 def getSSMParam(name):
     """
     Fetch the parameter with the given name from SSM Parameter Store.
@@ -115,9 +128,11 @@ def slack_message_not_supported(sns_record):
     stratus_produced_by = sns_msg_atts['producedby']['Value']
 
     sns_msg = json.loads(sns_record.get('Message'))
+    print(f"Extracted message: {json.dumps(sns_msg)}")
+
     iap_id = sns_msg['id']
-    iap_crated_time = sns_msg['timeCreated']
-    iap_created_by = sns_msg['createdBy']
+    iap_crated_time = sns_msg['timeCreated'] if sns_msg.get('timeCreated') else "N/A"
+    iap_created_by = sns_msg['createdBy'] if sns_msg.get('createdBy') else "N/A"
 
     slack_color = GRAY
 
@@ -185,6 +200,8 @@ def slack_message_from_tes_runs(sns_record):
     stratus_produced_by = sns_msg_atts['producedby']['Value']
 
     sns_msg = json.loads(sns_record.get('Message'))
+    print(f"Extracted message: {json.dumps(sns_msg)}")
+
     task_id = sns_msg['id']
     task_name = sns_msg['name']
     task_status = sns_msg['status']
@@ -277,6 +294,8 @@ def slack_message_from_gds_uploaded(sns_record):
     stratus_produced_by = sns_msg_atts['producedby']['Value']
 
     sns_msg = json.loads(sns_record.get('Message'))
+    print(f"Extracted message: {json.dumps(sns_msg)}")
+
     file_id = sns_msg['id']
     file_name = sns_msg['name']
     file_path = sns_msg['path']
@@ -344,6 +363,103 @@ def slack_message_from_gds_uploaded(sns_record):
     return slack_sender, slack_topic, slack_attachment
 
 
+def slack_message_from_bssh_runs(sns_record):
+    # TODO: parse ACL, extract workgroup ID and map to workgroup name
+    aws_account = sns_record.get('TopicArn').split(':')[4]
+    sns_record_date = parse(sns_record.get('Timestamp'))
+
+    sns_msg_atts = sns_record.get('MessageAttributes')
+    stratus_action = sns_msg_atts['action']['Value']
+    stratus_action_date = sns_msg_atts['actiondate']['Value']
+    stratus_action_type = sns_msg_atts['type']['Value']
+    stratus_produced_by = sns_msg_atts['producedby']['Value']
+
+    sns_msg = json.loads(sns_record.get('Message'))
+    print(f"Extracted message: {json.dumps(sns_msg)}")
+
+    run_id = sns_msg['id']
+    name = sns_msg['name']
+    folder_path = sns_msg['gdsFolderPath']
+    volumn_name = sns_msg['gdsVolumeName']
+    date_modified = sns_msg['dateModified']
+    instrument_run_id = sns_msg['instrumentRunId']
+    status = sns_msg['status']
+
+    acl = sns_msg['acl']
+    if len(acl) == 1:
+        owner = getWgNameFromId(acl[0])
+    else:
+        print("Multiple IDs in ACL, expected 1!")
+        owner = 'undetermined'
+
+    if status == "New":
+        slack_color = GREEN
+    else:
+        slack_color = GRAY
+
+    slack_sender = "Illumina Application Platform"
+    slack_topic = f"Notification from {stratus_action_type}"
+    slack_attachment = [
+        {
+            "fallback": f"Run {instrument_run_id}: {status}",
+            "color": slack_color,
+            "pretext": name,
+            "title": f"Run: {instrument_run_id}",
+            "text": folder_path,
+            "fields": [
+                {
+                    "title": "Action",
+                    "value": stratus_action,
+                    "short": True
+                },
+                {
+                    "title": "Action Type",
+                    "value": stratus_action_type,
+                    "short": True
+                },
+                {
+                    "title": "Volumn name",
+                    "value": volumn_name,
+                    "short": True
+                },
+                {
+                    "title": "Action Date",
+                    "value": stratus_action_date,
+                    "short": True
+                },
+                {
+                    "title": "Modified Date",
+                    "value": date_modified,
+                    "short": True
+                },
+                {
+                    "title": "Produced By",
+                    "value": stratus_produced_by,
+                    "short": True
+                },
+                {
+                    "title": "BSSH run ID",
+                    "value": run_id,
+                    "short": True
+                },
+                {
+                    "title": "Run owner",
+                    "value": owner,
+                    "short": True
+                },
+                {
+                    "title": "AWS Account",
+                    "value": getAwsAccountName(aws_account),
+                    "short": True
+                }
+            ],
+            "footer": "IAP GDS Event",
+            "ts": int(sns_record_date.timestamp())
+        }
+    ]
+    return slack_sender, slack_topic, slack_attachment
+
+
 def lambda_handler(event, context):
     # Log the received event in CloudWatch
     print(f"Received event: {json.dumps(event)}")
@@ -365,6 +481,8 @@ def lambda_handler(event, context):
                     slack_sender, slack_topic, slack_attachment = slack_message_from_gds_uploaded(sns_record)
                 elif sns_record['MessageAttributes']['type']['Value'] == 'tes.runs':
                     slack_sender, slack_topic, slack_attachment = slack_message_from_tes_runs(sns_record)
+                elif sns_record['MessageAttributes']['type']['Value'] == 'bssh.runs':
+                    slack_sender, slack_topic, slack_attachment = slack_message_from_bssh_runs(sns_record)
                 else:
                     slack_sender, slack_topic, slack_attachment = slack_message_not_supported(sns_record)
 
@@ -382,3 +500,4 @@ def lambda_handler(event, context):
 
     except Exception as e:
         print(e)
+        raise ValueError('Error sending message to Slack')

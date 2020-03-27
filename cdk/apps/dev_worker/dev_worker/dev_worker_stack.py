@@ -87,7 +87,7 @@ class DevWorkerStack(core.Stack):
         # We take all of the parameters we have and place this into the ec2 instance class
         # Except LaunchTemplate which is added as a property to the instance
         host = ec2.Instance(self,
-                            id="dev_worker",
+                            id="{}-instance".format(self.node.try_get_context("STACK_NAME")),
                             instance_type=instance_type,
                             instance_name=self.node.try_get_context("INSTANCE_NAME"),
                             machine_image=machine_image,

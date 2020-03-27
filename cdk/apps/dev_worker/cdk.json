@@ -1,5 +1,5 @@
 {
-  "app": "python app.py",
+  "app": "python3 app.py",
   "context": {
     "STACK_NAME": "dev-worker",
     "EC2_TYPE": "m4.4xlarge",

@@ -51,6 +51,13 @@ cdk deploy
 ## Deploy the workflow with different parameters
 You can change any of the parameters seen in the `cdk.json` *context* attribute
 ```bash
-cdk diff -c "STACK_NAME=alexis-unique-instance" -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
-cdk deploy -c "STACK_NAME=alexis-unique-instance" "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+cdk diff -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+cdk deploy -c "STACK_NAME=alexis-unique-stack" "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+```
+
+Notes:
+If you create a stack with a different *STACK_NAME* parameter, you will need to use this same context parameter when destorying the stack
+i.e:
+```cdk
+cdk destroy -c "STACK_NAME=alexis-unique-stack"
 ```

@@ -19,7 +19,10 @@ TAGS = {
 
 
 app = core.App()
-DevWorkerStack(app, "dev-worker", env={"account": ACCOUNT, "region": REGION})
+
+stack_name = app.node.try_get_context("STACK_NAME")
+
+DevWorkerStack(app, stack_name, env={"account": ACCOUNT, "region": REGION})
 
 # Add tags to app
 for key, value in TAGS.items():

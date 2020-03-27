@@ -51,6 +51,6 @@ cdk deploy
 ## Deploy the workflow with different parameters
 You can change any of the parameters seen in the `cdk.json` *context* attribute
 ```bash
-cdk diff -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
-cdk deploy -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+cdk diff -c "STACK_NAME=alexis-unique-instance" -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+cdk deploy -c "STACK_NAME=alexis-unique-instance" "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
 ```

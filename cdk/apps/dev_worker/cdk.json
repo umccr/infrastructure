@@ -1,6 +1,7 @@
 {
   "app": "python app.py",
   "context": {
+    "STACK_NAME": "dev-worker",
     "EC2_TYPE": "m4.4xlarge",
     "KEY_NAME": "alexis-dev",
     "MACHINE_IMAGE": "ami-0dc96254d5535925f",

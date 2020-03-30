@@ -20,7 +20,14 @@ TAGS = {
 
 app = core.App()
 
+# Check required args are not none
 stack_name = app.node.try_get_context("STACK_NAME")
+key_name = app.node.try_get_context("KEY_NAME")
+
+if stack_name is None:
+    print("Error: STACK_NAME in cdk.json is not defined")
+if key_name is None:
+    print("Error: KEY_NAME in cdk.json is not defined")
 
 DevWorkerStack(app, stack_name, env={"account": ACCOUNT, "region": REGION})
 

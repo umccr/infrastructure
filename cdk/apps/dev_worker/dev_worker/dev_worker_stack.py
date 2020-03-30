@@ -90,7 +90,7 @@ class DevWorkerStack(core.Stack):
                             block_devices=[ebs_var_block_device, ebs_extended_block_device],
                             )
 
-        if self.node.try_get_context("USE_SPOT_INSTANCE") is True:
+        if self.node.try_get_context("USE_SPOT_INSTANCE").lower() == 'true':
             # Spot pricing via ec2 fleet
             spot_options = {"MaxPrice": self.node.try_get_context("MAX_SPOT_PRICE")}
             market_options = {"MarketType": "spot",

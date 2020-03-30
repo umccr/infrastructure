@@ -74,15 +74,6 @@ class DevWorkerStack(core.Stack):
         # Get key name from context
         key_name = self.node.try_get_context("KEY_NAME")
 
-        # Spot pricing via ec2 fleet
-        spot_options = {"MaxPrice": self.node.try_get_context("MAX_SPOT_PRICE")}
-        market_options = {"MarketType": "spot",
-                          "SpotOptions": spot_options}
-        launch_template_data = {"InstanceMarketOptions": market_options}
-        launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate",
-                                                launch_template_name=self.node.try_get_context("LAUNCH_TEMPLATE_NAME"))
-        launch_template.add_property_override("LaunchTemplateData", launch_template_data)
-
         # The code that defines your stack goes here
         # We take all of the parameters we have and place this into the ec2 instance class
         # Except LaunchTemplate which is added as a property to the instance
@@ -99,8 +90,18 @@ class DevWorkerStack(core.Stack):
                             block_devices=[ebs_var_block_device, ebs_extended_block_device],
                             )
 
-        host.instance.add_property_override("LaunchTemplate", {"LaunchTemplateId": launch_template.ref,
-                                                               "Version": launch_template.attr_latest_version_number})
+        if self.node.try_get_context("USE_SPOT_INSTANCE").lower() == 'true':
+            # Spot pricing via ec2 fleet
+            spot_options = {"MaxPrice": self.node.try_get_context("MAX_SPOT_PRICE")}
+            market_options = {"MarketType": "spot",
+                              "SpotOptions": spot_options}
+            launch_template_data = {"InstanceMarketOptions": market_options}
+            launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate",
+                                                    launch_template_name=self.node.try_get_context("LAUNCH_TEMPLATE_NAME"))
+            launch_template.add_property_override("LaunchTemplateData", launch_template_data)
+
+            host.instance.add_property_override("LaunchTemplate", {"LaunchTemplateId": launch_template.ref,
+                                                                   "Version": launch_template.attr_latest_version_number})
 
         # Return public IP address s.t we can ssh into it
         # Note that we may return an IP prior to the user_data shell script completing so not

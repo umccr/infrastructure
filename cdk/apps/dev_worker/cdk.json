@@ -1,13 +1,15 @@
 {
-  "app": "python app.py",
+  "app": "python3 app.py",
   "context": {
+    "STACK_NAME": null,
     "EC2_TYPE": "m4.4xlarge",
-    "KEY_NAME": "alexis-dev",
+    "KEY_NAME": null,
     "MACHINE_IMAGE": "ami-0dc96254d5535925f",
     "VAR_VOLUME_SIZE": "16",
     "EXTENDED_VOLUME_SIZE": "100",
     "LAUNCH_TEMPLATE_NAME": "dev_worker_template",
     "INSTANCE_NAME": "dev_worker_instance_cdk",
+    "USE_SPOT_INSTANCE": true,
     "MAX_SPOT_PRICE": "0.30"
   }
 }

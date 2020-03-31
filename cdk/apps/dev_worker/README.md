@@ -30,7 +30,7 @@ Since we run through the Fn.Sub to substitute variables into the user_data scrip
 
 ## Create the env
 ```bash
-cdk init --language=python
+python -m venv .env
 ```
 
 ## Activate the env
@@ -38,26 +38,93 @@ cdk init --language=python
 source .env/bin/activate
 ``` 
 
-## Validate the stack
-```bash
-cdk synth
+## Context parameters
+This dev worker stack has the following optional context parameters.  
+Context parameters are defined with the `-c "KEY_NAME=VALUE_NAME` argument.  
+Repeat the `-c` parameter for defining multiple parameters.    
+i.e 
+```
+cdk deploy -c "STACK_NAME=my-stack" -c "KEY_NAME=myki"
 ```
 
-## Deploy the workflow
+The list of possible context parameters and their descriptions are listed below:
+
+### Required context parameters
+| **Context Key** | **Description**                                                                                           |
+|-----------------|-----------------------------------------------------------------------------------------------------------|
+| STACK_NAME      | Name of the stack to be deployed                                                                          |
+| KEY_NAME        | EC2 public/private key pair to be used. Public key complement is placed in /home/ec2-user/authorized_keys |
+
+### Optional context parameters
+| **Context Key**      | **Description**                                                                                                                                                                | **Default Value**       |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| EC2_TYPE             | Type of instance to be deployed, options can be seen here https://aws.amazon.com/ec2/instance-types/                                                                           | m4.4xlarge              |
+| MACHINE_IMAGE        | AMI can be found here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami.html#finding-an-ami-console                                                          | ami-0dc96254d5535925f   |
+| VAR_VOLUME_SIZE      | /var is mounted on a separate EBS volume to stop 8 Gb root volume from filling up. Can also be used as a scratch space by setting TMPDIR to /var/tmp. Unit is Gb               | 16                      |
+| EXTENDED_VOLUME_SIZE | /data/ is also mounted on a separate EBS volume/. Unit is Gb                                                                                                                   | 100                     |
+| LAUNCH_TEMPLATE_NAME | If running a spot instance, this is the name of the launch template used                                                                                                       | dev_worker_template     |
+| INSTANCE_NAME        | This is the name of the instance deployed and will show up in the EC2 console                                                                                                  | dev_worker_instance_cdk |
+| USE_SPOT_INSTANCE    | Would you like to use a spot instance, much cheaper but cannot be stopped, only terminated and may be shutdown at any time or fail to launch if the MAX_SPOT_PRICE is too low. | True                    |
+| MAX_SPOT_PRICE       | Maximum hourly rate of the spot instance in dollar value                                                                                                                       | 0.30                    |
+
+## Validate the stack
 ```bash
-cdk deploy
+cdk synth -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev"
 ```
 
 ## Deploy the workflow with different parameters
 You can change any of the parameters seen in the `cdk.json` *context* attribute
 ```bash
-cdk diff -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
-cdk deploy -c "STACK_NAME=alexis-unique-stack" "KEY_NAME=myname-dev' -c "EC2_TYPE=t2.micro"
+cdk diff -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev" -c "EC2_TYPE=t2.micro"
+cdk deploy -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev" -c "EC2_TYPE=t2.micro"
 ```
 
 Notes:
-If you create a stack with a different *STACK_NAME* parameter, you will need to use this same context parameter when destorying the stack
+You will need to use this same STACK_NAME parameter when destroying the stack
 i.e:
 ```cdk
 cdk destroy -c "STACK_NAME=alexis-unique-stack"
 ```
+
+## Some helpful commands
+*These commands assume the following ssh configs have been set:*
+```
+host i-* mi-*
+    ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
+    User ec2-user
+    IdentityFile /path/to/private/key/.ssh/aws
+```
+
+### Sync iap credentials to instance
+```
+INSTANCE_ID="i-a1b2c3d4e5"
+rsync --archive ~/.iap/ "${INSTANCE_ID}:/home/ec2-user/.iap/"
+```
+
+### Sync notebook to this instance
+The jupyter notebook provided gives a set of useful functions specific to AWS.
+This can allow the user to launch multiple cells in the evening, and have the instance stop after all cells have completed.
+The stopped instance can then be restarted in the morning. Only non-spot instances may be stopped.
+```
+INSTANCE_ID="i-a1b2c3d4e5"
+NOTEBOOK_NAME=dev_worker_notebook.ipynb
+rsync --archive "${NOTEBOOK_NAME}" "${INSTANCE_ID}:/home/ec2-user/my-notebook.ipynb"
+```
+
+## Launching jupyter
+ssh into the instance binding the port 8888 via the ec2-user  
+and launch jupyter in the background
+```bash
+# Local
+INSTANCE_ID="i-a1b2c3d4e5"
+ssh -L8888:localhost:8888 "${INSTANCE_ID}"
+# Remote
+nohup jupyter notebook --port=8888 &
+```
+
+Then check the token using: 
+```
+cat nohup.out
+```
+
+And open up a browser tab of the notebook.

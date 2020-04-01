@@ -6,7 +6,7 @@ terraform/stacks/stackstorm/keys
 .env
 cdk.out
 cdk.context.json
-*cdk.egg-info
+*.egg-info
 __pycache__
 .vscode
 .idea/

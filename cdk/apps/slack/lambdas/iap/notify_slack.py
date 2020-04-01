@@ -394,6 +394,8 @@ def slack_message_from_bssh_runs(sns_record):
 
     if status == "New":
         slack_color = GREEN
+    elif status == 'FailedUpload':
+        slack_color = RED
     else:
         slack_color = GRAY
 
@@ -415,6 +417,11 @@ def slack_message_from_bssh_runs(sns_record):
                 {
                     "title": "Action Type",
                     "value": stratus_action_type,
+                    "short": True
+                },
+                {
+                    "title": "Status",
+                    "value": status,
                     "short": True
                 },
                 {

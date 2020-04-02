@@ -101,9 +101,14 @@ def run_monitor(monitored_path, slack_lambda_name, state_machine_arn):
     root_path = Path(monitored_path)
     for child_path in root_path.iterdir():
         if child_path.is_dir():
-            logger.info(f"Adding path to monitor: {child_path}")
-            ch_wd = inotify_service.add_watch(child_path, WATCH_FLAGS)
-            wd_dir_map[ch_wd] = child_path
+            # Add a hack to exclude certain folders from being monitored
+            # TODO: find better way to do this
+            if '200401_A00130_0135_AH2JJCDSXY' in child_path.name:
+                logger.info(f"Ignoring path: {child_path}")
+            else:
+                logger.info(f"Adding path to monitor: {child_path}")
+                ch_wd = inotify_service.add_watch(child_path, WATCH_FLAGS)
+                wd_dir_map[ch_wd] = child_path
 
     while 1:
         # TODO: monitor for folder deletion events, to remove watches for removed runfolder?

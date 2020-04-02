@@ -299,7 +299,7 @@ def slack_message_from_gds_uploaded(sns_record):
     file_id = sns_msg['id']
     file_name = sns_msg['name']
     file_path = sns_msg['path']
-    volumn_name = sns_msg['volumeName']
+    volume_name = sns_msg['volumeName']
     file_crated_time = sns_msg['timeCreated']
     file_created_by = sns_msg['createdBy']
 
@@ -326,8 +326,8 @@ def slack_message_from_gds_uploaded(sns_record):
                     "short": True
                 },
                 {
-                    "title": "Volumn name",
-                    "value": volumn_name,
+                    "title": "Volume name",
+                    "value": volume_name,
                     "short": True
                 },
                 {

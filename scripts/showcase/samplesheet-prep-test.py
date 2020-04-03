@@ -107,7 +107,6 @@ def create_output_dir(output_dir):
     param: output_dir: path to the output directory
     """
     # create output directory if it does not exist
-    output_dir = os.path.dirname(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
 

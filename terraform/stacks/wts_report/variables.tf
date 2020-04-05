@@ -64,9 +64,12 @@ variable "workspace_wts_report_ro_buckets" {
     prod = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
             "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*",
             "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*"]
-    dev  = ["arn:aws:s3:::umccr-primary-data-dev2", "arn:aws:s3:::umccr-primary-data-dev2/*",
+    dev  = ["arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
+            "arn:aws:s3:::umccr-primary-data-dev2", "arn:aws:s3:::umccr-primary-data-dev2/*",
             "arn:aws:s3:::umccr-primary-data-dev", "arn:aws:s3:::umccr-primary-data-dev/*",
-            "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*"]
+            "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*",
+            "arn:aws:s3:::umccr-misc-temp", "arn:aws:s3:::umccr-misc-temp/*",
+            "arn:aws:s3:::umccr-refdata-dev", "arn:aws:s3:::umccr-refdata-dev/*"]
   }
 }
 

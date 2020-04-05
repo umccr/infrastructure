@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import boto3
 import http.client
@@ -68,6 +69,8 @@ def getCreatorFromId(id):
         return f"{id} (Alexis Lucattini)"
     elif id == '46258763-7c48-3a1c-8c5f-04003bf74e5a':
         return f"{id} (Alexis - unimelb)"
+    elif id == 'aa9f1c02-3963-3c3b-ad0d-9b6f6e26a405':
+        return f"{id} Pratik Soares (Illumina)"
     else:
         return f"{id} (unknown)"
 
@@ -392,12 +395,31 @@ def slack_message_from_bssh_runs(sns_record):
         print("Multiple IDs in ACL, expected 1!")
         owner = 'undetermined'
 
-    if status == "New":
+    # Map status to colour
+    # https://support.illumina.com/help/BaseSpace_Sequence_Hub/Source/Informatics/BS/Statuses_swBS.htm
+    # Sequencing statuses
+    # •	Running—The instrument is sequencing the run.
+    # •	Paused—A user paused the run on the instrument control software.
+    # •	Stopped—The instrument has been put into a Stopped state through the instrument control software.
+    # File Upload and Analysis statuses
+    # •	Uploading—The instrument completed sequencing and is uploading files.
+    # •	Failed Upload—The instrument failed to upload files to the BaseSpace Sequence Hub.
+    # •	Pending Analysis—The file has uploaded completely and is waiting for the Generate FASTQ analysis to begin.
+    # •	Analyzing—The Generate FASTQ analysis is running.
+    # •	Complete—The sequencing run and subsequent Generate FASTQ analysis completed successfully.
+    # •	Failed—Either the sequencing run was failed using the instrument control software or Generate FASTQ failed to complete.
+    # •	Rehybing—A flow cell has been sent back to a cBot for rehybing. When the new run is complete, the rehybing status is changed to Failed.
+    # •	Needs Attention—There is an issue with the sample sheet associated with the run. The run can be requeued after the sample sheet is fixed.
+    # •	Timed Out—There is an issue with the sample sheet associated with the run. The run can be requeued after the sample sheet is fixed.
+    if status == 'Uploading' or status == 'Running':
+        slack_color = BLUE
+    elif status == 'PendingAnalysis' or status == 'Complete':
         slack_color = GREEN
-    elif status == 'FailedUpload':
+    elif status == 'FailedUpload' or status == 'Failed' or status == 'TimedOut':
         slack_color = RED
     else:
-        slack_color = GRAY
+        print(f"Unsupported status {status}. Not reporting to Slack!")
+        sys.exit(0)
 
     slack_sender = "Illumina Application Platform"
     slack_topic = f"Notification from {stratus_action_type}"
@@ -492,7 +514,6 @@ def lambda_handler(event, context):
                     slack_sender, slack_topic, slack_attachment = slack_message_from_bssh_runs(sns_record)
                 else:
                     slack_sender, slack_topic, slack_attachment = slack_message_not_supported(sns_record)
-
         else:
             raise ValueError("Unexpected Message Format!")
     else:
@@ -501,10 +522,14 @@ def lambda_handler(event, context):
     # Forward the data to Slack
     try:
         print(f"Slack sender: ({slack_sender}), topic: ({slack_topic}) and attachments: {json.dumps(slack_attachment)}")
-        response = call_slack_webhook(slack_sender, slack_topic, slack_attachment)
-        print(f"Response status: {response}")
-        return event
-
+        # if we couldn't assign any sensible value, there is no point in sending a slack message
+        if slack_sender or slack_topic or slack_attachment:
+            response = call_slack_webhook(slack_sender, slack_topic, slack_attachment)
+            print(f"Response status: {response}")
+        else:
+            ValueError("Could not extract sensible values from event! Not sending Slack message.")
     except Exception as e:
         print(e)
         raise ValueError('Error sending message to Slack')
+
+    return event

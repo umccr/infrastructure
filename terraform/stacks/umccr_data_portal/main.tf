@@ -259,6 +259,22 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 ################################################################################
 # Back end configurations
 
+data "template_file" "sqs_iap_ens_event_policy" {
+  template = "${file("policies/sqs_iap_ens_event_policy.json")}"
+
+  vars {
+    # Use the same name as the one below, if referring there will be cicurlar dependency
+    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
+  }
+}
+
+# SQS Queue for IAP Event Notification Service event delivery
+# See https://iap-docs.readme.io/docs/ens_create-an-amazon-sqs-queue
+resource "aws_sqs_queue" "iap_ens_event_queue" {
+  name   = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
+  policy = "${data.template_file.sqs_iap_ens_event_policy.rendered}"
+}
+
 data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = "${var.s3_primary_data_bucket[terraform.workspace]}"
 }
@@ -821,6 +837,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "S3_EVENT_SQS_ARN"
       value = "${aws_sqs_queue.s3_event_queue.arn}"
+    }
+
+    environment_variable {
+      name  = "IAP_ENS_EVENT_SQS_ARN"
+      value = "${aws_sqs_queue.iap_ens_event_queue.arn}"
     }
 
     environment_variable {

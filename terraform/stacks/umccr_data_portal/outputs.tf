@@ -94,6 +94,10 @@ output "S3_EVENT_SQS_ARN" {
     value = "${aws_sqs_queue.s3_event_queue.arn}"
 }
 
+output "IAP_ENS_EVENT_SQS_ARN" {
+    value = "${aws_sqs_queue.iap_ens_event_queue.arn}"
+}
+
 output "CERTIFICATE_ARN" {
     value = "${aws_acm_certificate.client_cert.arn}"
 }

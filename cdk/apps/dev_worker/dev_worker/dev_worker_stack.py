@@ -96,8 +96,7 @@ class DevWorkerStack(core.Stack):
             market_options = {"MarketType": "spot",
                               "SpotOptions": spot_options}
             launch_template_data = {"InstanceMarketOptions": market_options}
-            launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate",
-                                                    launch_template_name=self.node.try_get_context("LAUNCH_TEMPLATE_NAME"))
+            launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate")
             launch_template.add_property_override("LaunchTemplateData", launch_template_data)
 
             host.instance.add_property_override("LaunchTemplate", {"LaunchTemplateId": launch_template.ref,

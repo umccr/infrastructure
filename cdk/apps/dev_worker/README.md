@@ -6,6 +6,13 @@ Deploy an ec2 instance with docker ready to go and logged into our ECR (Elastic 
 This repo is (partially) based on the cdk example provided [here](https://github.com/aws-samples/aws-cdk-examples/blob/master/python/existing-vpc-new-ec2-ebs-userdata/cdk_vpc_ec2)
 
 ## Quick start:
+
+0. Define the following function on your `.bashrc` or equivalent:
+```bash
+ssm() {
+	aws ssm start-session --target "$1" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
+}
+```
 1. Create the venv
 `python3 -m venv .env`
 2. Activate the venv
@@ -13,15 +20,14 @@ This repo is (partially) based on the cdk example provided [here](https://github
 3. Deploy the ec2 instance:
 `cdk deploy`
 4. Log into the instance:
-*You will need to read below to correctly configure your ssh config.*
-`ssh i-....`
+`ssm i-....`
 5. Shut down the instance and stack:
 *Assumes no other instances have been launched from this folder - verify STACK_NAME in context*
 `cdk destroy`
 
 ## Observe the cdk.json
 We have the following variables as default:
-* EC2_TYPE: m4.4xlarge  # 16 CPU, 64 GB RAM
+* EC2_TYPE: m5.4xlarge  # 16 CPU, 64 GB RAM
 * MACHINE_IMAGE: ami-0dc96254d5535925f
 * VOLUME_SIZE: "100"  # GB
     
@@ -94,7 +100,6 @@ cdk destroy -c "STACK_NAME=alexis-unique-stack"
 ## Some helpful commands
 
 ### Set SSH config
-*These commands assume the following ssh configs have been set:*
 This assumes you have loaded your public key complement `aws.pub` into your github keys (which are publicly accessible)
 You may choose between ec2-user and ssm-user, both have identical setups. ssm-user may be removed in future.
 ```

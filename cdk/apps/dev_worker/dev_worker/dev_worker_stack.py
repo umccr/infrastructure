@@ -13,6 +13,9 @@ class DevWorkerStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        # Get/set stack name for context
+        self.node.set_context("STACK_NAME", self.stack_name)
+
         # The code that defines your stack goes here
         # Set a vpc
         vpc = ec2.Vpc.from_lookup(self, "VPC", is_default=True)

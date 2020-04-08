@@ -68,15 +68,30 @@ amazon-linux-extras install docker
 usermod -a -G docker ssm-user
 usermod -a -G docker ec2-user
 
-# Start docker container
-service docker start
+# Start docker container at boot
+systemctl start docker
+systemctl enable docker
 
 # Install container registry helper
 yum install amazon-ecr-credential-helper -y
 
-# Add configuration to docker config - this logs us into docker for our ecr
-su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
-su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
+# Install the latest ssm agent
+yum install -y \
+  https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+systemctl start amazon-ssm-agent
+
+# echo "Fetching GitHub SSH keys for UMCCR members..."
+yum install -y jq
+ORG_NAME="UMCCR"
+ORG_USERS=$(curl -s "https://api.github.com/orgs/${!ORG_NAME}/members" | jq -r ".[].html_url")
+for org_user in ${!ORG_USERS}; do
+	  wget "${!org_user}.keys" -O - >> "/home/ec2-user/.ssh/authorized_keys"
+	  wget "${!org_user}.keys" -O - >> "/home/ssm-user/.ssh/authorized_keys"
+done
+
+# Add configuration to docker config - this logs us into docker for our ecr - doesn't seem to work right now.
+#su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
+#su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
 
 # Download IAP and install into /usr/local/bin
 echo "Downloading IAP"
@@ -97,17 +112,19 @@ rm Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh
   --name base \
   --channel defaults \
 	conda
-conda clean --all --yes
+/opt/conda/bin/conda clean --all --yes
 
 # Install jupyter so one can launch notebook
-conda install --yes --freeze-installed \
+/opt/conda/bin/conda install --yes --freeze-installed \
   --channel anaconda \
-  jupyter
-conda clean --all --yes
+  jupyter \
+  pip
+
+/opt/conda/bin/conda clean --all --yes
 
 # Install jupyter extensions
-pip install jupyter_contrib_nbextensions
-jupyter contrib nbextension install
+/opt/conda/bin/pip install jupyter_contrib_nbextensions
+/opt/conda/bin/jupyter contrib nbextension install
 
 # Fix bashrc for ec2-user and ssm-user for access ready for conda
 su - "ec2-user" -c "/opt/conda/bin/conda init"

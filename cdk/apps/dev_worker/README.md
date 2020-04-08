@@ -5,11 +5,17 @@ Deploy an ec2 instance with docker ready to go and logged into our ECR (Elastic 
 
 This repo is (partially) based on the cdk example provided [here](https://github.com/aws-samples/aws-cdk-examples/blob/master/python/existing-vpc-new-ec2-ebs-userdata/cdk_vpc_ec2)
 
+## Quick start:
+1. Create the venv
+`python3 -m venv .env`
+2. Activate the venv
+`source .env/bin/activate`
+3. Deploy the ec2 instance:
+`cdk deploy`
 
 ## Observe the cdk.json
 We have the following variables as default:
 * EC2_TYPE: m4.4xlarge
-* KEY_NAME: alexis-dev
 * MACHINE_IMAGE: ami-0dc96254d5535925f
 * VOLUME_SIZE: "100"
 * MOUNT_POINT: "/dev/xvdh"
@@ -23,7 +29,7 @@ are characteristic to this workflow
 
 ## The user data
 We then have the `user_data` folder to run the setup on the ec2 instance.
-Our output returns a public IP of our ec2 instance that we can then ssh into via the ssm manager.  
+Our output returns the ID of the ec2 instance that we can then ssh into via the ssm manager.  
 Since we run through the Fn.Sub to substitute variables into the user_data script as needed, all non-substituted variables must use the `${!VAR}` syntax.
 
 # CDK commands
@@ -40,24 +46,19 @@ source .env/bin/activate
 
 ## Context parameters
 This dev worker stack has the following optional context parameters.  
-Context parameters are defined with the `-c "KEY_NAME=VALUE_NAME` argument.  
+Context parameters are defined with the `-c "STACK_NAME=my-stack` argument.  
 Repeat the `-c` parameter for defining multiple parameters.    
 i.e 
 ```
-cdk deploy -c "STACK_NAME=my-stack" -c "KEY_NAME=myki"
+cdk deploy -c "STACK_NAME=my-stack"
 ```
 
 The list of possible context parameters and their descriptions are listed below:
 
-### Required context parameters
-| **Context Key** | **Description**                                                                                           |
-|-----------------|-----------------------------------------------------------------------------------------------------------|
-| STACK_NAME      | Name of the stack to be deployed                                                                          |
-| KEY_NAME        | EC2 public/private key pair to be used. Public key complement is placed in /home/ec2-user/authorized_keys |
-
 ### Optional context parameters
 | **Context Key**      | **Description**                                                                                                                                                                | **Default Value**       |
 |----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| STACK_NAME           | Unique Name of the stack you wish to deploy                                                                                                                                    | dev-worker-${USER}-uuid |
 | EC2_TYPE             | Type of instance to be deployed, options can be seen here https://aws.amazon.com/ec2/instance-types/                                                                           | m4.4xlarge              |
 | MACHINE_IMAGE        | AMI can be found here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami.html#finding-an-ami-console                                                          | ami-0dc96254d5535925f   |
 | VAR_VOLUME_SIZE      | /var is mounted on a separate EBS volume to stop 8 Gb root volume from filling up. Can also be used as a scratch space by setting TMPDIR to /var/tmp. Unit is Gb               | 16                      |
@@ -69,14 +70,14 @@ The list of possible context parameters and their descriptions are listed below:
 
 ## Validate the stack
 ```bash
-cdk synth -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev"
+cdk synth -c "STACK_NAME=alexis-unique-stack"
 ```
 
 ## Deploy the workflow with different parameters
 You can change any of the parameters seen in the `cdk.json` *context* attribute
 ```bash
-cdk diff -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev" -c "EC2_TYPE=t2.micro"
-cdk deploy -c "STACK_NAME=alexis-unique-stack" -c "KEY_NAME=myname-dev" -c "EC2_TYPE=t2.micro"
+cdk diff -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
+cdk deploy -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 ```
 
 Notes:
@@ -88,6 +89,7 @@ cdk destroy -c "STACK_NAME=alexis-unique-stack"
 
 ## Some helpful commands
 *These commands assume the following ssh configs have been set:*
+This assumes you have loaded your public key `aws.pub` into your github keys (which are publicly accessible)
 ```
 host i-* mi-*
     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"

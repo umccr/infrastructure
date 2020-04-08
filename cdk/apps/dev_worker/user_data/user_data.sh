@@ -105,6 +105,10 @@ conda install --yes --freeze-installed \
   jupyter
 conda clean --all --yes
 
+# Install jupyter extensions
+pip install jupyter_contrib_nbextensions
+jupyter contrib nbextension install
+
 # Fix bashrc for ec2-user and ssm-user for access ready for conda
 su - "ec2-user" -c "/opt/conda/bin/conda init"
 su - "ssm-user" -c "/opt/conda/bin/conda init"

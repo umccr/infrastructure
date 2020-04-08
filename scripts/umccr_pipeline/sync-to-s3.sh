@@ -152,10 +152,10 @@ log_file_name=$(echo "$dest_path" | tr \/ _)
 
 # build the command
 if test "$DEPLOY_ENV" = "prod"; then
-  cmd="aws s3 sync --no-progress"
+  cmd="aws s3 sync --no-progress --delete"
 else
   log_file_name+=".dev" # add dev extension to separate from prod log files
-  cmd="aws s3 sync --no-progress --dryrun"
+  cmd="aws s3 sync --no-progress --delete --dryrun"
 fi
 for i in "${excludes[@]}"
 do

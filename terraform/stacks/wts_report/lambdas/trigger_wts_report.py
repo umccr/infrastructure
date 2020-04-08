@@ -1,11 +1,10 @@
 import os
 import boto3
-import json
 
 
 def lambda_handler(event, context):
     # Log the received event
-    print("Received event: " + json.dumps(event, indent=2))
+    print(f"Received event: {event}")
     # get the Batch client ready
     batch_client = boto3.client('batch')
 
@@ -30,8 +29,9 @@ def lambda_handler(event, context):
 
     try:
         s3 = boto3.client('s3')
-        response_wts = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=data_wts_dir)
-        print("S3 list response: " + json.dumps(response_wts, indent=2, sort_keys=True, default=str))
+        print(f"Checking if data in WTS input S3 path ({data_wts_dir}) exists in bucket {data_bucket}")
+        response_wts = s3.list_objects(Bucket=data_bucket, MaxKeys=3, Prefix=data_wts_dir)
+        print(f"S3 list response: {response_wts}")
         if not response_wts.get('Contents') or len(response_wts['Contents']) < 1:
             return {
                 'statusCode': 400,
@@ -40,8 +40,9 @@ def lambda_handler(event, context):
             }
 
         if event.get('dataDirWGS'):
-            response_wgs = s3.list_objects(Bucket=data_bucket, MaxKeys=5, Prefix=data_wgs_dir)
-            print("S3 list response: " + json.dumps(response_wgs, indent=2, sort_keys=True, default=str))
+            print(f"Checking if data in WGS input S3 path ({data_wgs_dir}) exists in bucket {data_bucket}")
+            response_wgs = s3.list_objects(Bucket=data_bucket, MaxKeys=3, Prefix=data_wgs_dir)
+            print(f"S3 list response: {response_wgs}")
             if not response_wgs.get('Contents') or len(response_wgs['Contents']) < 1:
                 return {
                     'statusCode': 400,
@@ -81,7 +82,7 @@ def lambda_handler(event, context):
         )
 
         # Log response from AWS Batch
-        print("Response: " + json.dumps(response, indent=2))
+        print(f"Response: {response}")
         # Return the jobId
         event['jobId'] = response['jobId']
         return event

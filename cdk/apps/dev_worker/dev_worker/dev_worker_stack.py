@@ -37,7 +37,7 @@ class DevWorkerStack(core.Stack):
         ebs_var_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("VAR_VOLUME_SIZE")))
         # Place volume on a block device with the set mount point
         ebs_var_block_device = ec2.BlockDevice(device_name="/dev/sdf",
-                                                volume=ebs_var_vol)
+                                               volume=ebs_var_vol)
 
         # Get volume - contains a block device volume and a block device
         ebs_extended_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("EXTENDED_VOLUME_SIZE")))
@@ -71,9 +71,6 @@ class DevWorkerStack(core.Stack):
             self.region: self.node.try_get_context("MACHINE_IMAGE"),  # Refer to an existing AMI type
         })
 
-        # Get key name from context
-        key_name = self.node.try_get_context("KEY_NAME")
-
         # The code that defines your stack goes here
         # We take all of the parameters we have and place this into the ec2 instance class
         # Except LaunchTemplate which is added as a property to the instance
@@ -84,7 +81,6 @@ class DevWorkerStack(core.Stack):
                             machine_image=machine_image,
                             vpc=vpc,
                             vpc_subnets=vpc_subnets,
-                            key_name=key_name,
                             role=role,
                             user_data=user_data,
                             block_devices=[ebs_var_block_device, ebs_extended_block_device],
@@ -96,8 +92,7 @@ class DevWorkerStack(core.Stack):
             market_options = {"MarketType": "spot",
                               "SpotOptions": spot_options}
             launch_template_data = {"InstanceMarketOptions": market_options}
-            launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate",
-                                                    launch_template_name=self.node.try_get_context("LAUNCH_TEMPLATE_NAME"))
+            launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate")
             launch_template.add_property_override("LaunchTemplateData", launch_template_data)
 
             host.instance.add_property_override("LaunchTemplate", {"LaunchTemplateId": launch_template.ref,

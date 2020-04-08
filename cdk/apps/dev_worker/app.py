@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import sys
+import os
+import uuid
 
 from aws_cdk import core
 
@@ -24,18 +26,16 @@ app = core.App()
 
 # Check required args are not none
 stack_name = app.node.try_get_context("STACK_NAME")
-key_name = app.node.try_get_context("KEY_NAME")
 
 # Check stack name
 if stack_name is None:
-    print("Error: STACK_NAME in cdk.json is not defined")
-    print("Please use -c \"STACK_NAME=name-of-stack\"")
-    sys.exit(1)
+    user_name = os.environ.get('USER')
+    if user_name:
+        stack_name = f"dev-worker-{user_name}-{uuid.uuid1()}"
 
-# Check key name
-if key_name is None:
-    print("Error: KEY_NAME in cdk.json is not defined")
-    print("Please use -c \"KEY_NAME=name-of-key\"")
+if stack_name is None:
+    print("Error: no STACK_NAME defined!")
+    print("Please use -c \"STACK_NAME=name-of-stack\" or set the $USER env variable.")
     sys.exit(1)
 
 # Check USE_SPOT_INSTANCE is a boolean

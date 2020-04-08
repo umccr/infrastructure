@@ -8,7 +8,7 @@
     "VAR_VOLUME_SIZE": "16",
     "EXTENDED_VOLUME_SIZE": "100",
     "INSTANCE_NAME": "dev_worker_instance_cdk",
-    "USE_SPOT_INSTANCE": true,
+    "USE_SPOT_INSTANCE": "true",
     "MAX_SPOT_PRICE": "0.30"
   }
 }

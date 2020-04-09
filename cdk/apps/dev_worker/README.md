@@ -137,3 +137,18 @@ cat nohup.out
 ```
 
 And open up a browser tab of the notebook.
+
+## Troubleshooting
+
+### Expired Token Exception
+> An error occurred (ExpiredTokenException) when calling the StartSession operation: The security token included in the request is expired
+ssh_exchange_identification: Connection closed by remote host
+
+This means you need to re-login to aws via the google TFA authentication.
+
+### Target not connected
+> An error occurred (TargetNotConnected) when calling the StartSession operation: i-07aa0098c62dc5001 is not connected.
+ssh_exchange_identification: Connection closed by remote host
+
+The instance takes time to load up, it may not be at the stage that it's ready to accept logins or is yet to populate the authorized keys.
+

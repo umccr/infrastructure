@@ -10,9 +10,13 @@ This repo is (partially) based on the cdk example provided [here](https://github
 0. Define the following function on your `.bashrc` or equivalent:
 ```bash
 ssm() {
-	aws ssm start-session --target "$1" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
+    # ssh into the ec2 instance.
+    # params: instance_id - should start with 'i-'
+    instance_id="$1"
+	aws ssm start-session --target "${instance_id}" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
 }
 ```
+
 1. Create the venv
 `python3 -m venv .env`
 2. Activate the venv
@@ -101,13 +105,39 @@ cdk destroy -c "STACK_NAME=alexis-unique-stack"
 
 ### Set SSH config
 This assumes you have loaded your public key complement `aws.pub` into your github keys (which are publicly accessible)
-You may choose between ec2-user and ssm-user, both have identical setups. ssm-user may be removed in future.
+You may choose between ec2-user and ssm-user, both have identical setups. ssm-user may be removed in future.  
+*Roman politely asks you to use the ssm function provided above over this ssh alias.*
 ```
 host i-* mi-*
     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
     User ec2-user
     IdentityFile /path/to/private/key/.ssh/aws
 ```
+
+### Setting port forwarding through SSM
+
+Set up the following shell function in your `~.bashrc`.
+```
+# Start aws session
+ssm_port() {
+  # Log into an ec2 instance and forward the ports
+  # param: instance_id: starts with 'i-'
+  # param: remote_port: port on ec2 you wish to forward - should be a number
+  # param: local_port (optional): port on ec2 you wish to bind the remote port to.
+  instance_id="$1"
+  remote_port="$2"
+  local_port="$3"
+  # If local port is not set, set as remote port
+  if [[ -z "${local_port}" ]]; then
+    local_port="${remote_port}"
+  fi
+  # Run port forwarding command
+  aws ssm start-session --target "${instance_id}" \
+                        --document-name AWS-StartPortForwardingSession \
+                        --parameters "{\"portNumber\":[\"${remote_port}\"],\"localPortNumber\":[\"${local_port}\"]}"
+}
+```
+
 
 ### Sync iap credentials to instance
 ```
@@ -131,7 +161,7 @@ and launch jupyter in the background
 ```bash
 # Local
 INSTANCE_ID="i-a1b2c3d4e5"
-ssh -L8888:localhost:8888 "${INSTANCE_ID}"
+ssm_port "${INSTANCE_ID}" 8888
 # Remote
 nohup jupyter notebook --port=8888 &
 ```
@@ -157,3 +187,7 @@ ssh_exchange_identification: Connection closed by remote host
 
 The instance takes time to load up, it may not be at the stage that it's ready to accept logins or is yet to populate the authorized keys.
 
+### Session timed out whilst trying to run a notebook
+>Session: alexis.lucattini@umccr.org-0093f9ff6b4505b52 timed out
+
+This will happen if there's no activity on the port. You need to start the notebook first and then log in.

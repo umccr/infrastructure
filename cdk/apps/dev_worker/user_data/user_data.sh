@@ -129,3 +129,11 @@ rm Anaconda3-${!ANACONDA_VERSION}-Linux-x86_64.sh
 # Fix bashrc for ec2-user and ssm-user for access ready for conda
 su - "ec2-user" -c "/opt/conda/bin/conda init"
 su - "ssm-user" -c "/opt/conda/bin/conda init"
+
+# Pull starter notebook into home directory
+# FIXME update notebook path once in master branch
+starter_notebook="https://raw.githubusercontent.com/alexiswl/umccr-infrastructure/dev_worker_cdk/cdk/apps/dev_worker/dev_worker_notebook.ipynb"
+su - "ec2-user" -c "mkdir /home/ec2-user/notebooks"
+su - "ssm-user" -c "mkdir /home/ssm-user/notebooks"
+wget "${!starter_notebook}" -O - >> "/home/ec2-user/notebooks/dev_worker.ipynb"
+wget "${!starter_notebook}" -O - >> "/home/ssm-user/notebooks/dev_worker.ipynb"

@@ -13,6 +13,9 @@ class DevWorkerStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        # Get/set stack name for context
+        self.node.set_context("STACK_NAME", self.stack_name)
+
         # The code that defines your stack goes here
         # Set a vpc
         vpc = ec2.Vpc.from_lookup(self, "VPC", is_default=True)
@@ -37,7 +40,7 @@ class DevWorkerStack(core.Stack):
         ebs_var_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("VAR_VOLUME_SIZE")))
         # Place volume on a block device with the set mount point
         ebs_var_block_device = ec2.BlockDevice(device_name="/dev/sdf",
-                                                volume=ebs_var_vol)
+                                               volume=ebs_var_vol)
 
         # Get volume - contains a block device volume and a block device
         ebs_extended_vol = ec2.BlockDeviceVolume.ebs(volume_size=int(self.node.try_get_context("EXTENDED_VOLUME_SIZE")))
@@ -71,9 +74,6 @@ class DevWorkerStack(core.Stack):
             self.region: self.node.try_get_context("MACHINE_IMAGE"),  # Refer to an existing AMI type
         })
 
-        # Get key name from context
-        key_name = self.node.try_get_context("KEY_NAME")
-
         # The code that defines your stack goes here
         # We take all of the parameters we have and place this into the ec2 instance class
         # Except LaunchTemplate which is added as a property to the instance
@@ -84,7 +84,6 @@ class DevWorkerStack(core.Stack):
                             machine_image=machine_image,
                             vpc=vpc,
                             vpc_subnets=vpc_subnets,
-                            key_name=key_name,
                             role=role,
                             user_data=user_data,
                             block_devices=[ebs_var_block_device, ebs_extended_block_device],

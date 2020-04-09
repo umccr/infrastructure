@@ -13,7 +13,9 @@ ssm() {
     # ssh into the ec2 instance.
     # params: instance_id - should start with 'i-'
     instance_id="$1"
-	aws ssm start-session --target "${instance_id}" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
+    aws ssm start-session --target "${instance_id}" \
+                          --document-name "AWS-StartInteractiveCommand" \
+                          --parameters command="sudo su - ec2-user"
 }
 ```
 
@@ -64,7 +66,7 @@ Context parameters are defined with the `-c "STACK_NAME=my-stack` argument.
 Repeat the `-c` parameter for defining multiple parameters.    
 i.e 
 ```
-cdk deploy -c "STACK_NAME=my-stack"
+cdk deploy -c "STACK_NAME=my-stack" -c "USE_SPOT_INSTANCE=false"
 ```
 
 The list of possible context parameters and their descriptions are listed below:
@@ -84,7 +86,7 @@ The list of possible context parameters and their descriptions are listed below:
 
 ## Validate the stack
 ```bash
-cdk synth -c "STACK_NAME=alexis-unique-stack"
+cdk synth
 ```
 
 ## Deploy the workflow with different parameters
@@ -94,8 +96,9 @@ cdk diff -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 cdk deploy -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 ```
 
-Notes:
-You will need to use this same STACK_NAME parameter when destroying the stack
+## Terminating an instance / Destroying a stack.
+Check the context file (`cdk.json`) and ensure the STACK_NAME is that of the one you wish to destroy.
+If not, you will need to specify the STACK_NAME parameter when destroying the stack.
 i.e:
 ```cdk
 cdk destroy -c "STACK_NAME=alexis-unique-stack"
@@ -105,8 +108,9 @@ cdk destroy -c "STACK_NAME=alexis-unique-stack"
 
 ### Set SSH config
 This assumes you have loaded your public key complement `aws.pub` into your github keys (which are publicly accessible)
-You may choose between ec2-user and ssm-user, both have identical setups. ssm-user may be removed in future.  
-*Roman politely asks you to use the ssm function provided above over this ssh alias.*
+You may choose between ec2-user and ssm-user, both have identical setups. I would recommend the ec2-user  
+You will need to use the ssh command over ssm if you wish to rsync data from your local machine to the instance.  
+Note that data transfer is very slow as we're not going over port 22 directly.
 ```
 host i-* mi-*
     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
@@ -133,7 +137,7 @@ ssm_port() {
   fi
   # Run port forwarding command
   aws ssm start-session --target "${instance_id}" \
-                        --document-name AWS-StartPortForwardingSession \
+                        --document-name "AWS-StartPortForwardingSession"i \
                         --parameters "{\"portNumber\":[\"${remote_port}\"],\"localPortNumber\":[\"${local_port}\"]}"
 }
 ```
@@ -142,7 +146,7 @@ ssm_port() {
 ### Sync iap credentials to instance
 ```
 INSTANCE_ID="i-a1b2c3d4e5"
-rsync --archive ~/.iap/ "${INSTANCE_ID}:/home/ec2-user/.iap/"
+rsync --archive "~/.iap/" "${INSTANCE_ID}:/home/ec2-user/.iap/"
 ```
 
 ### Sync notebook to this instance
@@ -187,7 +191,7 @@ ssh_exchange_identification: Connection closed by remote host
 
 The instance takes time to load up, it may not be at the stage that it's ready to accept logins or is yet to populate the authorized keys.
 
-### Session timed out whilst trying to run a notebook
+### Session timed out immediately whilst trying to run a notebook
 >Session: alexis.lucattini@umccr.org-0093f9ff6b4505b52 timed out
 
 This will happen if there's no activity on the port. You need to start the notebook first and then log in.

@@ -15,7 +15,7 @@ ssm() {
     instance_id="$1"
     aws ssm start-session --target "${instance_id}" \
                           --document-name "AWS-StartInteractiveCommand" \
-                          --parameters command="sudo su - ec2-user"
+                          --parameters command="sudo su - ssm-user"
 }
 ```
 
@@ -108,13 +108,14 @@ cdk destroy -c "STACK_NAME=alexis-unique-stack"
 
 ### Set SSH config
 This assumes you have loaded your public key complement `aws.pub` into your github keys (which are publicly accessible)
-You may choose between ec2-user and ssm-user, both have identical setups. I would recommend the ec2-user  
+You may choose between ec2-user and ssm-user, both have identical setups. I would recommend the ssm-user.
+*The ec2-user may be removed in the near future if all the ssm functionality works correctly*
 You will need to use the ssh command over ssm if you wish to rsync data from your local machine to the instance.  
 Note that data transfer is very slow as we're not going over port 22 directly.
 ```
 host i-* mi-*
     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
-    User ec2-user
+    User ssm-user
     IdentityFile /path/to/private/key/.ssh/aws
 ```
 
@@ -137,7 +138,7 @@ ssm_port() {
   fi
   # Run port forwarding command
   aws ssm start-session --target "${instance_id}" \
-                        --document-name "AWS-StartPortForwardingSession"i \
+                        --document-name "AWS-StartPortForwardingSession" \
                         --parameters "{\"portNumber\":[\"${remote_port}\"],\"localPortNumber\":[\"${local_port}\"]}"
 }
 ```
@@ -146,7 +147,7 @@ ssm_port() {
 ### Sync iap credentials to instance
 ```
 INSTANCE_ID="i-a1b2c3d4e5"
-rsync --archive "~/.iap/" "${INSTANCE_ID}:/home/ec2-user/.iap/"
+rsync --archive "~/.iap/" "${INSTANCE_ID}:/home/ssm-user/.iap/"
 ```
 
 ### Sync notebook to this instance
@@ -156,17 +157,20 @@ The stopped instance can then be restarted in the morning. Only non-spot instanc
 ```
 INSTANCE_ID="i-a1b2c3d4e5"
 NOTEBOOK_NAME=dev_worker_notebook.ipynb
-rsync --archive "${NOTEBOOK_NAME}" "${INSTANCE_ID}:/home/ec2-user/my-notebook.ipynb"
+rsync --archive "${NOTEBOOK_NAME}" "${INSTANCE_ID}:/home/ssm-user/my-notebook.ipynb"
 ```
 
 ## Launching jupyter
-ssh into the instance binding the port 8888 via the ec2-user  
+ssh into the instance binding the port 8888 via the ssm-user  
 and launch jupyter in the background
 ```bash
 # Local
 INSTANCE_ID="i-a1b2c3d4e5"
+# Via SSM
 ssm_port "${INSTANCE_ID}" 8888
-# Remote
+# Via SSH
+ssh -L8888:localhost:8888 "${INSTANCE_ID}"
+# Remote (run ssm)
 nohup jupyter notebook --port=8888 &
 ```
 
@@ -176,6 +180,15 @@ cat nohup.out
 ```
 
 And open up a browser tab of the notebook.
+
+### Jupyter extensions.
+The following extensions are enabled by default:
+* Freeze
+  * Prevent you accidentally re-running a specific code-block.
+* Toc2
+  * Nicely places the table of contents for the notebook on the left hand side of the page.
+* Execute time
+  * Displays last execution time and duration for each cell block
 
 ## Troubleshooting
 

@@ -135,5 +135,20 @@ su - "ssm-user" -c "/opt/conda/bin/conda init"
 starter_notebook="https://raw.githubusercontent.com/alexiswl/umccr-infrastructure/dev_worker_cdk/cdk/apps/dev_worker/dev_worker_notebook.ipynb"
 su - "ec2-user" -c "mkdir /home/ec2-user/notebooks"
 su - "ssm-user" -c "mkdir /home/ssm-user/notebooks"
-wget "${!starter_notebook}" -O - >> "/home/ec2-user/notebooks/dev_worker.ipynb"
-wget "${!starter_notebook}" -O - >> "/home/ssm-user/notebooks/dev_worker.ipynb"
+
+# Deploy the notebook from the user
+su - "ec2-user" -c wget "${!starter_notebook}" -O - >> "/home/ec2-user/notebooks/dev_worker.ipynb"
+su - "ssm-user" -c wget "${!starter_notebook}" -O - >> "/home/ssm-user/notebooks/dev_worker.ipynb"
+
+# Add the notebook configs (with git control)
+# FIXME update the notebook path once in the master branch
+starter_notebook_configs="https://raw.githubusercontent.com/alexiswl/umccr-infrastructure/dev_worker_cdk/cdk/apps/dev_worker/user_data/add_notebook_configs.sh"
+# Get the notebook config for the user
+su - "ec2-user" -c "wget \"${!starter_notebook_configs}\" -O - >> \"/home/ec2-user/add_notebook_configs.sh\""
+su - "ssm-user" -c "wget \"${!starter_notebook_configs}\" -O - >> \"/home/ssm-user/add_notebook_configs.sh\""
+# Install configs
+su - "ec2-user" -c "bash \"/home/ec2-user/add_notebook_configs.sh\""
+su - "ssm-user" -c "bash \"/home/ssm-user/add_notebook_configs.sh\""
+# Delete script
+su - "ec2-user" -c "rm \"/home/ec2-user/add_notebook_configs.sh\""
+su - "ssm-user" -c "rm \"/home/ssm-user/add_notebook_configs.sh\""

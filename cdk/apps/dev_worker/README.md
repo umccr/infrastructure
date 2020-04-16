@@ -82,8 +82,8 @@ The list of possible context parameters and their descriptions are listed below:
 | LAUNCH_TEMPLATE_NAME | If running a spot instance, this is the name of the launch template used                                                                                                       | dev_worker_template     |
 | INSTANCE_NAME        | This is the name of the instance deployed and will show up in the EC2 console                                                                                                  | dev_worker_instance_cdk |
 | USE_SPOT_INSTANCE    | Would you like to use a spot instance, much cheaper but cannot be stopped, only terminated and may be shutdown at any time or fail to launch if the MAX_SPOT_PRICE is too low. | True                    |
-| MAX_SPOT_PRICE       | Maximum hourly rate of the spot instance in dollar value                                                                                                                       | 0.30                    |
-
+| MAX_SPOT_PRICE       | Maximum hourly rate of the spot instance in dollar value                                                                                                                       | null                    |
+| CREATOR              | Name of the creator                                                                                                                                                            | null                    |
 ## Validate the stack
 ```bash
 cdk synth

@@ -26,9 +26,11 @@ app = core.App()
 # Check required args are not none
 stack_name = app.node.try_get_context("STACK_NAME")
 
+# Get user - used for stack_name and the creator tag
+user_name = os.environ.get('USER')
+
 # Check stack name
 if stack_name is None:
-    user_name = os.environ.get('USER')
     # Check there is a user
     if not user_name:
         print("Error: no STACK_NAME defined!")
@@ -47,6 +49,15 @@ if not app.node.try_get_context("USE_SPOT_INSTANCE").lower() in ['true', 'false'
     print("Please use -c \"USE_SPOT_INSTANCE=true\" or -c \"USE_SPOT_INSTANCE=false\"")
     sys.exit(1)
 
+# Set creator tag
+if not app.node.try_get_context("CREATOR"):
+    creator_name = user_name
+else:
+    creator_name = app.node.try_get_context("CREATOR")
+
+TAGS["Creator"] = creator_name
+
+# Build the dev stack
 dev_stack = DevWorkerStack(app, stack_name, env={"account": ACCOUNT, "region": REGION})
 
 # Add tags to app

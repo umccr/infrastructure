@@ -32,9 +32,9 @@ mount /dev/sdf /var
 rm -r /mnt/var
 
 # Add disk to fstab
-echo "/dev/sdf       /var   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
+echo "/dev/sdf       /var   ext4    rw,user,suid,dev,exec,auto,async 0       2" >> /etc/fstab
 # remount the volume
-mount -o remount /var
+mount -a
 
 ## Now get the /data/ mountpoint
 # Create the communal group InstanceUser
@@ -44,9 +44,9 @@ mkdir /data
 # create ext4 filesystem on extended volume for data
 mkfs -t ext4 /dev/sdg
 # add an entry to fstab to mount volume during boot
-echo "/dev/sdg       /data   ext4    rw,suid,dev,exec,auto,user,async,nofail 0       2" >> /etc/fstab
+echo "/dev/sdg       /data   ext4    rw,user,suid,dev,exec,auto,async 0       2" >> /etc/fstab
 # mount the volume on current boot
-mount -o remount /data
+mount -a
 
 # Make the /data mount a communal playground for all users
 chown root:InstanceUser /data

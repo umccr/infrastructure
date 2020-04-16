@@ -121,8 +121,8 @@ useradd ssm-user \
   --base-dir /home/ \
   --create-home
 # Give ssm-user an irresponsible level of sudo permission
-echo "# Created by user_data.sh" > "/etc/sudoers.d/91-ssm-user.sh"
-echo "ssm-user ALL=(ALL) NOPASSWD:ALL" >> "/etc/sudoers.d/91-ssm-user.sh"
+echo "# User rules for ssm-user" > "/etc/sudoers.d/ssm-agent-users"
+echo "ssm-user ALL=(ALL) NOPASSWD:ALL" >> "/etc/sudoers.d/ssm-agent-users"
 
 # Create the .ssh directory for the ssm-user before adding authorised keys or adding groups
 su - "ssm-user" -c 'mkdir -p --mode 700 /home/ssm-user/.ssh'

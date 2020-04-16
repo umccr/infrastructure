@@ -52,6 +52,9 @@ mount -a
 chown root:InstanceUser /data
 chmod 775 /data
 
+# Create the .ssh directory for the ssm-user before adding authorised keys or adding groups
+su - "ssm-user" -c 'mkdir --mode 700 /home/ssm-user/.ssh'
+
 # Add each user to the instance user group so they have access to the /data mount
 usermod -a -G InstanceUser ec2-user
 usermod -a -G InstanceUser ssm-user
@@ -81,9 +84,6 @@ yum install -y \
   https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
 systemctl start amazon-ssm-agent
 
-# Create the .ssh directory for the ssm-user before adding authorised keys
-su - "ssm-user" -c 'mkdir --mode 700 /home/ssm-user/.ssh'
-
 # echo "Fetching GitHub SSH keys for UMCCR members..."
 yum install -y jq
 ORG_NAME="UMCCR"
@@ -92,10 +92,6 @@ for org_user in ${!ORG_USERS}; do
 	  wget "${!org_user}.keys" -O - >> "/home/ec2-user/.ssh/authorized_keys"
 	  wget "${!org_user}.keys" -O - >> "/home/ssm-user/.ssh/authorized_keys"
 done
-
-# Add configuration to docker config - this logs us into docker for our ecr - doesn't seem to work right now.
-#su - "ec2-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
-#su - "ssm-user" -c 'mkdir -p $HOME/.docker && echo "{ \"credsStore\" : \"ecr-login\" }" >> $HOME/.docker/config.json'
 
 # Download IAP and install into /usr/local/bin
 echo "Downloading IAP"

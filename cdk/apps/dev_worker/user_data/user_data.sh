@@ -81,6 +81,9 @@ yum install -y \
   https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
 systemctl start amazon-ssm-agent
 
+# Create the .ssh directory for the ssm-user before adding authorised keys
+su - "ssm-user" -c 'mkdir --mode 700 /home/ssm-user/.ssh'
+
 # echo "Fetching GitHub SSH keys for UMCCR members..."
 yum install -y jq
 ORG_NAME="UMCCR"
@@ -138,8 +141,8 @@ su - "ec2-user" -c "mkdir /home/ec2-user/notebooks"
 su - "ssm-user" -c "mkdir /home/ssm-user/notebooks"
 
 # Deploy the notebook from the user
-su - "ec2-user" -c wget "${!starter_notebook}" -O - >> "/home/ec2-user/notebooks/dev_worker.ipynb"
-su - "ssm-user" -c wget "${!starter_notebook}" -O - >> "/home/ssm-user/notebooks/dev_worker.ipynb"
+su - "ec2-user" -c "wget \"${!starter_notebook}\" -O - >> \"/home/ec2-user/notebooks/dev_worker.ipynb\""
+su - "ssm-user" -c "wget \"${!starter_notebook}\" -O - >> \"/home/ssm-user/notebooks/dev_worker.ipynb\""
 
 # Add the notebook configs (with git control)
 # FIXME update the notebook path once in the master branch

@@ -29,4 +29,4 @@ mkdir -p $HOME/.jupyter
 )
 
 # Link data from notebook configs to jupyter config folder
-ln -s "$HOME/jupyter_notebook_configs/cdk/apps/dev_worker/user_data/notebook_configs" "$HOME/.jupyter/nbconfig"
+ln -s "$HOME/.jupyter_notebook_configs/cdk/apps/dev_worker/user_data/notebook_configs" "$HOME/.jupyter/nbconfig"

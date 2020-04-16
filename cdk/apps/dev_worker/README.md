@@ -28,7 +28,7 @@ ssm() {
 4. Log into the instance:
 `ssm i-....`
 5. Shut down the instance and stack:
-*Assumes no other instances have been launched from this folder - verify STACK_NAME in context*
+*Assumes no other instances have been launched from this folder - verify STACK_NAME in file `.stack_name`*
 `cdk destroy`
 
 ## Observe the cdk.json
@@ -90,14 +90,16 @@ cdk synth
 ```
 
 ## Deploy the workflow with different parameters
-You can change any of the parameters seen in the `cdk.json` *context* attribute
+You can change any of the parameters seen in the `cdk.json` *context* attribute.
+Note setting parameters through -c will not change them in the file `cdk.json`.  
+This behaviour is identical in `.stack_name`. To reset the stack_name, simply delete the file `.stack_name`.
 ```bash
 cdk diff -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 cdk deploy -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 ```
 
 ## Terminating an instance / Destroying a stack.
-Check the context file (`cdk.json`) and ensure the STACK_NAME is that of the one you wish to destroy.
+Check the context file `.stack_name` and ensure the STACK_NAME is that of the one you wish to destroy.
 If not, you will need to specify the STACK_NAME parameter when destroying the stack.
 i.e:
 ```cdk

@@ -288,6 +288,46 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
   }
 }
 
+# S3 bucket for research data
+resource "aws_s3_bucket" "research" {
+  bucket = "${var.workspace_research_bucket_name[terraform.workspace]}"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+}
+
+# S3 bucket for temp data
+resource "aws_s3_bucket" "temp" {
+  bucket = "${var.workspace_temp_bucket_name[terraform.workspace]}"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+  lifecycle_rule {
+    id      = "monthly cleanup"
+    enabled = true
+
+    noncurrent_version_expiration {
+      days = 60
+    }
+
+    expiration {
+	  days = 30
+    }
+
+    abort_incomplete_multipart_upload_days = 5
+  }
+}
+
 resource "aws_s3_bucket" "run-data" {
   bucket = "${var.workspace_run_data_bucket_name[terraform.workspace]}"
 

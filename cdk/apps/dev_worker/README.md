@@ -10,9 +10,15 @@ This repo is (partially) based on the cdk example provided [here](https://github
 0. Define the following function on your `.bashrc` or equivalent:
 ```bash
 ssm() {
-	aws ssm start-session --target "$1" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
+    # ssh into the ec2 instance.
+    # params: instance_id - should start with 'i-'
+    instance_id="$1"
+    aws ssm start-session --target "${instance_id}" \
+                          --document-name "AWS-StartInteractiveCommand" \
+                          --parameters command="sudo su - ssm-user"
 }
 ```
+
 1. Create the venv
 `python3 -m venv .env`
 2. Activate the venv
@@ -22,7 +28,7 @@ ssm() {
 4. Log into the instance:
 `ssm i-....`
 5. Shut down the instance and stack:
-*Assumes no other instances have been launched from this folder - verify STACK_NAME in context*
+*Assumes no other instances have been launched from this folder - verify STACK_NAME in file `.stack_name`*
 `cdk destroy`
 
 ## Observe the cdk.json
@@ -60,7 +66,7 @@ Context parameters are defined with the `-c "STACK_NAME=my-stack` argument.
 Repeat the `-c` parameter for defining multiple parameters.    
 i.e 
 ```
-cdk deploy -c "STACK_NAME=my-stack"
+cdk deploy -c "STACK_NAME=my-stack" -c "USE_SPOT_INSTANCE=false"
 ```
 
 The list of possible context parameters and their descriptions are listed below:
@@ -76,22 +82,25 @@ The list of possible context parameters and their descriptions are listed below:
 | LAUNCH_TEMPLATE_NAME | If running a spot instance, this is the name of the launch template used                                                                                                       | dev_worker_template     |
 | INSTANCE_NAME        | This is the name of the instance deployed and will show up in the EC2 console                                                                                                  | dev_worker_instance_cdk |
 | USE_SPOT_INSTANCE    | Would you like to use a spot instance, much cheaper but cannot be stopped, only terminated and may be shutdown at any time or fail to launch if the MAX_SPOT_PRICE is too low. | True                    |
-| MAX_SPOT_PRICE       | Maximum hourly rate of the spot instance in dollar value                                                                                                                       | 0.30                    |
-
+| MAX_SPOT_PRICE       | Maximum hourly rate of the spot instance in dollar value                                                                                                                       | null                    |
+| CREATOR              | Name of the creator                                                                                                                                                            | null                    |
 ## Validate the stack
 ```bash
-cdk synth -c "STACK_NAME=alexis-unique-stack"
+cdk synth
 ```
 
 ## Deploy the workflow with different parameters
-You can change any of the parameters seen in the `cdk.json` *context* attribute
+You can change any of the parameters seen in the `cdk.json` *context* attribute.
+Note setting parameters through -c will not change them in the file `cdk.json`.  
+This behaviour is identical in `.stack_name`. To reset the stack_name, simply delete the file `.stack_name`.
 ```bash
 cdk diff -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 cdk deploy -c "STACK_NAME=alexis-unique-stack" -c "EC2_TYPE=t2.micro"
 ```
 
-Notes:
-You will need to use this same STACK_NAME parameter when destroying the stack
+## Terminating an instance / Destroying a stack.
+Check the context file `.stack_name` and ensure the STACK_NAME is that of the one you wish to destroy.
+If not, you will need to specify the STACK_NAME parameter when destroying the stack.
 i.e:
 ```cdk
 cdk destroy -c "STACK_NAME=alexis-unique-stack"
@@ -101,18 +110,46 @@ cdk destroy -c "STACK_NAME=alexis-unique-stack"
 
 ### Set SSH config
 This assumes you have loaded your public key complement `aws.pub` into your github keys (which are publicly accessible)
-You may choose between ec2-user and ssm-user, both have identical setups. ssm-user may be removed in future.
+You may choose between ec2-user and ssm-user, both have identical setups. I would recommend the ssm-user.
+*The ec2-user may be removed in the near future if all the ssm functionality works correctly*
+You will need to use the ssh command over ssm if you wish to rsync data from your local machine to the instance.  
+Note that data transfer is very slow as we're not going over port 22 directly.
 ```
 host i-* mi-*
     ProxyCommand sh -c "aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'"
-    User ec2-user
+    User ssm-user
     IdentityFile /path/to/private/key/.ssh/aws
 ```
+
+### Setting port forwarding through SSM
+
+Set up the following shell function in your `~.bashrc`.
+```
+# Start aws session
+ssm_port() {
+  # Log into an ec2 instance and forward the ports
+  # param: instance_id: starts with 'i-'
+  # param: remote_port: port on ec2 you wish to forward - should be a number
+  # param: local_port (optional): port on ec2 you wish to bind the remote port to.
+  instance_id="$1"
+  remote_port="$2"
+  local_port="$3"
+  # If local port is not set, set as remote port
+  if [[ -z "${local_port}" ]]; then
+    local_port="${remote_port}"
+  fi
+  # Run port forwarding command
+  aws ssm start-session --target "${instance_id}" \
+                        --document-name "AWS-StartPortForwardingSession" \
+                        --parameters "{\"portNumber\":[\"${remote_port}\"],\"localPortNumber\":[\"${local_port}\"]}"
+}
+```
+
 
 ### Sync iap credentials to instance
 ```
 INSTANCE_ID="i-a1b2c3d4e5"
-rsync --archive ~/.iap/ "${INSTANCE_ID}:/home/ec2-user/.iap/"
+rsync --archive "~/.iap/" "${INSTANCE_ID}:/home/ssm-user/.iap/"
 ```
 
 ### Sync notebook to this instance
@@ -122,17 +159,20 @@ The stopped instance can then be restarted in the morning. Only non-spot instanc
 ```
 INSTANCE_ID="i-a1b2c3d4e5"
 NOTEBOOK_NAME=dev_worker_notebook.ipynb
-rsync --archive "${NOTEBOOK_NAME}" "${INSTANCE_ID}:/home/ec2-user/my-notebook.ipynb"
+rsync --archive "${NOTEBOOK_NAME}" "${INSTANCE_ID}:/home/ssm-user/my-notebook.ipynb"
 ```
 
 ## Launching jupyter
-ssh into the instance binding the port 8888 via the ec2-user  
+ssh into the instance binding the port 8888 via the ssm-user  
 and launch jupyter in the background
 ```bash
 # Local
 INSTANCE_ID="i-a1b2c3d4e5"
+# Via SSM
+ssm_port "${INSTANCE_ID}" 8888
+# Via SSH
 ssh -L8888:localhost:8888 "${INSTANCE_ID}"
-# Remote
+# Remote (run ssm)
 nohup jupyter notebook --port=8888 &
 ```
 
@@ -142,3 +182,31 @@ cat nohup.out
 ```
 
 And open up a browser tab of the notebook.
+
+### Jupyter extensions.
+The following extensions are enabled by default:
+* Freeze
+  * Prevent you accidentally re-running a specific code-block.
+* Toc2
+  * Nicely places the table of contents for the notebook on the left hand side of the page.
+* Execute time
+  * Displays last execution time and duration for each cell block
+
+## Troubleshooting
+
+### Expired Token Exception
+> An error occurred (ExpiredTokenException) when calling the StartSession operation: The security token included in the request is expired
+ssh_exchange_identification: Connection closed by remote host
+
+This means you need to re-login to aws via the google TFA authentication.
+
+### Target not connected
+> An error occurred (TargetNotConnected) when calling the StartSession operation: i-07aa0098c62dc5001 is not connected.
+ssh_exchange_identification: Connection closed by remote host
+
+The instance takes time to load up, it may not be at the stage that it's ready to accept logins or is yet to populate the authorized keys.
+
+### Session timed out immediately whilst trying to run a notebook
+>Session: alexis.lucattini@umccr.org-0093f9ff6b4505b52 timed out
+
+This will happen if there's no activity on the port. You need to start the notebook first and then log in.

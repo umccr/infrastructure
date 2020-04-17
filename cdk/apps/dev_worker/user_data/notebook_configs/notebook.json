@@ -1,0 +1,9 @@
+{
+  "load_extensions": {
+    "freeze/main": true,
+    "toc2/main": true,
+    "execute_time/ExecuteTime": true,
+    "codefolding/main": true,
+    "highlight_selected_word/main": true
+  }
+}

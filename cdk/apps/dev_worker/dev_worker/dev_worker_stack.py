@@ -91,9 +91,11 @@ class DevWorkerStack(core.Stack):
 
         if self.node.try_get_context("USE_SPOT_INSTANCE").lower() == 'true':
             # Spot pricing via ec2 fleet
-            spot_options = {"MaxPrice": self.node.try_get_context("MAX_SPOT_PRICE")}
-            market_options = {"MarketType": "spot",
-                              "SpotOptions": spot_options}
+            spot_price = self.node.try_get_context("MAX_SPOT_PRICE")
+            market_options = {"MarketType": "spot"}
+            if spot_price is not None:
+                spot_options = {"MaxPrice": spot_price}
+                market_options["SpotOptions"] = spot_options
             launch_template_data = {"InstanceMarketOptions": market_options}
             launch_template = ec2.CfnLaunchTemplate(self, "LaunchTemplate")
             launch_template.add_property_override("LaunchTemplateData", launch_template_data)

@@ -10,8 +10,6 @@ Table of Contents
       - [packer](#packer)
             - [pcgr-ami](#pcgr-ami)
             - [pcgr-ami](#pcgr-ami)
-            - [stackstorm-ami](#stackstorm-ami)
-            - [vault-ami](#vault-ami)
       - [Scripts](#scripts)
       - [scripts](#scripts)
       - [terraform](#terraform)
@@ -19,10 +17,6 @@ Table of Contents
             - [stacks](#stacks)
                   - [bastion](#bastion)
                   - [bootstrap](#bootstrap)
-                  - [packer](#packer)
-                  - [pcgr](#pcgr)
-                  - [stackstorm](#stackstorm)
-      - [vault](#vault)
 
 # infrastructure
 
@@ -70,14 +64,12 @@ More details with `terraform help`.
 
 Terraform requires AWS credentials to manipulate AWS resources. For more details please refer to the [wiki](https://github.com/umccr/wiki/blob/master/computing/cloud/aws.md#aws-command-line-interface).
 
-Some Terraform stacks require access to sensitive data. We store those secrets in [Vault](https://www.vaultproject.io). Use the `assume-role-vault` wrapper script for convenience, more details [here](scripts/README.md).
-
 ### modules
 Reusable Terraform modules that can be used across multiple stacks. If you want to create a new module, use the `skel` module as a template.
 
 
 ### stacks
-A Terraform stack usually corresponds to a logical unit, like a piece of infrastructure for a service like StackStorm. We use a central S3 bucket in our AWS `bastion` account to keep all Terraform state and we use DynamoDB tables in each account to enable state locking.
+A Terraform stack usually corresponds to a logical unit, like a piece of infrastructure for a service. We use a central S3 bucket in our AWS `bastion` account to keep all Terraform state and we use DynamoDB tables in each account to enable state locking.
 
 #### bastion
 See [README](terraform/stacks/bastion/README.md)

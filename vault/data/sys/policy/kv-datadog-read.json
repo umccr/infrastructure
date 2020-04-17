@@ -1,3 +1,0 @@
-{
-  "policy": "path \"kv/datadog\" {\n  capabilities = [\"read\"]\n}"
-}

@@ -1,3 +1,0 @@
-{
-  "policy": "path \"secret/goldfish\" {\n  capabilities = [\"read\", \"update\"]\n}"
-}

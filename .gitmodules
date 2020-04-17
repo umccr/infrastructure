@@ -1,9 +1,0 @@
-[submodule "packer/stackstorm-ami"]
-	path = packer/stackstorm-ami
-	url = git@github.com:umccr/stackstorm-ami.git
-[submodule "packer/vault-ami"]
-	path = packer/vault-ami
-	url = https://github.com/umccr/vault-ami.git
-[submodule "packer/pcgr-ami"]
-	path = packer/pcgr-ami
-	url = https://github.com/umccr/pcgr-ami.git

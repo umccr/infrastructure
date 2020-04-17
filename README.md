@@ -41,45 +41,6 @@ You may want to clone it with: `git clone --recurse-submodules https://github.co
 ## docker
 Convenience containers
 
-### packer
-Container to run packer.
-See [README](docker/packer/README.md) on how to build and use it.
-
-## packer
-Packer configurations to build container/AMI images
-Inspiration taken from:
-- https://programmaticponderings.com/2017/03/06/baking-aws-ami-with-new-docker-ce-using-packer/
-
-To build AWS AMIs Packer requires sufficient AWS credentials which can be obtained assuming the `ops-admin` role:  
-`assume-role dev ops-admin`
-
-```
-packer build <ami.json>
-```
-**NOTE**: Packer can also be run using a docker container (see the [README](docker/packer/README.md)).
-
-
-### pcgr-ami
-**NOTE**: this is a GIT submodule and therefore may be out of sync with [umccr/pcgr-ami](https://github.com/umccr/pcgr-ami)
-
-See the README in packer/pcgr-ami
-
-### pcgr-ami
-**NOTE**: this is a GIT submodule
-
-See the README in packer/pcgr-ami
-
-### stackstorm-ami
-**NOTE**: this is a GIT submodule and therefore may be out of sync with [umccr/stackstorm-ami](https://github.com/umccr/stackstorm-ami)
-
-See the README in packer/stackstorm-ami
-
-### vault-ami
-**NOTE**: this is a GIT submodule and therefore may be out of sync with [umccr/vault-ami](https://github.com/umccr/vault-ami)
-
-See the README in packer/vault-ami
-
-
 ## Scripts
 Convenience scripts to assist in the setup/management of the infrastructure.
 
@@ -124,18 +85,3 @@ See [README](terraform/stacks/bastion/README.md)
 
 #### bootstrap
 See [README](terraform/stacks/bootstrap/README.md)
-
-
-#### packer
-See [README](terraform/stacks/packer/README.md)
-
-
-#### pcgr
-See [README](terraform/stacks/pcgr/README.md)
-
-
-#### stackstorm
-See [README](terraform/stacks/stackstorm/README.md)
-
-## vault
-The UMCCR is using HashiCorp's Vault to store secrets. Here we keep the codified configuration of the UMCCR Vault setup. See the [README](vault/README.md) for more details.

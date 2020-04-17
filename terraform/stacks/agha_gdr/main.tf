@@ -377,6 +377,11 @@ module "sarah" {
   pgp_key  = "keybase:freisinger"
 }
 
+resource "aws_iam_user_login_profile" "sarah_console_login" {
+  user    = "${module.sarah.username}"
+  pgp_key = "keybase:freisinger"
+}
+
 # groups
 resource "aws_iam_group" "admin" {
   name = "agha_gdr_admins"
@@ -537,6 +542,33 @@ resource "aws_iam_user_policy_attachment" "ro_store_sarah" {
   user       = "${module.sarah.username}"
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
+
+resource "aws_iam_policy" "bucket_list_sarah" {
+  name        = "agha_buckets_list_policy"
+  path        = "/"
+  description = "Policy to allow listing S3 buckets"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_user_policy_attachment" "bucket_list_sarah" {
+  user       = "${module.sarah.username}"
+  policy_arn = "${aws_iam_policy.bucket_list_sarah.arn}"
+}
+
 
 ################################################################################
 # Lambdas

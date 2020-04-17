@@ -224,6 +224,9 @@ output "sarah_secret_access_key" {
   value = "${module.sarah.encrypted_secret_access_key}"
 }
 
+output "sarah_console_login" {
+  value = "${aws_iam_user_login_profile.sarah_console_login.encrypted_password}"
+}
 
 
 # output for serivce user: agha_bot_user

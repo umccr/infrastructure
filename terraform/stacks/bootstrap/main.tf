@@ -316,10 +316,6 @@ resource "aws_s3_bucket" "temp" {
     id      = "monthly cleanup"
     enabled = true
 
-    noncurrent_version_expiration {
-      days = 60
-    }
-
     expiration {
 	  days = 30
     }

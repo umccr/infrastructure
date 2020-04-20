@@ -28,4 +28,4 @@ exec java -showversion --module-path="${prefix}/../Java/lib" "$IGV_MEM" \
     -Dapple.laf.useScreenMenuBar=true \
     -Djava.net.preferIPv4Stack=true \
     --module=org.igv/org.broad.igv.ui.Main \
-	--igvDirectory=$HOME/.igv-dev --preferences=$HOME/.igv-dev/prefs.properties
+	--igvDirectory=$HOME/.igv-dev --preferences=$HOME/.igv-dev/prefs.properties --port=60152

@@ -1,7 +1,7 @@
 
 # Dev worker project
 
-Deploy an ec2 instance with docker ready to go and logged into our ECR (Elastic container registry)
+Deploy an ec2 instance with docker and conda ready to go.
 
 This repo is (partially) based on the cdk example provided [here](https://github.com/aws-samples/aws-cdk-examples/blob/master/python/existing-vpc-new-ec2-ebs-userdata/cdk_vpc_ec2)
 

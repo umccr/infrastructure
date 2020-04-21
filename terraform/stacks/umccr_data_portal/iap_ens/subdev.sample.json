@@ -1,0 +1,12 @@
+{
+  "type": "gds.files",
+  "actions": ["uploaded","deleted","archived","unarchived"],
+  "name": "DataPortalDev",
+  "description": "UMCCR data portal (DEV) GDS Files subscription to deliver to SQS queue",
+  "deliveryTarget": {
+    "awsSqsQueue": {
+      "queueUrl": "<OUTPUT_FROM_TERRAFORM_OR_GRAB_FROM_AWS_SQS_CONSOLE>"
+    }
+  },
+  "filterExpression": "<PASTE_EXPR_OUTPUT_HERE>"
+}

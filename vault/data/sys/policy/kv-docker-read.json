@@ -1,3 +1,0 @@
-{
-  "policy": "path \"kv/docker\" {\n  capabilities = [\"read\"]\n}"
-}

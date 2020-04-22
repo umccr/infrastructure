@@ -306,7 +306,7 @@ def slack_message_from_gds_uploaded(sns_record):
     file_id = sns_msg['id']
     file_name = sns_msg['name']
     file_path = sns_msg['path']
-    volumn_name = sns_msg['volumeName']
+    volume_name = sns_msg['volumeName']
     file_crated_time = sns_msg['timeCreated']
     file_created_by = sns_msg['createdBy']
 
@@ -334,7 +334,7 @@ def slack_message_from_gds_uploaded(sns_record):
                 },
                 {
                     "title": "Volumn name",
-                    "value": volumn_name,
+                    "value": volume_name,
                     "short": True
                 },
                 {
@@ -387,7 +387,7 @@ def slack_message_from_bssh_runs(sns_record):
     run_id = sns_msg['id']
     name = sns_msg['name']
     folder_path = sns_msg['gdsFolderPath']
-    volumn_name = sns_msg['gdsVolumeName']
+    volume_name = sns_msg['gdsVolumeName']
     date_modified = sns_msg['dateModified']
     instrument_run_id = sns_msg['instrumentRunId']
     status = sns_msg['status']
@@ -452,7 +452,7 @@ def slack_message_from_bssh_runs(sns_record):
                 },
                 {
                     "title": "Volumn name",
-                    "value": volumn_name,
+                    "value": volume_name,
                     "short": True
                 },
                 {

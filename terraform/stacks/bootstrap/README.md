@@ -2,7 +2,6 @@
 This stack uses workspaces!
 
 ```bash
-assume-role dev ops-admin
 terraform workspace select dev
 terraform ...
 ```

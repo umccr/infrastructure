@@ -34,6 +34,25 @@ variable "workspace_run_data_bucket_name" {
   }
 }
 
+variable "workspace_primary_data_bucket_name" {
+  default = {
+    prod = "umccr-primary-data-prod"
+    dev  = "umccr-primary-data-dev"
+  }
+}
+
+variable "workspace_research_bucket_name" {
+  default = {
+    dev  = "umccr-research-dev"
+  }
+}
+
+variable "workspace_temp_bucket_name" {
+  default = {
+    dev  = "umccr-temp-dev"
+  }
+}
+
 variable "workspace_operator_write_buckets" {
   type = "map"
 
@@ -82,45 +101,12 @@ variable "workspace_operator_delete_buckets" {
   }
 }
 
-variable "workspace_pcgr_bucket_name" {
-  default = {
-    prod = "umccr-pcgr-prod"
-    dev  = "umccr-pcgr-dev"
-  }
-}
 
-variable "workspace_primary_data_bucket_name" {
-  default = {
-    prod = "umccr-primary-data-prod"
-    dev  = "umccr-primary-data-dev"
-  }
-}
-
-variable "workspace_vault_bucket_name" {
-  default = {
-    prod = "umccr-vault-data-prod"
-    dev  = "umccr-vault-data-dev"
-  }
-}
 
 variable "workspace_root_domain" {
   default = {
     prod = "prod.umccr.org"
     dev  = "dev.umccr.org"
-  }
-}
-
-variable "workspace_vault_env" {
-  default = {
-    prod = "PROD"
-    dev  = "DEV"
-  }
-}
-
-variable "workspace_vault_instance_tags" {
-  default = {
-    prod = "[{\"Key\": \"Name\", \"Value\": \"vault_prod\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"prod\"}]"
-    dev  = "[{\"Key\": \"Name\", \"Value\": \"vault_dev\"},{\"Key\": \"Stack\", \"Value\": \"bootstrap\"},{\"Key\": \"Environment\", \"Value\": \"dev\"}]"
   }
 }
 

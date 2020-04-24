@@ -22,9 +22,7 @@ NOTE: See the provided bootstrap script under `conf/bootstrap.sh` for an example
 ### Running the cluster
 
 ```bash
-# Create a cluster called my-test-cluster
-$ export CLUSTER_NAME="my-test-cluster"
-$ pcluster create $CLUSTER_NAME --config config --cluster-template dev --tags '{"Creator" : "'"$USER"'"}'
+$ ./bin/start-cluster.sh <CLUSTER_NAME>
 Beginning cluster creation for cluster: my-test-cluster
 Creating stack named: parallelcluster-my-test-cluster
 Status: parallelcluster-my-test-cluster - CREATE_COMPLETE
@@ -33,7 +31,7 @@ ClusterUser: ec2-user
 MasterPrivateIP: 172.31.23.110
 
 # Delete the cluster when finished
-$ pcluster delete $CLUSTER_NAME --config conf/config
+$ ./bin/stop-cluster.sh <CLUSTER_NAME>
 ```
 
 ## Cluster Use

@@ -6,7 +6,7 @@
 You can follow the official [docs][install_doc] or [this][blog_1] blog post (section `Setting up your client environment`) to set up the client requirements for parallel cluster.
 
 ```bash
-conda env update -f pcluster_client.env.yml
+conda env update -f conf/pcluster_client.env.yml
 ```
 
 ### Configuration
@@ -15,26 +15,25 @@ This configuration expects certain AWS resources to pre-exist, namely:
 - an instance role `parallelcluster-ec2-instance-role` with appropriate permissions to e.g. access S3 resources, allow SSM login, etc... See AWS managed policies `AmazonSSMManagedInstanceCore` and `AmazonS3ReadOnlyAccess` and policy.json (requires region substitution).
 - a key pair to be used for SSH (as admin backup to SSM)
 
-The default configuration (especially EC2 instance types for the compute fleet) may require modifications before it is suitable for your use case. See the 'config' file and adjust as necessary.
+The default configuration (especially EC2 instance types for the compute fleet) may require modifications before it is suitable for your use case. See the `conf/config` file and adjust as necessary.
 
-NOTE: See the provided bootstrap script for an example on how to setup the EC2 instances. Note that the config files points to an S3 location!
+NOTE: See the provided bootstrap script under `conf/bootstrap.sh` for an example on how to setup the EC2 instances.
 
 ### Running the cluster
 
 ```bash
-export CLUSTER_NAME="my-test-cluster"
 # Create a cluster called my-test-cluster
-(parallel_cluster) ~ $ pcluster create $CLUSTER_NAME --config config --cluster-template dev --tags '{"Creator" : "'"$USER"'"}'
+$ export CLUSTER_NAME="my-test-cluster"
+$ pcluster create $CLUSTER_NAME --config config --cluster-template dev --tags '{"Creator" : "'"$USER"'"}'
 Beginning cluster creation for cluster: my-test-cluster
 Creating stack named: parallelcluster-my-test-cluster
 Status: parallelcluster-my-test-cluster - CREATE_COMPLETE
 MasterPublicIP: 3.104.49.154
 ClusterUser: ec2-user
 MasterPrivateIP: 172.31.23.110
-(parallel_cluster) ~ $
 
 # Delete the cluster when finished
-(parallel_cluster) ~ $ pcluster delete $CLUSTER_NAME --config config
+$ pcluster delete $CLUSTER_NAME --config conf/config
 ```
 
 ## Cluster Use
@@ -95,5 +94,3 @@ The current cluster and scheduler (Slurm) run with minimal configuration, so the
 
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html
 [blog_1]: https://aws.amazon.com/blogs/machine-learning/building-an-interactive-and-scalable-ml-research-environment-using-aws-parallelcluster/
-
-

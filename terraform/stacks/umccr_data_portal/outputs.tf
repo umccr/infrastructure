@@ -82,14 +82,6 @@ output "API_DOMAIN_NAME" {
     value = "${local.api_domain}"
 }
 
-output "LIMS_BUCKET_NAME" {
-    value =  "${data.aws_s3_bucket.lims_bucket.bucket}"
-}
-
-output "LIMS_CSV_OBJECT_KEY" {
-    value = "${var.lims_csv_file_key}"
-}
-
 output "S3_EVENT_SQS_ARN" {
     value = "${aws_sqs_queue.s3_event_queue.arn}"
 }
@@ -104,4 +96,8 @@ output "CERTIFICATE_ARN" {
 
 output "WAF_NAME" {
     value = "${aws_wafregional_web_acl.api_web_acl.name}"
+}
+
+output "SERVERLESS_DEPLOYMENT_BUCKET" {
+    value = "${aws_s3_bucket.codepipeline_bucket.bucket}"
 }

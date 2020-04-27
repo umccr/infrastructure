@@ -283,10 +283,6 @@ data "aws_s3_bucket" "s3_run_data_bucket" {
   bucket = "${var.s3_run_data_bucket[terraform.workspace]}"
 }
 
-data "aws_s3_bucket" "lims_bucket" {
-  bucket = "${var.lims_bucket[terraform.workspace]}"
-}
-
 data "template_file" "sqs_s3_primary_data_event_policy" {
   template = "${file("policies/sqs_s3_primary_data_event_policy.json")}"
 
@@ -468,7 +464,7 @@ resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
 
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
-  bucket        = "${local.org_name}-${local.stack_name_dash}-codepipeline-artifacts-${terraform.workspace}"
+  bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
   acl           = "private"
   force_destroy = true
 }
@@ -825,16 +821,6 @@ resource "aws_codebuild_project" "codebuild_apis" {
     }
 
     environment_variable {
-      name  = "LIMS_BUCKET_NAME"
-      value = "${data.aws_s3_bucket.lims_bucket.bucket}"
-    }
-
-    environment_variable {
-      name  = "LIMS_CSV_OBJECT_KEY"
-      value = "${var.lims_csv_file_key}"
-    }
-
-    environment_variable {
       name  = "S3_EVENT_SQS_ARN"
       value = "${aws_sqs_queue.s3_event_queue.arn}"
     }
@@ -852,6 +838,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "WAF_NAME"
       value = "${aws_wafregional_web_acl.api_web_acl.name}"
+    }
+
+    environment_variable {
+      name  = "SERVERLESS_DEPLOYMENT_BUCKET"
+      value = "${aws_s3_bucket.codepipeline_bucket.bucket}"
     }
   }
 

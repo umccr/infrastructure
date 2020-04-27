@@ -46,6 +46,10 @@ MasterPublicIP: 3.104.49.154
 ClusterUser: ec2-user
 MasterPrivateIP: 172.31.23.110
 
+i-XXXXXXXXX   <---- Master insteance ID
+
+$ ssm i-XXXXXXXXXX
+
 # Delete the cluster when finished
 $ ./bin/stop-cluster.sh <CLUSTER_NAME>
 ```
@@ -53,12 +57,6 @@ $ ./bin/stop-cluster.sh <CLUSTER_NAME>
 ## Cluster Use
 
 ```shell
-# Retrieve IP of Master/Login node
-aws ec2 describe-instances \
-    --query "Reservations[*].Instances[*].[InstanceId]" \
-    --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" \
-    | jq -r '.[][][]'
-
 # Login to the master node
 aws ssm start-session --target <instance ID>
 

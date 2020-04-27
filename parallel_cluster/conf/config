@@ -19,7 +19,7 @@ post_install_args     = "R wget"
 ec2_iam_role          = parallelcluster-ec2-instance-role
 scheduler             = slurm
 initial_queue_size    = 1
-custom_ami            = ami-0b01adf2b53dcfe7c
+custom_ami            = ami-0c5dd348d78623bdb
 
 [vpc tothill]
 vpc_id           = vpc-7d2b2e1a

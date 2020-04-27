@@ -3,13 +3,29 @@
 ## Cluster Admin
 
 ### Setup
+
 You can follow the official [docs][install_doc] or [this][blog_1] blog post (section `Setting up your client environment`) to set up the client requirements for parallel cluster.
 
 ```shell
 conda env update -f conf/pcluster_client.env.yml
 ```
 
+This SSM shell function should be added to your `.bashrc` or equivalent:
+
+```shell
+ssm() {
+    aws ssm start-session --target "$1" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
+}
+```
+
+So that logging into the instances becomes:
+
+```bash
+$ ssm i-0a13c0c8d3fde0708
+```
+
 ### Configuration
+
 This configuration expects certain AWS resources to pre-exist, namely:
 - a network configuration with `VPC` and `subnet` according to the requirements of Parallel Cluster (the AWS defaults should be OK)
 - an instance role `parallelcluster-ec2-instance-role` with appropriate permissions to e.g. access S3 resources, allow SSM login, etc... See AWS managed policies `AmazonSSMManagedInstanceCore` and `AmazonS3ReadOnlyAccess` and policy.json (requires region substitution).

@@ -19,8 +19,7 @@ post_install_args     = "R wget"
 ec2_iam_role          = parallelcluster-ec2-instance-role
 scheduler             = slurm
 initial_queue_size    = 1
-# This tells AWS which previous machine setup to use
-#custom_ami = ami-0f2fda2defe8cc601
+custom_ami            = ami-0b01adf2b53dcfe7c
 
 [vpc tothill]
 vpc_id           = vpc-7d2b2e1a

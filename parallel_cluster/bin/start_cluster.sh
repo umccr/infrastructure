@@ -6,9 +6,11 @@ display_help() {
 }
 
 if [ "$1" ] ; then
-	echo "Creating cluster: $1"
-	pcluster create $1 --config conf/config --cluster-template tothill
+    pcluster create $1 --config conf/config --cluster-template tothill
+    aws ec2 describe-instances --filters Name=instance-state-name,Values="running" \
+                               --query 'Reservations[].Instances[].{Instance:InstanceId}'
+    echo "ssm i-XXXXX away!"
     exit 0
 else
-	display_help
+    display_help
 fi

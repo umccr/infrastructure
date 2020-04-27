@@ -6,7 +6,6 @@ display_help() {
 }
 
 if [ "$1" ] ; then
-	echo "Deleting cluster: $1"
 	pcluster delete $1 --config conf/config
     exit 0
 else

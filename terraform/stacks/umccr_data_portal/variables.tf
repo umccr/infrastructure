@@ -31,14 +31,6 @@ variable "certificate_validation" {
     description = "Whether automatic validate the cert (1) or, to manually validate (0)"
 }
 
-variable "lims_bucket" {
-    default = {
-        prod = "umccr-data-google-lims-prod" 
-        dev = "umccr-data-google-lims-dev" 
-    }
-    description = "Name of the S3 bucket storing lims data to be used by crawler "
-}
-
 variable "s3_primary_data_bucket" {
     default = {
         prod = "umccr-primary-data-prod"
@@ -66,11 +58,6 @@ variable "github_branch" {
 variable "localhost_url" {
     default     = "http://localhost:3000",
     description = "The localhost url used for testing"
-}
-
-variable "lims_csv_file_key" {
-    default = "google_lims.csv"
-    description = "CSV File key"
 }
 
 variable "rds_auto_pause" {

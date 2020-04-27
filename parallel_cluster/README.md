@@ -5,7 +5,7 @@
 ### Setup
 You can follow the official [docs][install_doc] or [this][blog_1] blog post (section `Setting up your client environment`) to set up the client requirements for parallel cluster.
 
-```bash
+```shell
 conda env update -f conf/pcluster_client.env.yml
 ```
 
@@ -21,7 +21,7 @@ NOTE: See the provided bootstrap script under `conf/bootstrap.sh` for an example
 
 ### Running the cluster
 
-```bash
+```shell
 $ ./bin/start-cluster.sh <CLUSTER_NAME>
 Beginning cluster creation for cluster: my-test-cluster
 Creating stack named: parallelcluster-my-test-cluster
@@ -36,7 +36,7 @@ $ ./bin/stop-cluster.sh <CLUSTER_NAME>
 
 ## Cluster Use
 
-```bash
+```shell
 # Retrieve IP of Master/Login node
 aws ec2 describe-instances \
     --query "Reservations[*].Instances[*].[InstanceId]" \
@@ -58,7 +58,7 @@ sbatch ...
 ```
 
 Example batch script file
-```bash
+```shell
 #!/bin/bash
 #SBATCH --output %J.out
 #SBATCH --error %J.err
@@ -69,22 +69,58 @@ docker run --rm hello-world
 ```
 
 
-## Notes & Comments
+## Legacy HPC compatible commands 
 
 The bootstrapping installs the `sinteractive` script also used on `Spartan` and it should work in the same way. The Slurm native alternative can be used as well: 
 
-```bash
-sinteractive --time=10:00 --nodes=1 --cpus-per-task=1
-srun --time=10:00 --nodes=1 --cpus-per-task=1 --pty -u "/bin/bash" -i -l
+```shell
+$ sinteractive --time=10:00 --nodes=1 --cpus-per-task=1
+$ srun --time=10:00 --nodes=1 --cpus-per-task=1 --pty -u "/bin/bash" -i -l
 ```
 
+Eventually, when users are ready to make the transition, this will be migrated to AWS Batch or more modern, efficient and integrated compute scheduling systems.
+
 ### Software availability
+
 Software installed on the login node is **not** automatically available on the compute nodes. For software to be avaiable on the cluster it will either have to be installed during the bootstrapping process (which will impact on time it takes for nodes to become available), be used within Docker containers (docker is installed on the cluster) or have to be distributed using a custom AMI that can be used when starting the cluster.
 
+#### Creating a custom AMI
+
+In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux AMI, please check the AMI ID list here and pass it to the `--ami-id` parameter (`alinux` AMIs are preferred for stability).
+
+```shell
+$ pcluster createami --ami-id ami-09226b689a5d43824 --os alinux2 --config conf/config --instance-type m5.large --region ap-southeast-2 --cluster-template tothill
+```
+
+If all goes whell, the AMI ID will be shown towards the end, ready to put it back on your parallelcluster `config` file:
+
+```shell
+$ pcluster createami --ami-id ami-09226b689a5d43824 --os alinux2 --config conf/config --region ap-southeast-2 --cluster-template tothill
+Building AWS ParallelCluster AMI. This could take a while...
+Base AMI ID: ami-09226b689a5d43824
+Base AMI OS: alinux2
+Instance Type: t2.xlarge
+Region: ap-southeast-2
+VPC ID: vpc-7d2b2e1a
+Subnet ID: subnet-3ad03d5c
+Template: https://s3.ap-southeast-2.amazonaws.com/ap-southeast-2-aws-parallelcluster/templates/aws-parallelcluster-2.6.1.cfn.json
+Cookbook: https://s3.ap-southeast-2.amazonaws.com/ap-southeast-2-aws-parallelcluster/cookbooks/aws-parallelcluster-cookbook-2.6.1.tgz
+Packer log: /var/folders/wz/__dd9trs0kl4jb3rs83704y80000gn/T/packer.log.20200427-145000.vaipm3lx
+Packer Instance ID: i-04a763679c1439fc3
+Packer status: 	exit code 0
+
+Custom AMI ami-0b01adf2b53dcfe7c created with name custom-ami-aws-parallelcluster-2.6.1-amzn2-hvm-202004271450
+
+To use it, add the following variable to the AWS ParallelCluster config file, under the [cluster ...] section
+custom_ami = ami-0b01adf2b53dcfe7c
+```
+
 ### File System
+
 The cluster uses EFS to provide a scalable FS that is available to all nodes. This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data (if it was already put in place). However, that also means the data put into EFS remains avaiable (and chargeable) as long as the cluster remains. So data will have to be cleaned up manually after it fulfilled it's purpose.
 
 ### Limitations
+
 The current cluster and scheduler (Slurm) run with minimal configuration, so there will be some limitations. Known points include:
 
 - Slurm's accounting (`sacct`) is not supported, as it requires an accounting data store to be set up.

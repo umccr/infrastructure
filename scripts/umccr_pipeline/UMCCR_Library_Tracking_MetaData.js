@@ -110,7 +110,49 @@ function createNewIntSubIds() {
     Logger.log("Next ID cnt: "  + cnt);
     var startCnt = cnt;
     var subjectHash = {};
-    var sheet = SpreadsheetApp.getActiveSheet();
+
+    // Find all subject IDs and create new internal ones where they don't exist
+    // Then use that as basis for ID generation in 2020
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('2019');
+    var sbjDataRange = sheet.getRange(2, SBJ_COL_IDX, sheet.getLastRow() - 1, 1);
+    var sbjData = sbjDataRange.getValues();
+    var extSbjData = sheet.getRange(2, EXT_SBJ_COL_IDX, sheet.getLastRow() - 1, 1).getValues();
+
+    for (var i = 0; i < sbjData.length; i++) {
+      // does not handle differnt internal IDs for the same external ID!!
+        var intSubId = sbjData[i][0];
+        var extSubId = extSbjData[i][0];
+        if (extSubId in subjectHash) {
+            var storedIntSubId = subjectHash[extSubId];
+            Logger.log("Internal ID already known for " + extSubId + " : " + storedIntSubId);
+            if (intSubId && intSubId != storedIntSubId) {
+                Logger.log("ERROR: overwriting existing identifier! " + storedIntSubId + "->" + intSubId);
+                subjectHash[extSubId] = intSubId;
+                sbjData[i][0] = intSubId;
+                // TODO: may need some further logic to select the "best" identifier for that subject, or allow user to select one
+            } else {
+                sbjData[i][0] = storedIntSubId;
+            }
+        } else {
+            if (!extSubId) {  // skip empty values
+                continue;
+            }
+            if (intSubId) {
+                Logger.log("Internal ID already present:" + intSubId);
+                subjectHash[extSubId] = intSubId;
+            } else {
+                Logger.log("New subject " + extSubId + ". Creating new internal ID.");
+                var nId = SBJ_ID_PREFIX + zerofill(cnt, SBJ_ID_INT_LEN);
+                subjectHash[extSubId] = nId;
+                sbjData[i][0] = nId;
+                cnt++;
+            }
+        }
+    }
+    sbjDataRange.setValues(sbjData);
+
+    // Replicate the same procedure for year 2020, building on the existing 2019 data
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('2020');
     var sbjDataRange = sheet.getRange(2, SBJ_COL_IDX, sheet.getLastRow() - 1, 1);
     var sbjData = sbjDataRange.getValues();
     var extSbjData = sheet.getRange(2, EXT_SBJ_COL_IDX, sheet.getLastRow() - 1, 1).getValues();

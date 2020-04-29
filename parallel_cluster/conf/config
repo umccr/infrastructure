@@ -31,7 +31,7 @@ master_subnet_id = subnet-3ad03d5c
 ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}
 
 [efs awselasticfs]
-shared_dir       = /efs
+shared_dir       = efs
 encrypted        = false
 performance_mode = generalPurpose
 

@@ -1,8 +1,12 @@
-# Parallel Cluster playground
+# UMCCR's AWS Parallel Cluster
+
+[AWS Parallel cluster][aws_parallel_cluster] is a Cloud-HPC system designed to bring traditional HPC practices to the cloud. UMCCR's intent is to onboard users to AWS, first on HPC and then steadily transitioning to more cloud-native, efficient alternatives where suitable.
 
 ## Cluster Admin
 
 ### Setup
+
+The [`conf/pcluster_client.env.yml` mentioned below][conda_conf] will setup `aws-parallelcluster` and other python dependencies on your python virtual environment. At UMCCR we typically use [Miniconda][miniconda], please set it up if you have not already before continuing.
 
 You can follow the official [docs][install_doc] or [this][blog_1] blog post (section `Setting up your client environment`) to set up the client requirements for parallel cluster.
 
@@ -142,3 +146,6 @@ The current cluster and scheduler (Slurm) run with minimal configuration, so the
 
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html
 [blog_1]: https://aws.amazon.com/blogs/machine-learning/building-an-interactive-and-scalable-ml-research-environment-using-aws-parallelcluster/
+[aws_parallel_cluster]: https://aws.amazon.com/hpc/parallelcluster/
+[miniconda]: https://docs.conda.io/en/latest/miniconda.html
+[conda_conf]: https://github.com/umccr/infrastructure/blob/master/parallel_cluster/conf/pcluster_client.env.yml

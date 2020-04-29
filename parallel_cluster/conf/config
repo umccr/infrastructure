@@ -37,6 +37,6 @@ performance_mode = generalPurpose
 
 [fsx lustrefs]
 shared_dir                = /scratch
-storage_capacity          = 10000
+storage_capacity          = 3600
 imported_file_chunk_size  = 1024
 import_path               = s3://tothill-scratch

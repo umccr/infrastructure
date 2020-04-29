@@ -11,6 +11,9 @@ if [ "$1" ] ; then
              --query "Reservations[*].Instances[*].[InstanceId]" \
              --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" --output text
 
+	# XXX: control error codes better, avoiding counterintuitive ones: i.e authed within a different account:
+	# ERROR: The configuration parameter 'vpc_id' generated the following errors:
+	# The vpc ID 'vpc-7d2b2e1a' does not exist
     echo "ssm i-XXXXX away!"
     exit 0
 else

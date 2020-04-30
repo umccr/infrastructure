@@ -179,7 +179,7 @@ class BatchStack(core.Stack):
             spot_fleet_role=spotfleet_role,
             instance_role=batch_instance_profile.instance_profile_name,
             vpc=vpc,
-            compute_resources_tags=core.Tag('Creator', 'Batch')
+            #compute_resources_tags=core.Tag('Creator', 'Batch')
         )
         # XXX: How to add more than one tag above??
         #core.Tag.add(my_compute_res, 'Foo', 'Bar')

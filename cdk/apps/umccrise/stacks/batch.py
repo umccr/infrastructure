@@ -162,46 +162,45 @@ class BatchStack(core.Stack):
             }
         )
 
-        # TODO: Replace with proper CDK construct once available
-        # TODO: Uses public subnet and default security group
-        batch_comp_env = batch.CfnComputeEnvironment(
-            self,
-            'UmccriseBatchComputeEnv',
-            type='MANAGED',
-            service_role=batch_service_role.role_arn,
-            compute_resources={
-                'type': props['compute_env_type'],
-                'allocationStrategy': 'BEST_FIT_PROGRESSIVE',
-                'maxvCpus': 128,
-                'minvCpus': 0,
-                'desiredvCpus': 0,
-                'imageId': props['compute_env_ami'],
-                'launchTemplate': {
-                    'launchTemplateName': launch_template.launch_template_name,
-                    'version': '$Latest'
-                },
-                'spotIamFleetRole': spotfleet_role.role_arn,
-                'instanceRole': batch_instance_profile.instance_profile_name,
-                'instanceTypes': ['optimal'],
-                'subnets': [vpc.public_subnets[0].subnet_id],
-                'securityGroupIds': [vpc.vpc_default_security_group],
-                'tags': {'Creator': 'Batch', 'Name': 'BatchWorker'}
-            }
+        launch_template_spec = batch.LaunchTemplateSpecification(
+            launch_template_name=launch_template.launch_template_name,
+            version='$Latest'
         )
 
-        # TODO: Replace with proper CDK construct once available
-        # TODO: job_queue_name could result in a clash, but is currently necessary
-        #       as we need a reference for the ENV variables of the lambda
-        #       Could/Should append a unique element/string.
-        job_queue = batch.CfnJobQueue(
+
+        my_compute_res = batch.ComputeResources(
+            type=batch.ComputeResourceType.SPOT,
+            allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+            desiredv_cpus=0,
+            maxv_cpus=128,
+            minv_cpus=0,
+            image=ec2.MachineImage.latest_amazon_linux(),
+            launch_template=launch_template_spec,
+            spot_fleet_role=spotfleet_role,
+            instance_role=batch_instance_profile.instance_profile_name,
+            vpc=vpc,
+            compute_resources_tags=core.Tag('Creator', 'Batch')
+        )
+        # XXX: How to add more than one tag above??
+        #core.Tag.add(my_compute_res, 'Foo', 'Bar')
+
+        my_compute_env = batch.ComputeEnvironment(
+            self,
+            'UmccriseBatchComputeEnv',
+            compute_environment_name="UmccriseBatchComputeEnv",
+            service_role=batch_service_role,
+            compute_resources=my_compute_res
+        )
+
+        job_queue = batch.JobQueue(
             self,
             'UmccriseJobQueue',
-            compute_environment_order=[{
-                'computeEnvironment': batch_comp_env.ref,
-                'order': 1
-            }],
-            priority=10,
-            job_queue_name='umccrise_job_queue'
+            job_queue_name='umccrise_job_queue',
+            compute_environments=[ batch.JobQueueComputeEnvironment(
+                compute_environment=my_compute_env,
+                order=1
+            )],
+            priority=10
         )
 
         ################################################################################

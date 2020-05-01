@@ -8,6 +8,7 @@
               "s3:GetObject",
               "s3:GetObjectVersion",
               "s3:List*",
+              "s3:restoreObject",
               "s3:GetBucketLocation"
             ],
             "Resource": [

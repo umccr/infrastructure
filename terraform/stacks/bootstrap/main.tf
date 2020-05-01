@@ -290,6 +290,7 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
 
 # S3 bucket for research data
 resource "aws_s3_bucket" "research" {
+  count  = "${terraform.workspace == "dev" ? 1 : 0}"
   bucket = "${var.workspace_research_bucket_name[terraform.workspace]}"
 
   server_side_encryption_configuration {
@@ -303,6 +304,7 @@ resource "aws_s3_bucket" "research" {
 
 # S3 bucket for temp data
 resource "aws_s3_bucket" "temp" {
+  count  = "${terraform.workspace == "dev" ? 1 : 0}"
   bucket = "${var.workspace_temp_bucket_name[terraform.workspace]}"
 
   server_side_encryption_configuration {

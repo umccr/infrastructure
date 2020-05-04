@@ -7,7 +7,6 @@ from stacks.iap_tes import IapTesStack
 from stacks.slack import CodeBuildLambdaStack
 
 dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
-prod_env = {'account': '472057503814', 'region': 'ap-southeast-2'}
 umccrise_ecr_repo = 'umccrise'
 codebuild_project_name = 'umccrise_codebuild_project'
 
@@ -24,21 +23,10 @@ cicd_dev_props = {
 batch_dev_props = {
     'namespace': 'umccrise-batch-dev',
     'container_image': 'umccr/umccrise:0.15.15',
-    'compute_env_ami': 'ami-0970010f37c4f9c8d',  # Amazon ECS optimised Linux 2 AMI
+    'compute_env_ami': 'ami-029bf83e14803c25f',  # Amazon ECS optimised Linux 2 AMI
     'compute_env_type': 'SPOT',
     'ro_buckets': ['umccr-refdata-prod', 'umccr-primary-data-prod', 'umccr-temp', 'umccr-refdata-dev'],
     'rw_buckets': ['umccr-primary-data-dev2', 'umccr-misc-temp'],
-    'refdata_bucket': 'umccr-refdata-prod',
-    'data_bucket': 'umccr-primary-data-prod'
-}
-
-batch_prod_props = {
-    'namespace': 'umccrise-batch-prod',
-    'container_image': 'umccr/umccrise:0.15.15',
-    'compute_env_ami': 'ami-09975fb45a9e256c3',
-    'compute_env_type': 'EC2',
-    'ro_buckets': ['umccr-refdata-prod'],
-    'rw_buckets': ['umccr-primary-data-prod', 'umccr-temp'],
     'refdata_bucket': 'umccr-refdata-prod',
     'data_bucket': 'umccr-primary-data-prod'
 }
@@ -72,6 +60,7 @@ app = core.App()
 # we generate them in a separate common stack
 # I.e. it would be unfortunate if a ECR repo would be deleted, just because
 # the CI/CD stack was removed.
+# TODO: Common infrasturcture should probably be under Terraform control
 common = CommonStack(
     app,
     common_dev_props['namespace'],
@@ -84,17 +73,12 @@ CICDStack(
     cicd_dev_props,
     env=dev_env
 )
+batch_dev_props['vpc'] = common.vpc
 BatchStack(
     app,
     batch_dev_props['namespace'],
     batch_dev_props,
     env=dev_env
-)
-BatchStack(
-    app,
-    batch_prod_props['namespace'],
-    batch_prod_props,
-    env=prod_env
 )
 IapTesStack(
     app,

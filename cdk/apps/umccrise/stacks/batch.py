@@ -31,6 +31,7 @@ echo formatting and mounting disk
 # assuming the device is available under the requested name
 sudo mkfs -t xfs /dev/xvdf
 mount /dev/xvdf /mnt
+docker info
 echo END CUSTOM USERDATA
 --==MYBOUNDARY==--"""
 
@@ -128,14 +129,7 @@ class BatchStack(core.Stack):
 
         ################################################################################
         # Minimal networking
-        # TODO: use exiting common setup
-        # TODO: roll out across all AZs? (Will require more subnets, NATs, ENIs, etc...)
-        vpc = ec2.Vpc(
-            self,
-            'UmccrVpc',
-            cidr="10.2.0.0/16",
-            max_azs=1
-        )
+        vpc = props['vpc']
 
         ################################################################################
         # Setup Batch compute resources
@@ -174,7 +168,7 @@ class BatchStack(core.Stack):
             desiredv_cpus=0,
             maxv_cpus=128,
             minv_cpus=0,
-            image=ec2.MachineImage.latest_amazon_linux(),
+            image=ec2.MachineImage.generic_linux(ami_map={'ap-southeast-2': props['compute_env_ami']}),
             launch_template=launch_template_spec,
             spot_fleet_role=spotfleet_role,
             instance_role=batch_instance_profile.instance_profile_name,
@@ -182,7 +176,7 @@ class BatchStack(core.Stack):
             #compute_resources_tags=core.Tag('Creator', 'Batch')
         )
         # XXX: How to add more than one tag above??
-        #core.Tag.add(my_compute_res, 'Foo', 'Bar')
+        # core.Tag.add(my_compute_res, 'Foo', 'Bar')
 
         my_compute_env = batch.ComputeEnvironment(
             self,

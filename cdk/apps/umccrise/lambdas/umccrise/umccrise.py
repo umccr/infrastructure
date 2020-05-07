@@ -1,7 +1,7 @@
 import os
 import boto3
 
-
+# TODO: sync/compare with production version
 JOB_DEF_NAME = 'umccrise'
 DH_IMAGE_NAME = 'umccr/umccrise'
 ECR_IMAGE_NAME = '843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise'

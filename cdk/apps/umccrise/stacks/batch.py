@@ -117,6 +117,7 @@ class BatchStack(core.Stack):
         for bucket in ro_buckets:
             bucket.grant_read(batch_instance_role)
         for bucket in rw_buckets:
+            # TODO: restirct write to paths with */umccrise/*
             bucket.grant_read_write(batch_instance_role)
 
         # Turn the instance role into a Instance Profile
@@ -129,6 +130,7 @@ class BatchStack(core.Stack):
 
         ################################################################################
         # Minimal networking
+        # TODO: import resource created with TF
         vpc = props['vpc']
 
         ################################################################################
@@ -215,6 +217,8 @@ class BatchStack(core.Stack):
         for bucket in rw_buckets:
             bucket.grant_read(lambda_role)
 
+        # TODO: support dev/prod split, i.e. image being configurable on dev, but fixed on prod
+        #       may need a default JobDefinition to be set up
         lmbda.Function(
             self,
             'UmccriseLambda',

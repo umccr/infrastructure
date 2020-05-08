@@ -22,7 +22,11 @@ setuptools.setup(
         "aws_cdk.aws_iam",
         "aws_cdk.aws_lambda",
         "aws_cdk.aws_ssm",
-        "aws-cdk.core"
+        "aws-cdk.core",
+        "aws_cdk.aws_codebuild",
+        "aws-cdk.aws-ecr",
+        "aws-cdk.aws-batch",
+        "boto3",
     ],
 
     python_requires=">=3.6",

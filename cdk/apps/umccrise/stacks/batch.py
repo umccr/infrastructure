@@ -4,12 +4,12 @@ from aws_cdk import (
     aws_batch as batch,
     aws_s3 as s3,
     aws_ec2 as ec2,
+    aws_ecs as ecs,
     core
 )
 
-# User data script to run on Batch worker instance start up
+# User data script to run on Batch worker instance on start up
 # Main purpose: pull in umccrise wrapper script to execute in Batch job
-# TODO: use variables (e.g. for device name)
 user_data_script = """MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
 
@@ -117,8 +117,8 @@ class BatchStack(core.Stack):
         for bucket in ro_buckets:
             bucket.grant_read(batch_instance_role)
         for bucket in rw_buckets:
-            # TODO: restirct write to paths with */umccrise/*
-            bucket.grant_read_write(batch_instance_role)
+            # restirct write to paths with */umccrise/*
+            bucket.grant_read_write(batch_instance_role, '*/umccrised/*')
 
         # Turn the instance role into a Instance Profile
         batch_instance_profile = iam.CfnInstanceProfile(
@@ -183,7 +183,7 @@ class BatchStack(core.Stack):
         my_compute_env = batch.ComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
-            compute_environment_name="UmccriseBatchComputeEnv",
+            compute_environment_name="cdk-umccrise-batch-compute-env",
             service_role=batch_service_role,
             compute_resources=my_compute_res
         )
@@ -191,12 +191,58 @@ class BatchStack(core.Stack):
         job_queue = batch.JobQueue(
             self,
             'UmccriseJobQueue',
-            job_queue_name='umccrise_job_queue',
+            job_queue_name='cdk-umccrise_job_queue',
             compute_environments=[ batch.JobQueueComputeEnvironment(
                 compute_environment=my_compute_env,
                 order=1
             )],
             priority=10
+        )
+
+        job_container = batch.JobDefinitionContainer(
+            image=ecs.ContainerImage.from_registry(name=props['container_image']),
+            vcpus=2,
+            memory_limit_mib=2048,
+            command=[
+                "/opt/container/umccrise-wrapper.sh",
+                "Ref::vcpus"
+            ],
+            mount_points=[
+                ecs.MountPoint(
+                    container_path='/work',
+                    read_only=False,
+                    source_volume='work'
+                ),
+                ecs.MountPoint(
+                    container_path='/opt/container',
+                    read_only=True,
+                    source_volume='container'
+                )
+            ],
+            volumes=[
+                ecs.Volume(
+                    name='container',
+                    host=ecs.Host(
+                        source_path='/opt/container'
+                    )
+                ),
+                ecs.Volume(
+                    name='work',
+                    host=ecs.Host(
+                        source_path='/mnt'
+                    )
+                )
+            ],
+            privileged=True
+        )
+
+        job_definition = batch.JobDefinition(
+            self,
+            'UmccriseJobDefinition',
+            job_definition_name='cdk-umccrise-job-definition',
+            parameters={'vcpus': '1'},
+            container=job_container,
+            timeout=core.Duration.hours(5)
         )
 
         ################################################################################

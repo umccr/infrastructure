@@ -5,6 +5,7 @@ from stacks.cicd import CICDStack
 from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
 from stacks.slack import CodeBuildLambdaStack
+from stacks.sfn import SfnStack
 
 dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
 umccrise_ecr_repo = 'umccrise'
@@ -91,6 +92,11 @@ CodeBuildLambdaStack(
     app,
     slack_dev_props['namespace'],
     slack_dev_props,
+    env=dev_env
+)
+SfnStack(
+    app,
+    'SfnStack',
     env=dev_env
 )
 

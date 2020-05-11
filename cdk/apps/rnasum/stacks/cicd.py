@@ -13,12 +13,11 @@ class CICDStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # RNAsum doesn't need refdata at the moment
-        # refdata = s3.Bucket.from_bucket_attributes(
-        #     self,
-        #     'reference_data',
-        #     bucket_name='umccr-refdata-dev'
-        # )
+        refdata = s3.Bucket.from_bucket_attributes(
+            self,
+            'reference_data',
+            bucket_name='umccr-refdata-dev'
+        )
 
         build_env = cb.BuildEnvironment(
             build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
@@ -49,4 +48,4 @@ class CICDStack(core.Stack):
             iam.ManagedPolicy.from_aws_managed_policy_name('AmazonEC2ContainerRegistryPowerUser')
         )
 
-        # refdata.grant_read(cb_project)
+        refdata.grant_read(cb_project)

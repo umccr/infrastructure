@@ -27,6 +27,8 @@ setuptools.setup(
         "aws-cdk.aws-ecr",
         "aws-cdk.aws-batch",
         "boto3",
+        "mockito",
+        "pytest",
     ],
 
     python_requires=">=3.6",

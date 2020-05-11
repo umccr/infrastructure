@@ -5,8 +5,6 @@ from stacks.cicd import CICDStack
 from stacks.batch import BatchStack
 from stacks.common import CommonStack
 
-rnasum_image = 'umccr/rnasum:0.3.5'
-
 dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
 codebuild_project_name = 'rnasum_codebuild_project'
 rnasum_ecr_repo = 'rnasum'
@@ -24,7 +22,7 @@ cicd_dev_props = {
 
 batch_dev_props = {
     'namespace': 'rnasum-batch-dev',
-    'container_image': rnasum_image,
+    'container_image': 'umccr/rnasum:0.3.5',
     'compute_env_ami': 'ami-029bf83e14803c25f',  # Amazon ECS optimised Linux 2 AMI
     'compute_env_type': 'SPOT',
     'ro_buckets': ['umccr-refdata-prod', 'umccr-primary-data-prod', 'umccr-temp', 'umccr-refdata-dev'],

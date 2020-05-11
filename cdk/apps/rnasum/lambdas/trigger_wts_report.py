@@ -1,10 +1,15 @@
+import logging
 import os
+
 import boto3
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 def lambda_handler(event, context):
     # Log the received event
-    print(f"Received event: {event}")
+    logger.info(f"Received event: {event}")
     # get the Batch client ready
     batch_client = boto3.client('batch')
 
@@ -29,9 +34,9 @@ def lambda_handler(event, context):
 
     try:
         s3 = boto3.client('s3')
-        print(f"Checking if data in WTS input S3 path ({data_wts_dir}) exists in bucket {data_bucket}")
+        logger.info(f"Checking if data in WTS input S3 path ({data_wts_dir}) exists in bucket {data_bucket}")
         response_wts = s3.list_objects(Bucket=data_bucket, MaxKeys=3, Prefix=data_wts_dir)
-        print(f"S3 list response: {response_wts}")
+        logger.info(f"S3 list response: {response_wts}")
         if not response_wts.get('Contents') or len(response_wts['Contents']) < 1:
             return {
                 'statusCode': 400,
@@ -40,9 +45,9 @@ def lambda_handler(event, context):
             }
 
         if event.get('dataDirWGS'):
-            print(f"Checking if data in WGS input S3 path ({data_wgs_dir}) exists in bucket {data_bucket}")
+            logger.info(f"Checking if data in WGS input S3 path ({data_wgs_dir}) exists in bucket {data_bucket}")
             response_wgs = s3.list_objects(Bucket=data_bucket, MaxKeys=3, Prefix=data_wgs_dir)
-            print(f"S3 list response: {response_wgs}")
+            logger.info(f"S3 list response: {response_wgs}")
             if not response_wgs.get('Contents') or len(response_wgs['Contents']) < 1:
                 return {
                     'statusCode': 400,
@@ -67,11 +72,10 @@ def lambda_handler(event, context):
             container_overrides['vcpus'] = int(container_vcpus)
             parameters['vcpus'] = container_vcpus
 
-        print("jobName: " + job_name)
-        print("containerOverrides: ")
-        print(container_overrides)
-        print("jobDefinition: ")
-        print(job_definition)
+        logger.info(f"jobName: {job_name}")
+        logger.info("containerOverrides: ")
+        logger.info(container_overrides)
+        logger.info(f"jobDefinition: {job_definition}")
         response = batch_client.submit_job(
             dependsOn=depends_on,
             containerOverrides=container_overrides,
@@ -82,10 +86,10 @@ def lambda_handler(event, context):
         )
 
         # Log response from AWS Batch
-        print(f"Response: {response}")
+        logger.info(f"Response: {response}")
         # Return the jobId
         event['jobId'] = response['jobId']
         return event
 
     except Exception as e:
-        print(e)
+        logger.error(e)

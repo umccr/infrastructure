@@ -70,6 +70,8 @@ variable "workspace_umccrise_ro_buckets" {
             "arn:aws:s3:::umccr-primary-data-prod", "arn:aws:s3:::umccr-primary-data-prod/*",
             "arn:aws:s3:::umccr-refdata-dev", "arn:aws:s3:::umccr-refdata-dev/*",
             "arn:aws:s3:::umccr-refdata-prod", "arn:aws:s3:::umccr-refdata-prod/*",
+            "arn:aws:s3:::umccr-research-dev", "arn:aws:s3:::umccr-research-dev/*",
+            "arn:aws:s3:::umccr-temp-dev", "arn:aws:s3:::umccr-temp-dev/*",
             "arn:aws:s3:::umccr-temp", "arn:aws:s3:::umccr-temp/*"]
   }
 }
@@ -82,6 +84,8 @@ variable "workspace_umccrise_wd_buckets" {
             "arn:aws:s3:::umccr-temp/*/umccrised/*"]
     dev  = ["arn:aws:s3:::umccr-primary-data-dev2/*/umccrised/*",
             "arn:aws:s3:::umccr-primary-data-dev/*/umccrised/*",
+            "arn:aws:s3:::umccr-research-dev/*/umccrised/*",
+            "arn:aws:s3:::umccr-temp-dev/*/umccrised/*",
             "arn:aws:s3:::umccr-misc-temp/*/umccrised/*"]
   }
 }

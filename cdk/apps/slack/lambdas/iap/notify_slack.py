@@ -125,6 +125,7 @@ def call_slack_webhook(sender, topic, attachments):
 
 
 def slack_message_not_supported(sns_record):
+    print("Trying to parse message for currently unsupported message format...")
     aws_account = sns_record.get('TopicArn').split(':')[4]
     sns_record_date = parse(sns_record.get('Timestamp'))
 
@@ -191,6 +192,133 @@ def slack_message_not_supported(sns_record):
             "ts": int(sns_record_date.timestamp())
         }
     ]
+    return slack_sender, slack_topic, slack_attachment
+
+
+def slack_message_from_wes_runs_historyevents(sns_record):
+    # NOTE: wes.runs.historyevents action:  "started", "succeeded", "failed", "aborted"
+    print("Parsing wes.runs.historyevents notification....")
+    aws_account = sns_record.get('TopicArn').split(':')[4]
+    sns_record_date = parse(sns_record.get('Timestamp'))
+
+    sns_msg_atts = sns_record.get('MessageAttributes')
+    stratus_action = sns_msg_atts['action']['Value']
+    stratus_action_type = sns_msg_atts['type']['Value']
+    if sns_msg_atts.get('actionDate'):
+        stratus_action_date = sns_msg_atts['actionDate']['Value']
+    else:
+        stratus_action_date = sns_msg_atts['actiondate']['Value']
+    if sns_msg_atts.get('producedBy'):
+        stratus_produced_by = sns_msg_atts['producedBy']['Value']
+    else:
+        stratus_produced_by = sns_msg_atts['producedby']['Value']
+
+    sns_msg = json.loads(sns_record.get('Message'))
+    print(f"Extracted message: {json.dumps(sns_msg)}")
+
+    wes_run = sns_msg['WorkflowRun']
+    wes_run_id = wes_run['Id']
+
+    wes_run_name = 'unknown'  # TODO: not part of the event/notification?
+    wes_run_status = wes_run['Status']
+    wes_run_crated_time = wes_run['TimeCreated']
+    wes_run_created_by = wes_run['CreatedBy']
+    wes_run_description = wes_run['WorkflowVersion']['Description']
+
+    action = stratus_action.lower()
+    status = wes_run_status.lower()
+    if action == 'started':
+        slack_color = BLUE
+    elif action == 'succeeded':
+        slack_color = GREEN
+    elif action == 'failed' or action == 'aborted':
+        slack_color = RED
+    else:
+        slack_color = BLACK
+
+    slack_sender = "Illumina Application Platform"
+    slack_topic = f"Notification from {stratus_action_type}"
+    slack_attachment = [
+        {
+            "fallback": f"WES run {wes_run_name}: {wes_run_status}",
+            "color": slack_color,
+            "pretext": wes_run_name,
+            "title": f"Task ID: {wes_run_id}",
+            "text": wes_run_description,
+            "fields": [
+                {
+                    "title": "Action",
+                    "value": stratus_action,
+                    "short": True
+                },
+                {
+                    "title": "Action Type",
+                    "value": stratus_action_type,
+                    "short": True
+                },
+                {
+                    "title": "Action Status",
+                    "value": status,
+                    "short": True
+                },
+                {
+                    "title": "Action Date",
+                    "value": stratus_action_date,
+                    "short": True
+                },
+                {
+                    "title": "Produced By",
+                    "value": stratus_produced_by,
+                    "short": True
+                },
+                {
+                    "title": "Task Created At",
+                    "value": wes_run_crated_time,
+                    "short": True
+                },
+                {
+                    "title": "Task Created By",
+                    "value": getCreatorFromId(wes_run_created_by),
+                    "short": True
+                },
+                {
+                    "title": "AWS Account",
+                    "value": getAwsAccountName(aws_account),
+                    "short": True
+                }
+            ],
+            "footer": "IAP TES Task",
+            "ts": int(sns_record_date.timestamp())
+        }
+    ]
+    return slack_sender, slack_topic, slack_attachment
+
+
+def slack_message_from_wes_runs(sns_record):
+    # NOTE: wes.runs.historyevents action:  "created", "updated", "aborted"
+    print("Parsing wes.runs notification....")
+    aws_account = sns_record.get('TopicArn').split(':')[4]
+    sns_record_date = parse(sns_record.get('Timestamp'))
+
+    sns_msg_atts = sns_record.get('MessageAttributes')
+    stratus_action = sns_msg_atts['action']['Value']
+    stratus_action_type = sns_msg_atts['type']['Value']
+    if sns_msg_atts.get('actionDate'):
+        stratus_action_date = sns_msg_atts['actionDate']['Value']
+    else:
+        stratus_action_date = sns_msg_atts['actiondate']['Value']
+    if sns_msg_atts.get('producedBy'):
+        stratus_produced_by = sns_msg_atts['producedBy']['Value']
+    else:
+        stratus_produced_by = sns_msg_atts['producedby']['Value']
+
+    sns_msg = json.loads(sns_record.get('Message'))
+    print(f"Extracted message: {json.dumps(sns_msg)}")
+
+    slack_sender = ''
+    slack_topic = ''
+    slack_attachment = ''
+
     return slack_sender, slack_topic, slack_attachment
 
 
@@ -516,6 +644,10 @@ def lambda_handler(event, context):
                     slack_sender, slack_topic, slack_attachment = slack_message_from_tes_runs(sns_record)
                 elif sns_record['MessageAttributes']['type']['Value'] == 'bssh.runs':
                     slack_sender, slack_topic, slack_attachment = slack_message_from_bssh_runs(sns_record)
+                elif sns_record['MessageAttributes']['type']['Value'] == 'wes.runs':
+                    slack_sender, slack_topic, slack_attachment = slack_message_from_wes_runs(sns_record)
+                elif sns_record['MessageAttributes']['type']['Value'] == 'wes.runs.historyevents':
+                    slack_sender, slack_topic, slack_attachment = slack_message_from_wes_runs_historyevents(sns_record)
                 else:
                     slack_sender, slack_topic, slack_attachment = slack_message_not_supported(sns_record)
         else:

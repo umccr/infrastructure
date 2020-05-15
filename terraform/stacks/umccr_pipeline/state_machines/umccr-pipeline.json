@@ -629,13 +629,13 @@
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Google LIMS updated. Updating stats sheet..."
+        "message": "Google LIMS updated. Creatting QC reports..."
       },
       "ResultPath": "$.lambda_result"
     },
     "Asynchronous create MultiQC reports": {
       "Type": "Parallel",
-      "Next": "Notify create MultiQC reports",
+      "Next": "Notify pipeline end",
       "OutputPath": "$[1]",
       "Branches": [
         {
@@ -686,72 +686,7 @@
         }
       ]
     },
-    "Notify create MultiQC reports": {
-      "Type": "Task",
-      "Resource": "${slack_notify_lambda_arn}",
-      "Next": "Asynchronous Stats sheet update",
-      "TimeoutSeconds": 12,
-      "Parameters": {
-        "topic": "UMCCR pipeline",
-        "title.$": "$.runfolder",
-        "message": "MultiQC reports created. Updating stats sheet..."
-      },
-      "ResultPath": "$.lambda_result"
-    },
-    "Asynchronous Stats sheet update": {
-      "Type": "Parallel",
-      "Next": "Notify Stats sheet update",
-      "OutputPath": "$[1]",
-      "Branches": [
-        {
-          "StartAt": "Start Stats sheet update",
-          "States": {
-            "Start Stats sheet update": {
-              "Type": "Task",
-              "Resource": "${pipeline_lambda_arn}",
-              "Parameters": {
-                "script_execution": "stats_sheet_update",
-                "input.$": "$"
-              },
-              "TimeoutSeconds": 12,
-              "End": true,
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "States.ALL"
-                  ],
-                  "IntervalSeconds": 3,
-                  "MaxAttempts": 2,
-                  "BackoffRate": 1.5
-                }
-              ]
-            }
-          }
-        },
-        {
-          "StartAt": "Wait for Stats sheet update",
-          "States": {
-            "Wait for Stats sheet update": {
-              "Type": "Task",
-              "Resource": "${wait_for_async_action_activity_arn}",
-              "ResultPath": "$.script_result",
-              "TimeoutSeconds": 605,
-              "End": true
-            }
-          }
-        }
-      ],
-      "Catch": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "ResultPath": "$.error_info",
-          "Next": "Notify Failure"
-        }
-      ]
-    },
-    "Notify Stats sheet update": {
+    "Notify pipeline end": {
       "Type": "Task",
       "Resource": "${slack_notify_lambda_arn}",
       "End": true,
@@ -759,10 +694,9 @@
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Stats sheet updated. Pipeline complete!"
+        "message": "QC reports created. Pipeline complete!"
       },
       "ResultPath": "$.lambda_result"
     }
-
   }
 }

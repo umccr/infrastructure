@@ -1,12 +1,11 @@
 {
   "app": "python3 app.py",
   "context": {
-    "EC2_TYPE": "m4.4xlarge",
-    "MACHINE_IMAGE": "ami-0dc96254d5535925f",
+    "EC2_TYPE": "m5.4xlarge",
+    "MACHINE_IMAGE": "ami-055a70ac36a232aeb",
     "VAR_VOLUME_SIZE": "16",
     "EXTENDED_VOLUME_SIZE": "100",
     "INSTANCE_NAME": "dev_worker_instance_cdk",
-    "USE_SPOT_INSTANCE": "true",
-    "MAX_SPOT_PRICE": "0.30"
+    "USE_SPOT_INSTANCE": "true"
   }
 }

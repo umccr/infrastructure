@@ -101,3 +101,7 @@ output "WAF_NAME" {
 output "SERVERLESS_DEPLOYMENT_BUCKET" {
     value = "${aws_s3_bucket.codepipeline_bucket.bucket}"
 }
+
+output "SLACK_CHANNEL" {
+    value = "${local.SLACK_CHANNEL}"
+}

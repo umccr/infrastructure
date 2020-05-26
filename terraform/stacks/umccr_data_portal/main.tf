@@ -79,6 +79,7 @@ locals {
   SSM_KEY_NAME_DJANGO_SECRET_KEY = "${data.aws_ssm_parameter.ssm_django_secret_key.name}"
   SSM_KEY_NAME_LIMS_SPREADSHEET_ID = "${data.aws_ssm_parameter.ssm_lims_spreadsheet_id.name}"
   SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON = "${data.aws_ssm_parameter.ssm_lims_service_account_json.name}"
+  SLACK_CHANNEL = "${var.slack_channel[terraform.workspace]}"
 }
 
 ################################################################################
@@ -843,6 +844,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "SERVERLESS_DEPLOYMENT_BUCKET"
       value = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+    }
+
+    environment_variable {
+      name  = "SLACK_CHANNEL"
+      value = "${local.SLACK_CHANNEL}"
     }
   }
 

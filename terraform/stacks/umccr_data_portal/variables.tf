@@ -63,7 +63,7 @@ variable "localhost_url" {
 variable "rds_auto_pause" {
     default = {
         prod = false,
-        dev  = true
+        dev  = false
     }
     description = "Whether to keep RDS serverless alive or pause if no load"
 }
@@ -82,4 +82,12 @@ variable "rds_max_capacity" {
         dev  = 1
     }
     description = "The maximum capacity in Aurora Capacity Units (ACUs)"
+}
+
+variable "slack_channel" {
+    default = {
+        prod = "#biobots",
+        dev  = "#arteria-dev"
+    }
+    description = "Slack channel to send operational status message"
 }

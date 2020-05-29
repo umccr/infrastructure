@@ -418,6 +418,46 @@ resource "aws_s3_bucket" "primary_data" {
   }
 }
 
+# S3 bucket to hold validation data
+resource "aws_s3_bucket" "validation_data" {
+  bucket = "${var.workspace_validation_bucket_name[terraform.workspace]}"
+  acl    = "private"
+
+  versioning {
+    enabled = "${terraform.workspace == "prod" ? true : false}"
+  }
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  tags {
+    Name        = "validation"
+    Environment = "${terraform.workspace}"
+  }
+
+  lifecycle_rule {
+    # TODO: data could go straight to INFREQUENT_ACCESS in both dev and prod?
+    id      = "intelligent_tiering"
+    enabled = "${terraform.workspace == "prod" ? true : false}"
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+}
+
 
 ## Slack notify Lambda #########################################################
 

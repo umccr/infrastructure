@@ -41,6 +41,13 @@ variable "workspace_primary_data_bucket_name" {
   }
 }
 
+variable "workspace_validation_bucket_name" {
+  default = {
+    prod = "umccr-validation-prod"
+    dev  = "umccr-validation-dev"
+  }
+}
+
 variable "workspace_research_bucket_name" {
   default = {
     dev  = "umccr-research-dev"

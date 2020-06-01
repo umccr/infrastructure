@@ -458,6 +458,19 @@ resource "aws_s3_bucket" "validation_data" {
   }
 }
 
+data "template_file" "validation_bucket_policy" {
+  template = "${file("policies/cross_account_bucket_policy.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.validation_data.id}"
+    account_id  = "${var.dev_account_id}"
+  }
+}
+
+resource "aws_s3_bucket_policy" "validation_bucket_policy" {
+  bucket = "${aws_s3_bucket.validation_data.id}"
+  policy = "${data.template_file.validation_bucket_policy.rendered}"
+}
 
 ## Slack notify Lambda #########################################################
 

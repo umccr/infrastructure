@@ -7,6 +7,12 @@ variable "tf_bucket" {
   default = "arn:aws:s3:::umccr-terraform-states"
 }
 
+variable "dev_account_id" {
+  type = "string"
+  default = "843407916570"
+}
+
+
 ################################################################################
 ## workspace variables
 

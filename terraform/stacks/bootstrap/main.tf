@@ -468,6 +468,7 @@ data "template_file" "validation_bucket_policy" {
 }
 
 resource "aws_s3_bucket_policy" "validation_bucket_policy" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${aws_s3_bucket.validation_data.id}"
   policy = "${data.template_file.validation_bucket_policy.rendered}"
 }

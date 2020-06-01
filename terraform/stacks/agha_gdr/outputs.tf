@@ -211,6 +211,20 @@ output "rk_chw_secret_access_key" {
 }
 
 
+# seanlianu
+output "seanlianu_username" {
+  value = "${module.seanlianu.username}"
+}
+
+output "seanlianu_access_key" {
+  value = "${module.seanlianu.access_key}"
+}
+
+output "seanlianu_secret_access_key" {
+  value = "${module.seanlianu.encrypted_secret_access_key}"
+}
+
+
 # sarah
 output "sarah_username" {
   value = "${module.sarah.username}"

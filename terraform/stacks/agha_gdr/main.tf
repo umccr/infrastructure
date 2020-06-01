@@ -370,6 +370,12 @@ module "rk_chw" {
   pgp_key  = "keybase:freisinger"
 }
 
+module "seanlianu" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "seanlianu"
+  pgp_key  = "keybase:freisinger"
+}
+
 # Special user (sarah) for AGHA data manager
 module "sarah" {
   source   = "../../modules/iam_user/secure_user"
@@ -410,7 +416,8 @@ resource "aws_iam_group_membership" "submit_members" {
     "${module.deanmeisong.username}",
     "${module.scottwood.username}",
     "${module.boxcroft.username}",
-    "${module.rk_chw.username}"
+    "${module.rk_chw.username}",
+    "${module.seanlianu.username}"
   ]
   group = "${aws_iam_group.submit.name}"
 }

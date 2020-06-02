@@ -7,6 +7,7 @@ from stacks.iap_tes import IapTesStack
 from stacks.slack import CodeBuildLambdaStack
 
 dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
+
 umccrise_ecr_repo = 'umccrise'
 codebuild_project_name = 'umccrise_codebuild_project'
 
@@ -25,10 +26,11 @@ batch_dev_props = {
     'container_image': 'umccr/umccrise:0.15.15',
     'compute_env_ami': 'ami-029bf83e14803c25f',  # Amazon ECS optimised Linux 2 AMI
     'compute_env_type': 'SPOT',
-    'ro_buckets': ['umccr-refdata-prod', 'umccr-primary-data-prod', 'umccr-temp', 'umccr-refdata-dev'],
-    'rw_buckets': ['umccr-primary-data-dev2', 'umccr-misc-temp'],
+    'ro_buckets': ['umccr-primary-data-prod', 'umccr-validation-prod', 'umccr-refdata-prod', 'umccr-refdata-dev'],
+    'rw_buckets': ['umccr-primary-data-dev', 'umccr-research-dev', 'umccr-temp-dev'],
     'refdata_bucket': 'umccr-refdata-prod',
-    'data_bucket': 'umccr-primary-data-prod'
+    'data_bucket': 'umccr-primary-data-prod',
+    'image_configurable': 'TRUE'
 }
 
 iap_tes_dev_props = {
@@ -93,5 +95,4 @@ CodeBuildLambdaStack(
     slack_dev_props,
     env=dev_env
 )
-
 app.synth()

@@ -3,37 +3,12 @@ from aws_cdk import (
     aws_iam as iam,
     aws_batch as batch,
     aws_s3 as s3,
+    aws_s3_assets as assets,
     aws_ec2 as ec2,
     aws_ecs as ecs,
     core
 )
-
-# User data script to run on Batch worker instance on start up
-# Main purpose: pull in umccrise wrapper script to execute in Batch job
-user_data_script = """MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
-
---==MYBOUNDARY==
-Content-Type: text/x-shellscript; charset="us-ascii"
-
-#!/bin/bash
-set -euxo pipefail
-echo START CUSTOM USERDATA
-ls -al /opt/
-mkdir /opt/container
-curl --output /opt/container/umccrise-wrapper.sh https://raw.githubusercontent.com/umccr/workflows/master/umccrise/umccrise-wrapper.sh
-ls -al /opt/container/
-chmod 755 /opt/container/umccrise-wrapper.sh
-ls -al /opt/container/
-echo Listing disk devices
-lsblk
-echo formatting and mounting disk
-# assuming the device is available under the requested name
-sudo mkfs -t xfs /dev/xvdf
-mount /dev/xvdf /mnt
-docker info
-echo END CUSTOM USERDATA
---==MYBOUNDARY==--"""
+import os.path
 
 
 class BatchStack(core.Stack):
@@ -41,6 +16,8 @@ class BatchStack(core.Stack):
 
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        dirname = os.path.dirname(__file__)
 
         ################################################################################
         # Set up permissions
@@ -148,12 +125,54 @@ class BatchStack(core.Stack):
             }
         ]
 
+        # Set up custom user data to configure the Batch instances
+        umccrise_wrapper_asset = assets.Asset(
+            self,
+            'UmccriseWrapperAsset',
+            path=os.path.join(dirname, '..', 'assets', "umccrise-wrapper.sh")
+        )
+        umccrise_wrapper_asset.grant_read(batch_instance_role)
+
+        user_data_asset = assets.Asset(
+            self,
+            'UserDataAsset',
+            path=os.path.join(dirname, '..', 'assets', "batch-user-data.sh")
+        )
+        user_data_asset.grant_read(batch_instance_role)
+
+        user_data = ec2.UserData.for_linux()
+        local_path = user_data.add_s3_download_command(
+            bucket=user_data_asset.bucket,
+            bucket_key=user_data_asset.s3_object_key
+        )
+        user_data.add_execute_file_command(
+            file_path=local_path,
+            arguments=f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key}"
+        )
+
+        # Generate user data wrapper to comply with LaunchTemplate required MIME multi-part archive format for user data
+        mime_wrapper = ec2.UserData.custom('MIME-Version: 1.0')
+        mime_wrapper.add_commands('Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="')
+        mime_wrapper.add_commands('')
+        mime_wrapper.add_commands('--==MYBOUNDARY==')
+        mime_wrapper.add_commands('Content-Type: text/x-shellscript; charset="us-ascii"')
+        mime_wrapper.add_commands('')
+        # install AWS CLI, as it's unexpectedly missing from the AWS Linux 2 AMI...
+        mime_wrapper.add_commands('yum -y install unzip')
+        mime_wrapper.add_commands('cd /opt')
+        mime_wrapper.add_commands('curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
+        mime_wrapper.add_commands('unzip awscliv2.zip')
+        mime_wrapper.add_commands('sudo ./aws/install --bin-dir /usr/bin')
+        # insert our actual user data payload
+        mime_wrapper.add_commands(user_data.render())
+        mime_wrapper.add_commands('--==MYBOUNDARY==--')
+
         launch_template = ec2.CfnLaunchTemplate(
             self,
             'UmccriseBatchComputeLaunchTemplate',
             launch_template_name='UmccriseBatchComputeLaunchTemplate',
             launch_template_data={
-                'userData': core.Fn.base64(user_data_script),
+                'userData': core.Fn.base64(mime_wrapper.render()),
                 'blockDeviceMappings': block_device_mappings
             }
         )
@@ -162,7 +181,6 @@ class BatchStack(core.Stack):
             launch_template_name=launch_template.launch_template_name,
             version='$Latest'
         )
-
 
         my_compute_res = batch.ComputeResources(
             type=batch.ComputeResourceType.SPOT,
@@ -175,7 +193,7 @@ class BatchStack(core.Stack):
             spot_fleet_role=spotfleet_role,
             instance_role=batch_instance_profile.instance_profile_name,
             vpc=vpc,
-            #compute_resources_tags=core.Tag('Creator', 'Batch')
+            # compute_resources_tags=core.Tag('Creator', 'Batch')
         )
         # XXX: How to add more than one tag above??
         # core.Tag.add(my_compute_res, 'Foo', 'Bar')
@@ -192,10 +210,12 @@ class BatchStack(core.Stack):
             self,
             'UmccriseJobQueue',
             job_queue_name='cdk-umccrise_job_queue',
-            compute_environments=[ batch.JobQueueComputeEnvironment(
-                compute_environment=my_compute_env,
-                order=1
-            )],
+            compute_environments=[
+                batch.JobQueueComputeEnvironment(
+                    compute_environment=my_compute_env,
+                    order=1
+                )
+            ],
             priority=10
         )
 
@@ -278,7 +298,9 @@ class BatchStack(core.Stack):
                 'REFDATA_BUCKET': props['refdata_bucket'],
                 'DATA_BUCKET': props['data_bucket'],
                 'UMCCRISE_MEM': '50000',
-                'UMCCRISE_VCPUS': '16'
+                'UMCCRISE_VCPUS': '16',
+                'IMAGE_CONFIGURABLE': props['image_configurable'],
+                'JOBDEF': job_definition.job_definition_name
             },
             role=lambda_role
         )

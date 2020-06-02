@@ -1,19 +1,29 @@
 import os
 import boto3
 
-
+ECR_REPO_NAME = 'umccrise'
 JOB_DEF_NAME = 'umccrise'
-DH_IMAGE_NAME = 'umccr/umccrise'
 ECR_IMAGE_NAME = '843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise'
-batch_client = boto3.client('batch')
-s3 = boto3.client('s3')
+
 IMAGE_CONFIGURABLE = os.environ.get('IMAGE_CONFIGURABLE') in ['true', 'True', 'TRUE', '1', 1]
 JOB_DEF = os.environ.get('JOBDEF')
+JOB_QUEUE = os.environ.get('JOBQUEUE')
+UMCCRISE_MEM = os.environ.get('UMCCRISE_MEM')
+UMCCRISE_VCPUS = os.environ.get('UMCCRISE_VCPUS')
+INPUT_BUCKET = os.environ.get('INPUT_BUCKET')
+REFDATA_BUCKET = os.environ.get('REFDATA_BUCKET')
+JOBNAME_PREFIX = os.environ.get('JOBNAME_PREFIX')
 
+batch_client = boto3.client('batch')
+s3 = boto3.client('s3')
+ecr_client = boto3.client('ecr')
+
+
+# job container properties for dynamic JobDefinition
 batch_job_container_props = {
     # 'image': 'umccr/umccrise:0.15.15',  # this will be set on-demand
-    'vcpus': 2,
-    'memory': 2048,
+    'vcpus': 16,
+    'memory': 51200,
     'command': [
         '/opt/container/umccrise-wrapper.sh',
         'Ref::vcpus'
@@ -56,6 +66,14 @@ def job_name_from_s3(bucket, path):
     return bucket + "---" + path.replace('/', '_').replace('.', '_')
 
 
+def fetch_ecr_image_tags():
+    image_tags = []
+    response = ecr_client.list_images(repositoryName=ECR_REPO_NAME)
+    for image in response['imageIds']:
+        image_tags.append(image['imageTag'])
+    return image_tags
+
+
 def lambda_handler(event, context):
     # Log the received event
     print(f"Received event: {event}")
@@ -66,13 +84,19 @@ def lambda_handler(event, context):
 
     # TODO: possibly need to check if requested image is available, otherwise the compute env might get invalidated
     # Get image version if configurable
-    if IMAGE_CONFIGURABLE:
-        print(f"Container image is configurable! Creating custom job definition.")
+    if IMAGE_CONFIGURABLE and event.get('imageVersion'):
+        print(f"Container image is configured! Creating custom job definition.")
         container_image_version = event['imageVersion']  # mandatory parameter when image is configurable (in dev)
-        container_image = DH_IMAGE_NAME if event.get('containerRepo') == 'DH' else ECR_IMAGE_NAME
-        print(f"Using container image {container_image}")
+        ecr_tags = fetch_ecr_image_tags()
+        if container_image_version not in ecr_tags:
+            return {
+                'statusCode': 400,
+                'error': 'Bad parameter',
+                'message': f"Version ({container_image_version}) does not exist for ECR image {ECR_IMAGE_NAME}!"
+            }
+
         # Set the container image version as requested
-        batch_job_container_props['image'] = f"{container_image}:{container_image_version}"
+        batch_job_container_props['image'] = f"{ECR_IMAGE_NAME}:{container_image_version}"
         # Register a job definition with those parameters
         print("INFO: Registering job definition")
         reg_response = batch_client.register_job_definition(
@@ -85,7 +109,7 @@ def lambda_handler(event, context):
         job_def_revision = reg_response['revision']
         job_definition = f"{job_def_name}:{job_def_revision}"
     else:
-        print(f"Container image is not configurable! Using default job definition.")
+        print(f"Container image is not configured/configurable! Using default job definition.")
         job_definition = JOB_DEF
 
     print(f"Using jobDefinition: {job_definition}")
@@ -94,15 +118,15 @@ def lambda_handler(event, context):
     container_overrides = event['containerOverrides'] if event.get('containerOverrides') else {}
     parameters = event['parameters'] if event.get('parameters') else {}
     depends_on = event['dependsOn'] if event.get('dependsOn') else []
-    job_queue = event['jobQueue'] if event.get('jobQueue') else os.environ.get('JOBQUEUE')
+    job_queue = event['jobQueue'] if event.get('jobQueue') else JOB_QUEUE
 
-    container_mem = event['memory'] if event.get('memory') else os.environ.get('UMCCRISE_MEM')
-    container_vcpus = event['vcpus'] if event.get('vcpus') else os.environ.get('UMCCRISE_VCPUS')
-    input_bucket = event['inputBucket'] if event.get('inputBucket') else os.environ.get('INPUT_BUCKET')
+    container_mem = event['memory'] if event.get('memory') else UMCCRISE_MEM
+    container_vcpus = event['vcpus'] if event.get('vcpus') else UMCCRISE_VCPUS
+    input_bucket = event['inputBucket'] if event.get('inputBucket') else INPUT_BUCKET
     result_bucket = event['resultBucket'] if event.get('resultBucket') else input_bucket
-    refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else os.environ.get('REFDATA_BUCKET')
+    refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else REFDATA_BUCKET
     job_name = event['jobName'] if event.get('jobName') else job_name_from_s3(input_bucket, input_dir)
-    job_name = os.environ.get('JOBNAME_PREFIX') + '_' + job_name
+    job_name = JOBNAME_PREFIX + '_' + job_name
     print(f"inputDir: {input_dir}  in input bucket: {input_bucket}")
 
     try:

@@ -221,8 +221,8 @@ class BatchStack(core.Stack):
 
         job_container = batch.JobDefinitionContainer(
             image=ecs.ContainerImage.from_registry(name=props['container_image']),
-            vcpus=2,
-            memory_limit_mib=2048,
+            vcpus=16,
+            memory_limit_mib=51200,
             command=[
                 "/opt/container/umccrise-wrapper.sh",
                 "Ref::vcpus"

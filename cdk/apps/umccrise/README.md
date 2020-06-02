@@ -3,32 +3,34 @@
 ## Usage
 Invoke a lambda function to kick off a UMCCRise Batch job.
 ```bash
-# minimal parameters (assumes default production settins)
+# minimal parameters (assumes default production settings)
 aws lambda invoke \
-    --function-name umccrise_lambda_prod \
-    --payload '{ "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "imageVersion": "0.15.15"}' \
+    --function-name umccrise_batch_lambda \
+    --payload '{ "inputDir": "Patients/SBJ00001/WGS/2019-03-20"}' \
     /tmp/lambda.output
 
-# overwrite selected parameters to customise job, e.g. take data from different data bucket and customise compute resource
+# overwrite selected parameters to customise job, e.g. take data a from different data bucket and customise compute resources
 aws lambda invoke \
-    --function-name umccrise_lambda_prod \
-    --payload '{ "resultDir": "Patients/SBJ00001/WGS/2019-03-20", "imageVersion": "0.15.15", "dataBucket": "umccr-temp", "memory": "50000", "vcpus": "16"}' \
+    --function-name umccrise_batch_lambda \
+    --payload '{ "inputDir": "Patients/SBJ00001/WGS/2019-03-20", "imageVersion": "0.15.15", "dataBucket": "umccr-validation-prod", "memory": "112640", "vcpus": "32"}' \
     /tmp/lambda.output
 ```
 
 ## Payload parameters
 
 Required:
-- resultDir: the path of the analysis result to run the job on
-- imageVersion: the umccrise image version to use for the job
+- inputDir: the path of the analysis result to run the job on
 
 Optional:
-- memory: the memory the job will have available (in MB). Default: `2048`
-- vcpus: the vCPUs the job will have available. Default: `2`
-- dataBucket: the S3 bucket holding the analysis result data. Default: `umccr-primary-data-prod`
+- imageVersion: the umccrise image version to use for the job (only configurable in `dev`). Default: defined in default JobDefinition.
+- memory: the memory the job will have available (in MiB). Default: `51200`
+- vcpus: the vCPUs the job will have available. Default: `16`
+- inputBucket: the S3 bucket holding the analysis result data. Default: `umccr-primary-data-prod`
 - refDataBucket: the S3 bucket holding the reference data. Default: `umccr-refdata-prod`
-- resultBucket: the S3 bucket where results are written to. Defaults to the dataBucket
-- jobName: the name to give to the Batch job. Default: dataBucket + "---" + resultDir.replace('/', '_').replace('.', '_')
+- resultBucket: the S3 bucket where results are written to. Default: the inputBucket
+- jobName: the name to give to the Batch job. Default: inputBucket + "---" + inputDir.replace('/', '_').replace('.', '_')
+
+
 
 # Welcome to your CDK Python project!
 

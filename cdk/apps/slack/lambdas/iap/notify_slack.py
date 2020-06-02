@@ -75,6 +75,8 @@ def getCreatorFromId(id):
         return f"{id} Andrei Seleznev (Illumina)"
     elif id == 'e3c89a8a-23a7-36cf-a1dc-281d96ed1aab':
         return f"{id} Yinan Wang (Illumina)"
+    elif id == '41fc4571-741c-386e-be44-cf9ae7313f53':
+        return f"{id} Victor Lin"
     else:
         return f"{id} (unknown)"
 

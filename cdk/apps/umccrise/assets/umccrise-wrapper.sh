@@ -71,6 +71,9 @@ job_output_dir=/work/output/${S3_INPUT_DIR}-${timestamp}
 
 mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,validation}
 
+echo "PULL ref data from S3 bucket"
+timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
+publish S3PullRefGenome $duration
 
 echo "PULL input (bcbio results) from S3 bucket"
 timer aws s3 sync --only-show-errors --exclude=* --include=final/* --include=config/* s3://${S3_DATA_BUCKET}/${S3_INPUT_DIR} /work/bcbio_project/${S3_INPUT_DIR}/
@@ -80,7 +83,7 @@ echo "umccrise version:"
 umccrise --version
 
 echo "RUN umccrise"
-timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes s3://${S3_REFDATA_BUCKET}/genomes/
+timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes /work/genomes
 publish RunUMCCRISE $duration
 
 echo "PUSH results"

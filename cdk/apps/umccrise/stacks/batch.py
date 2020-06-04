@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_s3_assets as assets,
     aws_ec2 as ec2,
     aws_ecs as ecs,
+    aws_ecr as ecr,
     core
 )
 import os.path
@@ -18,6 +19,12 @@ class BatchStack(core.Stack):
         super().__init__(scope, id, **kwargs)
 
         dirname = os.path.dirname(__file__)
+
+        ecr_repo = ecr.Repository.from_repository_name(
+            self,
+            'UmccriseEcrRepo',
+            repository_name='umccrise'
+        )
 
         ################################################################################
         # Set up permissions
@@ -282,6 +289,7 @@ class BatchStack(core.Stack):
             bucket.grant_read(lambda_role)
         for bucket in rw_buckets:
             bucket.grant_read(lambda_role)
+        ecr_repo.grant(lambda_role, 'ecr:ListImages')
 
         # TODO: support dev/prod split, i.e. image being configurable on dev, but fixed on prod
         #       may need a default JobDefinition to be set up

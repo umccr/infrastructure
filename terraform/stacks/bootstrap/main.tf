@@ -516,7 +516,7 @@ module "notify_slack_lambda" {
 # It'll have with private and public subnets, internet and NAT gateways, etc
 
 module "app_vpc" {
-  source = "git::git@github.com:gruntwork-io/module-vpc.git//modules/vpc-app?ref=v0.5.2"
+  source = "git::git@github.com:umccr/gruntworks-io-module-vpc.git//modules/vpc-app?ref=v0.5.2"
 
   vpc_name   = "vpc-${var.stack_name}-main"
   aws_region = "ap-southeast-2"

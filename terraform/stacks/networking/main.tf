@@ -50,7 +50,7 @@ module "main_vpc" {
   create_database_nat_gateway_route      = false  # true to give internet access (egress only)
   create_database_internet_gateway_route = false  # true for ingress from internet (NOT RECOMMENDED FOR PRODUCTION)
 
-  enable_dns_hostnames = false
+  enable_dns_hostnames = true
   enable_dns_support   = true
 
   public_subnet_tags = {

@@ -19,17 +19,18 @@ At the moment, this VPC defines three "tiers" of subnets:
 
 #### Terraform
 
-- In your app terraform, you can use [data source: aws_vpc](https://www.terraform.io/docs/providers/aws/d/vpc.html) to query this VPC by its ID.
+- In your app terraform, you can use [data source: aws_vpc](https://www.terraform.io/docs/providers/aws/d/vpc.html) to query this VPC. Recommended to use tag filters on `Name`, `Stack` and `Environment` keys over VPC ID as example below.
 
 - You may further filter subnet by its tier. Example for how to filter _Private_ subnets using tag: `Tier = "private"`
 
 ```hcl-terraform
-variable "main_vpc_id" {
-  default = "vpc-01234567890" # output of main vpc ID
-}
-
 data "aws_vpc" "main_vpc" {
-  id = var.main_vpc_id
+  # Using tags filter on networking stack to get main-vpc
+  tags = {
+    Name        = "main-vpc"
+    Stack       = "networking"
+    Environment = terraform.workspace
+  }
 }
 
 data "aws_subnet_ids" "private_subnets" {
@@ -43,6 +44,10 @@ data "aws_subnet_ids" "private_subnets" {
 
 #### CDK
 
+- Similarly for CDK, you can use [`VpcLookupOptions`](https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-ec2.VpcLookupOptions.html) on tags property to get this Main VPC.
+
+- Specifically for Python CDK, you can use [`ec2.Vpc.from_lookup`](https://docs.aws.amazon.com/cdk/api/latest/python/aws_cdk.aws_ec2/Vpc.html#aws_cdk.aws_ec2.Vpc.from_lookup) static method to build VPC object as following example.
+
 - In your stack, say `common.py`:
 
 ```python
@@ -55,7 +60,12 @@ class CommonStack(core.Stack):
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        vpc = ec2.Vpc.from_lookup(self, "VPC", vpc_id=props['vpc_id'])
+        # Using tags filter on networking stack to get main-vpc in given env context
+        vpc_name = "main-vpc"
+        vpc_tags = {
+            'Stack': 'networking',
+        }
+        vpc = ec2.Vpc.from_lookup(self, "VPC", vpc_name=vpc_name, tags=vpc_tags)
         self._vpc = vpc
 
     @property
@@ -72,16 +82,15 @@ from stacks.common import CommonStack
 
 app = core.App()
 
-common_props = {
-    'vpc_id': 'vpc-01234567890'  # output of main vpc ID
-}
-
-batch_app_props = {}
+env_dev = core.Environment(account="123456789", region="ap-southeast-2")
+common_props = {'namespace': 'common-stack'}
+batch_app_props = {'namespace': 'batch-stack'}
 
 common = CommonStack(
     app,
     common_props['namespace'],
     common_props,
+    env=env_dev
 )
 
 batch_app_props['vpc'] = common.vpc
@@ -89,10 +98,13 @@ BatchStack(
     app,
     batch_app_props['namespace'],
     batch_app_props,
+    env=env_dev
 )
 
 app.synth()
 ```
+
+- Note that VPC lookup is [context aware](https://docs.aws.amazon.com/cdk/latest/guide/context.html) and, it will be cached in `cdk.context.json` or use `cdk context -j | jq` to observe the cached VPC value for given environment context.
 
 ## Workspaces
 

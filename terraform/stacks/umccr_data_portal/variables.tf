@@ -1,4 +1,3 @@
-
 variable "base_domain" {
     default = {
         prod = "prod.umccr.org"
@@ -56,7 +55,7 @@ variable "github_branch" {
 }
 
 variable "localhost_url" {
-    default     = "http://localhost:3000",
+    default     = "http://localhost:3000"
     description = "The localhost url used for testing"
 }
 
@@ -70,7 +69,7 @@ variable "rds_auto_pause" {
 
 variable "rds_min_capacity" {
     default = {
-        prod = 2,
+        prod = 1,
         dev  = 1
     }
     description = "The minimum capacity in Aurora Capacity Units (ACUs)"

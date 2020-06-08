@@ -10,7 +10,7 @@
                 "cloudfront:UpdateDistribution",
                 "iam:*",
                 "lambda:*",
-                "apigateway:POST",                
+                "apigateway:POST",
                 "apigateway:DELETE",
                 "apigateway:PATCH",
                 "apigateway:GET",
@@ -25,7 +25,7 @@
             ],
             "Resource": "*"
         },
-                {
+        {
             "Effect": "Allow",
             "Action": [
                 "ec2:CreateNetworkInterface",
@@ -47,7 +47,9 @@
             "Condition": {
                 "StringEquals": {
                     "ec2:Subnet": [
-                        "arn:aws:ec2:${region}:${account_id}:subnet/${subnet_id}"
+                        "arn:aws:ec2:${region}:${account_id}:subnet/${subnet_id0}",
+                        "arn:aws:ec2:${region}:${account_id}:subnet/${subnet_id1}",
+                        "arn:aws:ec2:${region}:${account_id}:subnet/${subnet_id2}"
                     ],
                     "ec2:AuthorizedService": "codebuild.amazonaws.com"
                 }

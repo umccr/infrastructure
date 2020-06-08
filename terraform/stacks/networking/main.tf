@@ -53,19 +53,26 @@ module "main_vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
+  # See README Subnet Tagging section for the following tags combination
   public_subnet_tags = {
-    SubnetType = "public"
-    Tier       = var.public_tag
+    SubnetType            = var.umccr_subnet_tier.PUBLIC
+    Tier                  = var.umccr_subnet_tier.PUBLIC
+    "aws-cdk:subnet-name" = var.umccr_subnet_tier.PUBLIC
+    "aws-cdk:subnet-type" = var.aws_cdk_subnet_type.PUBLIC
   }
 
   private_subnet_tags = {
-    SubnetType = "private_app"
-    Tier       = var.private_tag
+    SubnetType            = var.umccr_subnet_tier.PRIVATE
+    Tier                  = var.umccr_subnet_tier.PRIVATE
+    "aws-cdk:subnet-name" = var.umccr_subnet_tier.PRIVATE
+    "aws-cdk:subnet-type" = var.aws_cdk_subnet_type.PRIVATE
   }
 
   database_subnet_tags = {
-    SubnetType = "private_persistence"
-    Tier       = var.database_tag
+    SubnetType            = var.umccr_subnet_tier.DATABASE
+    Tier                  = var.umccr_subnet_tier.DATABASE
+    "aws-cdk:subnet-name" = var.umccr_subnet_tier.DATABASE
+    "aws-cdk:subnet-type" = var.aws_cdk_subnet_type.ISOLATED
   }
 
   tags = {

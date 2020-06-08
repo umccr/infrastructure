@@ -73,38 +73,89 @@ class CommonStack(core.Stack):
         return self._vpc
 ```
 
+- And somewhere in `batch.py`:
+
+```python
+from aws_cdk import (
+    core,
+    aws_ec2 as ec2,
+    aws_batch as batch,
+    aws_lambda as lmbda,
+)
+
+class BatchStack(core.Stack):
+    def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        # Using main-vpc from networking stack
+        vpc: ec2.Vpc = props['vpc']
+        vpc_subnets: ec2.SubnetSelection = ec2.SubnetSelection(subnets=vpc.private_subnets)
+        
+        # create batch resource in private subnet (which is by default anyway)
+        batch_compute_res = batch.ComputeResources(
+            type=batch.ComputeResourceType.SPOT,
+            vpc=vpc,
+            vpc_subnets=vpc_subnets,
+            # skip other kwargs for brevity
+        )
+        ...
+        
+        # create lambda resource in private subnet (which is by default anyway)
+        lmbda.Function(
+            self,
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            vpc=vpc,
+            vpc_subnets=vpc_subnets,
+            # skip other kwargs for brevity
+        )
+        ...
+```
+
 - And somewhere in `app.py`:
 
 ```python
+import os
 from aws_cdk import core
 from stacks.batch import BatchStack
 from stacks.common import CommonStack
 
 app = core.App()
 
-env_dev = core.Environment(account="123456789", region="ap-southeast-2")
-common_props = {'namespace': 'common-stack'}
-batch_app_props = {'namespace': 'batch-stack'}
+env_profile=core.Environment(
+    account=os.environ.get('CDK_DEPLOY_ACCOUNT', os.environ['CDK_DEFAULT_ACCOUNT']),
+    region=os.environ.get('CDK_DEPLOY_REGION', os.environ['CDK_DEFAULT_REGION'])
+)
 
 common = CommonStack(
     app,
-    common_props['namespace'],
-    common_props,
-    env=env_dev
+    'common-stack',
+    props={},
+    env=env_profile
 )
 
-batch_app_props['vpc'] = common.vpc
 BatchStack(
     app,
-    batch_app_props['namespace'],
-    batch_app_props,
-    env=env_dev
+    'batch-stack',
+    props={'vpc': common.vpc},
+    env=env_profile
 )
 
 app.synth()
 ```
 
-- Note that VPC lookup is [context aware](https://docs.aws.amazon.com/cdk/latest/guide/context.html) and, it will be cached in `cdk.context.json` or use `cdk context -j | jq` to observe the cached VPC value for given environment context.
+- See [`debug.py`](debug.py) for all possible ways you can filter out different subnets tier in CDK app from this main vpc.
+
+- Note that VPC lookup is CDK [context aware](https://docs.aws.amazon.com/cdk/latest/guide/context.html) and, it will be cached in `cdk.context.json` or use `cdk context -j | jq` to observe the cached VPC value for given environment context.
+
+## Notes
+
+#### Subnet Tagging
+
+- For `aws-cdk:subnet-name` and `aws-cdk:subnet-type` tags, CDK follows AWS style tagging. See section 'Best Practices for Naming Tags and Resources' in [aws-tagging-best-practices.pdf](https://d1.awsstatic.com/whitepapers/aws-tagging-best-practices.pdf). And this is also by observation from a VPC stack deployed using CDK elsewhere.
+- Since we use Terraform for VPC setup here, added these two tags for convenience for filtering subnets by subnet type in downstream CDK app.
+- In "CDK" world, subnet type is generalised enum type defined at [CDK `SubnetType` interface](https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-ec2.SubnetType.html) construct. Under the hood, CDK implemented this subnet type using "tag" filter, anyway.
+- In "AWS" world, there is no such thing as "subnet type"! But tag filter is all that matter for tier-ing subnets for specific business use case and what meaningful to the organization.
+- Hence we have the following tag combinations!
 
 ## Workspaces
 

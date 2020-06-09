@@ -75,7 +75,6 @@ CICDStack(
     cicd_dev_props,
     env=dev_env
 )
-batch_dev_props['vpc'] = common.vpc
 BatchStack(
     app,
     batch_dev_props['namespace'],

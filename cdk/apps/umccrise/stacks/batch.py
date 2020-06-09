@@ -13,7 +13,6 @@ import os.path
 
 
 class BatchStack(core.Stack):
-    # Loosely based on https://msimpson.co.nz/BatchSpot/
 
     def __init__(self, scope: core.Construct, id: str, props, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -113,9 +112,14 @@ class BatchStack(core.Stack):
         )
 
         ################################################################################
-        # Minimal networking
-        # TODO: import resource created with TF
-        vpc = props['vpc']
+        # Import common infrastructure (maintained via TerraForm)
+
+        # VPC
+        vpc = ec2.Vpc.from_lookup(
+            self,
+            'UmccrMainVpc',
+            tags={'Name': 'main-vpc', 'Stack': 'networking'}
+        )
 
         ################################################################################
         # Setup Batch compute resources

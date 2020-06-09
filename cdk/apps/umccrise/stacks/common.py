@@ -1,6 +1,5 @@
 from aws_cdk import (
     core,
-    aws_ec2 as ec2,
     aws_ecr as ecr
 )
 
@@ -20,17 +19,6 @@ class CommonStack(core.Stack):
         self._ecr_name = ecr_repo.repository_name
         self._ecr_arn = ecr_repo.repository_arn
 
-        # Common VPC setup
-        # TODO: roll out across all AZs? (Will require more subnets, NATs, ENIs, etc...)
-        vpc = ec2.Vpc(
-            self,
-            'UmccrVpc',
-            cidr="10.2.0.0/16",
-            max_azs=1
-        )
-        self._vpc = vpc
-
-
     # Using the property decorator to expose properties of the common setup
     @property
     def ecr_name(self):
@@ -39,7 +27,3 @@ class CommonStack(core.Stack):
     @property
     def ecr_arn(self):
         return self._ecr_arn
-
-    @property
-    def vpc(self):
-        return self._vpc

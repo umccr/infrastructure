@@ -1,10 +1,27 @@
 #!/usr/bin/env python3
+import boto3
 from aws_cdk import core
 from stacks.common import CommonStack
 from stacks.cicd import CICDStack
 from stacks.batch import BatchStack
 from stacks.iap_tes import IapTesStack
 from stacks.slack import CodeBuildLambdaStack
+
+ssm_client = boto3.client('ssm')
+
+# TODO: add error handling
+# TODO: should those be stack specific, e.g. get a stack prefix?
+ro_bucket_names = ssm_client.get_parameter(Name='/cdk/umccrise/batch/ro_buckets')['Parameter']['Value'].split(',')
+rw_bucket_names = ssm_client.get_parameter(Name='/cdk/umccrise/batch/rw_buckets')['Parameter']['Value'].split(',')
+container_image = ssm_client.get_parameter(Name='/cdk/umccrise/batch/default_container_image')['Parameter']['Value']
+ec2_ami = ssm_client.get_parameter(Name='/cdk/umccrise/batch/ami')['Parameter']['Value']
+compute_env_type = ssm_client.get_parameter(Name='/cdk/umccrise/batch/compute_env_type')['Parameter']['Value']
+# TODO: the following are Lambda specific and could be loaded directly by the Lambda
+# pro: cleaner infra code
+# con: probably increases Lambda runtime slightly; not overwritable in Lambda env for quick testing
+refdata_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/refdata_bucket')['Parameter']['Value']
+input_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/input_bucket')['Parameter']['Value']
+image_configurable = ssm_client.get_parameter(Name='/cdk/umccrise/batch/image_configurable')['Parameter']['Value']
 
 dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
 
@@ -21,16 +38,16 @@ cicd_dev_props = {
     'codebuild_project_name': codebuild_project_name
 }
 
-batch_dev_props = {
-    'namespace': 'umccrise-batch-dev',
-    'container_image': 'umccr/umccrise:0.15.15',
-    'compute_env_ami': 'ami-029bf83e14803c25f',  # Amazon ECS optimised Linux 2 AMI
-    'compute_env_type': 'SPOT',
-    'ro_buckets': ['umccr-primary-data-prod', 'umccr-validation-prod', 'umccr-refdata-prod', 'umccr-refdata-dev'],
-    'rw_buckets': ['umccr-primary-data-dev', 'umccr-research-dev', 'umccr-temp-dev'],
-    'refdata_bucket': 'umccr-refdata-prod',
-    'data_bucket': 'umccr-primary-data-prod',
-    'image_configurable': 'TRUE'
+batch_props = {
+    'namespace': 'umccrise-batch',
+    'container_image': container_image,
+    'compute_env_ami': ec2_ami,  # Amazon ECS optimised Linux 2 AMI
+    'compute_env_type': compute_env_type,
+    'ro_buckets': ro_bucket_names,
+    'rw_buckets': rw_bucket_names,
+    'refdata_bucket': refdata_bucket,
+    'data_bucket': input_bucket,
+    'image_configurable': image_configurable
 }
 
 iap_tes_dev_props = {
@@ -77,8 +94,8 @@ CICDStack(
 )
 BatchStack(
     app,
-    batch_dev_props['namespace'],
-    batch_dev_props,
+    batch_props['namespace'],
+    props=batch_props,
     env=dev_env
 )
 IapTesStack(

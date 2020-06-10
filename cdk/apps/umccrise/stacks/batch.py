@@ -1,12 +1,12 @@
 from aws_cdk import (
-    aws_lambda as lmbda,
-    aws_iam as iam,
     aws_batch as batch,
+    aws_ec2 as ec2,
+    aws_ecr as ecr,
+    aws_ecs as ecs,
+    aws_iam as iam,
+    aws_lambda as lmbda,
     aws_s3 as s3,
     aws_s3_assets as assets,
-    aws_ec2 as ec2,
-    aws_ecs as ecs,
-    aws_ecr as ecr,
     core
 )
 import os.path
@@ -307,12 +307,12 @@ class BatchStack(core.Stack):
             environment={
                 'JOBNAME_PREFIX': "UMCCRISE_",
                 'JOBQUEUE': job_queue.job_queue_name,
-                'REFDATA_BUCKET': props['refdata_bucket'],
-                'DATA_BUCKET': props['data_bucket'],
                 'UMCCRISE_MEM': '50000',
                 'UMCCRISE_VCPUS': '16',
-                'IMAGE_CONFIGURABLE': props['image_configurable'],
-                'JOBDEF': job_definition.job_definition_name
+                'JOBDEF': job_definition.job_definition_name,
+                'REFDATA_BUCKET': props['refdata_bucket'],
+                'DATA_BUCKET': props['data_bucket'],
+                'IMAGE_CONFIGURABLE': props['image_configurable']
             },
             role=lambda_role
         )

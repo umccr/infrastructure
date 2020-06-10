@@ -31,7 +31,8 @@ setuptools.setup(
         "aws_cdk.aws_s3",
         "aws_cdk.aws_s3_assets",
         "aws_cdk.aws_ssm",
-        "aws-cdk.core"
+        "aws-cdk.core",
+        "boto3"
     ],
 
     python_requires=">=3.6",

@@ -1,6 +1,9 @@
 import os
 import json
 import http.client
+import boto3
+
+iam_client = boto3.client('iam')
 
 slack_host = os.environ.get("SLACK_HOST")
 slack_webhook_endpoint = os.environ.get("SLACK_WEBHOOK_ENDPOINT")
@@ -30,6 +33,14 @@ def call_slack_webhook(topic, title, message):
     connection.close()
 
     return response.status
+
+
+def get_username_from_userid(user_id):
+    user_response = iam_client.list_users()
+    for user in user_response['Users']:
+        if user['UserId'] == user_id:
+            return user['UserName']
+    return None
 
 
 def lambda_handler(event, context):
@@ -69,11 +80,19 @@ def lambda_handler(event, context):
                 elif message.get('Records'):
                     msg_record = message['Records'][0]  # Only consider first record for now
                     if msg_record.get('eventSource'):
+                        if msg_record['eventSource'] == 'aws:s3' and msg_record.get('userIdentity'):
+                            principal_id = msg_record['userIdentity']['principalId']
+                            if principal_id.startswith('AWS:'):
+                                user_id = principal_id[4:]
+                                print(f"User ID: {user_id}")
+                                user_name = get_username_from_userid(user_id)
                         slack_title = f"Event: {msg_record['eventSource']} {msg_record['eventName']}"
                         if msg_record.get('s3'):
                             slack_message = msg_record['s3']['bucket']['name']
                             slack_message += " : "
                             slack_message += msg_record['s3']['object']['key']
+                        if user_name:
+                            slack_message += f" (submitter: {user_name})"
                 else:
                     slack_title = "Unknown SNS message format"
             else:

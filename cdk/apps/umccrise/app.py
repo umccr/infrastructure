@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import boto3
 from aws_cdk import core
 from stacks.common import CommonStack
@@ -23,7 +24,11 @@ refdata_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/refdata_buck
 input_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/input_bucket')['Parameter']['Value']
 image_configurable = ssm_client.get_parameter(Name='/cdk/umccrise/batch/image_configurable')['Parameter']['Value']
 
-dev_env = {'account': '843407916570', 'region': 'ap-southeast-2'}
+# TODO: Needs to be removed before going to prod
+# Use CDK_DEFAULT_ACCOUNT and CDK_DEFAULT_REGION ?
+account_id = os.environ.get('CDK_DEFAULT_ACCOUNT')
+aws_region = os.environ.get('CDK_DEFAULT_REGION')
+aws_env = {'account': account_id, 'region': aws_region}
 
 umccrise_ecr_repo = 'umccrise'
 codebuild_project_name = 'umccrise_codebuild_project'
@@ -68,7 +73,7 @@ slack_dev_props = {
     'namespace': 'umccrise-codebuild-slack-dev',
     'slack_channel': '#arteria-dev',
     'codebuild_project_name': codebuild_project_name,
-    'aws_account': dev_env['account']
+    'aws_account': aws_env['account']
 }
 
 app = core.App()
@@ -84,31 +89,31 @@ common = CommonStack(
     app,
     common_dev_props['namespace'],
     common_dev_props,
-    env=dev_env
+    env=aws_env
 )
 CICDStack(
     app,
     cicd_dev_props['namespace'],
     cicd_dev_props,
-    env=dev_env
+    env=aws_env
 )
 BatchStack(
     app,
     batch_props['namespace'],
     props=batch_props,
-    env=dev_env
+    env=aws_env
 )
 IapTesStack(
     app,
     iap_tes_dev_props['namespace'],
     iap_tes_dev_props,
-    env=dev_env
+    env=aws_env
 )
 slack_dev_props['ecr_name'] = common.ecr_name
 CodeBuildLambdaStack(
     app,
     slack_dev_props['namespace'],
     slack_dev_props,
-    env=dev_env
+    env=aws_env
 )
 app.synth()

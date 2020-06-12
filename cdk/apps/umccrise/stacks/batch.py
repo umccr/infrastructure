@@ -130,7 +130,7 @@ class BatchStack(core.Stack):
                 'deviceName': '/dev/xvdf',
                 'ebs': {
                     'deleteOnTermination': True,
-                    'volumeSize': 1024,
+                    'volumeSize': 2048,
                     'volumeType': 'gp2'
                 }
             }

@@ -21,7 +21,7 @@ fi
 # on the same instance there could be issues related to shared volume/disk space, shared memeory space, etc
 
 # TODO: could parallelise some of the setup steps?
-#       i.e. download and unpack all ref data in parallel
+#       i.e. download refdata and input in parallel
 
 export AWS_DEFAULT_REGION="ap-southeast-2"
 CLOUDWATCH_NAMESPACE="UMCCRISE"
@@ -41,6 +41,8 @@ function timer { # arg?: command + args
 function publish { #arg 1: metric name, arg 2: value
     disk_space=$(df  | grep "${CONTAINER_MOUNT_POINT}$" | awk '{print $3}')
 
+    # TODO: restructure metric, as is now only has one value (the duration) that can be graphed
+    # TODO: ideally multiple metrics (duration, disc space, ...) are recorded for each job
     aws cloudwatch put-metric-data \
     --metric-name ${1} \
     --namespace $CLOUDWATCH_NAMESPACE \

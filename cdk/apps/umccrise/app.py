@@ -46,7 +46,7 @@ cicd_dev_props = {
 batch_props = {
     'namespace': 'umccrise-batch',
     'container_image': container_image,
-    'compute_env_ami': ec2_ami,  # Amazon ECS optimised Linux 2 AMI
+    'compute_env_ami': ec2_ami,  # Should be Amazon ECS optimised Linux 2 AMI
     'compute_env_type': compute_env_type,
     'ro_buckets': ro_bucket_names,
     'rw_buckets': rw_bucket_names,

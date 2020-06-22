@@ -195,9 +195,9 @@ class BatchStack(core.Stack):
 
         my_compute_res = batch.ComputeResources(
             type=batch.ComputeResourceType.SPOT,
-            allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+            allocation_strategy=batch.AllocationStrategy.BEST_FIT,
             desiredv_cpus=0,
-            maxv_cpus=128,
+            maxv_cpus=320,
             minv_cpus=0,
             image=ec2.MachineImage.generic_linux(ami_map={'ap-southeast-2': props['compute_env_ami']}),
             launch_template=launch_template_spec,

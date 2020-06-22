@@ -52,6 +52,19 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
     abort_incomplete_multipart_upload_days = 7
   }
 
+  lifecycle_rule {
+    id      = "infrequent_access"
+    enabled = "1"
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
+
   versioning {
     enabled = true
   }

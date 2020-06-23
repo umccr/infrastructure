@@ -105,3 +105,7 @@ output "SERVERLESS_DEPLOYMENT_BUCKET" {
 output "SLACK_CHANNEL" {
     value = local.SLACK_CHANNEL
 }
+
+output "SSM_KEY_NAME_IAP_AUTH_TOKEN" {
+    value = var.ssm_key_name_iap_auth_token
+}

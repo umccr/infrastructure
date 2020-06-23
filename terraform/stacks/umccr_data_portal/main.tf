@@ -745,7 +745,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/standard:3.0"
+    image        = "aws/codebuild/standard:4.0"
     type         = "LINUX_CONTAINER"
 
     environment_variable {
@@ -831,9 +831,10 @@ resource "aws_codebuild_project" "codebuild_apis" {
   }
 
   environment {
-    compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/standard:3.0"
-    type         = "LINUX_CONTAINER"
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:4.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
 
     environment_variable {
       name  = "STAGE"
@@ -913,6 +914,21 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "SLACK_CHANNEL"
       value = local.SLACK_CHANNEL
+    }
+
+    environment_variable {
+      name  = "SSM_KEY_NAME_IAP_AUTH_TOKEN"
+      value = var.ssm_key_name_iap_auth_token
+    }
+
+    environment_variable {
+      name = "IAP_BASE_URL"      # this is used only within CodeBuild dind scope
+      value = "http://localhost"
+    }
+
+    environment_variable {
+      name = "IAP_AUTH_TOKEN"
+      value = "any_value_work"  # this is used only within CodeBuild dind Prism mock stack for build test purpose only
     }
   }
 

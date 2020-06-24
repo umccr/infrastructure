@@ -73,20 +73,13 @@ job_output_dir=/work/output/${S3_INPUT_DIR}-${timestamp}
 
 mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,validation}
 
-echo "Starting AWS S3 data sync in parallel..."
 echo "PULL ref data from S3 bucket"
-timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes && publish S3PullRefGenome $duration &
-pids[1]=$!
+timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
+publish S3PullRefGenome $duration
 
 echo "PULL input (bcbio results) from S3 bucket"
-timer aws s3 sync --only-show-errors --exclude=* --include=final/* --include=config/* s3://${S3_DATA_BUCKET}/${S3_INPUT_DIR} /work/bcbio_project/${S3_INPUT_DIR}/ && publish S3PullInput $duration &
-pids[2]=$1
-
-echo "Waiting for S3 syncs to finish..."
-for pid in ${pids[*]}; do
-    wait $pid
-done
-echo "Starting umccrise..."
+timer aws s3 sync --only-show-errors --exclude=* --include=final/* --include=config/* s3://${S3_DATA_BUCKET}/${S3_INPUT_DIR} /work/bcbio_project/${S3_INPUT_DIR}/
+publish S3PullInput $duration
 
 echo "umccrise version:"
 umccrise --version

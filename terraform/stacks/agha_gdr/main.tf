@@ -614,6 +614,9 @@ module "notify_slack_lambda" {
 
   source_path = "${path.module}/lambdas/notify_slack.py"
 
+  attach_policy = true
+  policy        = "arn:aws:iam::aws:policy/IAMReadOnlyAccess"
+
   environment {
     variables {
       SLACK_HOST             = "hooks.slack.com"

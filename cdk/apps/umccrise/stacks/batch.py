@@ -195,7 +195,7 @@ class BatchStack(core.Stack):
 
         my_compute_res = batch.ComputeResources(
             type=batch.ComputeResourceType.SPOT,
-            allocation_strategy=batch.AllocationStrategy.BEST_FIT,
+            allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
             desiredv_cpus=0,
             maxv_cpus=320,
             minv_cpus=0,

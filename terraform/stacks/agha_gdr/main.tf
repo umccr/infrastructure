@@ -297,103 +297,120 @@ module "freisinger" {
   source   = "../../modules/iam_user/secure_user"
   username = "freisinger"
   pgp_key  = "keybase:freisinger"
+  email    = "florian.reisinger@umccr.org"
 }
 
 module "ametke" {
   source   = "../../modules/iam_user/secure_user"
   username = "ametke"
   pgp_key  = "keybase:ametke"
+  email    = "Alejandro.Metke@csiro.au"
 }
 
 module "simonsadedin" {
   source   = "../../modules/iam_user/secure_user"
   username = "simonsadedin"
   pgp_key  = "keybase:simonsadedin"
+  email    = "simon.sadedin@vcgs.org.au"
 }
 
 module "sebastian" {
   source   = "../../modules/iam_user/secure_user"
   username = "sebastian"
   pgp_key  = "keybase:freisinger"
+  email    = "sebastian.lunke@vcgs.org.au"
 }
 
 module "ebenngarvan" {
   source   = "../../modules/iam_user/secure_user"
   username = "ebenngarvan"
   pgp_key  = "keybase:ebenngarvan"
+  email    = "e.benn@garvan.org.au"
 }
 
 module "dnafault" {
   source   = "../../modules/iam_user/secure_user"
   username = "dnafault"
   pgp_key  = "keybase:freisinger"
+  email    = "d.degrave@garvan.org.au"
 }
 
 module "shyrav" {
   source   = "../../modules/iam_user/secure_user"
   username = "shyrav"
   pgp_key  = "keybase:freisinger"
+  email    = "s.ravishankar@garvan.org.au"
 }
 
 module "joecop" {
   source   = "../../modules/iam_user/secure_user"
   username = "joecop"
   pgp_key  = "keybase:freisinger"
+  email    = "j.copty@garvan.org.au"
 }
 
 module "michaelblackpath" {
   source   = "../../modules/iam_user/secure_user"
   username = "michaelblackpath"
   pgp_key  = "keybase:michaelblackpath"
+  email    = "Michael.Black2@health.wa.gov.au"
 }
 
 module "deanmeisong" {
   source   = "../../modules/iam_user/secure_user"
   username = "deanmeisong"
   pgp_key  = "keybase:deanmeisong"
+  email    = "Meisong.Wang@anu.edu.au"
 }
 
 module "scottwood" {
   source   = "../../modules/iam_user/secure_user"
   username = "scottwood"
   pgp_key  = "keybase:qimrbscott"
+  email    = "Scott.Wood@qimrberghofer.edu.au"
 }
 
 module "cassimons" {
   source   = "../../modules/iam_user/secure_user"
   username = "cassimons"
   pgp_key  = "keybase:freisinger"
+  email    = "cas.simons@mcri.edu.au"
 }
 
 module "minw" {
   source   = "../../modules/iam_user/secure_user"
   username = "minw"
   pgp_key  = "keybase:freisinger"
+  email    = "min.wang@mcri.edu.au"
 }
 
 module "boxcroft" {
   source   = "../../modules/iam_user/secure_user"
   username = "boxcroft"
   pgp_key  = "keybase:freisinger"
+  email    = "sarah.beecroft@perkins.org.au"
 }
 
 module "rk_chw" {
   source   = "../../modules/iam_user/secure_user"
   username = "rk_chw"
   pgp_key  = "keybase:freisinger"
+  email    = "rahul.krishnaraj@health.nsw.gov.au"
 }
 
 module "seanlianu" {
   source   = "../../modules/iam_user/secure_user"
   username = "seanlianu"
   pgp_key  = "keybase:freisinger"
+  email    = "sean.li@anu.edu.au"
 }
 
-# Special user (sarah) for AGHA data manager
+# Special user (sarah) for AGHA data manager/curator
 module "sarah" {
   source   = "../../modules/iam_user/secure_user"
   username = "sarah"
   pgp_key  = "keybase:freisinger"
+  email    = "sarah.casauria@mcri.edu.au"
 }
 
 resource "aws_iam_user_login_profile" "sarah_console_login" {

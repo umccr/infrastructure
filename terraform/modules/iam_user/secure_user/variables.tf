@@ -7,3 +7,8 @@ variable "username" {
 variable "pgp_key" {
   type = "string"
 }
+
+variable "email" {
+  type = "string"
+  default = "none"
+}

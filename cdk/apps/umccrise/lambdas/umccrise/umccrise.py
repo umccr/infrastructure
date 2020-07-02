@@ -11,6 +11,7 @@ JOB_QUEUE = os.environ.get('JOBQUEUE')
 UMCCRISE_MEM = os.environ.get('UMCCRISE_MEM')
 UMCCRISE_VCPUS = os.environ.get('UMCCRISE_VCPUS')
 INPUT_BUCKET = os.environ.get('INPUT_BUCKET')
+RESULT_BUCKET = os.environ.get('RESULT_BUCKET')
 REFDATA_BUCKET = os.environ.get('REFDATA_BUCKET')
 JOBNAME_PREFIX = os.environ.get('JOBNAME_PREFIX')
 
@@ -123,7 +124,7 @@ def lambda_handler(event, context):
     container_mem = event['memory'] if event.get('memory') else UMCCRISE_MEM
     container_vcpus = event['vcpus'] if event.get('vcpus') else UMCCRISE_VCPUS
     input_bucket = event['inputBucket'] if event.get('inputBucket') else INPUT_BUCKET
-    result_bucket = event['resultBucket'] if event.get('resultBucket') else input_bucket
+    result_bucket = event['resultBucket'] if event.get('resultBucket') else RESULT_BUCKET
     refdata_bucket = event['refDataBucket'] if event.get('refDataBucket') else REFDATA_BUCKET
     job_name = event['jobName'] if event.get('jobName') else job_name_from_s3(input_bucket, input_dir)
     job_name = JOBNAME_PREFIX + '_' + job_name

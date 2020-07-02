@@ -311,7 +311,8 @@ class BatchStack(core.Stack):
                 'UMCCRISE_VCPUS': '16',
                 'JOBDEF': job_definition.job_definition_name,
                 'REFDATA_BUCKET': props['refdata_bucket'],
-                'INPUT_BUCKET': props['data_bucket'],
+                'INPUT_BUCKET': props['input_bucket'],
+                'RESULT_BUCKET': props['result_bucket'],
                 'IMAGE_CONFIGURABLE': props['image_configurable']
             },
             role=lambda_role

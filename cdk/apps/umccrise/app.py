@@ -22,6 +22,7 @@ compute_env_type = ssm_client.get_parameter(Name='/cdk/umccrise/batch/compute_en
 # con: probably increases Lambda runtime slightly; not overwritable in Lambda env for quick testing
 refdata_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/refdata_bucket')['Parameter']['Value']
 input_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/input_bucket')['Parameter']['Value']
+result_bucket = ssm_client.get_parameter(Name='/cdk/umccrise/batch/result_bucket')['Parameter']['Value']
 image_configurable = ssm_client.get_parameter(Name='/cdk/umccrise/batch/image_configurable')['Parameter']['Value']
 
 # TODO: Needs to be removed before going to prod
@@ -51,7 +52,8 @@ batch_props = {
     'ro_buckets': ro_bucket_names,
     'rw_buckets': rw_bucket_names,
     'refdata_bucket': refdata_bucket,
-    'data_bucket': input_bucket,
+    'input_bucket': input_bucket,
+    'result_bucket': result_bucket,
     'image_configurable': image_configurable
 }
 

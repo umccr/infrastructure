@@ -19,7 +19,7 @@ variable "instance_type" {
 
 variable "instance_ami" {
   type    = "string"
-  default = "ami-00c3d41691e25e54c" # AWS Linux 2
+  default = "ami-088ff0e3bde7b3fdf" # AWS Linux 2
 }
 
 variable "instance_spot_price" {

@@ -152,6 +152,8 @@ def read_sample_sheet(sample_sheet):
             Sample_Type         What type of sample is this - eg DNA (`str) - optional
             Pair_ID             Which pair of samples does this belong to - eg est_Sample_UP01 -
                                 this may be the same as Sample_ID - required
+            index_len           The length of the first index - used in groupings
+            index2_len          The length of the second index - using in groupings
             ==========  ==============================================================
     """
     # Find the pivot (The row that contains [Data] that splits the samplesheet from the header
@@ -173,6 +175,14 @@ def read_sample_sheet(sample_sheet):
 
     # Re-read the sample sheet
     sample_sheet_df = pd.read_csv(sample_sheet, skiprows=start_row+1, header=0)
+
+    # Strip Ns at the end of indexes
+    sample_sheet_df['index'] = sample_sheet_df['index'].apply(lambda x: x.rstrip("N"))
+    sample_sheet_df['index2'] = sample_sheet_df['index2'].apply(lambda x: x.rstrip("N"))
+
+    # Add lengths
+    sample_sheet_df['index_len'] = sample_sheet_df['index'].apply(lambda x: len(x))
+    sample_sheet_df['index2_len'] = sample_sheet_df['index2'].apply(lambda x: len(x))
 
     return sample_sheet_header_rows, sample_sheet_df
 
@@ -369,7 +379,7 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
         logger.warning("Warning we couldn't figure out what to do with "
                        "this dataset of type '{}', so we're leaving it as is".format(sample_type))
         # Perform basic reset of sample sheet
-        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type"])
+        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type", "index_len", 'index2_len'])
     elif len(modification_strategies) > 1:
         logger.info("Found multiple modification strategies for {}. Completing in the following order: {}".format(
             sample_type, ', '.join(modification_strategies)
@@ -405,7 +415,7 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
     sample_sheet_dir : Path output directory to put SampleSheet_<Type>.csv
     """
     logger.info("Writing out sample sheets")
-    for sample_type, sample_sheet_type_df in sample_sheet_df.groupby('Type'):
+    for (sample_type, index_len, index2_len), sample_sheet_type_df in sample_sheet_df.groupby(['Type', 'index_len', 'index2_len']):
         # Modify the sample-sheet
         modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
             sample_sheet_header_rows=sample_sheet_header_rows,
@@ -413,7 +423,7 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
             sample_type=sample_type)
 
         # Set the output file name
-        output_file = sample_sheet_dir / "SampleSheet_{}.csv".format(sample_type)
+        output_file = sample_sheet_dir / "SampleSheet_{}.{}.{}.csv".format(sample_type, index_len, index2_len)
 
         # Write out the sample sheet
         logger.info("Writing out type {} to {} - containing {} samples".format(

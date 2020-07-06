@@ -68,9 +68,26 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     # Place arguments
-    parser.add_argument("--samplesheet", "--sample-sheet", "-s", type=str, required=True, dest="sample_sheet")
-    parser.add_argument("--trackingsheet", "--tracking-sheet", "-t", type=str, required=True, dest="tracking_sheet")
-    parser.add_argument("--outputPath", "--output-path", "-o", type=str, required=True, dest="output_path")
+    parser.add_argument("--sample-sheet", "--samplesheet", "-s", type=str, required=True, dest="sample_sheet")
+    parser.add_argument("--tracking-sheet", "--trackingsheet", "-t", type=str, required=True, dest="tracking_sheet")
+    parser.add_argument("--output-path", "--outputPath", "-o", type=str, required=True, dest="output_path")
+
+    sample_params_args = parser.add_argument_group("Parameters for filtering out samples."
+                                                   "If --sample-type, --index-legnth or --index2length"
+                                                   "are used. A file named SampleSheet.csv will be output."
+                                                   "If the --all parameter is used, then each file named will be "
+                                                   "distinguished with the following notation"
+                                                   "SampleSheet_<sample_type>.<index-length>.<index2-length>.csv")
+    sample_params_args.add_argument("--sample-type", type=str, required=False, default='WGS',
+                                    help="Type of samples we wish to keep")
+    sample_params_args.add_argument("--index-length", type=int, required=False, default=8,
+                                    help="The length of the i7 index of samples we wish to keep")
+    sample_params_args.add_argument("--index2-length", type=int, required=False, default=8,
+                                    help="The length of the i5 index of samples we wish to keep")
+    sample_params_args.add_argument("--all", action='store_true', default=False,
+                                    help="Produce combinations of all samples in the samplesheet."
+                                         "Cannot be used in combination with any other sample group parameters "
+                                         "(--sample-type, --index-length, --index2-length)")
 
     return parser.parse_args()
 
@@ -100,6 +117,16 @@ def check_args(args):
     if not Path(output_dir).is_dir():
         logger.info("Creating output folder")
         create_output_dir(output_dir)
+
+    # Check that the '--all' and other args follow conventions.
+    all_arg = getattr(args, 'all')
+    if all_arg:
+        logger.info("Setting sample-type, index and index2 all to none since the --all parameter was specified")
+        setattr(args, "sample_type", None)
+        setattr(args, "index_length", None)
+        setattr(args, "index2_length", None)
+
+    return args
 
 
 def create_output_dir(output_dir):
@@ -404,7 +431,8 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
     return modify_sample_header_rows, modified_sample_sheet_df
 
 
-def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir):
+def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir,
+                        sample_type=None, index_len=None, index2_len=None):
     """
     Perform a group-by based on type, append this to the prefix and set as the output
 
@@ -413,8 +441,34 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
     sample_sheet_header_rows : list of lines used to create the sample sheet header
     sample_sheet_df : pd.DataFrame with sample information per row
     sample_sheet_dir : Path output directory to put SampleSheet_<Type>.csv
+    sample_type : A specific sample to filter by
+    index_len : A specific index length to filter by
+    index2_len : A specific index2 length to filter by
     """
     logger.info("Writing out sample sheets")
+
+    # Filter sample sheet by sample
+    if sample_type is not None:
+        sample_sheet_df = sample_sheet_df.query("Type=='{}'".format(sample_type))
+    if sample_sheet_df.shape[0] == 0:
+        logger.error("After filtering for type '{}' we ended up with no rows in the sample sheet".format(sample_type))
+        sys.exit(1)
+
+    # Filter sample sheet by index length
+    if index_len is not None:
+        sample_sheet_df = sample_sheet_df.query("index_len=={}".format(index_len))
+    if sample_sheet_df.shape[0] == 0:
+        logger.error("After filtering for index of len '{}' we ended up with no rows in the sample sheet".format(index_len))
+        sys.exit(1)
+
+    # Filter sample sheet by index2 length
+    if index2_len is not None:
+        sample_sheet_df = sample_sheet_df.query("index2_len=={}".format(index_len))
+    if sample_sheet_df.shape[0] == 0:
+        logger.error("After filtering for index2 of len '{}' we ended up with no rows in the sample sheet".format(
+            index2_len))
+        sys.exit(1)
+
     for (sample_type, index_len, index2_len), sample_sheet_type_df in sample_sheet_df.groupby(['Type', 'index_len', 'index2_len']):
         # Modify the sample-sheet
         modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
@@ -422,8 +476,13 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
             sample_sheet_df=sample_sheet_type_df,
             sample_type=sample_type)
 
-        # Set the output file name
-        output_file = sample_sheet_dir / "SampleSheet_{}.{}.{}.csv".format(sample_type, index_len, index2_len)
+        if sample_type is not None and index_len is not None and index2_len is not None:
+            output_file = sample_sheet_dir / "SampleSheet.csv"
+        else:
+            # --all has been set
+            # Set the output file name
+            # Based on "SampleSheet_<type>.<index>.<index2>.csv" syntax
+            output_file = sample_sheet_dir / "SampleSheet_{}.{}.{}.csv".format(sample_type, index_len, index2_len)
 
         # Write out the sample sheet
         logger.info("Writing out type {} to {} - containing {} samples".format(
@@ -448,7 +507,7 @@ def main():
     args = get_args()
 
     # Check said args
-    check_args(args)
+    args = check_args(args)
 
     # Read in the samplesheet
     sample_sheet_header_rows, sample_sheet_df = read_sample_sheet(sample_sheet=Path(getattr(args, "sample_sheet")))
@@ -463,7 +522,10 @@ def main():
     # Write out the sample sheets
     write_sample_sheets(sample_sheet_header_rows=sample_sheet_header_rows,
                         sample_sheet_df=sample_sheet_df,
-                        sample_sheet_dir=Path(getattr(args, "output_path")))
+                        sample_sheet_dir=Path(getattr(args, "output_path")),
+                        sample_type=args.sample_type,
+                        index_len=args.index_length,
+                        index2_len=args.index2_length)
 
 
 if __name__ == "__main__":

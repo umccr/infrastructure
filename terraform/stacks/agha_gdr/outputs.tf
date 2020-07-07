@@ -225,6 +225,20 @@ output "seanlianu_secret_access_key" {
 }
 
 
+# sgao
+output "sgao_username" {
+  value = "${module.sgao.username}"
+}
+
+output "sgao_access_key" {
+  value = "${module.sgao.access_key}"
+}
+
+output "sgao_secret_access_key" {
+  value = "${module.sgao.encrypted_secret_access_key}"
+}
+
+
 # sarah
 output "sarah_username" {
   value = "${module.sarah.username}"

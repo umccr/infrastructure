@@ -405,6 +405,13 @@ module "seanlianu" {
   email    = "sean.li@anu.edu.au"
 }
 
+module "sgao" {
+  source   = "../../modules/iam_user/secure_user"
+  username = "sgao"
+  pgp_key  = "keybase:freisinger"
+  email    = "song.gao@sa.gov.au"
+}
+
 # Special user (sarah) for AGHA data manager/curator
 module "sarah" {
   source   = "../../modules/iam_user/secure_user"
@@ -447,7 +454,8 @@ resource "aws_iam_group_membership" "submit_members" {
     "${module.scottwood.username}",
     "${module.boxcroft.username}",
     "${module.rk_chw.username}",
-    "${module.seanlianu.username}"
+    "${module.seanlianu.username}",
+    "${module.sgao.username}"
   ]
   group = "${aws_iam_group.submit.name}"
 }

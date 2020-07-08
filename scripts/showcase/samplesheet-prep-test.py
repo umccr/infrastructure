@@ -73,10 +73,10 @@ def get_args():
     parser.add_argument("--output-path", "--outputPath", "-o", type=str, required=True, dest="output_path")
 
     sample_params_args = parser.add_argument_group("Parameters for filtering out samples."
-                                                   "If --sample-type, --index-legnth or --index2length"
-                                                   "are used. A file named SampleSheet.csv will be output."
+                                                   "If --sample-type, --index-length or --index2-length "
+                                                   "are used. A file named SampleSheet.csv will be output. "
                                                    "If the --all parameter is used, then each file named will be "
-                                                   "distinguished with the following notation"
+                                                   "distinguished with the following notation "
                                                    "SampleSheet_<sample_type>.<index-length>.<index2-length>.csv")
     sample_params_args.add_argument("--sample-type", type=str, required=False, default='WGS',
                                     help="Type of samples we wish to keep")

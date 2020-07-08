@@ -89,6 +89,11 @@ def get_args():
                                          "Cannot be used in combination with any other sample group parameters "
                                          "(--sample-type, --index-length, --index2-length)")
 
+    miscell_params = parser.add_argument_group("Miscellaneous parameters")
+    miscell_params.add_argument("--no-override-cycles",
+                                action='store_true', default=False,
+                                help="Don't override the cycles if the index length doesn't match the cycle-length")
+
     return parser.parse_args()
 
 
@@ -204,17 +209,24 @@ def read_sample_sheet(sample_sheet):
     sample_sheet_df = pd.read_csv(sample_sheet, skiprows=start_row+1, header=0)
 
     # Strip Ns at the end of indexes
-    sample_sheet_df['index'] = sample_sheet_df['index'].apply(lambda x: x.rstrip("N"))
-    sample_sheet_df['index2'] = sample_sheet_df['index2'].apply(lambda x: x.rstrip("N"))
+    sample_sheet_df = sample_sheet_df.rename(columns={
+        "index": "index_orig",
+        "index2": "index2_orig"
+    })
+    sample_sheet_df['index'] = sample_sheet_df['index_orig'].apply(lambda x: x.rstrip("N"))
+    sample_sheet_df['index2'] = sample_sheet_df['index2_orig'].apply(lambda x: x.rstrip("N"))
 
     # Add lengths
+    sample_sheet_df['index_len_orig'] = sample_sheet_df['index_orig'].apply(lambda x: len(x))
+    sample_sheet_df['index2_len_orig'] = sample_sheet_df['index2_orig'].apply(lambda x: len(x))
     sample_sheet_df['index_len'] = sample_sheet_df['index'].apply(lambda x: len(x))
     sample_sheet_df['index2_len'] = sample_sheet_df['index2'].apply(lambda x: len(x))
 
     return sample_sheet_header_rows, sample_sheet_df
 
 
-def convert_sample_sheet_header_to_v2(sample_sheet_header_rows):
+def convert_sample_sheet_header_to_v2(sample_sheet_header_rows, override_cycles,
+                                      index_len, index2_len, index_len_orig, index2_len_orig):
     """
     Given a list of replacements, replace each line with it's replacement
 
@@ -227,12 +239,38 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows):
     A list of header rows with modified content as per V2_METADATA_COLUMN_CHANGES
     """
     sample_sheet_header_rows_new = []
-    for row in sample_sheet_header_rows:
+
+    # Get reads
+    reads_index = sample_sheet_header_rows.index("[Reads]\n")
+    settings_index = sample_sheet_header_rows.index("[Settings]\n")
+
+    for row_index, row in enumerate(sample_sheet_header_rows):
         # Initialise new row
         new_row = row
         for old_value, new_value in V2_METADATA_COLUMN_CHANGES.items():
             new_row = re.sub(old_value + ",", new_value + ",", new_row)
+
+        if row_index == settings_index + 1 and override_cycles:
+            # Lets sneak in an overridecycles row
+            r1_mask = "{}y".format(int(sample_sheet_header_rows[reads_index+1]))
+            r2_mask = "{}y".format(int(sample_sheet_header_rows[reads_index+2]))
+            if not index_len == index_len_orig:
+                # We need to mask the length of the difference
+                i7_mask = "{}i{}n".format(index_len, index_len_orig-index_len)
+            else:
+                # Just append the length of the index
+                i7_mask = "{}i".format(index_len)
+            if not index2_len == index2_len_orig:
+                # We need to mask the length of the difference
+                i5_mask = "{}i{}n".format(index2_len, index2_len_orig-index2_len)
+            else:
+                i5_mask = "{}i".format(index2_len)
+
+            sample_sheet_header_rows_new.append("OverrideCycles,{};{};{};{}\n".format(
+                r1_mask, i7_mask, i5_mask, r2_mask
+            ))
         sample_sheet_header_rows_new.append(new_row)
+
     return sample_sheet_header_rows_new
 
 
@@ -368,7 +406,7 @@ def add_sample_type_to_sample_sheet(tracking_sheet_df, sample_sheet_df):
     return pd.merge(sample_sheet_df, slimmed_tracking_df, on='Sample_ID', how='left')
 
 
-def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
+def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type, override_cycles):
     """
     Massive if else function based on the third parameter (sample_type)
 
@@ -406,7 +444,7 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
         logger.warning("Warning we couldn't figure out what to do with "
                        "this dataset of type '{}', so we're leaving it as is".format(sample_type))
         # Perform basic reset of sample sheet
-        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type", "index_len", 'index2_len'])
+        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type"])
     elif len(modification_strategies) > 1:
         logger.info("Found multiple modification strategies for {}. Completing in the following order: {}".format(
             sample_type, ', '.join(modification_strategies)
@@ -419,8 +457,18 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
             # Add two extra columns to sample-sheet
             modified_sample_sheet_df = convert_sample_sheet_to_tso500(modified_sample_sheet_df)
         elif modification_strategy == "V2":
+            index_len = modified_sample_sheet_df['index_len'].unique().item()
+            index2_len = modified_sample_sheet_df['index2_len'].unique().item()
+            index_len_orig = modified_sample_sheet_df['index_len_orig'].unique().item()
+            index2_len_orig = modified_sample_sheet_df['index2_len_orig'].unique().item()
             # Rename adapter key
-            modify_sample_header_rows = convert_sample_sheet_header_to_v2(modify_sample_header_rows)
+            modify_sample_header_rows = \
+                convert_sample_sheet_header_to_v2(modify_sample_header_rows,
+                                                  index_len=index_len,
+                                                  index2_len=index2_len,
+                                                  index_len_orig=index_len_orig,
+                                                  index2_len_orig=index2_len_orig,
+                                                  override_cycles=override_cycles)
             # Drop 'type' columns and rename indexes
             modified_sample_sheet_df = convert_sample_sheet_to_v2(modified_sample_sheet_df)
         else:
@@ -428,10 +476,16 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
                          "but no indication on how to modify samplesheet")
             sys.exit(1)
 
+    # Drop length columns
+    modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["index_orig", "index2_orig",
+                                                                      "index_len", 'index2_len',
+                                                                      "index_len_orig", "index2_len_orig"])
+
     return modify_sample_header_rows, modified_sample_sheet_df
 
 
 def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir,
+                        override_cycles=False,
                         sample_type=None, index_len=None, index2_len=None):
     """
     Perform a group-by based on type, append this to the prefix and set as the output
@@ -472,6 +526,7 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
     for (sample_type, index_len, index2_len), sample_sheet_type_df in sample_sheet_df.groupby(['Type', 'index_len', 'index2_len']):
         # Modify the sample-sheet
         modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
+            override_cycles=override_cycles,
             sample_sheet_header_rows=sample_sheet_header_rows,
             sample_sheet_df=sample_sheet_type_df,
             sample_type=sample_type)
@@ -524,6 +579,7 @@ def main():
                         sample_sheet_df=sample_sheet_df,
                         sample_sheet_dir=Path(getattr(args, "output_path")),
                         sample_type=args.sample_type,
+                        override_cycles=not args.no_override_cycles,
                         index_len=args.index_length,
                         index2_len=args.index2_length)
 

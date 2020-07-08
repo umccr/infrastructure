@@ -401,12 +401,15 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type):
     modify_sample_header_rows = sample_sheet_header_rows.copy()
     modified_sample_sheet_df = sample_sheet_df.copy()
 
+    # Drop length columns
+    modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["index_len", 'index2_len'])
+
     # Check length of matches
     if len(modification_strategies) < 1:
         logger.warning("Warning we couldn't figure out what to do with "
                        "this dataset of type '{}', so we're leaving it as is".format(sample_type))
         # Perform basic reset of sample sheet
-        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type", "index_len", 'index2_len'])
+        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["Sample_Type", "Type"])
     elif len(modification_strategies) > 1:
         logger.info("Found multiple modification strategies for {}. Completing in the following order: {}".format(
             sample_type, ', '.join(modification_strategies)

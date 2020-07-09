@@ -55,11 +55,12 @@ metadata_validation_column_names = (
 
 # Regex pattern for Sample ID/Name
 topup_exp = '(?:_topup\d?)'
+rerun_exp = '(?:_rerun\d?)'
 sample_id = '(?:PRJ|CCR|MDX|TGX)\d{6}'
 sample_control = '(?:NTC|PTC)_\w+'
 library_id_int = 'L\d{7}'
 library_id_ext = 'L' + sample_id
-library_id = '(?:' + library_id_int + '|' + library_id_ext + ')' + topup_exp + '?'
+library_id = '(?:' + library_id_int + '|' + library_id_ext + ')(?:' + topup_exp + '|' + rerun_exp + ')?'
 
 regex_sample_id = re.compile(sample_id + '_' + library_id)
 regex_sample_id_ctl = re.compile(sample_control + library_id)

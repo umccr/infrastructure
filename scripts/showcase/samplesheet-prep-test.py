@@ -252,19 +252,19 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows, override_cycles,
 
         if row_index == settings_index + 1 and override_cycles:
             # Lets sneak in an overridecycles row
-            r1_mask = "{}y".format(int(sample_sheet_header_rows[reads_index+1]))
-            r2_mask = "{}y".format(int(sample_sheet_header_rows[reads_index+2]))
+            r1_mask = "Y{}".format(int(sample_sheet_header_rows[reads_index+1]))
+            r2_mask = "Y{}".format(int(sample_sheet_header_rows[reads_index+2]))
             if not index_len == index_len_orig:
                 # We need to mask the length of the difference
-                i7_mask = "{}i{}n".format(index_len, index_len_orig-index_len)
+                i7_mask = "I{}N{}".format(index_len, index_len_orig-index_len)
             else:
                 # Just append the length of the index
-                i7_mask = "{}i".format(index_len)
+                i7_mask = "I{}".format(index_len)
             if not index2_len == index2_len_orig:
                 # We need to mask the length of the difference
-                i5_mask = "{}i{}n".format(index2_len, index2_len_orig-index2_len)
+                i5_mask = "I{]N{}".format(index2_len, index2_len_orig-index2_len)
             else:
-                i5_mask = "{}i".format(index2_len)
+                i5_mask = "I{}".format(index2_len)
 
             sample_sheet_header_rows_new.append("OverrideCycles,{};{};{};{}\n".format(
                 r1_mask, i7_mask, i5_mask, r2_mask

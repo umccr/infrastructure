@@ -112,7 +112,8 @@ class BatchStack(core.Stack):
         )
 
         ################################################################################
-        # Import common infrastructure (maintained via TerraForm)
+        # Network
+        # (Import common infrastructure (maintained via TerraForm)
 
         # VPC
         vpc = ec2.Vpc.from_lookup(
@@ -121,6 +122,12 @@ class BatchStack(core.Stack):
             tags={'Name': 'main-vpc', 'Stack': 'networking'}
         )
 
+        batch_security_group = ec2.SecurityGroup(
+            self,
+            "BatchSecurityGroup",
+            vpc=vpc,
+            description="Allow all outbound, no inbound traffic"
+        )
         ################################################################################
         # Setup Batch compute resources
 
@@ -194,7 +201,7 @@ class BatchStack(core.Stack):
         )
 
         my_compute_res = batch.ComputeResources(
-            type=batch.ComputeResourceType.SPOT,
+            type=(batch.ComputeResourceType.SPOT if props['compute_env_type'].lower() == 'spot' else batch.ComputeResourceType.ON_DEMAND),
             allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
             desiredv_cpus=0,
             maxv_cpus=320,
@@ -204,6 +211,11 @@ class BatchStack(core.Stack):
             spot_fleet_role=spotfleet_role,
             instance_role=batch_instance_profile.instance_profile_name,
             vpc=vpc,
+            vpc_subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PUBLIC,
+                availability_zones=["ap-southeast-2a"]
+            ),
+            security_groups=[batch_security_group]
             # compute_resources_tags=core.Tag('Creator', 'Batch')
         )
         # XXX: How to add more than one tag above??

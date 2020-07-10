@@ -262,7 +262,7 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows, override_cycles,
                 i7_mask = "I{}".format(index_len)
             if not index2_len == index2_len_orig:
                 # We need to mask the length of the difference
-                i5_mask = "I{]N{}".format(index2_len, index2_len_orig-index2_len)
+                i5_mask = "I{}N{}".format(index2_len, index2_len_orig-index2_len)
             else:
                 i5_mask = "I{}".format(index2_len)
 

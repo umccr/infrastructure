@@ -53,6 +53,28 @@ module "main_vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
+  # Enable Gateway VPC endpoints
+  # No additional charge for using Gateway Endpoints https://docs.aws.amazon.com/vpc/latest/userguide/vpce-gateway.html
+  enable_s3_endpoint       = true
+  enable_dynamodb_endpoint = true
+
+  # To enable more VPC Endpoints, see table in https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/
+  # Note that Interface Endpoints are not free and use AWS PrivateLink https://aws.amazon.com/privatelink/pricing/
+  # However it is still more cost effective than NAT Gateway for data communication within AWS Services
+  # TODO monitor NAT Gateway cost +/- gradually enable most inter-communicated AWS Services depends on our usage here
+  #enable_events_endpoint = true
+  #enable_logs_endpoint = true
+  #enable_monitoring_endpoint = true
+  #enable_codebuild_endpoint = true
+  #enable_codepipeline_endpoint = true
+  #enable_ec2_endpoint = true
+  #enable_ecs_endpoint = true
+  #enable_ecr_dkr_endpoint = true
+  #enable_ssm_endpoint = true
+  #enable_sqs_endpoint = true
+  #enable_sns_endpoint = true
+  #enable_sts_endpoint = true
+
   # See README Subnet Tagging section for the following tags combination
   public_subnet_tags = {
     SubnetType            = var.umccr_subnet_tier.PUBLIC

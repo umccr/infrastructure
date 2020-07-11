@@ -14,7 +14,7 @@ provider "aws" {
 }
 
 resource "aws_eip" "main_vpc_nat_gateway" {
-  count = 1
+  count = 3
   vpc = true
 
   tags = {
@@ -37,10 +37,10 @@ module "main_vpc" {
   private_subnets  = ["10.2.20.0/23", "10.2.22.0/23", "10.2.24.0/23"]
   database_subnets = ["10.2.40.0/23", "10.2.42.0/23", "10.2.44.0/23"]
 
-  // Single NAT Gateway Scenario
+  # One NAT Gateway per availability zone
   enable_nat_gateway     = true
-  single_nat_gateway     = true
-  one_nat_gateway_per_az = false
+  single_nat_gateway     = false
+  one_nat_gateway_per_az = true
 
   reuse_nat_ips       = true
   external_nat_ip_ids = aws_eip.main_vpc_nat_gateway.*.id

@@ -1,0 +1,41 @@
+{
+    "Account": "472057503814",
+    "Parameters":{
+        "/cdk/umccrise/batch/ami": {
+            "Value": "ami-029bf83e14803c25f",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/compute_env_type": {
+            "Value": "ON_DEMAND",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/default_container_image": {
+            "Value": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise:1.0.4-0ac93f8d00",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/image_configurable": {
+            "Value": "FALSE",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/input_bucket": {
+            "Value": "umccr-primary-data-prod",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/result_bucket": {
+            "Value": "umccr-primary-data-prod",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/refdata_bucket": {
+            "Value": "umccr-refdata-prod",
+            "Type": "String"
+        },
+        "/cdk/umccrise/batch/ro_buckets": {
+            "Value": "umccr-refdata-prod",
+            "Type": "StringList"
+        },
+        "/cdk/umccrise/batch/rw_buckets": {
+            "Value": "umccr-primary-data-prod,umccr-validation-prod",
+            "Type": "StringList"
+        }
+    }
+}

@@ -212,13 +212,14 @@ class BatchStack(core.Stack):
             instance_role=batch_instance_profile.instance_profile_name,
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PUBLIC,
-                availability_zones=["ap-southeast-2a"]
+                subnet_type=ec2.SubnetType.PRIVATE,
+                # availability_zones=["ap-southeast-2a"]
             ),
             security_groups=[batch_security_group]
             # compute_resources_tags=core.Tag('Creator', 'Batch')
         )
         # XXX: How to add more than one tag above??
+        # https://github.com/aws/aws-cdk/issues/7350
         # core.Tag.add(my_compute_res, 'Foo', 'Bar')
 
         my_compute_env = batch.ComputeEnvironment(
@@ -228,6 +229,9 @@ class BatchStack(core.Stack):
             service_role=batch_service_role,
             compute_resources=my_compute_res
         )
+        # child = my_compute_env.node.default_child
+        # child_comp_res = child.compute_resources
+        # child_comp_res.tags = "{'Foo': 'Bar'}"
 
         job_queue = batch.JobQueue(
             self,
@@ -244,8 +248,8 @@ class BatchStack(core.Stack):
 
         job_container = batch.JobDefinitionContainer(
             image=ecs.ContainerImage.from_registry(name=props['container_image']),
-            vcpus=16,
-            memory_limit_mib=51200,
+            vcpus=32,
+            memory_limit_mib=100000,
             command=[
                 "/opt/container/umccrise-wrapper.sh",
                 "Ref::vcpus"
@@ -319,8 +323,8 @@ class BatchStack(core.Stack):
             environment={
                 'JOBNAME_PREFIX': "UMCCRISE_",
                 'JOBQUEUE': job_queue.job_queue_name,
-                'UMCCRISE_MEM': '50000',
-                'UMCCRISE_VCPUS': '16',
+                'UMCCRISE_MEM': '100000',
+                'UMCCRISE_VCPUS': '32',
                 'JOBDEF': job_definition.job_definition_name,
                 'REFDATA_BUCKET': props['refdata_bucket'],
                 'INPUT_BUCKET': props['input_bucket'],

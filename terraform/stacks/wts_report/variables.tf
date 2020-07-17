@@ -52,7 +52,7 @@ variable "workspace_refdata_bucket" {
 
   default = {
     prod = "umccr-refdata-prod"
-    dev  = "umccr-misc-temp"
+    dev  = "umccr-refdata-prod"
   }
 }
 

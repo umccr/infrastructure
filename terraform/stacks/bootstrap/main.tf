@@ -86,126 +86,6 @@ data "template_file" "saml_assume_policy" {
   }
 }
 
-##### fastq_data_uploader
-resource "aws_iam_role" "fastq_data_uploader" {
-  name                 = "fastq_data_uploader"
-  path                 = "/"
-  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
-  max_session_duration = "43200"
-}
-
-data "template_file" "fastq_data_uploader" {
-  template = "${file("policies/fastq_data_uploader.json")}"
-
-  vars {
-    resources = "${jsonencode(var.workspace_operator_write_buckets[terraform.workspace])}"
-  }
-}
-
-resource "aws_iam_policy" "fastq_data_uploader" {
-  name   = "fastq_data_uploader_${terraform.workspace}"
-  path   = "/"
-  policy = "${data.template_file.fastq_data_uploader.rendered}"
-}
-
-resource "aws_iam_role_policy_attachment" "fastq_data_uploader" {
-  role       = "${aws_iam_role.fastq_data_uploader.name}"
-  policy_arn = "${aws_iam_policy.fastq_data_uploader.arn}"
-}
-
-##### operator
-resource "aws_iam_role" "operator" {
-  name                 = "${terraform.workspace}_operator"
-  path                 = "/"
-  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
-  max_session_duration = "43200"
-}
-
-data "template_file" "operator" {
-  template = "${file("policies/operator.json")}"
-
-  vars {
-    s3_buckets  = "${jsonencode(var.workspace_operator_write_buckets[terraform.workspace])}"
-    s3_delete_buckets = "${jsonencode(var.workspace_operator_delete_buckets[terraform.workspace])}"
-    aws_account = "${data.aws_caller_identity.current.account_id}"
-    aws_region  = "${data.aws_region.current.name}"
-
-    umccrise_function_name   = "umccrise*"
-    wts_report_function_name = "wts_report*"
-  }
-}
-
-resource "aws_iam_policy" "operator" {
-  name   = "operator_${terraform.workspace}"
-  path   = "/"
-  policy = "${data.template_file.operator.rendered}"
-}
-
-resource "aws_iam_role_policy_attachment" "operator" {
-  role       = "${aws_iam_role.operator.name}"
-  policy_arn = "${aws_iam_policy.operator.arn}"
-}
-
-resource "aws_iam_role_policy_attachment" "operator_read_only" {
-  role       = "${aws_iam_role.operator.name}"
-  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-}
-
-##### primary_data_reader
-resource "aws_iam_role" "primary_data_reader" {
-  name                 = "primary_data_reader"
-  path                 = "/"
-  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
-  max_session_duration = "43200"
-}
-
-data "template_file" "primary_data_reader" {
-  template = "${file("policies/primary_data_reader.json")}"
-
-  vars {
-    bucket_name = "${aws_s3_bucket.primary_data.id}"
-  }
-}
-
-resource "aws_iam_policy" "primary_data_reader" {
-  name   = "primary_data_reader_${terraform.workspace}"
-  path   = "/"
-  policy = "${data.template_file.primary_data_reader.rendered}"
-}
-
-resource "aws_iam_role_policy_attachment" "primary_data_reader" {
-  role       = "${aws_iam_role.primary_data_reader.name}"
-  policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
-}
-
-##### umccr_worker
-resource "aws_iam_role" "umccr_worker" {
-  name                 = "umccr_worker"
-  path                 = "/"
-  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
-  max_session_duration = "43200"
-}
-
-data "template_file" "umccr_worker" {
-  template = "${file("policies/umccr_worker.json")}"
-
-  vars {
-    tf_bucket   = "${var.tf_bucket}"
-    aws_account = "${data.aws_caller_identity.current.account_id}"
-  }
-}
-
-resource "aws_iam_policy" "umccr_worker" {
-  name   = "umccr_worker_${terraform.workspace}"
-  path   = "/"
-  policy = "${data.template_file.umccr_worker.rendered}"
-}
-
-resource "aws_iam_role_policy_attachment" "umccr_worker" {
-  role       = "${aws_iam_role.umccr_worker.name}"
-  policy_arn = "${aws_iam_policy.umccr_worker.arn}"
-}
-
 ##### umccr_pipeline
 resource "aws_iam_role" "umccr_pipeline" {
   name                 = "umccr_pipeline"
@@ -243,7 +123,8 @@ resource "aws_iam_role_policy_attachment" "umccr_pipeline" {
 
 # S3 bucket for FASTQ data
 # NOTE: is meant to be a temporary solution until full support of primary data is there
-resource "aws_s3_bucket" "fastq-data" {
+resource "aws_s3_bucket" "fastq_data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
 
   server_side_encryption_configuration {
@@ -267,6 +148,7 @@ resource "aws_s3_bucket" "fastq-data" {
 
 # S3 bucket for raw sequencing data
 resource "aws_s3_bucket" "raw-sequencing-data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${var.workspace_seq_data_bucket_name[terraform.workspace]}"
 
   server_side_encryption_configuration {
@@ -288,45 +170,47 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
   }
 }
 
-# S3 bucket for research data
-resource "aws_s3_bucket" "research" {
-  count  = "${terraform.workspace == "dev" ? 1 : 0}"
-  bucket = "${var.workspace_research_bucket_name[terraform.workspace]}"
+# # S3 bucket for research data
+# resource "aws_s3_bucket" "research" {
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-}
+#   count  = "${terraform.workspace == "dev" ? 1 : 0}"
+#   bucket = "${var.workspace_research_bucket_name[terraform.workspace]}"
 
-# S3 bucket for temp data
-resource "aws_s3_bucket" "temp" {
-  count  = "${terraform.workspace == "dev" ? 1 : 0}"
-  bucket = "${var.workspace_temp_bucket_name[terraform.workspace]}"
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+# }
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-  lifecycle_rule {
-    id      = "monthly cleanup"
-    enabled = true
+# # S3 bucket for temp data
+# resource "aws_s3_bucket" "temp" {
+#   count  = "${terraform.workspace == "dev" ? 1 : 0}"
+#   bucket = "${var.workspace_temp_bucket_name[terraform.workspace]}"
 
-    expiration {
-	  days = 30
-    }
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+#   lifecycle_rule {
+#     id      = "monthly cleanup"
+#     enabled = true
 
-    abort_incomplete_multipart_upload_days = 5
-  }
-}
+#     expiration {
+# 	  days = 30
+#     }
+
+#     abort_incomplete_multipart_upload_days = 5
+#   }
+# }
 
 resource "aws_s3_bucket" "run-data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${var.workspace_run_data_bucket_name[terraform.workspace]}"
 
   versioning {
@@ -360,6 +244,7 @@ resource "aws_s3_bucket" "run-data" {
 
 # S3 bucket to hold primary data
 resource "aws_s3_bucket" "primary_data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
   acl    = "private"
 
@@ -420,6 +305,7 @@ resource "aws_s3_bucket" "primary_data" {
 
 # S3 bucket to hold validation data
 resource "aws_s3_bucket" "validation_data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${var.workspace_validation_bucket_name[terraform.workspace]}"
   acl    = "private"
 
@@ -459,6 +345,7 @@ resource "aws_s3_bucket" "validation_data" {
 }
 
 data "template_file" "validation_bucket_policy" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   template = "${file("policies/cross_account_bucket_policy.json")}"
 
   vars {
@@ -557,30 +444,6 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 }
 
 ################################################################################
-##     dev only resources                                                     ##
-################################################################################
-
-# Add a ops-admin rold that can be assumed without MFA (used for build agents)
-resource "aws_iam_role" "ops_admin_no_mfa_role" {
-  count                = "${terraform.workspace == "dev" ? 1 : 0}"
-  name                 = "ops_admin_no_mfa"
-  path                 = "/"
-  assume_role_policy   = "${data.template_file.saml_assume_policy.rendered}"
-  max_session_duration = "43200"
-}
-
-resource "aws_iam_policy" "ops_admin_no_mfa_policy" {
-  path   = "/"
-  policy = "${file("policies/ops_admin_no_mfa_policy.json")}"
-}
-
-resource "aws_iam_role_policy_attachment" "admin_access_to_ops_admin_no_mfa_role_attachment" {
-  count      = "${terraform.workspace == "dev" ? 1 : 0}"
-  role       = "${aws_iam_role.ops_admin_no_mfa_role.name}"
-  policy_arn = "${aws_iam_policy.ops_admin_no_mfa_policy.arn}"
-}
-
-################################################################################
 # Dedicated user to generate long lived presigned URLs
 # See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
 
@@ -591,25 +454,45 @@ module "presigned_urls" {
 }
 
 resource "aws_iam_user_policy_attachment" "presigned_user_primary_data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   user       = "${module.presigned_urls.username}"
   policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
 }
 
 resource "aws_iam_user_policy_attachment" "presigned_user_fastq_data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   user       = "${module.presigned_urls.username}"
   policy_arn = "${aws_iam_policy.fastq_data_reader.arn}"
 }
 
 data "template_file" "fastq_data_reader" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   template = "${file("policies/primary_data_reader.json")}"
 
   vars {
-    bucket_name = "${aws_s3_bucket.fastq-data.id}"
+    bucket_name = "${aws_s3_bucket.fastq_data.id}"
   }
 }
 
 resource "aws_iam_policy" "fastq_data_reader" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
   name   = "fastq_data_reader_${terraform.workspace}"
   path   = "/"
   policy = "${data.template_file.fastq_data_reader.rendered}"
+}
+
+data "template_file" "primary_data_reader" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
+  template = "${file("policies/primary_data_reader.json")}"
+
+  vars {
+    bucket_name = "${aws_s3_bucket.primary_data.id}"
+  }
+}
+
+resource "aws_iam_policy" "primary_data_reader" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
+  name   = "primary_data_reader_${terraform.workspace}"
+  path   = "/"
+  policy = "${data.template_file.primary_data_reader.rendered}"
 }

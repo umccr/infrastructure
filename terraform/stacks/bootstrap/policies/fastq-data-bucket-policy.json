@@ -1,0 +1,48 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowPutIfGrantFullAccess",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::843407916570:root"
+            },
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::umccr-fastq-data-prod/*",
+            "Condition": {
+                "StringEquals": {
+                    "s3:x-amz-acl": "bucket-owner-full-control"
+                }
+            }
+        },
+        {
+            "Sid": "DenyPutIfNotGrantFullAccess",
+            "Effect": "Deny",
+            "Principal": {
+                "AWS": "arn:aws:iam::843407916570:root"
+            },
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::umccr-fastq-data-prod/*",
+            "Condition": {
+                "StringNotEquals": {
+                    "s3:x-amz-acl": "bucket-owner-full-control"
+                }
+            }
+        },
+        {
+            "Sid": "AllowCrossAccountRead",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::843407916570:root"
+            },
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::umccr-fastq-data-prod/*",
+                "arn:aws:s3:::umccr-fastq-data-prod"
+            ]
+        }
+    ]
+}

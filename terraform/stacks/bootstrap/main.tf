@@ -145,6 +145,17 @@ resource "aws_s3_bucket" "fastq_data" {
     }
   }
 }
+data "template_file" "fastq_data_bucket_policy" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
+  template = "${file("policies/fastq-data-bucket-policy.json")}"
+}
+
+resource "aws_s3_bucket_policy" "fastq_data" {
+  count  = "${terraform.workspace == "prod" ? 1 : 0}"
+  bucket = "${aws_s3_bucket.fastq_data.id}"
+  policy = "${data.template_file.fastq_data_bucket_policy.rendered}"
+}
+
 
 # S3 bucket for raw sequencing data
 resource "aws_s3_bucket" "raw-sequencing-data" {

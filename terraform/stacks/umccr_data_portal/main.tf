@@ -334,11 +334,20 @@ data "template_file" "sqs_iap_ens_event_policy" {
   }
 }
 
+resource "aws_sqs_queue" "iap_ens_event_dlq" {
+  name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-dlq"
+  message_retention_seconds = 1209600
+}
+
 # SQS Queue for IAP Event Notification Service event delivery
 # See https://iap-docs.readme.io/docs/ens_create-an-amazon-sqs-queue
 resource "aws_sqs_queue" "iap_ens_event_queue" {
-  name   = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
+  name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
   policy = data.template_file.sqs_iap_ens_event_policy.rendered
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.iap_ens_event_dlq.arn
+    maxReceiveCount = 3
+  })
 }
 
 data "aws_s3_bucket" "s3_primary_data_bucket" {
@@ -361,10 +370,19 @@ data "template_file" "sqs_s3_primary_data_event_policy" {
   }
 }
 
+resource "aws_sqs_queue" "s3_event_dlq" {
+  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-dlq"
+  message_retention_seconds = 1209600
+}
+
 # SQS Queue for S3 event delivery
 resource "aws_sqs_queue" "s3_event_queue" {
-  name   = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
   policy = data.template_file.sqs_s3_primary_data_event_policy.rendered
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
+    maxReceiveCount = 3
+  })
 }
 
 # Enable primary data bucket s3 event notification to SQS
@@ -1120,6 +1138,8 @@ resource "aws_rds_cluster" "db" {
 
   # Workaround from https://github.com/terraform-providers/terraform-provider-aws/issues/3060
   db_subnet_group_name = aws_db_subnet_group.rds.name
+
+  enable_http_endpoint = true  # Enable RDS Data API (needed for Query Editor)
 
   scaling_configuration {
     auto_pause   = var.rds_auto_pause[terraform.workspace]

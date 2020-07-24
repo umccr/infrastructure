@@ -3,6 +3,8 @@ terraform/stacks/stackstorm/keys
 **/.terraform
 **/*.tfstate
 **/*.tfstate.backup
+**/*.tfstate.backup
+**/*.tfstate.*.backup
 .env
 cdk.out
 cdk.context.json

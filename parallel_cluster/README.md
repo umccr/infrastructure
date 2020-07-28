@@ -25,19 +25,8 @@ ssm() {
 So that logging into the instances becomes:
 
 ```bash
-$ ssm i-0a13c0c8d3fde0708
+$ ssm i-XXXXXXXXXXXXX
 ```
-
-### Configuration
-
-This configuration expects certain AWS resources to pre-exist, namely:
-- a network configuration with `VPC` and `subnet` according to the requirements of Parallel Cluster (the AWS defaults should be OK)
-- an instance role `parallelcluster-ec2-instance-role` with appropriate permissions to e.g. access S3 resources, allow SSM login, etc... See AWS managed policies `AmazonSSMManagedInstanceCore` and `AmazonS3ReadOnlyAccess` and policy.json (requires region substitution).
-- a key pair to be used for SSH (as admin backup to SSM)
-
-The default configuration (especially EC2 instance types for the compute fleet) may require modifications before it is suitable for your use case. See the `conf/config` file and adjust as necessary.
-
-NOTE: See the provided bootstrap script under `conf/bootstrap.sh` for an example on how to setup the EC2 instances.
 
 ### Running the cluster
 
@@ -50,7 +39,7 @@ MasterPublicIP: 3.104.49.154
 ClusterUser: ec2-user
 MasterPrivateIP: 172.31.23.110
 
-i-XXXXXXXXX   <---- Master insteance ID
+i-XXXXXXXXX   <---- Master instance ID
 
 $ ssm i-XXXXXXXXXX
 
@@ -98,10 +87,6 @@ $ srun --time=10:00 --nodes=1 --cpus-per-task=1 --pty -u "/bin/bash" -i -l
 
 Eventually, when users are ready to make the transition, this will be migrated to AWS Batch or more modern, efficient and integrated compute scheduling systems.
 
-### Software availability
-
-Software installed on the login node is **not** automatically available on the compute nodes. For software to be avaiable on the cluster it will either have to be installed during the bootstrapping process (which will impact on time it takes for nodes to become available), be used within Docker containers (docker is installed on the cluster) or have to be distributed using a custom AMI that can be used when starting the cluster.
-
 #### Creating a custom AMI
 
 In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux 2 AMI. [The EC2 Image builder eases this process significantly](https://aws.amazon.com/image-builder/):
@@ -119,6 +104,8 @@ custom_ami = ami-0b01adf2b53dcfe7c
 ### File System
 
 The cluster uses EFS to provide a scalable FS that is available to all nodes. This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data (if it was already put in place). However, that also means the data put into EFS remains avaiable (and chargeable) as long as the cluster remains. So data will have to be cleaned up manually after it fulfilled it's purpose.
+
+It also uses FSX lustre.
 
 ### Limitations
 

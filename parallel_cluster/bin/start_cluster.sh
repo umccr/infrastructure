@@ -14,7 +14,7 @@ if [ "$1" ] ; then
 	# XXX: control error codes better, avoiding counterintuitive ones: i.e authed within a different account:
 	# ERROR: The configuration parameter 'vpc_id' generated the following errors:
 	# The vpc ID 'vpc-7d2b2e1a' does not exist
-    echo "ssm i-XXXXX away!"
+    echo "ssm i-XXXXXXXXX away!"
     exit 0
 else
     display_help

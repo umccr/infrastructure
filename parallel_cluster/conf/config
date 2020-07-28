@@ -21,7 +21,7 @@ compute_instance_type = m5.large
 ec2_iam_role          = parallelcluster-ec2-instance-role
 scheduler             = slurm
 initial_queue_size    = 1
-custom_ami            = ami-0c5dd348d78623bdb
+custom_ami            = ami-0b90a8d795fb845d3
 
 [vpc tothill]
 vpc_id           = vpc-7d2b2e1a

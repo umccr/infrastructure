@@ -106,10 +106,9 @@ Software installed on the login node is **not** automatically available on the c
 
 In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux 2 AMI. [The EC2 Image builder eases this process significantly](https://aws.amazon.com/image-builder/):
 
-![ec2builder1]("img/bioinformatics_component.png")
-![ec2builder2]("img/build_bioinfo_component.png")
-![ec2builder3]("img/create_component.png")
-![ec2builder4]("img/several_components.png")
+![ec2builder2](img/build_bioinfo_component.png)
+![ec2builder1](img/bioinformatics_component.png)
+![ec2builder4](img/several_components.png)
 
 To use the newly created AMI, just add the following variable to the AWS ParallelCluster config file, under the [cluster ...] section, i.e:
 

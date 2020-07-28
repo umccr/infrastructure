@@ -24,8 +24,10 @@ initial_queue_size    = 1
 custom_ami            = ami-0b90a8d795fb845d3
 
 [vpc tothill]
-vpc_id           = vpc-7d2b2e1a
-master_subnet_id = subnet-3ad03d5c
+vpc_id = vpc-0020eaf6bc27c98a4
+master_subnet_id = subnet-07a7800b072d25eb3
+compute_subnet_id = subnet-0506a40a906ea0156
+use_public_ips = false
 
 [aliases]
 ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}

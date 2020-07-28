@@ -104,32 +104,16 @@ Software installed on the login node is **not** automatically available on the c
 
 #### Creating a custom AMI
 
-In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux AMI, please check the AMI ID list here and pass it to the `--ami-id` parameter (`alinux` AMIs are preferred for stability).
+In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux 2 AMI. [The EC2 Image builder eases this process significantly](https://aws.amazon.com/image-builder/):
 
-```shell
-$ pcluster createami --ami-id ami-09226b689a5d43824 --os alinux2 --config conf/config --instance-type m5.large --region ap-southeast-2 --cluster-template tothill
+![ec2builder1]("img/bioinformatics_component.png")
+![ec2builder2]("img/build_bioinfo_component.png")
+![ec2builder3]("img/create_component.png")
+![ec2builder4]("img/several_components.png")
+
+To use the newly created AMI, just add the following variable to the AWS ParallelCluster config file, under the [cluster ...] section, i.e:
+
 ```
-
-If all goes whell, the AMI ID will be shown towards the end, ready to put it back on your parallelcluster `config` file:
-
-```shell
-$ pcluster createami --ami-id ami-09226b689a5d43824 --os alinux2 --config conf/config --region ap-southeast-2 --cluster-template tothill
-Building AWS ParallelCluster AMI. This could take a while...
-Base AMI ID: ami-09226b689a5d43824
-Base AMI OS: alinux2
-Instance Type: t2.xlarge
-Region: ap-southeast-2
-VPC ID: vpc-7d2b2e1a
-Subnet ID: subnet-3ad03d5c
-Template: https://s3.ap-southeast-2.amazonaws.com/ap-southeast-2-aws-parallelcluster/templates/aws-parallelcluster-2.6.1.cfn.json
-Cookbook: https://s3.ap-southeast-2.amazonaws.com/ap-southeast-2-aws-parallelcluster/cookbooks/aws-parallelcluster-cookbook-2.6.1.tgz
-Packer log: /var/folders/wz/__dd9trs0kl4jb3rs83704y80000gn/T/packer.log.20200427-145000.vaipm3lx
-Packer Instance ID: i-04a763679c1439fc3
-Packer status: 	exit code 0
-
-Custom AMI ami-0b01adf2b53dcfe7c created with name custom-ami-aws-parallelcluster-2.6.1-amzn2-hvm-202004271450
-
-To use it, add the following variable to the AWS ParallelCluster config file, under the [cluster ...] section
 custom_ami = ami-0b01adf2b53dcfe7c
 ```
 

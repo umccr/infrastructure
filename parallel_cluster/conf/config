@@ -9,9 +9,9 @@ sanity_check     = true
 [cluster tothill]
 base_os               = alinux2
 key_name              = romanvg 
-vpc_settings          = tothill
+vpc_settings          = network
 efs_settings          = awselasticfs
-fsx_settings          = lustrefs
+#fsx_settings          = lustrefs
 s3_read_resource      = *
 cluster_type          = spot
 master_instance_type  = t2.medium
@@ -21,13 +21,13 @@ compute_instance_type = m5.large
 ec2_iam_role          = parallelcluster-ec2-instance-role
 scheduler             = slurm
 initial_queue_size    = 1
-custom_ami            = ami-0b90a8d795fb845d3
+custom_ami            = ami-002b1d0f440e6caea
 
-[vpc tothill]
+[vpc network]
 vpc_id = vpc-0020eaf6bc27c98a4
 master_subnet_id = subnet-07a7800b072d25eb3
 compute_subnet_id = subnet-0506a40a906ea0156
-use_public_ips = false
+use_public_ips = true
 
 [aliases]
 ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}
@@ -37,8 +37,8 @@ shared_dir       = efs
 encrypted        = false
 performance_mode = generalPurpose
 
-[fsx lustrefs]
-shared_dir                = /scratch
-storage_capacity          = 3600
-imported_file_chunk_size  = 1024
-import_path               = s3://tothill-scratch
+#[fsx lustrefs]
+#shared_dir                = /scratch
+#storage_capacity          = 3600
+#imported_file_chunk_size  = 1024
+#import_path               = s3://tothill-scratch

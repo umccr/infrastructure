@@ -6,7 +6,7 @@ display_help() {
 }
 
 if [ "$1" ] ; then
-    pcluster create $1 --config conf/config --cluster-template tothill
+    pcluster create $1 --config conf/config --cluster-template tothill --norollback 
     aws ec2 describe-instances \
              --query "Reservations[*].Instances[*].[InstanceId]" \
              --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" --output text

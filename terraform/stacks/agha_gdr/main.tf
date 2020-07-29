@@ -76,6 +76,15 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
     )
   )}"
 }
+resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
+  bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 
 resource "aws_s3_bucket" "agha_gdr_store" {
   bucket = "${var.agha_gdr_store_bucket_name}"
@@ -125,6 +134,14 @@ resource "aws_s3_bucket" "agha_gdr_store" {
 
     abort_incomplete_multipart_upload_days = 7
   }
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
+  bucket = "${aws_s3_bucket.agha_gdr_store.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # Attach bucket policy to deny object deletion

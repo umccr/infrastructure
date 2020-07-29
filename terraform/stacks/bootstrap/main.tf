@@ -145,6 +145,15 @@ resource "aws_s3_bucket" "fastq_data" {
     }
   }
 }
+resource "aws_s3_bucket_public_access_block" "fastq_data" {
+  bucket = "${aws_s3_bucket.fastq_data.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 data "template_file" "fastq_data_bucket_policy" {
   count  = "${terraform.workspace == "prod" ? 1 : 0}"
   template = "${file("policies/fastq-data-bucket-policy.json")}"
@@ -179,6 +188,14 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
       storage_class = "DEEP_ARCHIVE"
     }
   }
+}
+resource "aws_s3_bucket_public_access_block" "raw-sequencing-data" {
+  bucket = "${aws_s3_bucket.raw-sequencing-data.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # # S3 bucket for research data
@@ -252,6 +269,14 @@ resource "aws_s3_bucket" "run-data" {
   }
 
 }
+resource "aws_s3_bucket_public_access_block" "run-data" {
+  bucket = "${aws_s3_bucket.run-data.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
 # S3 bucket to hold primary data
 resource "aws_s3_bucket" "primary_data" {
@@ -313,6 +338,14 @@ resource "aws_s3_bucket" "primary_data" {
     }
   }
 }
+resource "aws_s3_bucket_public_access_block" "primary_data" {
+  bucket = "${aws_s3_bucket.primary_data.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
 # S3 bucket to hold validation data
 resource "aws_s3_bucket" "validation_data" {
@@ -353,6 +386,14 @@ resource "aws_s3_bucket" "validation_data" {
 
     abort_incomplete_multipart_upload_days = 7
   }
+}
+resource "aws_s3_bucket_public_access_block" "validation_data" {
+  bucket = "${aws_s3_bucket.validation_data.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 data "template_file" "validation_bucket_policy" {

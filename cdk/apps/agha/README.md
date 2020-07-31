@@ -1,7 +1,12 @@
 
 # Welcome to your CDK Python project!
 
-This is a blank project for Python development with CDK.
+- [Welcome to your CDK Python project!](#welcome-to-your-cdk-python-project)
+  - [Useful commands](#useful-commands)
+  - [Stacks](#stacks)
+    - [agha_stack](#agha_stack)
+
+This is a CDK project for AGHA.
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
@@ -55,4 +60,11 @@ command.
  * `cdk diff`        compare deployed stack with current state
  * `cdk docs`        open CDK documentation
 
-Enjoy!
+## Stacks
+
+### agha_stack
+This stack contains a Lambda to run AGHA submission validations comparing the submitted `manifest.txt` file to the content of the corresponding S3 "folder".
+
+NOTE: this stack deploys a Lambda layer to provide `pandas` support to the Lambda. This requires that the pandas deployment package is build prior to deploying the stack.
+
+In the `lambdas/layers/pandas` direcctory execute the `get_layer_packages.sh` script, which will generate the `lambdas/layers/pandas/python37-pandas.zip` referenced in the stack.

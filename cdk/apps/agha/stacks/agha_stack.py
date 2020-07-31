@@ -21,13 +21,19 @@ class AghaStack(core.Stack):
             ]
         )
 
-        # pandas_layer = lmbda.LayerVersion(
-        #     self,
-        #     "PandasLambdaLayer",
-        #     code=lmbda.Code.from_asset("lambdas/layers/pandas"),
-        #     compatible_runtimes=[lmbda.Runtime.PYTHON_3_7],
-        #     description="A pandas layer for python 3.7"
-        # )
+        pandas_layer = lmbda.LayerVersion(
+            self,
+            "PandasLambdaLayer",
+            code=lmbda.Code.from_asset("lambdas/layers/pandas/python37-pandas.zip"),
+            compatible_runtimes=[lmbda.Runtime.PYTHON_3_7],
+            description="A pandas layer for python 3.7"
+        )
+
+        scipy_layer = lmbda.LayerVersion.from_layer_version_arn(
+            self,
+            id="SciPyLambdaLayer",
+            layer_version_arn='arn:aws:lambda:ap-southeast-2:817496625479:layer:AWSLambda-Python37-SciPy1x:20'
+        )
 
         lmbda.Function(
             self,
@@ -42,5 +48,23 @@ class AghaStack(core.Stack):
                 'SLACK_CHANNEL': props['slack_channel']
             },
             role=lambda_role
-            # layers=[pandas_layer]
+        )
+
+        lmbda.Function(
+            self,
+            'PlaygroundLambda',
+            function_name=f"{props['namespace']}_playground_lambda",
+            handler='playground.lambda_handler',
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset('lambdas/playground'),
+            environment={
+                'STAGING_BUCKET': props['staging_bucket'],
+                'SLACK_HOST': props['slack_host'],
+                'SLACK_CHANNEL': props['slack_channel']
+            },
+            role=lambda_role,
+            layers=[
+                pandas_layer,
+                scipy_layer
+            ]
         )

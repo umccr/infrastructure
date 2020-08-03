@@ -53,6 +53,9 @@ locals {
   api_domain    = "api.${local.app_domain}"
   iam_role_path = "/${local.stack_name_us}/"
 
+  ssm_param_key_client_prefix = "/${local.stack_name_us}/client"
+  ssm_param_key_backend_prefix = "/${local.stack_name_us}/backend"
+
   app_domain = "${local.data_portal_domain_prefix}.${var.base_domain[terraform.workspace]}"
 
   cert_subject_alt_names = {
@@ -381,7 +384,7 @@ resource "aws_sqs_queue" "s3_event_queue" {
   policy = data.template_file.sqs_s3_primary_data_event_policy.rendered
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
-    maxReceiveCount = 3
+    maxReceiveCount = 20
   })
 }
 
@@ -802,11 +805,6 @@ resource "aws_codebuild_project" "codebuild_client" {
     }
 
     environment_variable {
-      name  = "COGNITO_APP_CLIENT_ID_LOCAL"
-      value = aws_cognito_user_pool_client.user_pool_client_localhost.id
-    }
-
-    environment_variable {
       name  = "OAUTH_DOMAIN"
       value = aws_cognito_user_pool_domain.user_pool_client_domain.domain
     }
@@ -819,16 +817,6 @@ resource "aws_codebuild_project" "codebuild_client" {
     environment_variable {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
       value = local.oauth_redirect_url[terraform.workspace]
-    }
-
-    environment_variable {
-      name  = "OAUTH_REDIRECT_IN_LOCAL"
-      value = var.localhost_url
-    }
-
-    environment_variable {
-      name  = "OAUTH_REDIRECT_OUT_LOCAL"
-      value = var.localhost_url
     }
   }
 
@@ -1218,4 +1206,155 @@ resource "aws_wafregional_sql_injection_match_set" "sql_injection_match_set" {
       type = "QUERY_STRING"
     }
   }
+}
+
+################################################################################
+# Save configurations in SSM Parameter Store
+
+# Save these in SSM Parameter Store for frontend client localhost development purpose
+
+resource "aws_ssm_parameter" "cog_user_pool_id" {
+  name = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
+  type = "String"
+  value = aws_cognito_user_pool.user_pool.id
+}
+
+resource "aws_ssm_parameter" "cog_identity_pool_id" {
+  name = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
+  type = "String"
+  value = aws_cognito_identity_pool.identity_pool.id
+}
+
+resource "aws_ssm_parameter" "cog_app_client_id_local" {
+  name = "${local.ssm_param_key_client_prefix}/cog_app_client_id_local"
+  type = "String"
+  value = aws_cognito_user_pool_client.user_pool_client_localhost.id
+}
+
+resource "aws_ssm_parameter" "oauth_domain" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_domain"
+  type = "String"
+  value = aws_cognito_user_pool_domain.user_pool_client_domain.domain
+}
+
+resource "aws_ssm_parameter" "oauth_redirect_in_local" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_local"
+  type = "String"
+  value = sort(aws_cognito_user_pool_client.user_pool_client_localhost.callback_urls)[0]
+}
+
+resource "aws_ssm_parameter" "oauth_redirect_out_local" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_local"
+  type = "String"
+  value = sort(aws_cognito_user_pool_client.user_pool_client_localhost.logout_urls)[0]
+}
+
+resource "aws_ssm_parameter" "oauth_redirect_in_stage" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_stage"
+  type = "String"
+  value = local.oauth_redirect_url[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "oauth_redirect_out_stage" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_stage"
+  type = "String"
+  value = local.oauth_redirect_url[terraform.workspace]
+}
+
+# Save these in SSM Parameter Store for backend api localhost Serverless purpose
+
+resource "aws_ssm_parameter" "lambda_iam_role_arn" {
+  name = "${local.ssm_param_key_backend_prefix}/lambda_iam_role_arn"
+  type = "String"
+  value = local.LAMBDA_IAM_ROLE_ARN
+}
+
+resource "aws_ssm_parameter" "lambda_subnet_ids" {
+  name = "${local.ssm_param_key_backend_prefix}/lambda_subnet_ids"
+  type = "String"
+  value = local.LAMBDA_SUBNET_IDS
+}
+
+resource "aws_ssm_parameter" "lambda_security_group_ids" {
+  name = "${local.ssm_param_key_backend_prefix}/lambda_security_group_ids"
+  type = "String"
+  value = local.LAMBDA_SECURITY_GROUP_IDS
+}
+
+resource "aws_ssm_parameter" "ssm_key_name_full_db_url" {
+  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_full_db_url"
+  type = "String"
+  value = local.SSM_KEY_NAME_FULL_DB_URL
+}
+
+resource "aws_ssm_parameter" "ssm_key_name_django_secret_key" {
+  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_django_secret_key"
+  type = "String"
+  value = local.SSM_KEY_NAME_DJANGO_SECRET_KEY
+}
+
+resource "aws_ssm_parameter" "ssm_key_name_lims_spreadsheet_id" {
+  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_spreadsheet_id"
+  type = "String"
+  value = local.SSM_KEY_NAME_LIMS_SPREADSHEET_ID
+}
+
+resource "aws_ssm_parameter" "ssm_key_name_lims_service_account_json" {
+  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_service_account_json"
+  type = "String"
+  value = local.SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON
+}
+
+resource "aws_ssm_parameter" "api_domain_name" {
+  name = "${local.ssm_param_key_backend_prefix}/api_domain_name"
+  type = "String"
+  value = local.api_domain
+}
+
+resource "aws_ssm_parameter" "s3_event_sqs_arn" {
+  name = "${local.ssm_param_key_backend_prefix}/s3_event_sqs_arn"
+  type = "String"
+  value = aws_sqs_queue.s3_event_queue.arn
+}
+
+resource "aws_ssm_parameter" "iap_ens_event_sqs_arn" {
+  name = "${local.ssm_param_key_backend_prefix}/iap_ens_event_sqs_arn"
+  type = "String"
+  value = aws_sqs_queue.iap_ens_event_queue.arn
+}
+
+resource "aws_ssm_parameter" "certificate_arn" {
+  name = "${local.ssm_param_key_backend_prefix}/certificate_arn"
+  type = "String"
+  value = aws_acm_certificate.client_cert.arn
+}
+
+resource "aws_ssm_parameter" "waf_name" {
+  name = "${local.ssm_param_key_backend_prefix}/waf_name"
+  type = "String"
+  value = aws_wafregional_web_acl.api_web_acl.name
+}
+
+resource "aws_ssm_parameter" "serverless_deployment_bucket" {
+  name = "${local.ssm_param_key_backend_prefix}/serverless_deployment_bucket"
+  type = "String"
+  value = aws_s3_bucket.codepipeline_bucket.bucket
+}
+
+resource "aws_ssm_parameter" "slack_channel" {
+  name = "${local.ssm_param_key_backend_prefix}/slack_channel"
+  type = "String"
+  value = local.SLACK_CHANNEL
+}
+
+resource "aws_ssm_parameter" "ssm_key_name_iap_auth_token" {
+  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_iap_auth_token"
+  type = "String"
+  value = var.ssm_key_name_iap_auth_token
+}
+
+resource "aws_ssm_parameter" "serverless_stage" {
+  name = "${local.ssm_param_key_backend_prefix}/stage"
+  type = "String"
+  value = terraform.workspace
 }

@@ -1,0 +1,22 @@
+name: Base 
+description: Bioinformatics biocontainers
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: samtools
+        action: ExecuteBash
+        inputs:
+          commands:
+            - docker pull quay.io/biocontainers/samtools:1.10--h9402c20_2"
+      - name: picard
+        action: ExecuteBash
+        inputs:
+          commands:
+            - docker pull quay.io/biocontainers/picard:2.23.3--0"
+      - name: facets
+        action: ExecuteBash
+        inputs:
+          commands:
+            - docker pull "quay.io/biocontainers/r-facets:0.5.14--r40he991be0_3"

@@ -1,0 +1,17 @@
+name: Base 
+description: Parallelcluster base software and dependencies
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: base-extras
+        action: ExecuteBash
+        inputs:
+          commands:
+            - yum install -y amazon-linux-extras
+            - yum install -y tmux htop vim
+            - amazon-linux-extras enable R3.4 epel vim docker=latest rust1 lustre2.10
+            #- pip3 install aws-parallelcluster --upgrade --user XXX: generates dkpg-dev install-time issues?:
+            # See: https://github.com/aws/aws-parallelcluster/issues/1903#issuecomment-665426575
+            - mkdir -p /scratch && chown ec2-user:ec2-user /scratch

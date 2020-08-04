@@ -18,3 +18,5 @@ phases:
             #- pip3 install aws-parallelcluster --upgrade --user XXX: generates dkpg-dev install-time issues?:
             # See: https://github.com/aws/aws-parallelcluster/issues/1903#issuecomment-665426575
             - mkdir -p /scratch && chown ec2-user:ec2-user /scratch
+            - mkdir -p /mnt/refdata && chown ec2-user:ec2-user /mnt/refdata
+            - mkdir -p /mnt/data && chown ec2-user:ec2-user /mnt/data

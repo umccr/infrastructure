@@ -96,8 +96,8 @@ The cluster uses EFS to provide a **filesystem that is available to all nodes**.
 This cluster also **uses AWS FSx lustre to access UMCCR "data lakes" or S3 buckets** where all the research data resides. Those S3 buckets are made available through:
 
 ```
-/mnt/refdata (mapping s3://umccr-refdata-dev for all genomics reference data)
-/mnt/primary-data (mapping to s3://umccr-temp-dev for input datasets)
+/mnt/refdata    (mapping s3://umccr-refdata-dev for all genomics reference data)
+/mnt/data       (mapping to s3://umccr-temp-dev for input datasets)
 ```
 
 Those mountpoints are subject to change, this is a work in progress that requires human consensus.

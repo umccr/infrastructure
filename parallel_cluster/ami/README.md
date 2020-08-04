@@ -48,4 +48,4 @@ Then:
 
  1. Add the docker tag to the `ami/biocontainers.yml` file.
  2. Rebuild the AMI as mentioned above.
- 3. Tweak your pcluster config to point to that new AMI (via the `custom_ami` field).
+ 3. Tweak your pcluster config to point to that new AMI (via the `custom_ami` field.

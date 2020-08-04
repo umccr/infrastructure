@@ -16,10 +16,10 @@ phases:
             - docker pull "quay.io/biocontainers/vawk:0.0.2--py_4"
             - docker pull "quay.io/biocontainers/bedtools:2.26.0gx--he513fc3_4"
             - docker pull "quay.io/biocontainers/vcflib:1.0.0_rc3--py37hc088bd4_0"
-            # R
+            - docker pull quay.io/biocontainers/gatk4-spark:4.1.8.1--0
             - docker pull "quay.io/biocontainers/r-facets:0.5.14--r40he991be0_3"
             # BCBio
             - docker pull "quay.io/bcbio/bcbio-base:1.2.3-2d6a5bb"
             - docker pull "quay.io/bcbio/bcbio-vc:1.2.3-2d6a5bb"
             - docker pull "quay.io/bcbio/bcbio-rnaseq:1.2.3-2d6a5bb"
-            # TODO: Pull UMCCRISE from AWS ECR ?
+            # TODO: Pull UMCCRISE from AWS ECR or public repo?

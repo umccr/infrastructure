@@ -1,6 +1,8 @@
 # UMCCR's AWS Parallel Cluster
 
-[AWS Parallel cluster][aws_parallel_cluster] is a Cloud-HPC system designed to bring traditional HPC practices to the cloud. UMCCR's intent is to onboard users to AWS, first on HPC and then steadily transitioning to more cloud-native, efficient alternatives where suitable.
+[AWS Parallel cluster][aws_parallel_cluster] is a Cloud-HPC system designed to bring traditional HPC practices to the cloud.
+
+UMCCR's intent is to onboard users to AWS, first on HPC and then steadily **transitioning to more cloud-native, efficient alternatives where suitable. This includes but is not limited to Illumina Access Platform (IAP).**
 
 ## Cluster Admin
 
@@ -102,7 +104,7 @@ Those mountpoints are subject to change, this is a work in progress that require
 
 ### Limitations
 
-The current cluster and scheduler (Slurm) run with minimal configuration, so there will be some limitations. Known points include:
+The current cluster and scheduler (SLURM) run with minimal configuration, so there will be some limitations. Known points include:
 
 - Slurm's accounting (`sacct`) is not supported, as it requires an accounting data store to be set up.
 - `--mem` option may cause a job to fail with `Requested node configuration is not available`

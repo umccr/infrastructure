@@ -11,3 +11,6 @@ phases:
           - docker pull "quay.io/biocontainers/picard:2.23.3--0"
           - docker pull "quay.io/biocontainers/r-facets:0.5.14--r40he991be0_3"
           - docker pull "quay.io/biocontainers/snp-pileup:0.5.14--hfbaaabd_3"
+          - docker pull "quay.io/biocontainers/vawk:0.0.2--py_4"
+          - docker pull "quay.io/biocontainers/bedtools:2.26.0gx--he513fc3_4"
+          - docker pull "quay.io/biocontainers/vcflib:1.0.0_rc3--py37hc088bd4_0"

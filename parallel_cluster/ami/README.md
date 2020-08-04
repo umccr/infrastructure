@@ -6,9 +6,9 @@ Boostrap and provision your parallelcluster for interactive Cloud HPC Bioinforma
 
 In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux 2 AMI. [The EC2 Image builder eases this process significantly](https://aws.amazon.com/image-builder/):
 
-![ec2builder2](img/build_bioinfo_component.png)
-![ec2builder1](img/bioinformatics_component.png)
-![ec2builder4](img/several_components.png)
+![ec2builder2](../img/build_bioinfo_component.png)
+![ec2builder1](../img/bioinformatics_component.png)
+![ec2builder4](../img/several_components.png)
 
 To use the newly created AMI, just add the following variable to the AWS ParallelCluster config file, under the [cluster ...] section, i.e:
 
@@ -40,7 +40,7 @@ If everything went well, it should conclude with a similar JSON message to the f
 
 # How do I include my software in the cluster's AMI?
 
-For instance, if you needed a (newer?) version of samtools docker container:
+For instance, if you needed a (newer?) version of samtools docker container on any docker repository (such as Quay.io or DockerHub):
 
 ![quay container search](../img/quayio_container.png)
 

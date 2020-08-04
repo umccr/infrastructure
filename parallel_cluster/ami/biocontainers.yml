@@ -5,18 +5,9 @@ schemaVersion: 1.0
 phases:
   - name: build
     steps:
-      - name: samtools
-        action: ExecuteBash
-        inputs:
-          commands:
-            - docker pull quay.io/biocontainers/samtools:1.10--h9402c20_2"
-      - name: picard
-        action: ExecuteBash
-        inputs:
-          commands:
-            - docker pull quay.io/biocontainers/picard:2.23.3--0"
-      - name: facets
-        action: ExecuteBash
-        inputs:
-          commands:
-            - docker pull "quay.io/biocontainers/r-facets:0.5.14--r40he991be0_3"
+      - name: biocontainers
+          - docker pull "quay.io/biocontainers/samtools:1.10--h9402c20_2"
+          - docker pull "quay.io/biocontainers/bcftools:1.10.2--h4f4756c_3"
+          - docker pull "quay.io/biocontainers/picard:2.23.3--0"
+          - docker pull "quay.io/biocontainers/r-facets:0.5.14--r40he991be0_3"
+          - docker pull "quay.io/biocontainers/snp-pileup:0.5.14--hfbaaabd_3"

@@ -51,13 +51,9 @@ $ ./bin/stop-cluster.sh <CLUSTER_NAME>
 
 ```shell
 # Login to the master node
-aws ssm start-session --target <instance ID>
+ssm <instance ID>
 
-# Once on the master node, change into the ec2-user
-# (as the environment is setup for that user)
-sudo su ec2-user
-
-# Run Slurm commands
+# Run Slurm commands as usual
 sinfo ...
 squeue ...
 srun ...
@@ -87,25 +83,22 @@ $ srun --time=10:00 --nodes=1 --cpus-per-task=1 --pty -u "/bin/bash" -i -l
 
 Eventually, when users are ready to make the transition, this will be migrated to AWS Batch or more modern, efficient and integrated compute scheduling systems.
 
-#### Creating a custom AMI
+#### Installing new software on the cluster
 
-In order to accelerate the bootstrapping process for common software (i.e: R, conda, compilers...) it is recommended to (re)create fresh AMIs. To base off from a fresh Amazon Linux 2 AMI. [The EC2 Image builder eases this process significantly](https://aws.amazon.com/image-builder/):
-
-![ec2builder2](img/build_bioinfo_component.png)
-![ec2builder1](img/bioinformatics_component.png)
-![ec2builder4](img/several_components.png)
-
-To use the newly created AMI, just add the following variable to the AWS ParallelCluster config file, under the [cluster ...] section, i.e:
-
-```
-custom_ami = ami-0b01adf2b53dcfe7c
-```
+Refer to [the custom AMI README.md](ami/README.md) to include your own (bioinformatics) software.
 
 ### File System
 
-The cluster uses EFS to provide a scalable FS that is available to all nodes. This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data (if it was already put in place). However, that also means the data put into EFS remains avaiable (and chargeable) as long as the cluster remains. So data will have to be cleaned up manually after it fulfilled it's purpose.
+The cluster uses EFS to provide a **filesystem that is available to all nodes**. This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data (if it was already put in place). However, that also means the data put into EFS remains avaiable (and chargeable) as long as the cluster remains. So data will have to be cleaned up manually after it fulfilled it's purpose.
 
-It also uses FSX lustre.
+This cluster also **uses AWS FSx lustre to access UMCCR "data lakes" or S3 buckets** where all the research data resides. Those S3 buckets are made available through:
+
+```
+/mnt/refdata (mapping s3://umccr-refdata-dev for all genomics reference data)
+/mnt/primary-data (mapping to s3://umccr-temp-dev for input datasets)
+```
+
+Those mountpoints are subject to change, this is a work in progress that requires human consensus.
 
 ### Limitations
 

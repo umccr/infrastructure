@@ -22,3 +22,4 @@ phases:
             - docker pull "quay.io/bcbio/bcbio-base:1.2.3-2d6a5bb"
             - docker pull "quay.io/bcbio/bcbio-vc:1.2.3-2d6a5bb"
             - docker pull "quay.io/bcbio/bcbio-rnaseq:1.2.3-2d6a5bb"
+            # TODO: Pull UMCCRISE from AWS ECR ?

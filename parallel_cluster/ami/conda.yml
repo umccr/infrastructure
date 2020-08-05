@@ -10,12 +10,12 @@ phases:
         inputs:
           commands:
             # https://github.com/dcbark01/AnacondaInstallEC2/blob/master/install.sh
-            - su - ec2-user -c "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && chmod +x *.sh"
-            - su - ec2-user -c "./Anaconda3-2020.07-Linux-x86_64.sh -b -p /home/ec2-user/.anaconda3"
-            - su - ec2-user -c "rm /home/ec2-user/Miniconda3-*.sh"
-            - su - ec2-user -c "echo '. /home/ec2-user/.anaconda3/etc/profile.d/conda.sh' >> /home/ec2-user/.bashrc"
-            - su - ec2-user -c "echo \"channels:\" >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "echo \"  - conda-forge\" >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "echo \"  - bioconda\" >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "echo \"  - defaults\" >> /home/ec2-user/.condarc"
+            - su - ec2-user -c "wget -O miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && chmod +x miniconda.sh"
+            - su - ec2-user -c "./miniconda.sh -b -p /home/ec2-user/.conda"
+            - su - ec2-user -c "rm miniconda.sh"
+            - su - ec2-user -c "echo '. /home/ec2-user/.conda/etc/profile.d/conda.sh' >> /home/ec2-user/.bashrc"
+            - su - ec2-user -c "echo 'channels:' >> /home/ec2-user/.condarc"
+            - su - ec2-user -c "echo '  - conda-forge' >> /home/ec2-user/.condarc"
+            - su - ec2-user -c "echo '  - bioconda' >> /home/ec2-user/.condarc"
+            - su - ec2-user -c "echo '  - defaults' >> /home/ec2-user/.condarc"
             - su - ec2-user -c "source /home/ec2-user/.bashrc && conda update -n base conda -y"

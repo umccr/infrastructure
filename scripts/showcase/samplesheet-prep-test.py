@@ -25,6 +25,10 @@ CONSOLE_LOGGER_STYLE = '%(funcName)-12s: %(levelname)-8s %(message)s'
 LOGGER_DATEFMT = '%y-%m-%d %H:%M:%S'
 THIS_SCRIPT_NAME = "SAMPLESHEET SPLITTER"
 
+# For dev purposes
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+
 
 def initialise_logger():
     """
@@ -210,23 +214,28 @@ def read_sample_sheet(sample_sheet):
 
     # Strip Ns at the end of indexes
     sample_sheet_df = sample_sheet_df.rename(columns={
-        "index": "index_orig",
-        "index2": "index2_orig"
+        "index": "index_orig"
     })
     sample_sheet_df['index'] = sample_sheet_df['index_orig'].apply(lambda x: x.rstrip("N"))
-    sample_sheet_df['index2'] = sample_sheet_df['index2_orig'].apply(lambda x: x.rstrip("N"))
-
-    # Add lengths
+    # Add sample lengths
     sample_sheet_df['index_len_orig'] = sample_sheet_df['index_orig'].apply(lambda x: len(x))
-    sample_sheet_df['index2_len_orig'] = sample_sheet_df['index2_orig'].apply(lambda x: len(x))
     sample_sheet_df['index_len'] = sample_sheet_df['index'].apply(lambda x: len(x))
-    sample_sheet_df['index2_len'] = sample_sheet_df['index2'].apply(lambda x: len(x))
+
+    # Do the same for index 2 if it exists
+    if 'index2' in sample_sheet_df.columns.tolist():
+        sample_sheet_df = sample_sheet_df.rename(columns={
+            "index2": "index2_orig"
+        })
+        sample_sheet_df['index2'] = sample_sheet_df['index2_orig'].apply(lambda x: x.rstrip("N"))
+        # Add lengths
+        sample_sheet_df['index2_len_orig'] = sample_sheet_df['index2_orig'].apply(lambda x: len(x))
+        sample_sheet_df['index2_len'] = sample_sheet_df['index2'].apply(lambda x: len(x))
 
     return sample_sheet_header_rows, sample_sheet_df
 
 
 def convert_sample_sheet_header_to_v2(sample_sheet_header_rows, override_cycles,
-                                      index_len, index2_len, index_len_orig, index2_len_orig):
+                                      index_len, index_len_orig, index2_len=None, index2_len_orig=None):
     """
     Given a list of replacements, replace each line with it's replacement
 
@@ -260,14 +269,17 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows, override_cycles,
             else:
                 # Just append the length of the index
                 i7_mask = "I{}".format(index_len)
+
+            if index2_len is None or index2_len_orig is None:
+                i5_mask = None
             if not index2_len == index2_len_orig:
                 # We need to mask the length of the difference
                 i5_mask = "I{}N{}".format(index2_len, index2_len_orig-index2_len)
             else:
                 i5_mask = "I{}".format(index2_len)
 
-            sample_sheet_header_rows_new.append("OverrideCycles,{};{};{};{}\n".format(
-                r1_mask, i7_mask, i5_mask, r2_mask
+            sample_sheet_header_rows_new.append("OverrideCycles,{}\n".format(
+                ';'.join(map(str, [mask for mask in [r1_mask, i7_mask, i5_mask, r2_mask] if mask is None]))
             ))
         sample_sheet_header_rows_new.append(new_row)
 
@@ -458,9 +470,13 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type, 
             modified_sample_sheet_df = convert_sample_sheet_to_tso500(modified_sample_sheet_df)
         elif modification_strategy == "V2":
             index_len = modified_sample_sheet_df['index_len'].unique().item()
-            index2_len = modified_sample_sheet_df['index2_len'].unique().item()
             index_len_orig = modified_sample_sheet_df['index_len_orig'].unique().item()
-            index2_len_orig = modified_sample_sheet_df['index2_len_orig'].unique().item()
+            if 'index2' in modified_sample_sheet_df.columns.tolist():
+                index2_len = modified_sample_sheet_df['index2_len'].unique().item()
+                index2_len_orig = modified_sample_sheet_df['index2_len_orig'].unique().item()
+            else:
+                index2_len = None
+                index2_len_orig = None
             # Rename adapter key
             modify_sample_header_rows = \
                 convert_sample_sheet_header_to_v2(modify_sample_header_rows,
@@ -477,16 +493,21 @@ def modify_sample_sheet(sample_sheet_header_rows, sample_sheet_df, sample_type, 
             sys.exit(1)
 
     # Drop length columns
-    modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["index_orig", "index2_orig",
-                                                                      "index_len", 'index2_len',
-                                                                      "index_len_orig", "index2_len_orig"])
+    modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["index_orig",
+                                                                      "index_len",
+                                                                      "index_len_orig"])
+
+    if 'index2_len' in modified_sample_sheet_df.columns.tolist():
+        modified_sample_sheet_df = modified_sample_sheet_df.drop(columns=["index2_orig",
+                                                                          "index2_len",
+                                                                          "index2_len_orig"])
 
     return modify_sample_header_rows, modified_sample_sheet_df
 
 
 def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_dir,
                         override_cycles=False,
-                        sample_type=None, index_len=None, index2_len=None):
+                        sample_type_arg=None, index_len_arg=None, index2_len_arg=None):
     """
     Perform a group-by based on type, append this to the prefix and set as the output
 
@@ -502,55 +523,85 @@ def write_sample_sheets(sample_sheet_header_rows, sample_sheet_df, sample_sheet_
     logger.info("Writing out sample sheets")
 
     # Filter sample sheet by sample
-    if sample_type is not None:
-        sample_sheet_df = sample_sheet_df.query("Type=='{}'".format(sample_type))
+    if sample_type_arg is not None:
+        sample_sheet_df = sample_sheet_df.query("Type=='{}'".format(sample_type_arg))
     if sample_sheet_df.shape[0] == 0:
-        logger.error("After filtering for type '{}' we ended up with no rows in the sample sheet".format(sample_type))
+        logger.error("After filtering for type '{}' we ended up with no rows in the sample sheet".format(sample_type_arg))
         sys.exit(1)
 
     # Filter sample sheet by index length
-    if index_len is not None:
-        sample_sheet_df = sample_sheet_df.query("index_len=={}".format(index_len))
+    if index_len_arg is not None:
+        sample_sheet_df = sample_sheet_df.query("index_len=={}".format(index_len_arg))
     if sample_sheet_df.shape[0] == 0:
         logger.error("After filtering for index of len '{}' we ended up with no rows in the sample sheet".format(index_len))
         sys.exit(1)
 
     # Filter sample sheet by index2 length
-    if index2_len is not None:
-        sample_sheet_df = sample_sheet_df.query("index2_len=={}".format(index_len))
+    if index2_len_arg is not None and 'index2' in sample_sheet_df.columns.tolist():
+        sample_sheet_df = sample_sheet_df.query("index2_len=={}".format(index2_len_arg))
     if sample_sheet_df.shape[0] == 0:
         logger.error("After filtering for index2 of len '{}' we ended up with no rows in the sample sheet".format(
-            index2_len))
+            index2_len_arg))
         sys.exit(1)
 
-    for (sample_type, index_len, index2_len), sample_sheet_type_df in sample_sheet_df.groupby(['Type', 'index_len', 'index2_len']):
-        # Modify the sample-sheet
-        modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
-            override_cycles=override_cycles,
-            sample_sheet_header_rows=sample_sheet_header_rows,
-            sample_sheet_df=sample_sheet_type_df,
-            sample_type=sample_type)
+    if "index2_len" not in sample_sheet_df.columns.tolist():
+        for (sample_type, index_len), sample_sheet_type_df in sample_sheet_df.groupby(['Type', 'index_len']):
+            # Modify the sample-sheet
+            modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
+                override_cycles=override_cycles,
+                sample_sheet_header_rows=sample_sheet_header_rows,
+                sample_sheet_df=sample_sheet_type_df,
+                sample_type=sample_type)
 
-        if sample_type is not None and index_len is not None and index2_len is not None:
-            output_file = sample_sheet_dir / "SampleSheet.csv"
-        else:
-            # --all has been set
-            # Set the output file name
-            # Based on "SampleSheet_<type>.<index>.<index2>.csv" syntax
-            output_file = sample_sheet_dir / "SampleSheet_{}.{}.{}.csv".format(sample_type, index_len, index2_len)
+            if sample_type_arg is not None and index_len_arg is not None:
+                output_file = sample_sheet_dir / "SampleSheet.csv"
+            else:
+                # --all has been set
+                # Set the output file name
+                # Based on "SampleSheet_<type>.<index>.<index2>.csv" syntax
+                output_file = sample_sheet_dir / "SampleSheet_{}.{}.csv".format(sample_type, index_len)
 
-        # Write out the sample sheet
-        logger.info("Writing out type {} to {} - containing {} samples".format(
-            sample_type, output_file, sample_sheet_type_df.shape[0]))
+            # Write out the sample sheet
+            logger.info("Writing out type {} to {} - containing {} samples".format(
+                sample_type, output_file, sample_sheet_type_df.shape[0]))
 
-        # Write out sample sheet
-        with open(output_file, 'w') as sample_sheet_output_h:
-            # Write out the header rows
-            sample_sheet_output_h.writelines(modified_sample_header_rows)
-            # Write out [Data]
-            sample_sheet_output_h.write("{}\n".format(HEADER_LINE_PRECURSOR))
             # Write out sample sheet
-            modified_sample_sheet_df.to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
+            with open(output_file, 'w') as sample_sheet_output_h:
+                # Write out the header rows
+                sample_sheet_output_h.writelines(modified_sample_header_rows)
+                # Write out [Data]
+                sample_sheet_output_h.write("{}\n".format(HEADER_LINE_PRECURSOR))
+                # Write out sample sheet
+                modified_sample_sheet_df.to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
+    else:
+        for (sample_type, index_len, index2_len), sample_sheet_type_df in sample_sheet_df.groupby(['Type', 'index_len', 'index2_len']):
+            # Modify the sample-sheet
+            modified_sample_header_rows, modified_sample_sheet_df = modify_sample_sheet(
+                override_cycles=override_cycles,
+                sample_sheet_header_rows=sample_sheet_header_rows,
+                sample_sheet_df=sample_sheet_type_df,
+                sample_type=sample_type)
+
+            if sample_type_arg is not None and index_len_arg is not None and index2_len_arg is not None:
+                output_file = sample_sheet_dir / "SampleSheet.csv"
+            else:
+                # --all has been set
+                # Set the output file name
+                # Based on "SampleSheet_<type>.<index>.<index2>.csv" syntax
+                output_file = sample_sheet_dir / "SampleSheet_{}.{}.{}.csv".format(sample_type, index_len, index2_len)
+
+            # Write out the sample sheet
+            logger.info("Writing out type {} to {} - containing {} samples".format(
+                sample_type, output_file, sample_sheet_type_df.shape[0]))
+
+            # Write out sample sheet
+            with open(output_file, 'w') as sample_sheet_output_h:
+                # Write out the header rows
+                sample_sheet_output_h.writelines(modified_sample_header_rows)
+                # Write out [Data]
+                sample_sheet_output_h.write("{}\n".format(HEADER_LINE_PRECURSOR))
+                # Write out sample sheet
+                modified_sample_sheet_df.to_csv(sample_sheet_output_h, sep=",", header=True, index=False)
 
 
 def main():
@@ -578,10 +629,10 @@ def main():
     write_sample_sheets(sample_sheet_header_rows=sample_sheet_header_rows,
                         sample_sheet_df=sample_sheet_df,
                         sample_sheet_dir=Path(getattr(args, "output_path")),
-                        sample_type=args.sample_type,
+                        sample_type_arg=args.sample_type,
                         override_cycles=not args.no_override_cycles,
-                        index_len=args.index_length,
-                        index2_len=args.index2_length)
+                        index_len_arg=args.index_length,
+                        index2_len_arg=args.index2_length)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,17 @@ schemaVersion: 1.0
 phases:
   - name: build
     steps:
+      # Make sure docker is up and running, cannot trust base component to have this on in place already:
+      # https://www.rodolfo.io/2019/05/how-to-install-docker-on-amazon-linux-2/
+      - name: Docker
+        action: ExecuteBash
+        inputs:
+          commands:
+            - amazon-linux-extras install -y docker
+            - amazon-linux-extras enable -y docker # an AWS systemctl wrapper (see cmd below)?
+            - systemctl enable docker
+            - service docker start
+            - usermod -a -G docker ec2-user
       - name: biocontainers
         action: ExecuteBash
         inputs:

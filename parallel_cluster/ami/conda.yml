@@ -5,17 +5,27 @@ schemaVersion: 1.0
 phases:
   - name: build
     steps:
-      - name: anaconda
+      - name: miniconda
         action: ExecuteBash
         inputs:
           commands:
-            # https://github.com/dcbark01/AnacondaInstallEC2/blob/master/install.sh
-            - su - ec2-user -c "wget -O miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && chmod +x miniconda.sh"
-            - su - ec2-user -c "./miniconda.sh -b -p /home/ec2-user/.conda"
-            - su - ec2-user -c "rm miniconda.sh"
-            - su - ec2-user -c "echo '. /home/ec2-user/.conda/etc/profile.d/conda.sh' >> /home/ec2-user/.bashrc"
-            - su - ec2-user -c "echo 'channels:' >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "echo '  - conda-forge' >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "echo '  - bioconda' >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "echo '  - defaults' >> /home/ec2-user/.condarc"
-            - su - ec2-user -c "source /home/ec2-user/.bashrc && conda update -n base conda -y"
+            # Download conda and install for ec2-user
+            - |
+              su - ec2-user \
+                -c "wget -O miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+                    bash miniconda.sh -b -p /home/ec2-user/.conda && \
+                    rm miniconda.sh"
+            # Initialise conda for ec2-user
+            - |
+              su - ec2-user \
+                -c "/home/ec2-user/.conda/bin/conda init"
+            # Update base conda version
+            - |
+              su - ec2-user \
+               -c "conda update -n base conda -y"
+            # Set default channels for ec2-user
+            # Defaults remains at the top of the channel list
+            - |
+              su - ec2-user \
+                -c "conda config --append channels bioconda && \
+                    conda config --append channels conda-forge"

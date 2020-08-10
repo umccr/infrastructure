@@ -31,9 +31,14 @@ $ ssm i-XXXXXXXXXXXXX
 ```
 
 ### Running the cluster
+> CLUSTER_NAME can only be alpha-numeric and must start with a letter
 
 ```shell
-$ ./bin/start-cluster.sh <CLUSTER_NAME>
+$ CLUSTER_TEMPLATE="tothill"  # or umccr_dev 
+$ ./bin/start_cluster.sh \
+  --cluster-name <CLUSTER_NAME> 
+  --cluster-template "${CLUSTER_TEMPLATE}"
+  --extra-parameters "{\"KeyName\": \"alexis-wfh-dev\"}"
 Beginning cluster creation for cluster: my-test-cluster
 Creating stack named: parallelcluster-my-test-cluster
 Status: parallelcluster-my-test-cluster - CREATE_COMPLETE

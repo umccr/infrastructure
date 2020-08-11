@@ -272,14 +272,15 @@ def convert_sample_sheet_header_to_v2(sample_sheet_header_rows, override_cycles,
 
             if index2_len is None or index2_len_orig is None:
                 i5_mask = None
-            if not index2_len == index2_len_orig:
+            elif not index2_len == index2_len_orig:
                 # We need to mask the length of the difference
                 i5_mask = "I{}N{}".format(index2_len, index2_len_orig-index2_len)
             else:
                 i5_mask = "I{}".format(index2_len)
 
+            # If one of these isn't empty
             sample_sheet_header_rows_new.append("OverrideCycles,{}\n".format(
-                ';'.join(map(str, [mask for mask in [r1_mask, i7_mask, i5_mask, r2_mask] if mask is None]))
+                ';'.join(map(str, [mask for mask in [r1_mask, i7_mask, i5_mask, r2_mask] if mask is not None]))
             ))
         sample_sheet_header_rows_new.append(new_row)
 

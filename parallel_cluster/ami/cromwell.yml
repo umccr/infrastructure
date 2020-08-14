@@ -1,0 +1,56 @@
+name: cromwell
+description: Install cromwell into the master node
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: cromwell
+        action: ExecuteBash
+        inputs:
+          commands:
+            # Update yum
+            - |
+              yum update -y
+            # Install java and wget if needed
+            - |
+              which java || amazon-linux-extras install -y java-openjdk11
+              which wget || yum install wget -y
+            # Create directory
+            # Download cromwell
+            # Link Jar to /opt/cromwell/cromwell.jar
+            # Running will be something like this
+            # java \
+            #   -Duser.timezone=${TIMEZONE} \
+            #   -Duser.dir=${WORKDIR} \
+            #   -Dconfig.file=${CONFIG_FILE} \
+            #   -Dwebservice.port=${WEBSERVICE_PORT} \
+            #   -DLOG_LEVEL=DEBUG \
+            #   -DLOG_MODE=pretty \
+            #   -Xms2G \
+            #   -Xmx10G \
+            #   -XX:ParallelGCThreads=10 \
+            #   -jar ${CROMWELL_JAR} server 1>/dev/null &
+            # SERVER_PROC_ID=$!
+            - |
+              cromwell_version="52"
+              mkdir -p /opt/cromwell/jar
+              wget "https://github.com/broadinstitute/cromwell/releases/download/${cromwell_version}/cromwell-${cromwell_version}.jar" \
+                --output-document "/opt/cromwell/jar/cromwell-${cromwell_version}.jar"
+              ln -s "/opt/cromwell/jar/cromwell-${cromwell_version}.jar" "/opt/cromwell/jar/cromwell.jar"
+            # Create cromwell work dir
+            - |
+              cromwell_workdir="/scratch/cromwell/"
+              mkdir -p "${cromwell_workdir}"
+            # Create cromwell configs dir
+            - |
+              cromwell_configs_dir="/opt/cromwell/configs"
+              mkdir -p "${cromwell_configs_dir}"
+            # Create cromwell env dir
+            - |
+              cromwell_env_dir="/opt/cromwell/env"
+              mkdir -p "${cromwell_env_dir}"
+            # Create cromwell scripts dir
+            - |
+              cromwell_scripts_dir="/opt/cromwell/scripts/"
+              mkdir -p "${cromwell_scripts_dir}"

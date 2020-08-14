@@ -105,17 +105,21 @@ This cluster also **uses AWS FSx lustre to access UMCCR "data lakes" or S3 bucke
 /mnt/data       (mapping to s3://umccr-temp-dev for input datasets)
 ```
 
-Those mountpoints are subject to change, this is a work in progress that requires human consensus.
+Those mount points are subject to change, this is a work in progress that requires human consensus.
 
 ### Limitations
 
 The current cluster and scheduler (SLURM) run with minimal configuration, so there will be some limitations. Known points include:
 
 - Slurm's accounting (`sacct`) is not supported, as it requires an accounting data store to be set up.
+    * Explained in the [blog post here][accounting_blog]
 - `--mem` option may cause a job to fail with `Requested node configuration is not available`
+    * Can be fixed with [workaround suggested here][slurm_mem_solution]
 
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html
 [blog_1]: https://aws.amazon.com/blogs/machine-learning/building-an-interactive-and-scalable-ml-research-environment-using-aws-parallelcluster/
 [aws_parallel_cluster]: https://aws.amazon.com/hpc/parallelcluster/
 [miniconda]: https://docs.conda.io/en/latest/miniconda.html
 [conda_conf]: https://github.com/umccr/infrastructure/blob/master/parallel_cluster/conf/pcluster_client.env.yml
+[slurm_mem_solution]: https://github.com/aws/aws-parallelcluster/issues/1517#issuecomment-561775124
+[accounting_blog]: https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/

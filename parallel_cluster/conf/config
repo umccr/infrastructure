@@ -27,20 +27,25 @@ custom_ami            = ami-002b1d0f440e6caea
 base_os               = alinux2
 vpc_settings          = umccr_dev_network
 # Definitely experimental
-fsx_settings          = lustrefs
+fsx_settings          = umccr_dev_lustrefs
 s3_read_resource      = *
 cluster_type          = spot
+key_name              = alexis-wfh-dev
 # Need something substantial to hold the slurm database
 master_instance_type  = t2.medium
 # 16 CPUs and 64 Gb
 compute_instance_type = m5.4xlarge
-ec2_iam_role          = parallelcluster-ec2-instance-role
+# Using additional_iam_policies over ec2_iam_role
+# TODO check if these policies are necessary
+additional_iam_policies = arn:aws:iam::aws:policy/AmazonFSxFullAccess, arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore, arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
 scheduler             = slurm
 initial_queue_size    = 1
 # Basic ami with installations of
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
-custom_ami            = ami-0b98c49201c9a1e75
+# TODO check base,conda,cromwell and build custom-ami from it
+# custom_ami            = ami-041fb79614da5fa41
+post_install          = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/bootstrap-slurm-cromwell.sh
 
 [vpc network]
 vpc_id = vpc-0020eaf6bc27c98a4
@@ -65,9 +70,10 @@ shared_dir       = efs
 encrypted        = false
 performance_mode = generalPurpose
 
-[fsx lustrefs]
+[fsx umccr_dev_lustrefs]
 shared_dir                = /fsx
 storage_capacity          = 3600
 imported_file_chunk_size  = 1024
 import_path               = s3://umccr-temp-dev/Alexis_parallel_cluster_test/input_folder
-export_path               = s3://umccr-temp-dev/Alexis_parallel_cluster_test/output_folder
+# TODO read up on import vs export path
+#export_path               = s3://umccr-temp-dev/Alexis_parallel_cluster_test/output_folder

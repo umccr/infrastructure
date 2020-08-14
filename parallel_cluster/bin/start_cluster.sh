@@ -13,7 +13,6 @@ display_help() {
 
 # Get args
 while [ $# -gt 0 ]; do
-  echo $1
   case "$1" in
     --cluster-name)
       cluster_name_arg="$2"
@@ -61,8 +60,9 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
       "${cluster_name_arg}" \
       --config "${config_file_arg}" \
       --cluster-template "${cluster_template_arg}" \
-      --norollback \
-      --extra-parameters "${extra_parameters_arg}"
+      --extra-parameters "tags={\"Creator\": \"${USER}\"}"
+    # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
+    # Need to investigate further before determining this is the cause of the issue
 
     # Check if creation was successful
 	  if [[ "$?" == "0" ]]; then
@@ -74,9 +74,11 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
     fi
 
     # Output the master IP to log
+    # FIXME - this doesn't print out the instance ID
     echo_stderr "$(aws ec2 describe-instances \
-                   --query "Reservations[*].Instances[*].[InstanceId]" \
-                   --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" --output text)"
+                     --query "Reservations[*].Instances[*].[InstanceId]" \
+                     --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" \
+                     --output text)"
 
 	  # FIXME: control error codes better, avoiding counterintuitive ones: i.e authed within a different account:
 	  # ERROR: The configuration parameter 'vpc_id' generated the following errors:

@@ -9,14 +9,37 @@ phases:
         action: ExecuteBash
         inputs:
           commands:
+            # Reset yum
+            - |
+              # Clean rpm cache first
+              if [[ -d "/var/lib/rpm/" ]]; then
+                rm -f /var/lib/rpm/__db*
+                logger -s "Cleaning rpm cache"
+              fi
+              # Then clean yum
+              yum clean all
+              logger -s "Cleaning yum"
+              rm -rf /var/cache/yum
+            # Update yum, install dev tools
+            - |
+              yum update -y -q
+              # Install devtools
+              yum groups mark install "Development Tools"
+              yum update -y -q
+              yum groupinstall -y 'Development Tools'
             # Install basics
             - |
-              yum update -y
-              yum install -y \
+              yum update -y -q
+              yum install -y -q \
                 amazon-linux-extras \
-                tmux
-                htop
+                tmux \
+                htop \
                 wget
+            # Install latest aws cli
+            - |
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              ./aws/install
             # Install packages inside amazon-linux-extras
             - |
               amazon-linux-extras install -y \
@@ -26,28 +49,30 @@ phases:
                 lustre2.10 \
                 livepatch \
                 R3.4 \
-                python3.8 \
                 ruby2.4 \
                 golang1.11 \
                 rust1 \
                 java-openjdk11
-            # Create alias for python3
+            # Install python3 and pip3
+            # Install aws-parallelcluster
             - |
-              ln -s /usr/bin/python3.8 /usr/bin/python3
+              yum install -y -q \
+                epel-release
+              yum install -y -q \
+                python3 python3-pip
+              python3 -m pip install --upgrade pip
+              python3 -m pip install aws-parallelcluster
             # Install awstoe
             # Handy, for (in-cluster) AMI building: https://docs.aws.amazon.com/imagebuilder/latest/userguide/image-builder-component-manager-local.html
             - |
               wget https://awstoe-ap-southeast-2.s3.ap-southeast-2.amazonaws.com/latest/linux/amd64/awstoe \
                 -O /usr/local/bin/awstoe
               chmod +x /usr/local/bin/awstoe
-            # Install parallel-cluster commands via pip into ec2-user account
+            ## Install latest amazon-ssm-agent
             - |
-              su - ec2-user
-                -c "curl -O https://bootstrap.pypa.io/get-pip.py && \
-                    python3 get-pip.py --user && \
-                    pip3 install --upgrade pip && \
-                    pip3 install aws-parallelcluster --user"
-            # Set mountpoints and assign ownership to ec2-user
+              wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+              rpm -iv --replacepkgs --force amazon-ssm-agent.rpm
+            ## Create mount points
             - |
               mkdir -p /scratch && chown ec2-user:ec2-user /scratch
               mkdir -p /mnt/refdata && chown ec2-user:ec2-user /mnt/refdata

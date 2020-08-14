@@ -171,6 +171,10 @@ resource "aws_s3_bucket" "raw-sequencing-data" {
   count  = "${terraform.workspace == "prod" ? 1 : 0}"
   bucket = "${var.workspace_seq_data_bucket_name[terraform.workspace]}"
 
+  versioning {
+    enabled = "${terraform.workspace == "prod" ? true : false}"
+  }
+
   server_side_encryption_configuration {
     rule {
       apply_server_side_encryption_by_default {
@@ -430,7 +434,7 @@ module "notify_slack_lambda" {
   description   = "Lambda to send messages to Slack"
   handler       = "notify_slack.lambda_handler"
   runtime       = "python3.6"
-  timeout       = 3
+  timeout       = 10
 
   source_path = "${path.module}/lambdas/notify_slack.py"
 

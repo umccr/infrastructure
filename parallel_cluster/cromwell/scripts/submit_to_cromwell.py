@@ -77,6 +77,7 @@ def check_args(args):
 
     return args
 
+
 def submit_to_cromwell(args):
     # Get authentication (as no authentication)
     auth = CromwellAuth.from_no_authentication(url="http://localhost:{}".format(args.webservice_port))

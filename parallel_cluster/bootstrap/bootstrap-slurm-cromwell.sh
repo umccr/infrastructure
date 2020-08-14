@@ -1,11 +1,9 @@
 #!/bin/bash
 
-:'
-# TODO put this on S3
-# TODO put in as functions
-'
-
 . "/etc/parallelcluster/cfnconfig"
+
+# Exit on failed command
+set -e
 
 # Globals
 # Globals - Miscell
@@ -29,14 +27,14 @@ CROMWELL_SLURM_CONFIG_FILE_PATH="/opt/cromwell/configs/slurm.conf"
 CROMWELL_OPTIONS_CONFIG_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/configs/options.json"
 CROMWELL_OPTIONS_CONFIG_FILE_PATH="/opt/cromwell/configs/options.json"
 CROMWELL_TOOLS_CONDA_ENV_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/env/cromwell_conda_env.yml"
-CROMWELL_TOOLS_CONDA_FILE_PATH="/opt/cromwell/env/cromwell_tools.yml"
+CROMWELL_TOOLS_CONDA_ENV_FILE_PATH="/opt/cromwell/env/cromwell_tools.yml"
 CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
 CROMWELL_SCRIPTS_DIR="/opt/cromwell/scripts"
 CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/scripts/submit_to_cromwell.py"
 CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_PATH="${CROMWELL_SCRIPTS_DIR}/submit_workflow_to_cromwell.py"
 CROMWELL_SBATCH_SUBMIT_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/scripts/submit_to_sbatch.sh"
 CROMWELL_SBATCH_SUBMIT_FILE_PATH="${CROMWELL_SCRIPTS_DIR}/submit_to_sbatch.sh"
-CROMWELL_WEBSERVICE_PORT=9000
+CROMWELL_WEBSERVICE_PORT=8000
 CROMWELL_WORKDIR="/scratch/cromwell"
 CROMWELL_TMPDIR="$(mktemp -d --suffix _cromwell)"
 CROMWELL_LOG_LEVEL="DEBUG"
@@ -45,6 +43,10 @@ CROMWELL_MEM_MAX_HEAP_SIZE="4G"
 CROMWELL_START_UP_HEAP_SIZE="1G"
 CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
 CROMWELL_SERVER_PROC_ID=0
+
+echo_stderr() {
+  echo "${@}" 1>&2
+}
 
 enable_mem_on_slurm() {
   : '
@@ -67,16 +69,16 @@ get_cromwell_files() {
   : '
   Pull necessary cromwell files from s3
   '
-  wget "${CROMWELL_SLURM_CONFIG_FILE_S3}" \
-    --output-document "${CROMWELL_SLURM_CONFIG_FILE_PATH}"
-  wget "${CROMWELL_OPTIONS_CONFIG_FILE_S3}" \
-    --output-document "${CROMWELL_OPTIONS_CONFIG_FILE_PATH}"
-  wget "${CROMWELL_TOOLS_CONDA_ENV_FILE_S3}" \
-    --output-document "${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}"
-  wget "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_S3}" \
-    --output-document "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_PATH}"
-  wget "${CROMWELL_SBATCH_SUBMIT_FILE_S3}" \
-    --output-document "${CROMWELL_SBATCH_SUBMIT_FILE_PATH}"
+  aws s3 cp "${CROMWELL_SLURM_CONFIG_FILE_S3}" \
+    "${CROMWELL_SLURM_CONFIG_FILE_PATH}"
+  aws s3 cp "${CROMWELL_OPTIONS_CONFIG_FILE_S3}" \
+    "${CROMWELL_OPTIONS_CONFIG_FILE_PATH}"
+  aws s3 cp "${CROMWELL_TOOLS_CONDA_ENV_FILE_S3}" \
+    "${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}"
+  aws s3 cp "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_S3}" \
+    "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_PATH}"
+  aws s3 cp "${CROMWELL_SBATCH_SUBMIT_FILE_S3}" \
+    "${CROMWELL_SBATCH_SUBMIT_FILE_PATH}"
 }
 
 start_cromwell() {
@@ -105,30 +107,41 @@ create_cromwell_env() {
   '
   # Create env for submitting workflows to cromwell
   su - ec2-user \
-    -c "conda env create --file \"${CROMWELL_TOOLS_CONDA_FILE_PATH}\" --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\""
+    -c "cd \$(mktemp -d); \
+        cp \"${CROMWELL_TOOLS_CONDA_FILE_PATH}\" ./; \
+        conda env create \
+          --file \$(basename \"${CROMWELL_TOOLS_CONDA_FILE_PATH}\") \
+          --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\""
+
   # Add script path to env_vars.sh
   su - ec2-user \
     -c "conda activate \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\" && \
-        mkdir -p \"$(eval echo '${CONDA_PREFIX}/etc/conda/activate.d/')\" && \
-        echo \"export PATH=$(eval echo \"${CROMWELL_SCRIPTS_DIR}\":'$PATH')\" > \
-        $(eval echo '${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh')"
+        mkdir -p \"\${CONDA_PREFIX}/etc/conda/activate.d/\" && \
+        echo \"export PATH=\\\"${CROMWELL_SCRIPTS_DIR}:\\\$PATH\"\\\" >> \
+        \"\${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh\""
 }
 
-# Processes to complete on all nodes at startup
+# Processes to complete on ALL (master and compute) nodes at startup
 # Security updates
 yum update -y
 # Set timezone to Australia/Melbourne
 timedatectl set-timezone "${TIMEZONE}"
+# Start the docker service
+systemctl start docker
 
 case "${cfn_node_type}" in
     MasterServer)
       # Set mem attribute on slurm conf file
+      echo_stderr "Enabling --mem parameter on slurm"
       enable_mem_on_slurm
       # Get necessary files from S3 to start cromwell
+      echo_stderr "Getting necessary files from cromwell"
       get_cromwell_files
       # Start cromwell service
+      echo_stderr "Starting cromwell"
       start_cromwell
       # Create cromwell env to enable submitting to service from user
+      echo_stderr "Creating cromwell conda env for ec2-user"
       create_cromwell_env
     ;;
     ComputeFleet)

@@ -11,11 +11,11 @@ phases:
           commands:
             # Update yum
             - |
-              yum update -y
+              yum update -y -q
             # Install java and wget if needed
             - |
-              which java || amazon-linux-extras install -y java-openjdk11
-              which wget || yum install wget -y
+              which java 2>/dev/null || amazon-linux-extras install -y -q java-openjdk11
+              which wget 2>/dev/null || yum install wget -y
             # Create directory
             # Download cromwell
             # Link Jar to /opt/cromwell/cromwell.jar

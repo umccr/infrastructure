@@ -29,12 +29,6 @@ cleanup() {
     # But slurm only gives us 90 seconds and this can take a few minutes to complete
     err=$?
     echo_stderr "Cleaning things up after err ${err}"
-    # Check if the image exists as a link - unlink if so
-    if [[ -L "${IMAGE_NAME}" ]]; then
-        # Unlinking image
-        echo_stderr "Unlinking image"
-        unlink "${IMAGE_NAME}"
-    fi
     # Clean up the local diskspace
     fuser -TERM -k "${BUILD_LOG_STDOUT}.fifo"; fuser -TERM -k "${BUILD_LOG_STDERR}.fifo";
     fuser -TERM -k "${EXEC_LOG_STDOUT}.fifo"; fuser -TERM -k "${EXEC_LOG_STDERR}.fifo"
@@ -43,6 +37,8 @@ cleanup() {
     rm -f "${EXEC_LOG_STDOUT}.fifo" "${EXEC_LOG_STDOUT}.fifo";
     rm -f "${SBATCH_STDOUT}.fifo" "${SBATCH_STDERR}.fifo";
     mv "${SBATCH_STDOUT}" "${SBATCH_STDERR}" "execution/";
+    mv "${BUILD_LOG_STDOUT}" "${BUILD_LOG_STDERR}" "execution/";
+    mv "${EXEC_LOG_STDOUT}" "${EXEC_LOG_STDERR}" "execution/";
     rm -rf "${SHARED_DIR}"
     exit "${err}"
 }
@@ -53,7 +49,6 @@ cleanup() {
 
 : '
 The following env vars should exist
-IMAGE_NAME - The docker container ID
 IMAGE_PATH - The path to the docker image (on dockerhub.com)
 CWD - The working directory of the task
 DOCKER_CWD - The working directory inside docker
@@ -61,10 +56,6 @@ JOB_SHELL - The job shell - likely bash
 SCRIPT_PATH - Path to the script
 '
 
-if [[ ! -v IMAGE_NAME ]]; then
-  echo_stderr "Error could not find variable IMAGE_NAME, exiting"
-  exit 1
-fi
 if [[ ! -v IMAGE_PATH ]]; then
   echo_stderr "Error could not find variable IMAGE_PATH, exiting"
   exit 1
@@ -82,6 +73,10 @@ if [[ ! -v JOB_SHELL ]]; then
   exit 1
 fi
 if [[ ! -v SCRIPT_PATH ]]; then
+  echo_stderr "Error could not find variable SCRIPT_PATH, exiting"
+  exit 1
+fi
+if [[ ! -v DOCKER_SCRIPT_PATH ]]; then
   echo_stderr "Error could not find variable SCRIPT_PATH, exiting"
   exit 1
 fi
@@ -148,7 +143,6 @@ mkfifo "${SBATCH_STDOUT}.fifo" "${SBATCH_STDERR}.fifo"
 trap cleanup EXIT
 ### END OF PROLOGUE ###
 
-
 # Use tee - to capture dataset
 tee "${SBATCH_STDOUT}" < "${SBATCH_STDOUT}.fifo" &
 tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
@@ -168,7 +162,7 @@ tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
           --export=ALL \
           --ntasks="1" \
           --job-name="docker_pull" \
-              docker pull "docker://${IMAGE_PATH}"
+              docker pull "${IMAGE_PATH}"
     ) > "${BUILD_LOG_STDOUT}.fifo" 2> "${BUILD_LOG_STDERR}.fifo"
 
     ### RUN SCRIPT ###
@@ -185,14 +179,15 @@ tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
           --export=ALL \
           --ntasks="1" \
           --job-name="docker_exec" \
-          --mem-per-cpu="${ALLOC_MEMORY}" \
             docker run \
               --rm \
               --volume "${EXEC_TMP_DIR}:${DOCKER_TMPDIR}" \
               --volume "${CWD}:${DOCKER_CWD}" \
               --volume "/etc/localtime:/etc/localtime" \
+              --cpus "${SLURM_CPUS_PER_TASK}" \
+              --memory "$((${SLURM_CPUS_PER_TASK}*${SLURM_MEM_PER_CPU}))M" \
               --entrypoint "${JOB_SHELL}" \
-                "${IMAGE_NAME}" \
+                "${IMAGE_PATH}" \
                   "${DOCKER_SCRIPT_PATH}"
     ) > "${EXEC_LOG_STDOUT}.fifo" 2> "${EXEC_LOG_STDERR}.fifo"
 
@@ -202,16 +197,15 @@ tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
 
 ### EPILOGUE ###
 
-# Sync filesystem before deleting fifos
-sync --file-system "${SHARED_DIR}"
-
 # Delete fifos
 rm -f "${BUILD_LOG_STDOUT}.fifo" "${BUILD_LOG_STDOUT}.fifo";
 rm -f "${EXEC_LOG_STDOUT}.fifo" "${EXEC_LOG_STDOUT}.fifo";
 rm -f "${SBATCH_STDOUT}.fifo" "${SBATCH_STDERR}.fifo";
 
 # Move sbatch outputs to the execution folder
-mv "${SBATCH_STDOUT}" "${SBATCH_STDERR}" "execution/"
+mv "${SBATCH_STDOUT}" "${SBATCH_STDERR}" "execution/";
+mv "${BUILD_LOG_STDOUT}" "${BUILD_LOG_STDERR}" "execution/";
+mv "${EXEC_LOG_STDOUT}" "${EXEC_LOG_STDERR}" "execution/";
 
 # Delete all other directories
 rm -rf "${SHARED_DIR}"

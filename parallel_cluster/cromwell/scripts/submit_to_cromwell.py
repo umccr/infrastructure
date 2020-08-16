@@ -14,8 +14,8 @@ from cromwell_tools.cromwell_auth import CromwellAuth
 
 
 # Set defaults
-DEFAULT_WEBSERVICE_PORT=8000
-DEFAULT_WORKFLOW_OPTIONS=Path("/opt/cromwell/configs/options.json")
+DEFAULT_WEBSERVICE_PORT = 8000
+DEFAULT_WORKFLOW_OPTIONS = Path("/opt/cromwell/configs/options.json")
 
 
 def get_args():

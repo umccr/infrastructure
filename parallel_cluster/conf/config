@@ -44,7 +44,6 @@ initial_queue_size    = 1
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # TODO check base,conda,cromwell and build custom-ami from it
-# Create app with CDK?
 # Currently built manually - create image builder for this.
 custom_ami            = ami-02f2ae59ffab4fbfb
 post_install          = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/bootstrap-slurm-cromwell.sh
@@ -63,6 +62,8 @@ vpc_id = vpc-00eafc63c0dfca266
 master_subnet_id = subnet-0fab038b0341872f1
 # Elastic IP address is associated to the master instance.
 use_public_ips = true
+# Security group where the slurm accounting database sits
+additional_sg         = sg-07819a174c8c1c4cd
 
 [aliases]
 ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}
@@ -76,6 +77,7 @@ performance_mode = generalPurpose
 shared_dir                = /fsx
 storage_capacity          = 1200
 imported_file_chunk_size  = 1024
+# FIXME how to mount this folder at /fsx
 import_path               = s3://umccr-temp-dev/Alexis_parallel_cluster_test/input_folder
 # TODO read up on import vs export path
 # FIXME Without export path, file placed in input_folder was not placed back in s3

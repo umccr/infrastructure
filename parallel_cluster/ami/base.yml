@@ -62,6 +62,14 @@ phases:
                 python3 python3-pip
               python3 -m pip install --upgrade pip
               python3 -m pip install aws-parallelcluster
+            ## Install mysql for slurm accounting
+            - |
+              yum install -y -q \
+                mysql
+            ## For pulling in username/passwords from s3 files
+            - |
+              yum install -y -q \
+                yq
             ## Install latest amazon-ssm-agent
             - |
               systemctl stop amazon-ssm-agent

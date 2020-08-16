@@ -60,7 +60,7 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
       "${cluster_name_arg}" \
       --config "${config_file_arg}" \
       --cluster-template "${cluster_template_arg}" \
-      --extra-parameters "tags={\"Creator\": \"${USER}\"}"
+      --tags "{\"Creator\": \"${USER}\"}"
     # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
     # Need to investigate further before determining this is the cause of the issue
 
@@ -75,6 +75,7 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
 
     # Output the master IP to log
     # FIXME - this doesn't print out the instance ID
+    # Could be because the instance hasn't started running at this point.
     echo_stderr "$(aws ec2 describe-instances \
                      --query "Reservations[*].Instances[*].[InstanceId]" \
                      --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" \

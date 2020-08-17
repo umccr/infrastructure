@@ -1,6 +1,21 @@
 #!/bin/bash
 
+: '
+Run through initial set up of node at launch time.
+'
+
+# Base level functions
+echo_stderr() {
+  echo "${@}" 1>&2
+}
+
+# Source config, tells us if we're on a compute or master node
 . "/etc/parallelcluster/cfnconfig"
+
+if [[ ! -v cfn_node_type ]]; then
+  echo_stderr "cfn_node_type is not defined. Cannot determine if we're on a master or compute node. Exiting"
+  exit 1
+fi
 
 # Exit on failed command
 set -e
@@ -62,9 +77,7 @@ CROMWELL_START_UP_HEAP_SIZE="1G"
 CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
 CROMWELL_SERVER_PROC_ID=0
 
-echo_stderr() {
-  echo "${@}" 1>&2
-}
+# Functions
 
 enable_mem_on_slurm() {
   : '
@@ -167,16 +180,16 @@ start_cromwell() {
   su - ec2-user \
     -c "
     nohup java \
-    "-Duser.timezone=${TIMEZONE}" \
-    "-Duser.dir=${CROMWELL_WORKDIR}" \
-    "-Dconfig.file=${CROMWELL_SLURM_CONFIG_FILE_PATH}" \
-    "-Dwebservice.port=${CROMWELL_WEBSERVICE_PORT}" \
-    "-Djava.io.tmpdir=${CROMWELL_TMPDIR}" \
-    "-DLOG_LEVEL=${CROMWELL_LOG_LEVEL}" \
-    "-DLOG_MODE=${CROMWELL_LOG_MODE}" \
-    "-Xms${CROMWELL_START_UP_HEAP_SIZE}" \
-    "-Xmx${CROMWELL_MEM_MAX_HEAP_SIZE}" \
-    -jar "${CROMWELL_JAR_PATH}" server >/home/ec2-user/cromwell-server.log 2>&1 &"
+    \"-Duser.timezone=${TIMEZONE}\" \
+    \"-Duser.dir=${CROMWELL_WORKDIR}\" \
+    \"-Dconfig.file=${CROMWELL_SLURM_CONFIG_FILE_PATH}\" \
+    \"-Dwebservice.port=${CROMWELL_WEBSERVICE_PORT}\" \
+    \"-Djava.io.tmpdir=${CROMWELL_TMPDIR}\" \
+    \"-DLOG_LEVEL=${CROMWELL_LOG_LEVEL}\" \
+    \"-DLOG_MODE=${CROMWELL_LOG_MODE}\" \
+    \"-Xms${CROMWELL_START_UP_HEAP_SIZE}\" \
+    \"-Xmx${CROMWELL_MEM_MAX_HEAP_SIZE}\" \
+    \"-jar\" \"${CROMWELL_JAR_PATH}\" server > /home/ec2-user/cromwell-server.log 2>&1 &"
   CROMWELL_SERVER_PROC_ID="$!"
   logger "Starting cromwell under process ${CROMWELL_SERVER_PROC_ID}"
 }
@@ -228,9 +241,10 @@ case "${cfn_node_type}" in
       echo_stderr "Enabling --mem parameter on slurm"
       enable_mem_on_slurm
       # Connect slurm to rds
+      echo_stderr "Connecting to slurm rds database"
       connect_sacct_to_mysql_db
       # Get necessary files from S3 to start cromwell
-      echo_stderr "Getting necessary files from cromwell"
+      echo_stderr "Getting necessary files for configuring cromwell"
       get_cromwell_files
       # Start cromwell service
       echo_stderr "Starting cromwell"
@@ -239,6 +253,7 @@ case "${cfn_node_type}" in
       echo_stderr "Creating cromwell conda env for ec2-user"
       create_cromwell_env
       # Set /fsx to ec2-user
+      echo_stderr "Changing ownership of /fsx to ec2-user"
       change_fsx_permissions
     ;;
     ComputeFleet)

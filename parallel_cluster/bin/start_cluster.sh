@@ -2,64 +2,86 @@
 
 # Functions
 echo_stderr(){
-  # Write log to stderr
-  echo "${@}" 1>&2
+    # Write log to stderr
+    echo "${@}" 1>&2
 }
 
 display_help() {
-  # Display help message then exit
-  echo_stderr "Usage: $0 --cluster-name NAME_OF_YOUR_CLUSTER --cluster-template CLUSTER_TEMPLATE"
+    # Display help message then exit
+    echo_stderr "Usage: $0 NAME_OF_YOUR_CLUSTER --cluster-template CLUSTER_TEMPLATE"
 }
 
 # Get args
 while [ $# -gt 0 ]; do
-  case "$1" in
-    --cluster-name)
-      cluster_name_arg="$2"
-      shift 1
-      ;;
-    --cluster-template)
-      cluster_template_arg="$2"
-      shift 1
-      ;;
-    --config-file)
-      config_file_arg="$2"
-      shift 1
-      ;;
-    --extra-parameters)
-      extra_parameters_arg="$2"
-      shift 1
-      ;;
-    --help)
-      display_help
-      exit 0
-      ;;
-    *)
-      printf "***************************\n"
-      printf "* Error: Invalid argument.*\n"
-      printf "***************************\n"
-      display_help
-      exit 1
-  esac
-  shift
+    case "$1" in
+        --cluster-template)
+          cluster_template="$2"
+          shift 1
+          ;;
+        --config)
+          config_file="$2"
+          shift 1
+          ;;
+        --extra-parameters)
+          extra_parameters="$2"
+          shift 1
+          ;;
+        --help)
+          display_help
+          exit 0
+          ;;
+        *)
+          # Single positional argument
+          cluster_name_arg="$1"
+        ;;
+    esac
+    shift
 done
 
-if [[ -z "${config_file_arg}" ]]; then
-  echo_stderr "--config-file not specified, defaulting to conf/config"
-  config_file_arg="conf/config"
+
+# Check config file, set config_file_arg param
+if [[ -z "${config_file}" ]]; then
+    echo_stderr "--config not specified, defaulting to conf/config"
+    config_file="conf/config"
 fi
 
-if [[ ! -f "${config_file_arg}" ]]; then
-  echo_stderr "Could not find path to config file, exiting"
-  exit 1
+if [[ ! -f "${config_file}" ]]; then
+    echo_stderr "Could not find path to config file, exiting"
+    exit 1
 fi
 
+config_file_arg="--config=${config_file}"
+
+# Check cluster_template argument
+if [[ -z "${cluster_template}" ]]; then
+    echo_stderr "--cluster-template not specified, using default in config"
+    cluster_template_arg=""
+else
+    cluster_template_arg="--cluster-template=${cluster_template}"
+fi
+
+# Check extra parameters argument
+if [[ -z "${extra_parameters}" ]]; then
+  extra_parameters_arg=""
+else
+  extra_parameters_arg="--extra-parameters=${extra_parameters}"
+fi
+
+# Ensure cluster-name is set
 if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
+    echo_stderr "Running the following command:"
+    echo_stderr "pcluster create \
+                 ${cluster_name_arg} \
+                 ${config_file_arg} \
+                 ${cluster_template_arg} \
+                 ${extra_parameters_arg} \
+                 --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}"
     # Initialise the cluster
     pcluster create \
       "${cluster_name_arg}" \
-      --config "${config_file_arg}" \
-      --cluster-template "${cluster_template_arg}" \
+      "${config_file_arg}" \
+      "${cluster_template_arg}" \
+      "${extra_parameters_arg}" \
       --tags "{\"Creator\": \"${USER}\"}"
     # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
     # Need to investigate further before determining this is the cause of the issue

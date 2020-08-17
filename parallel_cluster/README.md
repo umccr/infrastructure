@@ -36,9 +36,8 @@ $ ssm i-XXXXXXXXXXXXX
 ```shell
 $ CLUSTER_TEMPLATE="tothill"  # or umccr_dev 
 $ ./bin/start_cluster.sh \
-  --cluster-name <CLUSTER_NAME> 
+  <CLUSTER_NAME> 
   --cluster-template "${CLUSTER_TEMPLATE}"
-  --extra-parameters "{\"KeyName\": \"alexis-wfh-dev\"}"
 Beginning cluster creation for cluster: my-test-cluster
 Creating stack named: parallelcluster-my-test-cluster
 Status: parallelcluster-my-test-cluster - CREATE_COMPLETE

@@ -63,7 +63,7 @@ master_subnet_id = subnet-0fab038b0341872f1
 # Elastic IP address is associated to the master instance.
 use_public_ips = true
 # Security group where the slurm accounting database sits
-additional_sg         = sg-07819a174c8c1c4cd
+additional_sg         = sg-0ca5bdaab39885649
 
 [aliases]
 ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}

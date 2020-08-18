@@ -70,18 +70,17 @@ fi
 # Ensure cluster-name is set
 if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
     echo_stderr "Running the following command:"
-    echo_stderr "pcluster create \
+    echo "pcluster create \
                  ${cluster_name_arg} \
                  ${config_file_arg} \
                  ${cluster_template_arg} \
-                 ${extra_parameters_arg} \
-                 --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}"
+                 --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}\"" | \
+       sed -e's/  */ /g' 1>&2
     # Initialise the cluster
     pcluster create \
       "${cluster_name_arg}" \
       "${config_file_arg}" \
       "${cluster_template_arg}" \
-      "${extra_parameters_arg}" \
       --tags "{\"Creator\": \"${USER}\"}"
     # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
     # Need to investigate further before determining this is the cause of the issue

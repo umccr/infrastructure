@@ -1,0 +1,6 @@
+name: bcbio_nextgen_vm
+channels:
+  - defaults
+dependencies:
+  - bcbio-nextgen=1.2.3
+  - bcbio-nextgen-vm=0.1.6

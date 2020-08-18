@@ -77,6 +77,13 @@ CROMWELL_START_UP_HEAP_SIZE="1G"
 CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
 CROMWELL_SERVER_PROC_ID=0
 
+# Globals - BCBIO
+BCBIO_CONDA_ENV_S3=""  # TODO
+BCBIO_CONDA_ENV_FILE_PATH="/opt/bcbio/env/bcbio.yml"
+BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
+BCBIO_SYSTEM_YAML_S3=""  # TODO
+BCBIO_SYSTEM_YAML_FILE_PATH="/opt/bcbio/configs/bcbio-system.yaml"
+
 # Functions
 
 enable_mem_on_slurm() {
@@ -99,7 +106,7 @@ enable_mem_on_slurm() {
   # Add DefMemPerCpu to cluster line (final line of the config)
   sed -i "/^PartitionName=/ s/$/ DefMemPerCPU=${SLURM_DEF_MEM_PER_CPU}/" "${SLURM_CONF_FILE}"
 
-  # Restart slurm database with changes to conf file
+  # Restart slurm control service with changes to conf file
   systemctl restart slurmctld
 }
 
@@ -121,13 +128,14 @@ connect_sacct_to_mysql_db() {
     "${SLURM_DBD_ENDPOINT_FILE_PATH}"
 
   # Update slurmdbd.conf
+  echo_stderr "Updating slurmdbd.conf"
   # We need to update the following attributes
   # DbdHost
   # StoragePass
   # StorageHost
-  sed -i "/^DbdHost=/s/.*/DbdHost=$(cat "${SLURM_DBD_ENDPOINT_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
+  sed -i "/^DbdHost=/s/.*/DbdHost="$(hostname -s)"/" "${SLURM_DBD_CONF_FILE_PATH}"
   sed -i "/^StoragePass=/s/.*/StoragePass=$(cat "${SLURM_DBD_PWD_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
-  sed -i "/^StorageHost=/s/.*/StorageHost=$(hostname -s)/" "${SLURM_DBD_CONF_FILE_PATH}"
+  sed -i "/^StorageHost=/s/.*/StorageHost=$(cat "${SLURM_DBD_ENDPOINT_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
 
   # Delete password and endpoint files under /root
   rm -f "${SLURM_DBD_ENDPOINT_FILE_PATH}" "${SLURM_DBD_PWD_FILE_PATH}"
@@ -144,15 +152,18 @@ connect_sacct_to_mysql_db() {
   # AccountingStoragePort=6819
   # These are all commented out by default in the standard slurm file
   # Search for the commented out and add in.
-  sed -i "/^\#JobAcctGatherType=/s/.*/JobAcctGatherType=jobacct_gather/linux/" "${SLURM_CONF_FILE}"
-  sed -i "/^\#JobAcctGatherFrequency=/s/.*/JobAcctGatherFrequency=30" "${SLURM_CONF_FILE}"
-  sed -i "/^\#AccountingStorageType=/s/.*/AccountingStorageType=accounting_storage/slurmdbd/" "${SLURM_CONF_FILE}"
-  sed -i "/^\#AccountingStorageHost=/s/.*/AccountingStorageHost=$(hostname -s)/" "${SLURM_CONF_FILE}"
-  sed -i "/^\#AccountingStorageUser=/s/.*/AccountingStorageUser=admin/" "${SLURM_CONF_FILE}"
-  sed -i "/^\#AccountingStoragePort=/s/.*/AccountingStoragePort=6819/" "${SLURM_CONF_FILE}"
+  { echo "JobAcctGatherType=jobacct_gather/linux"; \
+    echo "JobAcctGatherFrequency=30"; \
+    echo "AccountingStorageType=accounting_storage/slurmdbd"; \
+    echo "AccountingStorageHost=$(hostname -s)"; \
+    echo "AccountingStorageUser=admin"; \
+    echo "AccountingStoragePort=6819"; } >> "${SLURM_CONF_FILE}"
 
-  # Restart the slurm database
+  # Restart the slurm control service
   systemctl restart slurmctld
+
+  # Start the slurmdb service
+  /opt/slurm/sbin/slurmdbd
 }
 
 
@@ -170,6 +181,16 @@ get_cromwell_files() {
     "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_PATH}"
   aws s3 cp "${CROMWELL_SBATCH_SUBMIT_FILE_S3}" \
     "${CROMWELL_SBATCH_SUBMIT_FILE_PATH}"
+}
+
+get_bcbio_files() {
+  : '
+  Pull necessary bcbio files from s3
+  '
+  aws s3 cp "${BCBIO_CONDA_ENV_S3}" \
+    "${BCBIO_CONDA_ENV_FILE_PATH}"
+  aws s3 cp "${BCBIO_SYSTEM_YAML_S3}" \
+    "${BCBIO_SYSTEM_YAML_FILE_PATH}"
 }
 
 start_cromwell() {
@@ -192,6 +213,20 @@ start_cromwell() {
     \"-jar\" \"${CROMWELL_JAR_PATH}\" server > /home/ec2-user/cromwell-server.log 2>&1 &"
   CROMWELL_SERVER_PROC_ID="$!"
   logger "Starting cromwell under process ${CROMWELL_SERVER_PROC_ID}"
+}
+
+create_bcbio_env() {
+  : '
+  Create bcbio env to run through slurm in ipython mode
+  '
+  # Create env for submitting workflows to slurm
+  su - ec2-user \
+    -c "cd \$(mktemp -d); \
+        cp \"${BCBIO_CONDA_ENV_FILE_PATH}\" ./; \
+        conda env create \
+          --file \$(basename \"${BCBIO_CONDA_ENV_FILE_PATH}\") \
+          --name \"${BCBIO_CONDA_ENV_NAME}\""
+
 }
 
 create_cromwell_env() {
@@ -243,15 +278,21 @@ case "${cfn_node_type}" in
       # Connect slurm to rds
       echo_stderr "Connecting to slurm rds database"
       connect_sacct_to_mysql_db
+      # Get necessary files from S3 to start bcbio
+      echo_stderr "Getting necessary files for configuring bcbio"
+      get_bcbio_files
+      # Create bcbio env
+      echo_stderr "Creating bcbio env for ec2-user"
+      create_bcbio_env
       # Get necessary files from S3 to start cromwell
       echo_stderr "Getting necessary files for configuring cromwell"
       get_cromwell_files
-      # Start cromwell service
-      echo_stderr "Starting cromwell"
-      start_cromwell
       # Create cromwell env to enable submitting to service from user
       echo_stderr "Creating cromwell conda env for ec2-user"
       create_cromwell_env
+      # Start cromwell service
+      echo_stderr "Starting cromwell"
+      start_cromwell
       # Set /fsx to ec2-user
       echo_stderr "Changing ownership of /fsx to ec2-user"
       change_fsx_permissions

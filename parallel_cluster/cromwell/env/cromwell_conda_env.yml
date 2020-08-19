@@ -1,0 +1,5 @@
+name: cromwell_tools
+dependencies:
+  - pip
+  - pip:
+    - cromwell-tools >= 2.4.1

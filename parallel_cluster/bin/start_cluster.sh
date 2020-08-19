@@ -81,6 +81,8 @@ fi
 
 # Check no-rollback argument
 if [[ "${no_rollback}" == "true" ]]; then
+  echo_stderr "--no-rollback specified, use this ONLY when debugging"
+  echo_stderr "additional compute nodes cannot be started correctly with this setting"
   no_rollback_arg="--norollback"
 else
   no_rollback_arg=""
@@ -99,8 +101,6 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
                  --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}\"" | \
        sed -e's/  */ /g' 1>&2
     # Initialise the cluster
-    # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
-    # Unsure if this causes a problem
     pcluster create \
       "${cluster_name_arg}" \
       "${config_file_arg}" \
@@ -108,7 +108,6 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
       "${cluster_template_arg}" \
       "${extra_parameters_arg}" \
       --tags "{\"Creator\": \"${USER}\"}"
-    # Need to investigate further before determining this is the cause of the issue
 
     # Check if creation was successful
 	  if [[ "$?" == "0" ]]; then
@@ -120,11 +119,13 @@ if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
     fi
 
     # Output the master IP to log
-    # FIXME - this doesn't print out the instance ID
-    # Could be because the instance hasn't started running at this point.
+    # We list both those in pending/initializing or running states.
+    # And we ensure that this is our instance by specifying the Creator tag
     echo_stderr "$(aws ec2 describe-instances \
                      --query "Reservations[*].Instances[*].[InstanceId]" \
-                     --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=Master" \
+                     --filters "Name=instance-state-name,Values=pending,running" \
+                               "Name=tag:Name,Values=Master" \
+                               "Name=tag:Creator,Values=\"${USER}\"" \
                      --output text)"
 
 	  # FIXME: control error codes better, avoiding counterintuitive ones: i.e authed within a different account:

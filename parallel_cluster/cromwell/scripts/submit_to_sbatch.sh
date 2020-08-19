@@ -23,12 +23,23 @@ echo_stderr () {
     echo "${@}" >&2
 }
 
+sync_filesystem() {
+  # sync a specific filesystem
+  local filesystem="$1"
+  docker run \
+  --rm \
+  --volume "${PWD}:${PWD}" \
+  --workdir "${PWD}" \
+    alpine:latest sync -f "${filesystem}"
+}
+
 cleanup() {
     # Used by trap to ensure the image and tmp directories are deleted
     # Ideally we wouldn't have to submit another job
     # But slurm only gives us 90 seconds and this can take a few minutes to complete
-    err=$?
+    err="$?"
     echo_stderr "Cleaning things up after err ${err}"
+
     # Clean up the local diskspace
     fuser -TERM -k "${BUILD_LOG_STDOUT}.fifo"; fuser -TERM -k "${BUILD_LOG_STDERR}.fifo";
     fuser -TERM -k "${EXEC_LOG_STDOUT}.fifo"; fuser -TERM -k "${EXEC_LOG_STDERR}.fifo"
@@ -39,7 +50,14 @@ cleanup() {
     mv "${SBATCH_STDOUT}" "${SBATCH_STDERR}" "execution/";
     mv "${BUILD_LOG_STDOUT}" "${BUILD_LOG_STDERR}" "execution/";
     mv "${EXEC_LOG_STDOUT}" "${EXEC_LOG_STDERR}" "execution/";
+
+    # Sync the execution filesystem
+    sync_filesystem execution/
+
+    # Delete the shared /tmp dir
     rm -rf "${SHARED_DIR}"
+
+    # Exit with the initial exit code
     exit "${err}"
 }
 
@@ -107,6 +125,11 @@ if [[ ! -v SLURM_JOB_ID || ! -v SLURM_NODELIST ]]; then
         exit 21
 fi
 
+# Ensure cpus-per-task and mem-per-cpu are set
+if [[ ! -v SLURM_CPUS_PER_TASK || ! -v SLURM_MEM_PER_CPU ]]; then
+        exit 22
+fi
+
 # Write out the bash script and move it to the executions directory
 scontrol write batch_script "${SLURM_JOB_ID}" 1>&2
 mv "slurm-${SLURM_JOB_ID}.sh" execution/
@@ -141,6 +164,7 @@ mkfifo "${SBATCH_STDOUT}.fifo" "${SBATCH_STDERR}.fifo"
 # Trap a failure and cleanup
 # All code until 'trap - EXIT' will run through this
 trap cleanup EXIT
+
 ### END OF PROLOGUE ###
 
 # Use tee - to capture dataset
@@ -162,7 +186,8 @@ tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
           --export=ALL \
           --ntasks="1" \
           --job-name="docker_pull" \
-              docker pull "${IMAGE_PATH}"
+          docker pull \
+            "${IMAGE_PATH}"
     ) > "${BUILD_LOG_STDOUT}.fifo" 2> "${BUILD_LOG_STDERR}.fifo"
 
     ### RUN SCRIPT ###
@@ -179,34 +204,22 @@ tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
           --export=ALL \
           --ntasks="1" \
           --job-name="docker_exec" \
-            docker run \
-              --rm \
-              --volume "${EXEC_TMP_DIR}:${DOCKER_TMPDIR}" \
-              --volume "${CWD}:${DOCKER_CWD}" \
-              --volume "/etc/localtime:/etc/localtime" \
-              --cpus "${SLURM_CPUS_PER_TASK}" \
-              --memory "$((${SLURM_CPUS_PER_TASK}*${SLURM_MEM_PER_CPU}))M" \
-              --entrypoint "${JOB_SHELL}" \
-                "${IMAGE_PATH}" \
-                  "${DOCKER_SCRIPT_PATH}"
+          docker run \
+            --rm \
+            --volume "${EXEC_TMP_DIR}:${DOCKER_TMPDIR}" \
+            --volume "${CWD}:${DOCKER_CWD}" \
+            --volume "/etc/localtime:/etc/localtime" \
+            --cpus "${SLURM_CPUS_PER_TASK}" \
+            --memory "$((${SLURM_CPUS_PER_TASK}*${SLURM_MEM_PER_CPU}))M" \
+            --entrypoint "${JOB_SHELL}" \
+            "${IMAGE_PATH}" \
+              "${DOCKER_SCRIPT_PATH}"
     ) > "${EXEC_LOG_STDOUT}.fifo" 2> "${EXEC_LOG_STDERR}.fifo"
+    ### END OF RUN SCRIPT ###
 
 ) > "${SBATCH_STDOUT}.fifo" 2> "${SBATCH_STDERR}.fifo"
 
-### END OF RUN SCRIPT ###
-
-# FIXME add a sync parameter here if we're using a HDD filesystem.
-# I don't trust them.
-# Use a set +e just incase it fails too
-# Use the sync -f parameter found in an alpine repo
-# docker run \
-#   --rm \
-#   --volume $PWD:$PWD \
-#   --workdir $PWD \
-#   alpine:latest sync -f execution/
-
-
-### EPILOGUE ###
+### START OF EPILOGUE ###
 
 # Delete fifos
 rm -f "${BUILD_LOG_STDOUT}.fifo" "${BUILD_LOG_STDOUT}.fifo";
@@ -217,6 +230,11 @@ rm -f "${SBATCH_STDOUT}.fifo" "${SBATCH_STDERR}.fifo";
 mv "${SBATCH_STDOUT}" "${SBATCH_STDERR}" "execution/";
 mv "${BUILD_LOG_STDOUT}" "${BUILD_LOG_STDERR}" "execution/";
 mv "${EXEC_LOG_STDOUT}" "${EXEC_LOG_STDERR}" "execution/";
+
+# Use the sync -f parameter found in an alpine busybox
+set +e
+sync_filesystem execution/
+set -e
 
 # Delete all other directories
 rm -rf "${SHARED_DIR}"

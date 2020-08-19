@@ -41,3 +41,4 @@
   - 10, see cromwell,slurm.conf
 - How can I see what is going on in the compute nodes?
   - see which ip's are up, ssh in from ec2-user.
+- What is cromshell and how can I use it?

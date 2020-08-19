@@ -1,5 +1,7 @@
 name: bcbio_nextgen_vm
 channels:
+  - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - bcbio-nextgen=1.2.3

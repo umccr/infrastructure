@@ -8,8 +8,17 @@ echo_stderr(){
 
 display_help() {
     # Display help message then exit
-    echo_stderr "Usage: $0 NAME_OF_YOUR_CLUSTER --cluster-template CLUSTER_TEMPLATE"
+    echo_stderr "Usage: $0 NAME_OF_YOUR_CLUSTER "
+    echo_stderr "Additional Options:
+                 --cluster-template tothill|umccr_dev (default: tothill)
+                 --config /path/to/config (default: conf/config)
+                 --extra-parameters (default: none)
+                 --no-rollback (default: false, use for debugging purposes)"
+
 }
+
+# Defaults
+no_rollback="false"
 
 # Get args
 while [ $# -gt 0 ]; do
@@ -25,6 +34,9 @@ while [ $# -gt 0 ]; do
         --extra-parameters)
           extra_parameters="$2"
           shift 1
+          ;;
+        --no-rollback)
+          no_rollback="true"
           ;;
         --help)
           display_help
@@ -67,22 +79,35 @@ else
   extra_parameters_arg="--extra-parameters=${extra_parameters}"
 fi
 
+# Check no-rollback argument
+if [[ "${no_rollback}" == "true" ]]; then
+  no_rollback_arg="--norollback"
+else
+  no_rollback_arg=""
+fi
+
 # Ensure cluster-name is set
 if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
+    # Log what's going to be run
     echo_stderr "Running the following command:"
     echo "pcluster create \
                  ${cluster_name_arg} \
                  ${config_file_arg} \
+                 ${no_rollback_arg} \
                  ${cluster_template_arg} \
+                 ${extra_parameters_arg} \
                  --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}\"" | \
        sed -e's/  */ /g' 1>&2
     # Initialise the cluster
+    # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
+    # Unsure if this causes a problem
     pcluster create \
       "${cluster_name_arg}" \
       "${config_file_arg}" \
+      "${no_rollback_arg}" \
       "${cluster_template_arg}" \
+      "${extra_parameters_arg}" \
       --tags "{\"Creator\": \"${USER}\"}"
-    # FIXME removed --no-rollback argument due to compute nodes not starting up as required.
     # Need to investigate further before determining this is the cause of the issue
 
     # Check if creation was successful

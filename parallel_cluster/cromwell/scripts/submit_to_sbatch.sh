@@ -128,10 +128,10 @@ EXEC_LOG_DIR="$(mktemp --tmpdir="${SHARED_DIR}" -d "exec_log_XXX")"
 EXEC_TMP_DIR="$(mktemp --tmpdir="${SHARED_DIR}" -d "exec_tmp_XXX")"
 
 # Create fifos
-BUILD_LOG_STDOUT="${BUILD_LOG_DIR}/stdout.build.log"
-BUILD_LOG_STDERR="${BUILD_LOG_DIR}/stderr.build.log"
-EXEC_LOG_STDOUT="${EXEC_LOG_DIR}/stdout.exec.log"
-EXEC_LOG_STDERR="${EXEC_LOG_DIR}/stderr.exec.log"
+BUILD_LOG_STDOUT="${BUILD_LOG_DIR}/stdout.build.${SLURM_JOB_ID}.${SLURM_RESTART_COUNT}.log"
+BUILD_LOG_STDERR="${BUILD_LOG_DIR}/stderr.build.${SLURM_JOB_ID}.${SLURM_RESTART_COUNT}.log"
+EXEC_LOG_STDOUT="${EXEC_LOG_DIR}/stdout.exec.${SLURM_JOB_ID}.${SLURM_RESTART_COUNT}.log"
+EXEC_LOG_STDERR="${EXEC_LOG_DIR}/stderr.exec.${SLURM_JOB_ID}.${SLURM_RESTART_COUNT}.log"
 SBATCH_STDOUT="${EXEC_LOG_DIR}/stdout.${SLURM_JOB_ID}.${SLURM_RESTART_COUNT}.batch"
 SBATCH_STDERR="${EXEC_LOG_DIR}/stderr.${SLURM_JOB_ID}.${SLURM_RESTART_COUNT}.batch"
 mkfifo "${BUILD_LOG_STDOUT}.fifo" "${BUILD_LOG_STDERR}.fifo"
@@ -194,6 +194,17 @@ tee "${SBATCH_STDERR}" < "${SBATCH_STDERR}.fifo" >&2 &
 ) > "${SBATCH_STDOUT}.fifo" 2> "${SBATCH_STDERR}.fifo"
 
 ### END OF RUN SCRIPT ###
+
+# FIXME add a sync parameter here if we're using a HDD filesystem.
+# I don't trust them.
+# Use a set +e just incase it fails too
+# Use the sync -f parameter found in an alpine repo
+# docker run \
+#   --rm \
+#   --volume $PWD:$PWD \
+#   --workdir $PWD \
+#   alpine:latest sync -f execution/
+
 
 ### EPILOGUE ###
 

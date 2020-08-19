@@ -78,10 +78,10 @@ CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
 CROMWELL_SERVER_PROC_ID=0
 
 # Globals - BCBIO
-BCBIO_CONDA_ENV_S3=""  # TODO
+BCBIO_CONDA_ENV_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/env/bcbio_env.yml"
 BCBIO_CONDA_ENV_FILE_PATH="/opt/bcbio/env/bcbio.yml"
 BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
-BCBIO_SYSTEM_YAML_S3=""  # TODO
+BCBIO_SYSTEM_YAML_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/config/bcbio_system.yaml"
 BCBIO_SYSTEM_YAML_FILE_PATH="/opt/bcbio/configs/bcbio-system.yaml"
 
 # Functions
@@ -183,6 +183,7 @@ get_cromwell_files() {
     "${CROMWELL_SBATCH_SUBMIT_FILE_PATH}"
 }
 
+
 get_bcbio_files() {
   : '
   Pull necessary bcbio files from s3
@@ -192,6 +193,7 @@ get_bcbio_files() {
   aws s3 cp "${BCBIO_SYSTEM_YAML_S3}" \
     "${BCBIO_SYSTEM_YAML_FILE_PATH}"
 }
+
 
 start_cromwell() {
   : '
@@ -215,7 +217,10 @@ start_cromwell() {
   logger "Starting cromwell under process ${CROMWELL_SERVER_PROC_ID}"
 }
 
+
 create_bcbio_env() {
+  # TODO creation should be on the ami
+  # Update conda and environment on startup
   : '
   Create bcbio env to run through slurm in ipython mode
   '
@@ -229,7 +234,10 @@ create_bcbio_env() {
 
 }
 
+
 create_cromwell_env() {
+  # TODO creation should be on the ami
+  # Update conda and the environment on startup
   : '
   Create cromwell env to submit to cromwell server
   Add /opt/cromwell/scripts to PATH
@@ -250,6 +258,7 @@ create_cromwell_env() {
         \"\${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh\""
 }
 
+
 change_fsx_permissions() {
   : '
   Change fsx permissions s.t entire directory is owned by the ec2-user
@@ -257,6 +266,7 @@ change_fsx_permissions() {
   chown ec2-user:ec2-user "${FSX_DIR}"
 }
 
+# Runtime installations and configurations
 # Processes to complete on ALL (master and compute) nodes at startup
 # Security updates
 yum update -y

@@ -40,13 +40,17 @@ library_ext_id_column_name = 'ExternalLibraryID'  # is the external (provided) l
 sample_name_column_name = 'SampleName'  # the sample name assigned by the lab
 project_owner_column_name = 'ProjectOwner'
 project_name_column_name = 'ProjectName'
+project_custodian_column_name = 'ProjectCustodian'
 type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
 assay_column_name = 'Assay'
+override_cycles_column_name = 'OverrideCycles'
 phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
 source_column_name = 'Source'  # tissue, FFPE, ...
 quality_column_name = 'Quality'  # Good, Poor, Borderline
 topup_column_name = 'Topup'
 secondary_analysis_column_name = 'SecondaryAnalysis'
+workflow_column_name = 'Workflow'
+tags_column_name = 'Tags'
 fastq_column_name = 'FASTQ'
 number_fastqs_column_name = 'NumberFASTQS'
 results_column_name = 'Results'
@@ -55,26 +59,29 @@ notes_column_name = 'Notes'
 todo_column_name = 'ToDo'
 # List of column names expected to be found in the tracking sheet
 metadata_column_names = (
-    subject_id_column_name,
-    subject_ext_id_column_name,
+    library_id_column_name,
+    sample_name_column_name,
     sample_id_column_name,
     sample_ext_id_column_name,
-    sample_name_column_name,
-    library_id_column_name,
-    type_column_name,
+    subject_id_column_name,
+    subject_ext_id_column_name,
     phenotype_column_name,
+    quality_column_name,
     source_column_name,
-    assay_column_name,
     project_name_column_name,
     project_owner_column_name,
-    quality_column_name)
+    type_column_name,
+    assay_column_name,
+    override_cycles_column_name,
+    workflow_column_name
+)
 # Instrument ID mapping
 instrument_name = {
     "A01052": "Po",
     "A00130": "Baymax"
 }
 
-# column headers of the LIMS spreadsheet
+# column headers of the LIMS spreadsheet (in order!)
 sheet_column_headers = (
     illumina_id_column_name,
     run_column_name,
@@ -88,13 +95,17 @@ sheet_column_headers = (
     sample_name_column_name,
     project_owner_column_name,
     project_name_column_name,
+    project_custodian_column_name,
     type_column_name,
     assay_column_name,
+    override_cycles_column_name,
     phenotype_column_name,
     source_column_name,
     quality_column_name,
     topup_column_name,
     secondary_analysis_column_name,
+    workflow_column_name,
+    tags_column_name,
     fastq_column_name,
     number_fastqs_column_name,
     results_column_name,
@@ -192,8 +203,10 @@ def get_meta_data_by_library_id(library_id):
         logger.debug(f"Unique entry found for sample ID {library_id}")
     elif len(hit) > 1:
         logger.error(f"Multiple entries for library ID {library_id}!")
+        raise ValueError(f"Multiple entries for library ID {library_id}!")
     else:
         logger.error(f"No entry for library ID {library_id}")
+        raise ValueError(f"No entry for library ID {library_id}")
     return hit
 
 
@@ -380,23 +393,28 @@ if __name__ == "__main__":
                                 column_values[library_id_column_name].item(),
                                 column_values[subject_ext_id_column_name].item(),
                                 column_values[sample_ext_id_column_name].item(),
-                                '-',
+                                '-',  # ExternalLibraryID
                                 column_values[sample_name_column_name].item(),
                                 column_values[project_owner_column_name].item(),
                                 column_values[project_name_column_name].item(),
+                                '-',  # ProjectCustodian
                                 column_values[type_column_name].item(),
                                 column_values[assay_column_name].item(),
+                                column_values[override_cycles_column_name].item(),
                                 column_values[phenotype_column_name].item(),
                                 column_values[source_column_name].item(),
                                 column_values[quality_column_name].item(),
-                                '-',
-                                '-',
+                                '-',  # Topup
+                                '-',  # SecondaryAnalysis
+                                column_values[workflow_column_name].item(),
+                                '-',  # Tags
                                 s3_fastq_pattern,
                                 len(fastq_file_paths),
-                                '-',
-                                '-',
-                                '-',
-                                '-'))
+                                '-',  # Results
+                                '-',  # Trello
+                                '-',  # Notes
+                                '-'  # ToDo
+                                ))
 
     ################################################################################
     # write the data into a CSV file

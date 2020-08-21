@@ -1,10 +1,27 @@
 name: cromwell
-description: Install cromwell into the master node
+description: Install cromwell conda env into the ami for the ec2 user
 schemaVersion: 1.0
 
 phases:
   - name: build
     steps:
+      - name: makefolders
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              mkdir -p /opt/cromwell/configs/
+              mkdir -p /opt/cromwell/env
+              mkdir -p /opt/cromwell/scripts
+      - name: download_cromwell_files
+        action: S3Download
+        inputs:
+          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/configs/*"
+            destination: "/opt/cromwell/configs/"
+          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/env/*"
+            destination: "/opt/cromwell/env/"
+          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/scripts/*"
+            destination: "/opt/cromwell/scripts/"
       - name: cromwell
         action: ExecuteBash
         inputs:
@@ -42,15 +59,22 @@ phases:
             - |
               cromwell_workdir="/scratch/cromwell/"
               mkdir -p "${cromwell_workdir}"
-            # Create cromwell configs dir
+            # Create env for submitting workflows to cromwell
             - |
-              cromwell_configs_dir="/opt/cromwell/configs"
-              mkdir -p "${cromwell_configs_dir}"
-            # Create cromwell env dir
+              CROMWELL_TOOLS_CONDA_ENV_FILE_PATH="/opt/cromwell/env/cromwell_conda_env.yml"
+              CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
+              su - ec2-user \
+                -c "cd \$(mktemp -d); \
+                    cp \"${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}\" ./; \
+                    conda env create \
+                      --file \$(basename \"${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}\") \
+                      --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\""
+            # Add script path to env_vars.sh
             - |
-              cromwell_env_dir="/opt/cromwell/env"
-              mkdir -p "${cromwell_env_dir}"
-            # Create cromwell scripts dir
-            - |
-              cromwell_scripts_dir="/opt/cromwell/scripts/"
-              mkdir -p "${cromwell_scripts_dir}"
+              CROMWELL_SCRIPTS_DIR="/opt/cromwell/scripts"
+              CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
+              su - ec2-user \
+                -c "conda activate \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\" && \
+                    mkdir -p \"\${CONDA_PREFIX}/etc/conda/activate.d/\" && \
+                    echo \"export PATH=\\\"${CROMWELL_SCRIPTS_DIR}:\\\$PATH\"\\\" >> \
+                    \"\${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh\""

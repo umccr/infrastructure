@@ -19,6 +19,21 @@ display_help() {
 
 # Defaults
 no_rollback="false"
+pcluster_args=""
+cluster_name_arg=""
+
+# Check version
+check_pcluster_version() {
+  # Used to ensure that pcluster is in our PATH
+  pcluster version >/dev/null 2>&1
+  return "$?"
+}
+
+if ! check_pcluster_version; then
+  echo_stderr "Could not get version, from command 'pcluster version'."
+  echo_stderr "ensure pcluster is in your path variable"
+  exit 1
+fi
 
 # Get args
 while [ $# -gt 0 ]; do
@@ -42,6 +57,11 @@ while [ $# -gt 0 ]; do
           display_help
           exit 0
           ;;
+        '--'*)
+          echo_stderr "$1 not a valid argument"
+          display_help
+          exit 1
+          ;;
         *)
           # Single positional argument
           cluster_name_arg="$1"
@@ -50,6 +70,15 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+# Check cluster_name_arg is defined
+if [[ -z "${cluster_name_arg}" ]]; then
+  echo_stderr "Could not find the one positional argument required."
+  echo_stderr "Please specify a name of your cluster"
+  display_help
+  exit 1
+else
+  pcluster_args="${pcluster_args} \"${cluster_name_arg}\""
+fi
 
 # Check config file, set config_file_arg param
 if [[ -z "${config_file}" ]]; then
@@ -62,71 +91,61 @@ if [[ ! -f "${config_file}" ]]; then
     exit 1
 fi
 
-config_file_arg="--config=${config_file}"
+# Append config file to arg list
+pcluster_args="${pcluster_args} --config=\"${config_file}\""
 
 # Check cluster_template argument
 if [[ -z "${cluster_template}" ]]; then
     echo_stderr "--cluster-template not specified, using default in config"
-    cluster_template_arg=""
 else
-    cluster_template_arg="--cluster-template=${cluster_template}"
+    # Append template to arg list
+    pcluster_args="${pcluster_args} --cluster-template=\"${cluster_template}\""
 fi
 
 # Check extra parameters argument
-if [[ -z "${extra_parameters}" ]]; then
-  extra_parameters_arg=""
-else
-  extra_parameters_arg="--extra-parameters=${extra_parameters}"
+if [[ -n "${extra_parameters}" ]]; then
+  pcluster_args="${pcluster_args} --extra-parameters=\"${extra_parameters}\""
 fi
 
 # Check no-rollback argument
 if [[ "${no_rollback}" == "true" ]]; then
   echo_stderr "--no-rollback specified, use this ONLY when debugging"
   echo_stderr "additional compute nodes cannot be started correctly with this setting"
-  no_rollback_arg="--norollback"
-else
-  no_rollback_arg=""
+  pcluster_args="${pcluster_args} --norollback"
 fi
 
+# Add creator tag to pcluster args
+pcluster_args="${pcluster_args} --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}\""
+
 # Ensure cluster-name is set
-if [[ "${cluster_name_arg}" && "${cluster_template_arg}" ]]; then
+if [[ "${cluster_name_arg}" ]]; then
     # Log what's going to be run
     echo_stderr "Running the following command:"
-    echo "pcluster create \
-                 ${cluster_name_arg} \
-                 ${config_file_arg} \
-                 ${no_rollback_arg} \
-                 ${cluster_template_arg} \
-                 ${extra_parameters_arg} \
-                 --tags \"{\\\"Creator\\\": \\\"${USER}\\\"}\"" | \
-       sed -e's/  */ /g' 1>&2
+    echo_stderr "pcluster create ${pcluster_args}"
     # Initialise the cluster
-    pcluster create \
-      "${cluster_name_arg}" \
-      "${config_file_arg}" \
-      "${no_rollback_arg}" \
-      "${cluster_template_arg}" \
-      "${extra_parameters_arg}" \
-      --tags "{\"Creator\": \"${USER}\"}"
-
-    # Check if creation was successful
-	  if [[ "$?" == "0" ]]; then
-      echo_stderr "Stack creation succeeded - now retrieving name of IP"
-      exit 0
-    else
+    if ! eval pcluster create "${pcluster_args}"; then
       echo_stderr "Could not create the parallel cluster stack, exiting"
       exit 1
+    else
+      echo_stderr "Stack creation succeeded - now retrieving name of IP"
     fi
 
     # Output the master IP to log
     # We list both those in pending/initializing or running states.
     # And we ensure that this is our instance by specifying the Creator tag
-    echo_stderr "$(aws ec2 describe-instances \
+    instance_id="$(aws ec2 describe-instances \
                      --query "Reservations[*].Instances[*].[InstanceId]" \
                      --filters "Name=instance-state-name,Values=pending,running" \
                                "Name=tag:Name,Values=Master" \
                                "Name=tag:Creator,Values=\"${USER}\"" \
                      --output text)"
+
+    if [[ -z "${instance_id}" ]]; then
+      echo_stderr "Could not retrieve instance ID"
+    else
+      echo_stderr "Got instance_id ${instance_id}"
+      echo_stderr "Log into your cluster with \"ssm ${instance_id}\""
+    fi
 
 	  # FIXME: control error codes better, avoiding counterintuitive ones: i.e authed within a different account:
 	  # ERROR: The configuration parameter 'vpc_id' generated the following errors:

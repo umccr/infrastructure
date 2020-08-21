@@ -43,8 +43,7 @@ initial_queue_size    = 1
 # Basic ami with installations of
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
-# Currently built manually - create image builder for this.
-custom_ami            = ami-02f2ae59ffab4fbfb
+custom_ami            = ami-01b4c9cb3ad8f94b9
 post_install          = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/bootstrap-slurm-cromwell.sh
 
 [vpc network]

@@ -34,7 +34,10 @@ phases:
                 amazon-linux-extras \
                 tmux \
                 htop \
-                wget
+                wget \
+                curl \
+                file \
+                git
             # Install latest aws cli
             - |
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -66,16 +69,18 @@ phases:
             - |
               yum install -y -q \
                 mysql
-            ## For pulling in username/passwords from s3 files
-            - |
-              yum install -y -q \
-                yq
             ## Install latest amazon-ssm-agent
             - |
               systemctl stop amazon-ssm-agent
               systemctl disable amazon-ssm-agent
-              wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-              rpm -install --force --upgrade --replacepkgs amazon-ssm-agent.rpm
+              wget --output-document amazon-ssm-agent.rpm \
+                https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+              rpm \
+                --install \
+                --force \
+                --upgrade \
+                --replacepkgs amazon-ssm-agent.rpm
+              rm amazon-ssm-agent.rpm
               systemctl enable amazon-ssm-agent
               systemctl start amazon-ssm-agent
             ## Create mount points

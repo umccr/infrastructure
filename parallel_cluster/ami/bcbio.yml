@@ -1,0 +1,35 @@
+name: bcbio
+description: Install bcbio conda env into the master node for the ec2-user
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: makefolders
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              mkdir -p /opt/bcbio/env
+              mkdir -p /opt/bcbio/config
+      - name: download_cromwell_files
+        action: S3Download
+        inputs:
+          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/env/*"
+            destination: "/opt/bcbio/env/"
+          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/config/*"
+            destination: "/opt/bcbio/config/"
+      - name: bcbio
+        action: ExecuteBash
+        inputs:
+          commands:
+            # Add bcbio env
+            - |
+              BCBIO_CONDA_ENV_FILE_PATH="/opt/bcbio/env/bcbio_env.yml"
+              BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
+              su - ec2-user \
+                -c "cd \$(mktemp -d); \
+                    cp \"${BCBIO_CONDA_ENV_FILE_PATH}\" ./; \
+                    conda env create \
+                      --file \$(basename \"${BCBIO_CONDA_ENV_FILE_PATH}\") \
+                      --name \"${BCBIO_CONDA_ENV_NAME}\""

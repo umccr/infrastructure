@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 : '
 Run through initial set up of node at launch time.
@@ -29,6 +29,8 @@ FSX_DIR="/fsx"
 # Globals - slurm
 # Slurm conf file we need to edit
 SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
+SLURM_SINTERACTIVE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/slurm/scripts/sinteractive.sh"
+SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
 # Total mem on a m5.4xlarge parition is 64Gb
 # This value MUST be lower than the RealMemory attribute from `/opt/slurm/sbin/slurmd -C`
 # Otherwise slurm will put the nodes into 'drain' mode.
@@ -55,18 +57,8 @@ SLURM_DBD_ENDPOINT_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/slurm/co
 SLURM_DBD_ENDPOINT_FILE_PATH="/root/slurmdbd-endpoint.txt"
 
 # Globals - Cromwell
-CROMWELL_SLURM_CONFIG_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/configs/slurm.conf"
 CROMWELL_SLURM_CONFIG_FILE_PATH="/opt/cromwell/configs/slurm.conf"
-CROMWELL_OPTIONS_CONFIG_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/configs/options.json"
-CROMWELL_OPTIONS_CONFIG_FILE_PATH="/opt/cromwell/configs/options.json"
-CROMWELL_TOOLS_CONDA_ENV_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/env/cromwell_conda_env.yml"
-CROMWELL_TOOLS_CONDA_ENV_FILE_PATH="/opt/cromwell/env/cromwell_tools.yml"
 CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
-CROMWELL_SCRIPTS_DIR="/opt/cromwell/scripts"
-CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/scripts/submit_to_cromwell.py"
-CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_PATH="${CROMWELL_SCRIPTS_DIR}/submit_workflow_to_cromwell.py"
-CROMWELL_SBATCH_SUBMIT_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/scripts/submit_to_sbatch.sh"
-CROMWELL_SBATCH_SUBMIT_FILE_PATH="${CROMWELL_SCRIPTS_DIR}/submit_to_sbatch.sh"
 CROMWELL_WEBSERVICE_PORT=8000
 CROMWELL_WORKDIR="/fsx/cromwell"
 CROMWELL_TMPDIR="$(mktemp -d --suffix _cromwell)"
@@ -78,14 +70,9 @@ CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
 CROMWELL_SERVER_PROC_ID=0
 
 # Globals - BCBIO
-BCBIO_CONDA_ENV_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/env/bcbio_env.yml"
-BCBIO_CONDA_ENV_FILE_PATH="/opt/bcbio/env/bcbio.yml"
 BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
-BCBIO_SYSTEM_YAML_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/config/bcbio_system.yaml"
-BCBIO_SYSTEM_YAML_FILE_PATH="/opt/bcbio/configs/bcbio-system.yaml"
 
 # Functions
-
 enable_mem_on_slurm() {
   : '
     # Update slurm conf to expect memory capacity of ComputeFleet based on input
@@ -133,7 +120,7 @@ connect_sacct_to_mysql_db() {
   # DbdHost
   # StoragePass
   # StorageHost
-  sed -i "/^DbdHost=/s/.*/DbdHost="$(hostname -s)"/" "${SLURM_DBD_CONF_FILE_PATH}"
+  sed -i "/^DbdHost=/s/.*/DbdHost=\"$(hostname -s)\"/" "${SLURM_DBD_CONF_FILE_PATH}"
   sed -i "/^StoragePass=/s/.*/StoragePass=$(cat "${SLURM_DBD_PWD_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
   sed -i "/^StorageHost=/s/.*/StorageHost=$(cat "${SLURM_DBD_ENDPOINT_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
 
@@ -157,7 +144,8 @@ connect_sacct_to_mysql_db() {
     echo "AccountingStorageType=accounting_storage/slurmdbd"; \
     echo "AccountingStorageHost=$(hostname -s)"; \
     echo "AccountingStorageUser=admin"; \
-    echo "AccountingStoragePort=6819"; } >> "${SLURM_CONF_FILE}"
+    echo "AccountingStoragePort=6819"; \
+    echo ""; } >> "${SLURM_CONF_FILE}"
 
   # Restart the slurm control service
   systemctl restart slurmctld
@@ -166,32 +154,15 @@ connect_sacct_to_mysql_db() {
   /opt/slurm/sbin/slurmdbd
 }
 
-
-get_cromwell_files() {
-  : '
-  Pull necessary cromwell files from s3
-  '
-  aws s3 cp "${CROMWELL_SLURM_CONFIG_FILE_S3}" \
-    "${CROMWELL_SLURM_CONFIG_FILE_PATH}"
-  aws s3 cp "${CROMWELL_OPTIONS_CONFIG_FILE_S3}" \
-    "${CROMWELL_OPTIONS_CONFIG_FILE_PATH}"
-  aws s3 cp "${CROMWELL_TOOLS_CONDA_ENV_FILE_S3}" \
-    "${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}"
-  aws s3 cp "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_S3}" \
-    "${CROMWELL_TOOLS_SUBMIT_WORKFLOW_SCRIPT_FILE_PATH}"
-  aws s3 cp "${CROMWELL_SBATCH_SUBMIT_FILE_S3}" \
-    "${CROMWELL_SBATCH_SUBMIT_FILE_PATH}"
-}
-
-
-get_bcbio_files() {
-  : '
-  Pull necessary bcbio files from s3
-  '
-  aws s3 cp "${BCBIO_CONDA_ENV_S3}" \
-    "${BCBIO_CONDA_ENV_FILE_PATH}"
-  aws s3 cp "${BCBIO_SYSTEM_YAML_S3}" \
-    "${BCBIO_SYSTEM_YAML_FILE_PATH}"
+get_sinteractive_command() {
+  # Ensure directory is available
+  mkdir -p "$(dirname ${SLURM_SINTERACTIVE_FILE_PATH})"
+  # Download sinteractive command
+  aws s3 cp "${SLURM_SINTERACTIVE_S3}" "${SLURM_SINTERACTIVE_FILE_PATH}"
+  # Add as executable
+  chmod +x "${SLURM_SINTERACTIVE_FILE_PATH}"
+  # Link to folder already in path
+  ln -s "${SLURM_SINTERACTIVE_FILE_PATH}" "/usr/local/bin/sinteractive"
 }
 
 
@@ -218,25 +189,7 @@ start_cromwell() {
 }
 
 
-create_bcbio_env() {
-  # TODO creation should be on the ami
-  # Update conda and environment on startup
-  : '
-  Create bcbio env to run through slurm in ipython mode
-  '
-  # Create env for submitting workflows to slurm
-  su - ec2-user \
-    -c "cd \$(mktemp -d); \
-        cp \"${BCBIO_CONDA_ENV_FILE_PATH}\" ./; \
-        conda env create \
-          --file \$(basename \"${BCBIO_CONDA_ENV_FILE_PATH}\") \
-          --name \"${BCBIO_CONDA_ENV_NAME}\""
-
-}
-
-
-create_cromwell_env() {
-  # TODO creation should be on the ami
+update_cromwell_env() {
   # Update conda and the environment on startup
   : '
   Create cromwell env to submit to cromwell server
@@ -244,20 +197,26 @@ create_cromwell_env() {
   '
   # Create env for submitting workflows to cromwell
   su - ec2-user \
-    -c "cd \$(mktemp -d); \
-        cp \"${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}\" ./; \
-        conda env create \
-          --file \$(basename \"${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}\") \
-          --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\""
-
-  # Add script path to env_vars.sh
-  su - ec2-user \
-    -c "conda activate \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\" && \
-        mkdir -p \"\${CONDA_PREFIX}/etc/conda/activate.d/\" && \
-        echo \"export PATH=\\\"${CROMWELL_SCRIPTS_DIR}:\\\$PATH\"\\\" >> \
-        \"\${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh\""
+    -c "conda update --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\" --all --yes"
 }
 
+update_bcbio_env() {
+  # Update conda and the environment on startup
+  : '
+  Create cromwell env to submit to cromwell server
+  Add /opt/cromwell/scripts to PATH
+  '
+  # Create env for submitting workflows to cromwell
+  su - ec2-user \
+    -c "conda update --name \"${BCBIO_CONDA_ENV_NAME}\" --all --yes"
+}
+
+update_base_conda_env(){
+  # Update the base conda env
+    # Create env for submitting workflows to cromwell
+  su - ec2-user \
+    -c "conda update --name \"base\" --all --yes"
+}
 
 change_fsx_permissions() {
   : '
@@ -279,27 +238,24 @@ usermod -a -G docker ec2-user
 
 case "${cfn_node_type}" in
     MasterServer)
-      # FIXME delete this once new ami has these installed
-      yum install -y -q \
-        mysql
       # Set mem attribute on slurm conf file
       echo_stderr "Enabling --mem parameter on slurm"
       enable_mem_on_slurm
+      # Add sinteractive
+      echo_stderr "Adding sinteractive command to /usr/local/bin"
+      get_sinteractive_command
       # Connect slurm to rds
       echo_stderr "Connecting to slurm rds database"
       connect_sacct_to_mysql_db
-      # Get necessary files from S3 to start bcbio
-      echo_stderr "Getting necessary files for configuring bcbio"
-      get_bcbio_files
-      # Create bcbio env
-      echo_stderr "Creating bcbio env for ec2-user"
-      create_bcbio_env
-      # Get necessary files from S3 to start cromwell
-      echo_stderr "Getting necessary files for configuring cromwell"
-      get_cromwell_files
-      # Create cromwell env to enable submitting to service from user
-      echo_stderr "Creating cromwell conda env for ec2-user"
-      create_cromwell_env
+      # Update base conda env
+      echo_stderr "Updating base conda env"
+      update_base_conda_env
+      # Update bcbio conda env
+      echo_stderr "Updating bcbio-env"
+      update_bcbio_env
+      # Update cromwell env
+      echo_stderr "Update cromwell conda env for ec2-user"
+      update_cromwell_env
       # Start cromwell service
       echo_stderr "Starting cromwell"
       start_cromwell

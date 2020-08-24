@@ -231,7 +231,8 @@ def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run):
     client = gspread.authorize(creds)
 
     params = {
-        'valueInputOption': 'USER_ENTERED'
+        'valueInputOption': 'USER_ENTERED',
+        'insertDataOption': 'INSERT_ROWS'
     }
     body = {
         'majorDimension': 'ROWS',

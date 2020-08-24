@@ -32,7 +32,7 @@
     `The node may currently be in use, reserved for another job, in an advanced reservation, DOWN, DRAINED, or not responding.`
     - nodes take time to spin up etc.
 - Where are my outputs?
-  - in /fsx/cromwell/outputs or as specified in workflow.options.json
+  - in /fsx/scratch2/cromwell/outputs or as specified in workflow.options.json
 - How long does a node stay idle for?
   - 10 mins, see parallel-cluster, config
 - How much does a node cost to run?

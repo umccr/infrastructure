@@ -1,5 +1,5 @@
 {
-    "final_workflow_outputs_dir": "/fsx/cromwell/outputs",
+    "final_workflow_outputs_dir": "/fsx/scratch2/cromwell/outputs",
     "use_relative_output_paths": true,
     "final_workflow_log_dir": "wf_logs",
     "final_call_logs_dir": "call_logs"

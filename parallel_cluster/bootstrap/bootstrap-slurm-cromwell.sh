@@ -24,7 +24,7 @@ set -e
 # Globals - Miscell
 # Which timezone are we in
 TIMEZONE="Australia/Melbourne"
-FSX_DIR="/fsx"
+FSX_SCRATCH_DIR="/fsx/scratch2"
 
 # Globals - slurm
 # Slurm conf file we need to edit
@@ -60,7 +60,7 @@ SLURM_DBD_ENDPOINT_FILE_PATH="/root/slurmdbd-endpoint.txt"
 CROMWELL_SLURM_CONFIG_FILE_PATH="/opt/cromwell/configs/slurm.conf"
 CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
 CROMWELL_WEBSERVICE_PORT=8000
-CROMWELL_WORKDIR="/fsx/cromwell"
+CROMWELL_WORKDIR="${FSX_SCRATCH_DIR}/cromwell"
 CROMWELL_TMPDIR="$(mktemp -d --suffix _cromwell)"
 CROMWELL_LOG_LEVEL="DEBUG"
 CROMWELL_LOG_MODE="pretty"
@@ -165,7 +165,6 @@ get_sinteractive_command() {
   ln -s "${SLURM_SINTERACTIVE_FILE_PATH}" "/usr/local/bin/sinteractive"
 }
 
-
 start_cromwell() {
   : '
   Start the cromwell service on launch of master node
@@ -218,24 +217,7 @@ update_base_conda_env(){
     -c "conda update --name \"base\" --all --yes"
 }
 
-change_fsx_permissions() {
-  : '
-  Change fsx permissions s.t entire directory is owned by the ec2-user
-  '
-  chown ec2-user:ec2-user "${FSX_DIR}"
-}
-
-# Runtime installations and configurations
-# Processes to complete on ALL (master and compute) nodes at startup
-# Security updates
-yum update -y
-# Set timezone to Australia/Melbourne
-timedatectl set-timezone "${TIMEZONE}"
-# Start the docker service
-systemctl start docker
-# Add ec2-user to docker group
-usermod -a -G docker ec2-user
-
+# Complete slurm and cromwell post-slurm installation
 case "${cfn_node_type}" in
     MasterServer)
       # Set mem attribute on slurm conf file
@@ -259,9 +241,6 @@ case "${cfn_node_type}" in
       # Start cromwell service
       echo_stderr "Starting cromwell"
       start_cromwell
-      # Set /fsx to ec2-user
-      echo_stderr "Changing ownership of /fsx to ec2-user"
-      change_fsx_permissions
     ;;
     ComputeFleet)
     ;;

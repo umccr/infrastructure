@@ -33,3 +33,12 @@ phases:
                     conda env create \
                       --file \$(basename \"${BCBIO_CONDA_ENV_FILE_PATH}\") \
                       --name \"${BCBIO_CONDA_ENV_NAME}\""
+            # Update bcbio env
+            # Many packages makes this necessary
+            - |
+              BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
+              su - ec2-user \
+                  -c "conda update \
+                        --name \"${BCBIO_CONDA_ENV_NAME}\" \
+                        --all \
+                        --yes"

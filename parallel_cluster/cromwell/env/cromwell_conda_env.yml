@@ -1,6 +1,11 @@
 name: cromwell_tools
+channels:
+  - defaults
+  - bioconda
+  - conda-forge
 dependencies:
   - cromshell=0.4.3
+  - cwltool=3.0.20200724003302
   - pip
   - pip:
     - cromwell-tools >= 2.4.1

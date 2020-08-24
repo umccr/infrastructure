@@ -69,6 +69,14 @@ phases:
                     conda env create \
                       --file \$(basename \"${CROMWELL_TOOLS_CONDA_ENV_FILE_PATH}\") \
                       --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\""
+            # Good practise when env first installed
+            - |
+              CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
+              su - ec2-user \
+                  -c "conda update \
+                        --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\" \
+                        --all \
+                        --yes"
             # Add script path to env_vars.sh
             - |
               CROMWELL_SCRIPTS_DIR="/opt/cromwell/scripts"

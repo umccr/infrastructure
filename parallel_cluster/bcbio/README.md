@@ -8,3 +8,5 @@ This will be fixed soon.
 
 Activate with `conda activate bcbio_nextgen_vm`
 
+`bcbio_vm.py install --datadir=/fsx/bcbio install --data --tools --wrapper`
+`bcbio_vm.py install --wrapper --tools --data`

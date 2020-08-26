@@ -13,7 +13,9 @@ The [`conf/pcluster_client.env.yml` mentioned below][conda_conf] will setup `aws
 You can follow the official [docs][install_doc] or [this][blog_1] blog post (section `Setting up your client environment`) to set up the client requirements for parallel cluster.
 
 ```shell
-conda env update -f conf/pcluster_client.env.yml
+conda env create \
+  --file conf/pcluster_client.env.yml \
+  --name pcluster
 ```
 
 This SSM shell function should be added to your `.bashrc` or equivalent:
@@ -22,7 +24,10 @@ This SSM shell function should be added to your `.bashrc` or equivalent:
 
 ```shell
 ssm() {
-    aws ssm start-session --target "$1" --document-name AWS-StartInteractiveCommand --parameters command="sudo su - ec2-user"
+    aws ssm start-session \
+      --target "$1" \
+      --document-name AWS-StartInteractiveCommand \
+      --parameters command="sudo su - ec2-user"
 }
 ```
 
@@ -37,6 +42,7 @@ $ ssm i-XXXXXXXXXXXXX
 
 ```shell
 $ CLUSTER_TEMPLATE="tothill"  # or umccr_dev 
+$ conda activate pcluster
 $ ./bin/start_cluster.sh \
   <CLUSTER_NAME> 
   --cluster-template "${CLUSTER_TEMPLATE}"
@@ -95,11 +101,11 @@ by both the submission and execution node.
 
 #### Legacy HPC compatible commands 
 
-The bootstrapping installs the `sinteractive` script also used on `Spartan` and it should work in the same way. The Slurm native alternative can be used as well: 
+The bootstrapping installs the `sinteractive` script also used on `Spartan` and it should work in the same way.  
+>The Slurm native alternative can be used as well however this should be avoided due to a [AWS Parallel Cluster bug](https://github.com/aws/aws-parallelcluster/issues/1955)
 
 ```shell
 $ sinteractive --time=10:00 --nodes=1 --cpus-per-task=1
-$ srun --time=10:00 --nodes=1 --cpus-per-task=1 --pty -u "/bin/bash" -i -l
 ```
 
 Eventually, when users are ready to make the transition, this will be migrated to AWS Batch or more modern, efficient and integrated compute scheduling systems.
@@ -118,7 +124,7 @@ curl -X  POST "http://localhost:8000/api/workflows/v1"  \
 ```
 
 #### Logs and outputs
-All outputs and logs should be under /fsx/cromwell.
+All outputs and logs should be under /fsx/scratch2/cromwell.
 These need to be part of the shared filesystem.
 Jobs are run through a slurm/docker configuration.
 
@@ -132,7 +138,14 @@ Both conda and docker are is also installed on our *standard* AMI
 
 ### File System
 
-The cluster uses EFS to provide a **filesystem that is available to all nodes**. This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data (if it was already put in place). However, that also means the data put into EFS remains avaiable (and chargeable) as long as the cluster remains. So data will have to be cleaned up manually after it fulfilled it's purpose.
+> Currently under development and discussion.  
+> Subject to change
+
+The cluster uses EFS  to provide a **filesystem that is available to all nodes**. 
+This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data 
+(if it was already put in place). 
+However, that also means the data put into EFS remains available (and chargeable) as long as the cluster remains. 
+So data will have to be cleaned up manually after it fulfilled it's purpose.
 
 This cluster also **uses AWS FSx lustre to access UMCCR "data lakes" or S3 buckets** where all the research data resides. Those S3 buckets are made available through:
 
@@ -165,8 +178,8 @@ The current cluster and scheduler (SLURM) run with minimal configuration, so the
 
 This has been seen with two main causes.
 1. The AMI is not compatible with parallel cluster see [this github issue][ami_parallel_cluster_issue]
-2. The post_install script has failed to run successfully.
-
+2. The pre_install script has failed to run successfully.
+3. The post_install script has failed to run successfully.
 
 
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html

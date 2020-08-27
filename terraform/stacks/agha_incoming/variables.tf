@@ -22,11 +22,6 @@ variable "instance_ami" {
   default = "ami-088ff0e3bde7b3fdf" # AWS Linux 2
 }
 
-variable "instance_spot_price" {
-  type    = "string"
-  default = "0.02"
-}
-
 # workspace specific variables
 
 variable "instance_tags" {

@@ -98,6 +98,8 @@ If you are submitting a job that requires a file that is exclusively on one node
 you may consider using [sbcast][sbcast_guide] parameter to ensure that the file is
 copied to the worker node. Alternatively place the file inside a location that is shared
 by both the submission and execution node. 
+  * `/efs` if using the efs configuration on `tothill` or `umccr_dev`
+  * `/fsx` if using the fsx configuration on `umccr_dev_fsx`
 
 #### Legacy HPC compatible commands 
 
@@ -123,8 +125,10 @@ curl -X  POST "http://localhost:8000/api/workflows/v1"  \
     -F "workflowOptions=/opt/cromwell/configs/options.json"
 ```
 
+The [cromshell_tookit][cromshell_repo] is also available under the `cromwell_tools` conda environment.
+
 #### Logs and outputs
-All outputs and logs should be under /fsx/scratch2/cromwell.
+All outputs and logs should be under `/efs/cromwell` (or `/fsx/cromwell`)
 These need to be part of the shared filesystem.
 Jobs are run through a slurm/docker configuration.
 
@@ -141,22 +145,21 @@ Both conda and docker are is also installed on our *standard* AMI
 > Currently under development and discussion.  
 > Subject to change
 
-The cluster uses EFS  to provide a **filesystem that is available to all nodes**. 
+The cluster uses EFS to provide a **filesystem that is available to all nodes**. 
 This means that all compute nodes have access to the same FS and don't necessarily have to stage their own data 
 (if it was already put in place). 
 However, that also means the data put into EFS remains available (and chargeable) as long as the cluster remains. 
 So data will have to be cleaned up manually after it fulfilled it's purpose.
 
-This cluster also **uses AWS FSx lustre to access UMCCR "data lakes" or S3 buckets** where all the research data resides. Those S3 buckets are made available through:
+One can also specify to use an `fsx lustre` filesystem. This will be more expensive for most use cases.
 
-```
-/mnt/refdata    (mapping s3://umccr-refdata-dev for all genomics reference data)
-/mnt/data       (mapping to s3://umccr-temp-dev for input datasets)
-```
+Both EFS and FSX systems are deleted on the deletion of the stack. Please ensure you have copied your data 
+you wish to save back to S3
 
-Those mount points are subject to change, this is a work in progress that requires human consensus.
-
-> fsx configurations are also possible
+**Not yet implemented**
+> /mnt/refdata    (mapping s3://umccr-refdata-dev for all genomics reference data)
+> /mnt/data       (mapping to s3://umccr-temp-dev for input datasets)
+> Those mount points are subject to change, this is a work in progress that requires human consensus.
 
 ### Limitations
 
@@ -170,6 +173,8 @@ The current cluster and scheduler (SLURM) run with minimal configuration, so the
 - `--mem` option may cause a job to fail with `Requested node configuration is not available`
     > This has been fixed in the [slurm_boostrap_file](bootstrap/post_install.sh)
     * See [workaround suggested here][slurm_mem_solution]
+    * However there is no slurm controller enforcing memory, since you are the only one using 
+      the cluster, please do not exploit this or forever suffer the consequences.
     
 ## Troubleshooting
 
@@ -181,6 +186,19 @@ This has been seen with two main causes.
 2. The pre_install script has failed to run successfully.
 3. The post_install script has failed to run successfully.
 
+If you have used the `--no-rollback` flag you should be able to log into the master node via ssm.
+From here, you should check the file `/var/log/cfn-init.log` to see where your start up failed. 
+
+### It's taking a long time for my job to start
+Head to the ec2 console and check to see if a new compute node is running.
+Ensure that you can see the logs of the compute node by clicking on the console,
+if not, the compute node has probably not launched completely yet, give it another few minutes.
+
+If however you can see the logs, and everything seems okay it may be worth doing the following.
+
+1. Run the `sacct` command to see the status of your job. 
+2. Check that the `compute` node is not in drain mode, `scontrol show partition=compute`.
+3. If you have used `srun --pty bash` to login to the node, use `sinteractive` instead due to a known bug.
 
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html
 [blog_1]: https://aws.amazon.com/blogs/machine-learning/building-an-interactive-and-scalable-ml-research-environment-using-aws-parallelcluster/
@@ -191,3 +209,4 @@ This has been seen with two main causes.
 [accounting_blog]: https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/
 [sbatch_guide]: https://slurm.schedmd.com/sbatch.html
 [sbcast_guide]: https://slurm.schedmd.com/sbcast.html
+[cromshell_repo]: https://github.com/broadinstitute/cromshell

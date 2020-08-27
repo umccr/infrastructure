@@ -10,7 +10,7 @@ display_help() {
     # Display help message then exit
     echo_stderr "Usage: $0 NAME_OF_YOUR_CLUSTER "
     echo_stderr "Additional Options:
-                 --cluster-template tothill|umccr_dev (default: tothill)
+                 --cluster-template tothill|umccr_dev|umccr_dev_fsx (default: tothill)
                  --config /path/to/config (default: conf/config)
                  --extra-parameters (default: none)
                  --no-rollback (default: false, use for debugging purposes)"

@@ -163,12 +163,12 @@ Those mount points are subject to change, this is a work in progress that requir
 The current cluster and scheduler (SLURM) run with minimal configuration, so there will be some limitations. Known points include:
 
 - Slurm's accounting (`sacct`) is not supported, as it requires an accounting data store to be set up.
-    > This has been set up in the [slurm_boostrap_file](bootstrap/bootstrap-slurm-cromwell.sh)  
+    > This has been set up in the [slurm_boostrap_file](bootstrap/post_install.sh)  
     > You will also need to create a security group for the RDS  
     > And add this security group to your config under 'additional_sg'
     * Explained in the [blog post here][accounting_blog]
 - `--mem` option may cause a job to fail with `Requested node configuration is not available`
-    > This has been fixed in the [slurm_boostrap_file](bootstrap/bootstrap-slurm-cromwell.sh)
+    > This has been fixed in the [slurm_boostrap_file](bootstrap/post_install.sh)
     * See [workaround suggested here][slurm_mem_solution]
     
 ## Troubleshooting

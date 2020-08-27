@@ -2,6 +2,7 @@
 
 check_nodes(){
   # Check a node is ready
+  # 1 for yes, 0 for no
   node_length=$(scontrol show nodes --oneliner | grep -v "DRAIN" | grep -cv "No nodes in the system")
   echo "${node_length}"
 }

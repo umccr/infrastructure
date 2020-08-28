@@ -1,0 +1,21 @@
+name: yq
+description: Install brew and yq for ec2-user
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: install brew and yq
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              su - ec2-user \
+                -c "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)\"; \
+                    export PATH=\"\$PATH:/home/linuxbrew/.linuxbrew/bin\"; \
+                    brew install gcc; \
+                    export LDFLAGS=\"-L\$(ls -d /home/linuxbrew/.linuxbrew/opt/isl@*)lib\"; \
+                    export LDFLAGS=\"-L\$(ls -d /home/linuxbrew/.linuxbrew/opt/isl@*)lib\"; \
+                    brew install yq; \
+                    echo \"export PATH=\\\"\\\$PATH:/home/linuxbrew/.linuxbrew/bin\\\"\" >> \
+                    \"/home/ec2-user/.bashrc\""

@@ -8,9 +8,6 @@ echo_stderr() {
 # Source config, tells us if we're on a compute or master node
 . "/etc/parallelcluster/cfnconfig"
 
-# Globals
-TIMEZONE="Australia/Melbourne"
-
 this_instance_id() {
   : '
   Use the ec2-metadata command to return the instance id this ec2 instance is running on
@@ -129,14 +126,8 @@ change_shared_permissions() {
 # Security updates
 yum update -y
 
-# Set timezone to Australia/Melbourne
-timedatectl set-timezone "${TIMEZONE}"
-
 # Start the docker service
 systemctl start docker
-
-# Add ec2-user to docker group
-usermod -a -G docker ec2-user
 
 # Create /shared directory
 echo_stderr "Creating mount point for ${SHARED_FILESYSTEM_MOUNT} scratch"

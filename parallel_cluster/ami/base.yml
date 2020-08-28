@@ -27,6 +27,10 @@ phases:
               yum groups mark install "Development Tools"
               yum update -y -q
               yum groupinstall -y 'Development Tools'
+            # Change timezone to Australia/Melbourne
+            - |
+              TIMEZONE="Australia/Melbourne"
+              timedatectl set-timezone "${TIMEZONE}"
             # Install basics
             - |
               yum update -y -q
@@ -83,8 +87,6 @@ phases:
               rm amazon-ssm-agent.rpm
               systemctl enable amazon-ssm-agent
               systemctl start amazon-ssm-agent
-            ## Create mount points
+            ## Add ec2-user to docker
             - |
-              mkdir -p /scratch && chown ec2-user:ec2-user /scratch
-              mkdir -p /mnt/refdata && chown ec2-user:ec2-user /mnt/refdata
-              mkdir -p /mnt/data && chown ec2-user:ec2-user /mnt/data
+              usermod -a -G docker ec2-user

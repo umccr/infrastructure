@@ -103,6 +103,7 @@ fi
 set -e
 
 # Globals
+S3_BUCKET_DIR="s3://umccr-temp-dev/Alexis_parallel_cluster_test"
 # Globals - Miscell
 # Which timezone are we in
 TIMEZONE="Australia/Melbourne"
@@ -126,7 +127,7 @@ fi
 # Globals - slurm
 # Slurm conf file we need to edit
 SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
-SLURM_SINTERACTIVE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/slurm/scripts/sinteractive.sh"
+SLURM_SINTERACTIVE_S3="${S3_BUCKET_DIR}/slurm/scripts/sinteractive.sh"
 SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
 # Total mem on a m5.4xlarge parition is 64Gb
 # This value MUST be lower than the RealMemory attribute from `/opt/slurm/sbin/slurmd -C`
@@ -144,13 +145,13 @@ SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"
 # Our template slurmdbd.conf to download
 # Little to no modification from the example shown here:
 # https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/
-SLURM_DBD_CONF_FILE_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/slurm/conf/slurmdbd-template.conf"
+SLURM_DBD_CONF_FILE_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-template.conf"
 SLURM_DBD_CONF_FILE_PATH="/opt/slurm/etc/slurmdbd.conf"
 # S3 Password
-SLURM_DBD_PWD_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/slurm/conf/slurmdbd-passwd.txt"
+SLURM_DBD_PWD_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-passwd.txt"
 SLURM_DBD_PWD_FILE_PATH="/root/slurmdbd-pwd.txt"
 # RDS Endpoint
-SLURM_DBD_ENDPOINT_S3="s3://umccr-temp-dev/Alexis_parallel_cluster_test/slurm/conf/slurmdbd-endpoint.txt"
+SLURM_DBD_ENDPOINT_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-endpoint.txt"
 SLURM_DBD_ENDPOINT_FILE_PATH="/root/slurmdbd-endpoint.txt"
 
 # Globals - Cromwell

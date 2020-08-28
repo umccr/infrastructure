@@ -44,7 +44,7 @@ initial_queue_size    = 1
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # See the ami readme for recreation of the custom_ami
-custom_ami            = ami-0a506aed533d1678d
+custom_ami            = ami-0309a6a138b994d22
 pre_install           = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/pre_install.sh
 post_install          = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/post_install.sh
 
@@ -68,7 +68,7 @@ initial_queue_size    = 1
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # See the ami readme for recreation of the custom_ami
-custom_ami            = ami-0a506aed533d1678d
+custom_ami           = ami-0309a6a138b994d22
 pre_install           = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/pre_install.sh
 post_install          = s3://umccr-temp-dev/Alexis_parallel_cluster_test/bootstrap/post_install.sh
 

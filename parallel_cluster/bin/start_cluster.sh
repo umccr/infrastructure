@@ -40,7 +40,7 @@ append_ip_to_extra_parameters() {
   local extra_parameters
   extra_parameters="$(echo "$1" | {
                      # Add AccessFrom attribute - output in raw format
-                     jq ".AccessFrom = \"$(get_local_ip)/0\"" \
+                     jq ".AccessFrom = \"$(get_local_ip)/32\"" \
                        --compact-output
                     } | {
                       # Compact output is too compact

@@ -53,12 +53,11 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
   }
 
   lifecycle_rule {
-    id      = "infrequent_access"
+    id      = "intelligent_tiering"
     enabled = "1"
 
     transition {
-      days          = 30
-      storage_class = "STANDARD_IA"
+      storage_class = "INTELLIGENT_TIERING"
     }
 
     abort_incomplete_multipart_upload_days = 7
@@ -257,20 +256,6 @@ resource "aws_iam_role" "s3_admin_delete" {
 resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
   role       = "${aws_iam_role.s3_admin_delete.name}"
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-################################################################################
-# Dedicated user for PanelApp
-module "panelapp" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "panelapp"
-  pgp_key  = "keybase:brainstorm"
-}
-
-resource "aws_iam_user_policy_attachment" "panelapp" {
-  user       = "${module.panelapp.username}"
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-  depends_on = ["module.panelapp"]
 }
 
 ################################################################################
@@ -617,7 +602,12 @@ resource "aws_iam_policy" "bucket_list_sarah" {
     {
       "Effect": "Allow",
       "Action": [
-        "s3:ListAllMyBuckets"
+        "s3:ListAllMyBuckets",
+        "s3:HeadBucket",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetAccountPublicAccessBlock",
+        "s3:GetBucketVersioning",
+        "s3:GetEncryptionConfiguration"
       ],
       "Resource": "*"
     }

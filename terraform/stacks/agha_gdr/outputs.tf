@@ -282,12 +282,3 @@ output "agha_catalogue_user_access_key" {
 output "agha_catalogue_user_secret_access_key" {
   value = "${module.agha_catalogue_user.encrypted_secret_access_key}"
 }
-
-# Panelapp
-output "panelapp_access_key" {
-  value = "${module.panelapp.access_key}"
-}
-
-output "panelapp_access_secret_key" {
-  value = "${module.panelapp.encrypted_secret_access_key}"
-}

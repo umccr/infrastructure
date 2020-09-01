@@ -200,6 +200,13 @@ If however you can see the logs, and everything seems okay it may be worth doing
 2. Check that the `compute` node is not in drain mode, `scontrol show partition=compute`.
 3. If you have used `srun --pty bash` to login to the node, use `sinteractive` instead due to a known bug.
 
+### Cannot log into AWS SSO whilst in pcluster env
+This is caused by a decision from aws not to support v2 on pip.  
+When you run the pcluster installation command it installs aws v1 onto your conda env.  
+You'll need to open up a new shell (that is not in your pcluster conda env) to login via sso.  
+Many people arent happy about this. You can rant to them [here][aws_doesnt_support_pip_bug]
+
+
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html
 [blog_1]: https://aws.amazon.com/blogs/machine-learning/building-an-interactive-and-scalable-ml-research-environment-using-aws-parallelcluster/
 [aws_parallel_cluster]: https://aws.amazon.com/hpc/parallelcluster/
@@ -210,3 +217,4 @@ If however you can see the logs, and everything seems okay it may be worth doing
 [sbatch_guide]: https://slurm.schedmd.com/sbatch.html
 [sbcast_guide]: https://slurm.schedmd.com/sbcast.html
 [cromshell_repo]: https://github.com/broadinstitute/cromshell
+[aws_doesnt_support_pip_bug]: https://github.com/aws/aws-cli/issues/4947

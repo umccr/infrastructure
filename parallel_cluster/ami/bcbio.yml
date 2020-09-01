@@ -15,9 +15,9 @@ phases:
       - name: download_cromwell_files
         action: S3Download
         inputs:
-          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/env/*"
+          - source: "s3://umccr-research-dev/parallel-cluster/bcbio/env/*"
             destination: "/opt/bcbio/env/"
-          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/bcbio/config/*"
+          - source: "s3://umccr-research-dev/parallel-cluster/bcbio/config/*"
             destination: "/opt/bcbio/config/"
       - name: bcbio
         action: ExecuteBash

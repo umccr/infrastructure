@@ -46,7 +46,7 @@ resource "aws_spot_instance_request" "agha_instance" {
   user_data = "${data.template_file.userdata.rendered}"
   root_block_device {
     volume_type           = "gp2"
-    volume_size           = 10
+    volume_size           = 500
     delete_on_termination = true
   }
   # tags apply to the spot request, NOT the instance!

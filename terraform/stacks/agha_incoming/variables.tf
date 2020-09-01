@@ -14,7 +14,7 @@ variable "stack_name" {
 
 variable "instance_type" {
   type    = "string"
-  default = "t2.micro"
+  default = "m5a.xlarge"
 }
 
 variable "instance_ami" {

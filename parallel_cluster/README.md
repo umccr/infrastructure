@@ -206,6 +206,9 @@ When you run the pcluster installation command it installs aws v1 onto your cond
 You'll need to open up a new shell (that is not in your pcluster conda env) to login via sso.  
 Many people arent happy about this. You can rant to them [here][aws_doesnt_support_pip_bug]
 
+### The vpc ID 'vpc-XXXX' does not exist
+This can be caused by trying to access a network configuration outside your permissions.
+Ensure you're setting `--cluster-template` correctly and pointing to the right config-file with `--config`
 
 [install_doc]: https://docs.aws.amazon.com/parallelcluster/latest/ug/install.html
 [blog_1]: https://aws.amazon.com/blogs/machine-learning/building-an-interactive-and-scalable-ml-research-environment-using-aws-parallelcluster/

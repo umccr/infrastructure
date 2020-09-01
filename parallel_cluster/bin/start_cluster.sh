@@ -182,8 +182,3 @@ else
   echo_stderr "Got instance_id ${instance_id}"
   echo_stderr "Log into your cluster with \"ssm ${instance_id}\""
 fi
-
-# FIXME: control error codes better, avoiding counterintuitive ones: i.e authed within a different account:
-# ERROR: The configuration parameter 'vpc_id' generated the following errors:
-# The vpc ID 'vpc-7d2b2e1a' does not exist
-# OR ERROR:  The following resource(s) failed to create: [MasterServerWaitCondition, ComputeFleet].

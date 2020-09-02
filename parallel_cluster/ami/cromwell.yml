@@ -16,11 +16,11 @@ phases:
       - name: download_cromwell_files
         action: S3Download
         inputs:
-          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/configs/*"
+          - source: "s3://umccr-research-dev/parallel-cluster/cromwell/configs/*"
             destination: "/opt/cromwell/configs/"
-          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/env/*"
+          - source: "s3://umccr-research-dev/parallel-cluster/cromwell/env/*"
             destination: "/opt/cromwell/env/"
-          - source: "s3://umccr-temp-dev/Alexis_parallel_cluster_test/cromwell/scripts/*"
+          - source: "s3://umccr-research-dev/parallel-cluster/cromwell/scripts/*"
             destination: "/opt/cromwell/scripts/"
       - name: cromwell
         action: ExecuteBash

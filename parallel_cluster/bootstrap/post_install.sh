@@ -103,7 +103,7 @@ fi
 set -e
 
 # Globals
-S3_BUCKET_DIR="s3://umccr-temp-dev/Alexis_parallel_cluster_test"
+S3_BUCKET_DIR="s3://umccr-research-dev/parallel-cluster"
 # Globals - Miscell
 # Which timezone are we in
 TIMEZONE="Australia/Melbourne"

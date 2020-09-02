@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Following recommendations from AWS disble certain rules/checks
-# https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-cis-to-disable.html
-
 aws_region='ap-southeast-2'
 aws_account=$(aws sts get-caller-identity | jq -r '.Account')
 
@@ -18,28 +15,24 @@ aws_account=$(aws sts get-caller-identity | jq -r '.Account')
 # echo ${cis_controls[@]}
 
 
-# Don't disable the same rules in the master account!
-if test "$aws_account" = '650704067584'; then
+# Disable certain rules for all accounts
+# CIS 1.13 – Ensure MFA is enabled for the "root" account
+aws securityhub update-standards-control \
+    --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/1.13" \
+    --control-status "DISABLED" \
+    --disabled-reason "Using hardware MFA instead"
 
-    # CIS 1.14 – Ensure hardware MFA is enabled for the "root" account
-    aws securityhub update-standards-control \
-        --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/1.14" \
-        --control-status "DISABLED" \
-        --disabled-reason "Using virtual MFA instead"
 
-else
+# Disable specific rules in member accounts if the master has them covered
+# Following recommendations from AWS disble certain rules/checks
+# https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-cis-to-disable.html
+if test "$aws_account" != '650704067584'; then
 
     # CIS 1.1 - Avoid the use of the "root" account
     aws securityhub update-standards-control \
         --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/1.1" \
         --control-status "DISABLED" \
         --disabled-reason "Covered by monitor in CloudTrail master account"
-
-    # CIS 1.13 – Ensure MFA is enabled for the "root" account
-    aws securityhub update-standards-control \
-        --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/1.13" \
-        --control-status "DISABLED" \
-        --disabled-reason "Using hardware MFA instead"
 
     # CIS 2.3 - Ensure the S3 bucket CloudTrail logs to is not publicly accessible
     aws securityhub update-standards-control \

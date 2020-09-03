@@ -17,11 +17,6 @@ variable "instance_type" {
   default = "m5a.xlarge"
 }
 
-variable "instance_ami" {
-  type    = "string"
-  default = "ami-088ff0e3bde7b3fdf" # AWS Linux 2
-}
-
 # workspace specific variables
 
 variable "instance_tags" {

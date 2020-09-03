@@ -32,22 +32,38 @@ data "template_file" "userdata" {
   }
 }
 
+data "aws_security_group" "outbound" {
+  name = "outbound-only"
+}
+
+# find the lastest Amazon Linux 2 AMI
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami.html
+data "aws_ami" "AmazonLinux2" {
+  most_recent      = true
+  owners           = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-2.0.????????.?-x86_64-gp2"]
+  }
+}
+
 resource "aws_spot_instance_request" "agha_instance" {
   wait_for_fulfillment = true
 
-  ami                  = "${var.instance_ami}"
+  ami                  = "${data.aws_ami.AmazonLinux2.image_id}"
   instance_type        = "${var.instance_type}"
   availability_zone    = "${var.availability_zone}"
   iam_instance_profile = "${aws_iam_instance_profile.instance_profile.id}"
 
-  #   subnet_id              = "${aws_subnet.sn_a_vpc_st2.id}"
-  #   vpc_security_group_ids = [ "${aws_security_group.vpc_st2.id}" ]
+  vpc_security_group_ids = [ "${data.aws_security_group.outbound.id}" ]
 
   user_data = "${data.template_file.userdata.rendered}"
   root_block_device {
     volume_type           = "gp2"
     volume_size           = 500
     delete_on_termination = true
+    encrypted             = true
   }
   # tags apply to the spot request, NOT the instance!
   # https://github.com/terraform-providers/terraform-provider-aws/issues/174

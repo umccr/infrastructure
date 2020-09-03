@@ -13,3 +13,7 @@ output "instance_public_ip" {
 output "instance_id" {
   value = "${aws_spot_instance_request.agha_instance.spot_instance_id}"
 }
+
+output "aws_ami" {
+  value = "${data.aws_ami.AmazonLinux2.image_id}"
+}

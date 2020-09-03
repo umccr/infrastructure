@@ -580,6 +580,7 @@ resource "aws_iam_group_policy_attachment" "read_store_rw_policy_attachment" {
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
 
+# permission attachments for data manager
 resource "aws_iam_user_policy_attachment" "ro_staging_sarah" {
   user       = "${module.sarah.username}"
   policy_arn = "${aws_iam_policy.agha_staging_ro_policy.arn}"
@@ -590,35 +591,25 @@ resource "aws_iam_user_policy_attachment" "ro_store_sarah" {
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
 
-resource "aws_iam_policy" "bucket_list_sarah" {
-  name        = "agha_buckets_list_policy"
-  path        = "/"
-  description = "Policy to allow listing S3 buckets"
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:ListAllMyBuckets",
-        "s3:HeadBucket",
-        "s3:GetBucketPublicAccessBlock",
-        "s3:GetAccountPublicAccessBlock",
-        "s3:GetBucketVersioning",
-        "s3:GetEncryptionConfiguration"
-      ],
-      "Resource": "*"
-    }
-  ]
+resource "aws_iam_policy" "agha_data_manager_policy" {
+  name   = "agha_data_manager_policy"
+  path   = "/"
+  policy = "${file("policies/data_manager_policy.json")}"
 }
-EOF
-}
-
-resource "aws_iam_user_policy_attachment" "bucket_list_sarah" {
+resource "aws_iam_user_policy_attachment" "agha_data_manager_policy" {
   user       = "${module.sarah.username}"
-  policy_arn = "${aws_iam_policy.bucket_list_sarah.arn}"
+  policy_arn = "${aws_iam_policy.agha_data_manager_policy.arn}"
+}
+
+resource "aws_iam_policy" "default_user_policy" {
+  name   = "default_user_policy"
+  path   = "/"
+  policy = "${file("policies/default_user_policy.json")}"
+}
+resource "aws_iam_user_policy_attachment" "default_user_policy" {
+  user       = "${module.sarah.username}"
+  policy_arn = "${aws_iam_policy.default_user_policy.arn}"
 }
 
 

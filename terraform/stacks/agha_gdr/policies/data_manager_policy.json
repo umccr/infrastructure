@@ -1,0 +1,17 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:HeadBucket",
+                "s3:GetBucketPublicAccessBlock",
+                "s3:GetAccountPublicAccessBlock",
+                "s3:GetBucketVersioning",
+                "s3:GetEncryptionConfiguration"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

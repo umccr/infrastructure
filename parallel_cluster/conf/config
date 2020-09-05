@@ -44,9 +44,11 @@ initial_queue_size    = 1
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # See the ami readme for recreation of the custom_ami
-custom_ami            = ami-0309a6a138b994d22
+custom_ami            = ami-0f5bfcd72e192188e
 pre_install           = s3://umccr-research-dev/parallel-cluster/bootstrap/pre_install.sh
 post_install          = s3://umccr-research-dev/parallel-cluster/bootstrap/post_install.sh
+master_root_volume_size  = 25  # Gb - for multiple conda installations
+compute_root_volume_size = 48  # Gb - for multiple docker containers to be pulled down to run commands
 
 [cluster umccr_dev_fsx]
 base_os               = alinux2
@@ -68,9 +70,11 @@ initial_queue_size    = 1
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # See the ami readme for recreation of the custom_ami
-custom_ami           = ami-0309a6a138b994d22
+custom_ami           = ami-0f5bfcd72e192188e
 pre_install           = s3://umccr-research-dev/parallel-cluster/bootstrap/pre_install.sh
 post_install          = s3://umccr-research-dev/parallel-cluster/bootstrap/post_install.sh
+master_root_volume_size = 25   # Gb - for multiple conda installations
+compute_root_volume_size = 48  # Gb - for multiple docker containers to be pulled down to run commands
 
 ## Networks
 [vpc tothill_network]

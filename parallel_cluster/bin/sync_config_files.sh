@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
 
+# Globals
 ROOT_PATH="umccr-research-dev/parallel-cluster"
 
-aws s3 sync "cromwell/" "s3://${ROOT_PATH}/cromwell/"
+# AMI components
+aws s3 sync "ami/" "s3://${ROOT_PATH}/ami/"
+
+# Pre and Post install scripts
 aws s3 sync "bootstrap/" "s3://${ROOT_PATH}/bootstrap/"
-aws s3 sync "bcbio" "s3://${ROOT_PATH}/bcbio/"
-aws s3 sync "slurm/scripts" "s3://${ROOT_PATH}/slurm/scripts"
-aws s3 cp "slurm/conf/slurmdbd-template.conf" "s3://${ROOT_PATH}/slurm/conf/slurmdbd-template.conf"
-# Upload password and end points
-#aws s3 cp "slurm/conf/slurmdbd-endpoint.txt" "s3://${ROOT_PATH}/slurm/conf/slurmdbd-endpoint.txt"
-#aws s3 cp "slurm/conf/slurmdbd-passwd.txt" "s3://${ROOT_PATH}/slurm/conf/slurmdbd-passwd.txt"
+
+# Slurm templates and scripts
+aws s3 sync "slurm/" "s3://${ROOT_PATH}/slurm/"
+
+# Cromwell templates and scripts (with conda env)
+aws s3 sync "cromwell/" "s3://${ROOT_PATH}/cromwell/"
+
+# Bcbio config (and conda env)
+aws s3 sync "bcbio/" "s3://${ROOT_PATH}/bcbio/"
+
+# Toil (just conda env at this point)
+aws s3 sync "toil/" "s3://${ROOT_PATH}/toil/"

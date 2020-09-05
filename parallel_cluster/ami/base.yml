@@ -9,6 +9,9 @@ phases:
         action: ExecuteBash
         inputs:
           commands:
+            # Update yum then rest
+            - |
+              yum update -y -q
             # Reset yum
             - |
               # Clean rpm cache first

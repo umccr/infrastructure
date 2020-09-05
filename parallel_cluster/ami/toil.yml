@@ -1,0 +1,40 @@
+name: toil
+description: Install toil conda env into the master node for the ec2-user
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: makefolders
+        action: ExecuteBash
+        inputs:
+          commands:
+            - |
+              mkdir -p /opt/toil/env
+      - name: download_toil_files
+        action: S3Download
+        inputs:
+          - source: "s3://umccr-research-dev/parallel-cluster/toil/env/*"
+            destination: "/opt/toil/env/"
+      - name: toil_env_creation
+        action: ExecuteBash
+        inputs:
+          commands:
+            # Add toil env
+            - |
+              TOIL_CONDA_ENV_FILE_PATH="/opt/toil/env/toil-env.yml"
+              TOIL_CONDA_ENV_NAME="toil"
+              su - ec2-user \
+                -c "cd \$(mktemp -d); \
+                    cp \"${TOIL_CONDA_ENV_FILE_PATH}\" ./; \
+                    conda env create \
+                      --file \$(basename \"${TOIL_CONDA_ENV_FILE_PATH}\") \
+                      --name \"${TOIL_CONDA_ENV_NAME}\";"
+            # Update toil env
+            - |
+              TOIL_CONDA_ENV_NAME="toil"
+              su - ec2-user \
+                  -c "conda update \
+                        --name \"${TOIL_CONDA_ENV_NAME}\" \
+                        --all \
+                        --yes;"

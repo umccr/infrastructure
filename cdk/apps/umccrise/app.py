@@ -93,7 +93,7 @@ common = CommonStack(
     common_dev_props,
     env=aws_env
 )
-CICDStack(
+cicd = CICDStack(
     app,
     cicd_dev_props['namespace'],
     cicd_dev_props,
@@ -112,6 +112,7 @@ IapTesStack(
     env=aws_env
 )
 slack_dev_props['ecr_name'] = common.ecr_name
+slack_dev_props['cb_project'] = cicd.cb_project
 CodeBuildLambdaStack(
     app,
     slack_dev_props['namespace'],

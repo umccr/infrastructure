@@ -107,6 +107,17 @@ get_parallelcluster_filesystem_type() {
   echo "${file_system_types}"
 }
 
+get_pc_s3_root() {
+  : '
+  Get the s3 root for the cluster files
+  '
+  local s3_cluster_root
+  s3_cluster_root="$(aws ssm get-parameter --name "${S3_BUCKET_DIR_SSM_KEY}" | {
+                     jq --raw-output '.Parameter.Value'
+                   })"
+  echo "${s3_cluster_root}"
+}
+
 get_rds_endpoint() {
   : '
   Take the RDS endpoint from inside an SSM parameter
@@ -406,7 +417,7 @@ GLOBALS
 '
 
 # Globals
-S3_BUCKET_DIR="s3://umccr-research-dev/parallel-cluster"
+S3_BUCKET_DIR_SSM_KEY="/parallel_cluster/dev/s3_config_root"
 
 # Globals - Miscell
 # Which timezone are we in
@@ -430,7 +441,7 @@ fi
 # Globals - slurm
 # Slurm conf file we need to edit
 SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
-SLURM_SINTERACTIVE_S3="${S3_BUCKET_DIR}/slurm/scripts/sinteractive.sh"
+SLURM_SINTERACTIVE_S3="$(get_pc_s3_root)/slurm/scripts/sinteractive.sh"
 SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
 # Total mem on a m5.4xlarge parition is 64Gb
 # This value MUST be lower than the RealMemory attribute from `/opt/slurm/sbin/slurmd -C`
@@ -448,7 +459,7 @@ SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"
 # Our template slurmdbd.conf to download
 # Little to no modification from the example shown here:
 # https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/
-SLURM_DBD_CONF_FILE_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-template.conf"
+SLURM_DBD_CONF_FILE_S3="$(get_pc_s3_root)/slurm/conf/slurmdbd-template.conf"
 SLURM_DBD_CONF_FILE_PATH="/opt/slurm/etc/slurmdbd.conf"
 # S3 Password
 SLURM_DBD_SSM_KEY_PASSWD="/parallel_cluster/dev/slurm_rds_db_password"

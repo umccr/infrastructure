@@ -100,7 +100,7 @@ ssh = ssh {CFN_USER}@{MASTER_IP} {ARGS}
 ## Filesystems
 [efs awselasticfs]
 shared_dir       = efs
-encrypted        = false
+encrypted        = true
 performance_mode = generalPurpose
 
 [fsx lustrefs]

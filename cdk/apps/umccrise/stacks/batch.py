@@ -137,6 +137,7 @@ class BatchStack(core.Stack):
                 'deviceName': '/dev/xvdf',
                 'ebs': {
                     'deleteOnTermination': True,
+                    'encrypted': True
                     'volumeSize': 2048,
                     'volumeType': 'gp2'
                 }

@@ -48,12 +48,7 @@ class CodeBuildLambdaStack(core.Stack):
 
         ################################################################################
         # Create a reference to the UMCCRise CodeBuild project
-        # TODO: should probably use cross-stack resource references
-        cb_project = cb.Project.from_project_name(
-            self,
-            id='UmccriseCodeBuildProject',
-            project_name=props['codebuild_project_name']
-        )
+        cb_project = props['cb_project']
 
         ################################################################################
         # Create an SNS topic to receive CodeBuild state change events

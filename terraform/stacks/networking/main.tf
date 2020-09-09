@@ -37,7 +37,7 @@ module "main_vpc" {
   private_subnets  = ["10.2.20.0/23", "10.2.22.0/23", "10.2.24.0/23"]
   database_subnets = ["10.2.40.0/23", "10.2.42.0/23", "10.2.44.0/23"]
 
-  // Single NAT Gateway Scenario
+  # Single NAT Gateway Scenario
   enable_nat_gateway     = true
   single_nat_gateway     = true
   one_nat_gateway_per_az = false
@@ -98,6 +98,55 @@ module "main_vpc" {
   }
 
   tags = {
+    Environment = terraform.workspace
+    Stack       = var.stack_name
+    Creator     = "terraform"
+  }
+}
+
+resource "aws_security_group" "main_vpc_sg_outbound" {
+  name        = "main-vpc-sg-outbound"
+  description = "Main VPC Security Group allow outbound only traffic"
+  vpc_id      = module.main_vpc.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "outbound_only"
+    Tier        = var.umccr_subnet_tier.PRIVATE
+    Environment = terraform.workspace
+    Stack       = var.stack_name
+    Creator     = "terraform"
+  }
+}
+
+resource "aws_security_group" "main_vpc_sg_uom" {
+  name        = "main-vpc-sg-uom"
+  description = "Main VPC Security Group allow outbound traffic and UoM only inbound to SSH"
+  vpc_id      = module.main_vpc.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["10.1.0.0/20"]
+  }
+
+  tags = {
+    Name        = "ssh_from_uom"
+    Tier        = var.umccr_subnet_tier.PRIVATE
     Environment = terraform.workspace
     Stack       = var.stack_name
     Creator     = "terraform"

@@ -19,9 +19,9 @@ At the moment, this VPC defines three "tiers" of subnets:
 
 #### Terraform
 
-- In your app terraform, you can use [data source: aws_vpc](https://www.terraform.io/docs/providers/aws/d/vpc.html) to query this VPC. Recommended to use tag filters on `Name`, `Stack` and `Environment` keys over VPC ID as example below.
-
-- You may further filter subnet by its tier. Example for how to filter _Private_ subnets using tag: `Tier = "private"`
+- In your app terraform, you can use [data source: aws_vpc](https://www.terraform.io/docs/providers/aws/d/vpc.html) to query this VPC. Recommended to use tag filters on `Name`, `Stack` and `Environment` keys.
+- You may further [data query filter subnet](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/subnet_ids) by its **Tier** tag. Example for how to filter _Private_ subnets using tag: `Tier = "private"`
+- You may also [data query filter security group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/security_group) by its **Name** tag. Example for how to filter _uom_ security group using tag: `Name = "uom"`
 
 ```hcl-terraform
 data "aws_vpc" "main_vpc" {
@@ -38,6 +38,24 @@ data "aws_subnet_ids" "private_subnets" {
 
   tags = {
     Tier = "private"
+  }
+}
+
+data "aws_security_group" "main_vpc_sg_uom" {
+  vpc_id = data.aws_vpc.main_vpc.id
+
+  # allow outbound traffic and UoM only inbound to SSH
+  tags = {
+    Name = "ssh_from_uom"
+  }
+}
+
+data "aws_security_group" "main_vpc_sg_outbound" {
+  vpc_id = data.aws_vpc.main_vpc.id
+
+  # allow outbound only traffic
+  tags = {
+    Name = "outbound_only"
   }
 }
 ```
@@ -157,13 +175,31 @@ app.synth()
 - In "AWS" world, there is no such thing as "subnet type"! But tag filter is all that matter for tier-ing subnets for specific business use case and what meaningful to the organization.
 - Hence we have the following tag combinations!
 
+#### Remove all rules under default SG 
+
+- After applying this VPC, please use Console UI to purge all rules (both ingress and egress rules) under this Main VPC default Security Group (SG) for [AWS CIS Security compliance](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-cis.html) purpose.
+- Default Security Group for this Main VPC is, therefore, effectively lockdown mode to prevent any accidental network security implication.
+
 ## Workspaces
 
-This stack uses workspaces! It is typically applied against the AWS `prod` and `dev` accounts and uses Terraform workspaces to distinguish between those accounts. 
+Login to AWS.
+```
+aws sso login --profile=dev && export AWS_PROFILE=dev
+```
+
+This stack uses terraform workspaces.
+```
+terraform workspace list
+  default
+* dev
+  prod
+  tothill
+```
+
+It is typically applied against the AWS `prod` and `dev` accounts and uses Terraform workspaces to distinguish between those accounts.
 
 ```
-aws sso login --profile=dev
-export AWS_PROFILE=dev
 terraform workspace select dev
-terraform ...
+terraform plan
+terraform apply
 ```

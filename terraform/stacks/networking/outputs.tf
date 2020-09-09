@@ -35,3 +35,11 @@ output "database_subnet_arns" {
 output "database_subnet_group" {
   value = module.main_vpc.database_subnet_group
 }
+
+output "main_vpc_sg_outbound" {
+  value = aws_security_group.main_vpc_sg_outbound.id
+}
+
+output "main_vpc_sg_uom" {
+  value = aws_security_group.main_vpc_sg_uom.id
+}

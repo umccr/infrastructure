@@ -50,6 +50,14 @@ class DebugStack(core.Stack):
         for subnet in vpc.isolated_subnets:
             print(subnet.subnet_id)
 
+        # At the mo, CDK only offer existing Security Group by ID lookup, see https://github.com/aws/aws-cdk/issues/4241
+        # FIXME might be possible to use tag lookup when this PR in https://github.com/aws/aws-cdk/pull/5641
+        main_vpc_sg_uom_id = "sg-0d8aab41e8bb973c3"  # bound to DEV
+        uom_sg = ec2.SecurityGroup.from_security_group_id(self, "main-vpc-sg-uom", main_vpc_sg_uom_id, mutable=False)
+        print(">>> uom_sg")
+        assert uom_sg is not None, f"{main_vpc_sg_uom_id} is only avail in DEV account"
+        print(f"\t{uom_sg.to_string()}")
+
 
 class DebugApp(core.App):
     def __init__(self):
@@ -62,13 +70,9 @@ if __name__ == '__main__':
 
 
 # Usage:
-# aws sso login --profile=dev
-# Latest yawsso >= 0.3.0 support multiple named profiles sync, btw!!
-# pip install -U yawsso
-# yawsso -p dev prod
-# cdk synth --app="python3 debug.py" --profile=dev
-# cdk synth --app="python3 debug.py" --profile=prod
-# cdk context -j | jq
+#   aws sso login --profile=dev
+#   cdk synth --app="python3 debug.py" --profile=dev
+#   cdk context -j | jq
 
 # Footnote:
 # Wondering those wired subnets id print upon first time synth like the following?

@@ -22,6 +22,17 @@ aws securityhub update-standards-control \
     --control-status "DISABLED" \
     --disabled-reason "Using hardware MFA instead"
 
+# CIS 2.9 - Ensure VPC flow logging is enabled in all VPCs
+aws securityhub update-standards-control \
+    --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/2.9" \
+    --control-status "DISABLED" \
+    --disabled-reason "TBD"
+
+# EC2.6 - VPC flow logging should be enabled in all VPCs
+aws securityhub update-standards-control \
+    --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/aws-foundational-security-best-practices/v/1.0.0/EC2.6" \
+    --control-status "DISABLED" \
+    --disabled-reason "TBD"
 
 # Disable specific rules in member accounts if the master has them covered
 # Following recommendations from AWS disble certain rules/checks

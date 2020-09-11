@@ -611,6 +611,21 @@ resource "aws_iam_user_policy_attachment" "default_user_policy" {
   user       = "${module.sarah.username}"
   policy_arn = "${aws_iam_policy.default_user_policy.arn}"
 }
+resource "aws_iam_group_policy_attachment" "admin_default_user_attachment" {
+  group      = "${aws_iam_group.admin.name}"
+  policy_arn = "${aws_iam_policy.default_user_policy.arn}"
+}
+
+resource "aws_iam_group_policy_attachment" "submit_default_user_attachment" {
+  group      = "${aws_iam_group.submit.name}"
+  policy_arn = "${aws_iam_policy.default_user_policy.arn}"
+}
+
+resource "aws_iam_group_policy_attachment" "read_default_user_attachment" {
+  group      = "${aws_iam_group.read.name}"
+  policy_arn = "${aws_iam_policy.default_user_policy.arn}"
+}
+
 
 
 ################################################################################

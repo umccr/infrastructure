@@ -2,6 +2,18 @@
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Sid": "AllowManageAccessKeys",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetUser",
+                "iam:ListAccessKeys",
+                "iam:UpdateAccessKey",
+                "iam:CreateAccessKey",
+                "iam:DeleteAccessKey"
+            ],
+            "Resource": "arn:aws:iam::*:user/${aws:username}"
+        },
+        {
             "Sid": "AllowViewAccountInfo",
             "Effect": "Allow",
             "Action": "iam:ListVirtualMFADevices",
@@ -27,23 +39,6 @@
                 "iam:ResyncMFADevice"
             ],
             "Resource": "arn:aws:iam::*:user/${aws:username}"
-        },
-        {
-            "Sid": "DenyAllExceptListedIfNoMFA",
-            "Effect": "Deny",
-            "NotAction": [
-                "iam:CreateVirtualMFADevice",
-                "iam:EnableMFADevice",
-                "iam:GetUser",
-                "iam:ListMFADevices",
-                "iam:ListVirtualMFADevices",
-                "iam:ResyncMFADevice",
-                "sts:GetSessionToken"
-            ],
-            "Resource": "*",
-            "Condition": {
-                "BoolIfExists": {"aws:MultiFactorAuthPresent": "false"}
-            }
         }
     ]
 }

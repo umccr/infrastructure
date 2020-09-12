@@ -175,7 +175,24 @@ The current cluster and scheduler (SLURM) run with minimal configuration, so the
     * See [workaround suggested here][slurm_mem_solution]
     * However there is no slurm controller enforcing memory, since you are the only one using 
       the cluster, please do not exploit this or forever suffer the consequences.
-    
+
+## Some use cases
+
+The following worklows are working examples you can run through to see AWS Parallel Cluster in action.
+
+### Toil
+
+[Gridss Purple Linx CWL](working_examples/toil/gridss-purple-linx-cwl.md)
+
+### Cromwell
+
+[Haplotype Caller WDL](working_examples/cromwell/haplotype-caller.md)
+
+### bcbio
+> Not this is not currently a working example due to a novel failure
+
+[bcbio variant calling example](working_examples/bcbio/bcbio-nextgen.md)
+
 ## Troubleshooting
 
 ### Failed to build cluster

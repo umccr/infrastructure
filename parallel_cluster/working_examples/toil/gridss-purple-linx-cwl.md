@@ -262,7 +262,6 @@ This is extremely useful for debugging as it means gridss can skip the reference
     "class": "File",
     "location": "__SHARED_DIR__/input-data/gridss-purple-linx/smoke_test/CPCT12345678R.bam"
   },
-  "output_dir": "output",
   "snvvcf": {
     "class": "File",
     "location": "__SHARED_DIR__/input-data/gridss-purple-linx/smoke_test/CPCT12345678T.somatic_caller_post_processed.vcf.gz"
@@ -343,7 +342,6 @@ Write the following file to `gridss-purple-linx.packed.input-SBJ_seqcii_020.json
     "class": "File",
     "location": "__SHARED_DIR__/input-data/iap/SBJ_seqcii_020/SBJ_seqcii_020.bam"
   },
-  "output_dir": "output",
   "snvvcf": {
     "class": "File",
     "location": "__SHARED_DIR__/input-data/iap/SBJ_seqcii_020/SBJ_seqcii_020.vcf.gz"
@@ -445,8 +443,9 @@ sed -i "s%__SHARED_DIR__%${SHARED_DIR}%g" gridss-purple-linx.packed.input-SBJ_se
 ## Downloading the workflow from GitHub
 
 ```{bash get_workflow_from_git_repo, echo=TRUE, eval=FALSE}
+gridss_workflow_url_with_token="https://raw.githubusercontent.com/umccr-illumina/cwl-iap/master/workflows/gridss-purple-linx/0.1/iap-requests/gridss-purple-linx-0.1.packed.cwl.json?token=AB6RMGYOL5FVNKITJQK5JHC7MX4PU"
 wget --output-document gridss-purple-linx-0.1.packed.cwl.json \
-  https://raw.githubusercontent.com/umccr-illumina/cwl-iap/master/workflows/gridss-purple-linx/0.1/iap-requests/gridss-purple-linx-0.1.packed.cwl.json?token=AB6RMG3DVX6JL664R7N3L7K7MWZF2
+  "${gridss_workflow_url_with_token}"
 ```
 
 ## Running the workflow through toil

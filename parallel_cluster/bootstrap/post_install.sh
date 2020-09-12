@@ -45,7 +45,7 @@ this_instance_id() {
 this_cloud_formation_stack_name() {
   : '
   Returns the cloud formation stack
-  Single quoetes over query command are intentional
+  Single quotes over query command are intentional
   '
   local cloud_stack
   cloud_stack="$(aws ec2 describe-instances \
@@ -396,8 +396,8 @@ update_toil_env() {
     -c "conda update --name \"${TOIL_CONDA_ENV_NAME}\" --all --yes; \
         conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
         pip install --upgrade \"toil[all]\""
-  # TODO - file bug with TOIL group
-  # Fix --net=none when launching docker containers
+  # FIXME --net=none when launching docker containers
+  # Could be a NetworkAccess Requirement?
   su - ec2-user \
     -c "conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
         sed -i 's/net=none/net=host/g' \"\${CONDA_PREFIX}/lib/python3.8/site-packages/cwltool/docker.py\""
@@ -409,6 +409,23 @@ update_base_conda_env() {
   su - ec2-user \
     -c "conda update --name \"base\" --all --yes"
 }
+
+write_shared_dir_to_bashrc() {
+  : '
+  Get SHARED_FILESYSTEM_MOUNT and write to ~/.bashrc
+  '
+  su - ec2-user \
+    -c "echo export SHARED_DIR=\\\"${SHARED_FILESYSTEM_MOUNT}\\\" >> /home/ec2-user/.bashrc"
+}
+
+clean_conda_envs() {
+  : '
+  Clean all conda envs
+  '
+  su - ec2-user \
+    -c "conda clean --all --yes"
+}
+
 
 : '
 #################################################
@@ -531,6 +548,12 @@ case "${cfn_node_type}" in
       # Start cromwell service
       echo_stderr "Creating start cromwell script"
       create_start_cromwell_script
+      # Write SHARED_DIR env var to bashrc
+      echo_stderr "Setting SHARED_DIR for user"
+      write_shared_dir_to_bashrc
+      # Clean conda env
+      echo_stderr "Cleaning conda envs"
+      clean_conda_envs
     ;;
     ComputeFleet)
     ;;

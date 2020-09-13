@@ -1,0 +1,10 @@
+name: toil
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - ipython
+  - pip
+  - pip:
+    - toil[all] >= 4.2.0
+prefix: /home/alexiswl/anaconda3/envs/toil

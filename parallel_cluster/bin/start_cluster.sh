@@ -147,8 +147,7 @@ pcluster_args="${pcluster_args} --extra-parameters \"${extra_parameters}\""
 
 # Check no-rollback argument
 if [[ "${no_rollback}" == "true" ]]; then
-  echo_stderr "--no-rollback specified, use this ONLY when debugging"
-  echo_stderr "additional compute nodes cannot be started correctly with this setting"
+  echo_stderr "--no-rollback specified, a useful tool for debugging problems"
   pcluster_args="${pcluster_args} --norollback"
 fi
 
@@ -167,13 +166,14 @@ else
 fi
 
 # Output the master IP to log
-# We list both those in pending/initializing or running states.
-# And we ensure that this is our instance by specifying the Creator tag
+# Use running to ensure it is the current stack
+# Use Master to ensure it's the master node
+# Use the cloudformation stack-name to ensure we get just this stack
 instance_id="$(aws ec2 describe-instances \
                  --query "Reservations[*].Instances[*].[InstanceId]" \
-                 --filters "Name=instance-state-name,Values=pending,running" \
+                 --filters "Name=instance-state-name,Values=running" \
                            "Name=tag:Name,Values=Master" \
-                           "Name=tag:Creator,Values=\"${USER}\"" \
+                           "Name=tag:aws:cloudformation:stack-name,Values=parallelcluster-${cluster_name_arg}" \
                  --output text)"
 
 if [[ -z "${instance_id}" ]]; then

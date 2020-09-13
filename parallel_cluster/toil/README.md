@@ -11,12 +11,12 @@ sinteractive
 > Create the following directories in your shared filesystem mount (probably /efs)
 
 ```bash
-SHARED_FILESYSTEM_DIR="/efs"
-TOIL_JOB_STORE="${SHARED_FILESYSTEM_DIR}/toil/job-store"
-TOIL_WORKDIR="${SHARED_FILESYSTEM_DIR}/toil/workdir"
-TOIL_TMPDIR="${SHARED_FILESYSTEM_DIR}/toil/tmpdir"
-TOIL_LOG_DIR="${SHARED_FILESYSTEM_DIR}/toil/logs"
-TOIL_OUTPUTS="${SHARED_FILESYSTEM_DIR}/toil/outputs"
+SHARED_DIR="/efs"
+TOIL_JOB_STORE="${SHARED_DIR}/toil/job-store"
+TOIL_WORKDIR="${SHARED_DIR}/toil/workdir"
+TOIL_TMPDIR="${SHARED_DIR}/toil/tmpdir"
+TOIL_LOG_DIR="${SHARED_DIR}/toil/logs"
+TOIL_OUTPUTS="${SHARED_DIR}/toil/outputs"
 ```
 
 ```bash

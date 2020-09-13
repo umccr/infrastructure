@@ -132,6 +132,11 @@ All outputs and logs should be under `/efs/cromwell` (or `/fsx/cromwell`)
 These need to be part of the shared filesystem.
 Jobs are run through a slurm/docker configuration.
 
+### Running through toil
+
+Please look through the [toil README](toil/README.md) or checkout the [examples page](working_examples/toil/gridss-purple-linx-cwl.md)
+for guidance.
+
 ### Installing new software on the cluster
 
 Refer to [the custom AMI README.md](ami/README.md) to include your own (bioinformatics) software.

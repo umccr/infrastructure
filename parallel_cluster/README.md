@@ -19,8 +19,6 @@ conda env create \
 ```
 
 This SSM shell function should be added to your `.bashrc` or equivalent:
-> Ensure that AmazonSSMManagedInstanceCore is set as an additional policy in your config  
-> additional_iam_policies = arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 
 ```shell
 ssm() {
@@ -36,6 +34,10 @@ So that logging into the instances becomes:
 ```bash
 $ ssm i-XXXXXXXXXXXXX
 ```
+
+> This assumes AmazonSSMManagedInstanceCore is set as an 
+> additional policy in your parallel cluster config template i.e:
+> additional_iam_policies = arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 
 ### Running the cluster
 > CLUSTER_NAME can only be alpha-numeric and must start with a letter
@@ -53,8 +55,7 @@ MasterPublicIP: 3.104.49.154
 ClusterUser: ec2-user
 MasterPrivateIP: 172.31.23.110
 
-< Currently not implemented, instance ID can be seen in the console >
-i-XXXXXXXXX   <---- Master instance ID
+Log in with 'ssm i-XXXXXXXX'   <---- Master instance ID
 
 $ ssm i-XXXXXXXXXX
 
@@ -79,7 +80,8 @@ sbatch ...
 ### Logging into a computer node
 You can also log into a computer node from the master node,
 from the `ec2-user`, this is handy for debugging purposes:   
-`ssh local-ip-of-running-compute node`
+`ssh local-ip-of-running-compute node`.  
+Use sinfo to see the current list of running compute nodes.
 
 ### Using slurm
 See [sbatch guide][sbatch_guide] for more information
@@ -109,8 +111,6 @@ The bootstrapping installs the `sinteractive` script also used on `Spartan` and 
 ```shell
 $ sinteractive --time=10:00 --nodes=1 --cpus-per-task=1
 ```
-
-Eventually, when users are ready to make the transition, this will be migrated to AWS Batch or more modern, efficient and integrated compute scheduling systems.
 
 ### Running through cromwell
 The cromwell server runs under the ec2-user on port 8000.
@@ -156,9 +156,9 @@ This means that all compute nodes have access to the same FS and don't necessari
 However, that also means the data put into EFS remains available (and chargeable) as long as the cluster remains. 
 So data will have to be cleaned up manually after it fulfilled it's purpose.
 
-One can also specify to use an `fsx lustre` filesystem. This will be more expensive for most use cases.
+One can also specify to use an `fsx lustre` filesystem. This will be faster but more expensive for most use cases.
 
-Both EFS and FSX systems are deleted on the deletion of the stack. Please ensure you have copied your data 
+Both EFS and FSX systems are purged on the deletion of the stack. Please ensure you have copied your data 
 you wish to save back to S3
 
 **Not yet implemented**
@@ -170,16 +170,10 @@ you wish to save back to S3
 
 The current cluster and scheduler (SLURM) run with minimal configuration, so there will be some limitations. Known points include:
 
-- Slurm's accounting (`sacct`) is not supported, as it requires an accounting data store to be set up.
-    > This has been set up in the [slurm_boostrap_file](bootstrap/post_install.sh)  
-    > You will also need to create a security group for the RDS  
-    > And add this security group to your config under 'additional_sg'
-    * Explained in the [blog post here][accounting_blog]
-- `--mem` option may cause a job to fail with `Requested node configuration is not available`
-    > This has been fixed in the [slurm_boostrap_file](bootstrap/post_install.sh)
-    * See [workaround suggested here][slurm_mem_solution]
-    * However there is no slurm controller enforcing memory, since you are the only one using 
-      the cluster, please do not exploit this or forever suffer the consequences.
+- `--mem` option is not natively suppported:
+    * Whilst it can be used, there is no slurm controller enforcing memory. 
+    * Since you are probably the only one using the cluster, 
+      please do not exploit this or forever suffer the consequences.
 
 ## Some use cases
 

@@ -4,8 +4,13 @@
 Take in a samplesheet,
 Look through headers, rename as necessary
 Look through samples, update override cycles logic as necessary
-Split samplesheet out into separate override cycles files
+Split samplesheet out into separate override cycles files\
 Write to separate files
+If --v2 specified:
+  * rename Settings.Adapter to Settings.AdapterRead1
+  * Reduce Data to columns Lane, Sample_ID, index, index2, Sample_Project
+  * Add FileFormatVersion,2 to Header
+  * Convert Reads from list to dict with Read1Cycles and Read2Cycles as keys
 """
 
 # Imports
@@ -19,16 +24,6 @@ import sys
 
 # Set logging level
 logging.basicConfig(level=logging.DEBUG)
-
-"""
-Read:
-config = configparser.RawConfigParser()
-config.read('example.cfg')
-
-Write
-with open('example.ini', 'w') as configfile:
-...   config.write(configfile)
-"""
 
 # Globals
 SAMPLESHEET_HEADER_REGEX = r"^\[(\S+)\](,+)?"  # https://regex101.com/r/5nbe9I/1
@@ -46,7 +41,7 @@ def get_args():
 
     # Arguments
     parser.add_argument("--samplesheet-csv", required=True,
-                        help="Path to samplesheet csv")
+                        help="Path to v1 samplesheet csv")
     parser.add_argument("--out-dir", required=False,
                         help="Output directory for samplesheets, set to cwd if not specified")
     parser.add_argument("--samples", required=False,
@@ -59,9 +54,67 @@ def get_args():
                              "If not set, error if samples in the samplesheet are not present in --samples arg")
     parser.add_argument("--v2", required=False,
                         default=False, action="store_true",
-                        help="Do we wish to output a V2 samplesheet - changes heading names")
+                        help="Do we wish to output a V2 samplesheet - see top doc string for more info on changes")
 
     return parser.parse_args()
+
+
+def set_args(args):
+    """
+    Convert --samples and--override-cycles to arrays
+    Check they're the same length
+    :return:
+    """
+
+    # Get user args
+    samplesheet_csv_arg = getattr(args, "samplesheet_csv", None)
+    outdir_arg = getattr(args, "out_dir", None)
+    samples_arg = getattr(args, "samples", None)
+    override_cycles_arg = getattr(args, "override_cycles", None)
+
+    # Convert samplesheet csv to path
+    samplesheet_csv_path = Path(samplesheet_csv_arg)
+    # Check its a file
+    if not samplesheet_csv_path.is_file():
+        logging.error("Could not find file {}".format(samplesheet_csv_path))
+        sys.exit(1)
+    # Set attribute as Path object
+    setattr(args, "samplesheet_csv", samplesheet_csv_path)
+
+    # Checking the output path
+    if outdir_arg is None:
+        outdir_arg = os.getcwd()
+    outdir_path = Path(outdir_arg)
+    if not outdir_path.parent.is_dir():
+        logging.error("Could not create --out-dir, make sure parents exist. Exiting")
+        sys.exit(1)
+    elif not outdir_path.is_dir():
+        outdir_path.mkdir(parents=False)
+    setattr(args, "out_dir", outdir_path)
+
+    # Check either both or neither are None
+    if not bool(samples_arg is None) == bool(override_cycles_arg is None):
+        logging.error("Must specify both --samples and --override-cycles or neither")
+        sys.exit(1)
+
+    # Nothing to do if they're both none
+    if samples_arg is None and override_cycles_arg is None:
+        return args
+
+    # Convert to arrays
+    samples_list = samples_arg.split(",")
+    override_cycles_list = override_cycles_arg.split(",")
+
+    # Check lengths are the same
+    if not len(samples_list) == len(override_cycles_list):
+        logging.error("Found unequal number of entries for samples and override cycles")
+
+    # Set attr as lists
+    setattr(args, "samples", samples_list)
+    setattr(args, "override_cycles", override_cycles_list)
+
+    # Return args
+    return args
 
 
 def read_samplesheet_csv(samplesheet_csv_path):
@@ -138,62 +191,17 @@ def configure_samplesheet_obj(sample_sheet_obj):
     return sample_sheet_obj
 
 
-def set_args(args):
+def strip_ns_from_indexes(samplesheetobj_data_df):
     """
-    Convert --samples and--override-cycles to arrays
-    Check they're the same length
+    Strip Ns from the end of the index and index2 headers
+    :param samplesheetobj_data_df:
     :return:
     """
 
-    # Get user args
-    samplesheet_csv_arg = getattr(args, "samplesheet_csv", None)
-    outdir_arg = getattr(args, "out_dir", None)
-    samples_arg = getattr(args, "samples", None)
-    override_cycles_arg = getattr(args, "override_cycles", None)
+    samplesheetobj_data_df['index'] = samplesheetobj_data_df['index'].apply(lambda x: x.rstrip("N"))
+    samplesheetobj_data_df['index2'] = samplesheetobj_data_df['index2'].apply(lambda x: x.rstrip("N"))
 
-    # Convert samplesheet csv to path
-    samplesheet_csv_path = Path(samplesheet_csv_arg)
-    # Check its a file
-    if not samplesheet_csv_path.is_file():
-        logging.error("Could not find file {}".format(samplesheet_csv_path))
-        sys.exit(1)
-    # Set attribute as Path object
-    setattr(args, "samplesheet_csv", samplesheet_csv_path)
-
-    # Checking the output path
-    if outdir_arg is None:
-        outdir_arg = os.getcwd()
-    outdir_path = Path(outdir_arg)
-    if not outdir_path.parent.is_dir():
-        logging.error("Could not create --out-dir, make sure parents exist. Exiting")
-        sys.exit(1)
-    elif not outdir_path.is_dir():
-        outdir_path.mkdir(parents=False)
-    setattr(args, "out_dir", outdir_path)
-
-    # Check either both or neither are None
-    if not bool(samples_arg is None) == bool(override_cycles_arg is None):
-        logging.error("Must specify both --samples and --override-cycles or neither")
-        sys.exit(1)
-
-    # Nothing to do if they're both none
-    if samples_arg is None and override_cycles_arg is None:
-        return args
-
-    # Convert to arrays
-    samples_list = samples_arg.split(",")
-    override_cycles_list = override_cycles_arg.split(",")
-
-    # Check lengths are the same
-    if not len(samples_list) == len(override_cycles_list):
-        logging.error("Found unequal number of entries for samples and override cycles")
-
-    # Set attr as lists
-    setattr(args, "samples", samples_list)
-    setattr(args, "override_cycles", override_cycles_list)
-
-    # Return args
-    return args
+    return samplesheetobj_data_df
 
 
 def merge_samples_and_override_cycles_array_to_df(samples_list, override_cycles_list):
@@ -208,7 +216,7 @@ def merge_samples_and_override_cycles_array_to_df(samples_list, override_cycles_
                          "OverrideCycles": override_cycles_list})
 
 
-def rename_settings_and_data_headers(samplesheet_obj):
+def rename_settings_and_data_headers_v2(samplesheet_obj):
     """
     :return:
     """
@@ -216,6 +224,69 @@ def rename_settings_and_data_headers(samplesheet_obj):
     for v1_key, v2_key in V2_SAMPLESHEET_HEADER_VALUES.items():
         if v1_key in samplesheet_obj.keys():
             samplesheet_obj[v2_key] = samplesheet_obj.pop(v1_key)
+
+    return samplesheet_obj
+
+
+def add_file_format_version_v2(samplesheet_header):
+    """
+    Add FileFormatVersion key pair to samplesheet header for v2 samplesheet
+    :param samplesheet_header:
+    :return:
+    """
+
+    samplesheet_header['FileFormatVersion'] = 2
+
+    return samplesheet_header
+
+
+def update_settings_v2(samplesheet_settings):
+    """
+    Convert Adapter To AdapterRead1 for v2 samplesheet
+    :param samplesheet_settings:
+    :return:
+    """
+    samplesheet_settings["AdapterRead1"] = samplesheet_settings.pop("Adapter")
+
+    return samplesheet_settings
+
+
+def truncate_data_columns_v2(samplesheet_data_df):
+    """
+    Truncate data columns to v2 columns
+    Lane,Sample_ID,index,index2,Sample_Project
+    :param samplesheet_data_df:
+    :return:
+    """
+
+    samplesheet_data_df = samplesheet_data_df[["Lane", "Sample_ID", "index", "index2", "Sample_Project"]]
+
+    return samplesheet_data_df
+
+
+def convert_reads_from_list_to_dict_v2(samplesheet_reads):
+    """
+    Convert Reads from a list to a dict format
+    :param samplesheet_reads:
+    :return:
+    """
+
+    samplesheet_reads = {"Read{}Cycles".format(i + 1): rnum for i, rnum in enumerate(samplesheet_reads)}
+
+    return samplesheet_reads
+
+
+def convert_samplesheet_to_v2(samplesheet_obj):
+    """
+    Runs through necessary steps to convert object to v2 samplesheet
+    :param samplesheet_obj:
+    :return:
+    """
+    samplesheet_obj["Header"] = add_file_format_version_v2(samplesheet_obj["Header"])
+    samplesheet_obj["Settings"] = update_settings_v2(samplesheet_obj["Settings"])
+    samplesheet_obj["Data"] = truncate_data_columns_v2(samplesheet_obj["Data"])
+    samplesheet_obj["Reads"] = convert_reads_from_list_to_dict_v2(samplesheet_obj["Reads"])
+    samplesheet_obj = rename_settings_and_data_headers_v2(samplesheet_obj)
 
     return samplesheet_obj
 
@@ -278,7 +349,7 @@ def write_samplesheet(samplesheet_obj, output_file, is_v2):
 
     # Rename samplesheet at the last possible moment
     if is_v2:
-        samplesheet_obj = rename_settings_and_data_headers(samplesheet_obj)
+        samplesheet_obj = convert_samplesheet_to_v2(samplesheet_obj)
 
     # Write the output file
     with open(output_file, 'w') as samplesheet_h:
@@ -286,7 +357,7 @@ def write_samplesheet(samplesheet_obj, output_file, is_v2):
             # Write out the section header
             samplesheet_h.write("[{}]\n".format(section))
             # Write out values
-            if type(section_values) == list:  # [Reads]
+            if type(section_values) == list:  # [Reads] for v1 samplesheets
                 # Write out each item in a new line
                 samplesheet_h.write("\n".join(section_values))
             elif type(section_values) == dict:
@@ -324,6 +395,9 @@ def main():
         samplesheet_obj = merge_override_cycles_to_samplesheet(samplesheet_obj=samplesheet_obj,
                                                                override_cycles_df=override_cycles_df,
                                                                ignore_missing_samples=args.ignore_missing_samples)
+
+    # Strip Ns from samplesheet indexes
+    samplesheet_obj["Data"] = strip_ns_from_indexes(samplesheet_obj["Data"])
 
     # Write out samplesheets
     write_out_samplesheets(samplesheet_obj=samplesheet_obj,

@@ -23,7 +23,7 @@ scheduler             = slurm
 pre_install           = s3://tothill-parallel-cluster-dev/bootstrap/pre_install.sh
 post_install          = s3://tothill-parallel-cluster-dev/bootstrap/post_install.sh
 initial_queue_size    = 1
-custom_ami            = ami-0f5bfcd72e192188e
+custom_ami            = ami-074416eece29e32ec
 master_root_volume_size  = 45  # Gb - for multiple conda installations
 compute_root_volume_size = 60  # Gb - for multiple docker containers to be pulled down to run commands
 

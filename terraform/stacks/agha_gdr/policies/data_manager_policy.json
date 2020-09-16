@@ -4,6 +4,8 @@
         {
             "Effect": "Allow",
             "Action": [
+                "health:DescribeEventAggregates",
+                "health:DescribeEvents",
                 "s3:ListAllMyBuckets",
                 "s3:HeadBucket",
                 "s3:GetBucketPublicAccessBlock",

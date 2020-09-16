@@ -20,7 +20,6 @@ echo_stderr() {
   echo "${@}" 1>&2
 }
 
-
 : '
 #################################################
 AWS FUNCTIONS
@@ -62,6 +61,31 @@ this_cloud_formation_stack_name() {
 
   # Return cloud stack name
   echo "${cloud_stack}"
+}
+
+this_parallel_cluster_version() {
+  : '
+  Determines the version of parallel cluster
+  Useful for ssm-parameters that are dependent on the parallel cluster version
+  we are using
+  '
+
+  local pc_version
+  pc_version="$(aws ec2 describe-instances \
+                  --filters "Name=instance-id,Values=$(this_instance_id)" \
+                  --query='Reservations[*].Instances[*].Tags[?Key==`ClusterName`].Value[]' | {
+                  # Returns double nested like
+                  # [
+                  #  [
+                  #   "2.9.0"
+                  #  ]
+                  # ]
+                jq --raw-output '.[0][0]'
+               })"
+
+  # Returned pc-version
+  echo "${pc_version}"
+
 }
 
 get_parallelcluster_filesystem_type() {
@@ -135,11 +159,10 @@ get_rds_passwd() {
   '
   local rds_passwd
   rds_passwd="$(aws ssm get-parameter --name "${SLURM_DBD_SSM_KEY_PASSWD}" --with-decryption | {
-               jq --raw-output '.Parameter.Value'
-              })"
+    jq --raw-output '.Parameter.Value'
+  })"
   echo "${rds_passwd}"
 }
-
 
 : '
 #################################################
@@ -154,10 +177,10 @@ is_slurmdb_up() {
   local slurmdb_status
   local storage_port=6819
   slurmdb_status=$(netstat -antp | {
-                   grep LISTEN
-                  } | {
-                   grep -c "${storage_port}"
-                  })
+    grep LISTEN
+  } | {
+    grep -c "${storage_port}"
+  })
   echo "${slurmdb_status}"
 }
 
@@ -167,12 +190,14 @@ is_cluster() {
   1 for yes, 0 otherwise
   '
   local has_cluster
+  local stack_name_lower_case="$1"
+
   has_cluster="$(/opt/slurm/bin/sacctmgr list cluster \
-                    format=Cluster \
-                    --parsable2 \
-                    --noheader | {
-                 grep -c "^${stack_name_lower_case}$"
-                })"
+    format=Cluster \
+    --parsable2 \
+    --noheader | {
+    grep -c "^${stack_name_lower_case}$"
+  })"
   echo "${has_cluster}"
 }
 
@@ -205,7 +230,9 @@ enable_mem_on_slurm() {
   '
   # Get line of INCLUDE_CLUSTER_LINE
   local include_cluster_line_num
-  include_cluster_line_num=$(grep -n "${SLURM_CONF_INCLUDE_CLUSTER_LINE}" "${SLURM_CONF_FILE}" | cut -d':' -f1)
+  include_cluster_line_num=$(grep -n "${SLURM_CONF_INCLUDE_CLUSTER_LINE}" "${SLURM_CONF_FILE}" | {
+                             cut -d':' -f1
+                            })
   # Prepend with REAL_MEM_LINE
   sed -i "${include_cluster_line_num}i${SLURM_CONF_REAL_MEM_LINE}" "${SLURM_CONF_FILE}"
 
@@ -270,8 +297,10 @@ connect_sacct_to_mysql_db() {
   } >>"${SLURM_CONF_FILE}"
 
   # Get lower case version of the cluster name
-  stack_name_lower_case="$(this_cloud_formation_stack_name | \
-                           tr '[:upper:]' '[:lower:]')"
+  local stack_name_lower_case
+  stack_name_lower_case="$(this_cloud_formation_stack_name | {
+                           tr '[:upper:]' '[:lower:]'
+                          })"
 
   # Rename the slurm cluster to the name of the CFN instance (As there can only be one of these running at once)
   sed -i "/^ClusterName=/s/.*/ClusterName=${stack_name_lower_case}/" "${SLURM_CONF_FILE}"
@@ -296,16 +325,28 @@ connect_sacct_to_mysql_db() {
   # Don't override existing jobs for this cluster?
   # 0 if does NOT contain the cluster, 1 if does
   echo_stderr "Checking the cluster list"
-  if [[ "$(is_cluster)" == "0" ]]; then
+  if [[ "$(is_cluster "${stack_name_lower_case}")" == "0" ]]; then
     # Add the cluster
     echo_stderr "Registering ${stack_name_lower_case} as a cluster"
     # Override prompt with 'yes'
-    yes | /opt/slurm/bin/sacctmgr add cluster "${stack_name_lower_case}"
+    # Write to /dev/null incase of a SIGPIEP signal
+    yes 2>/dev/null | /opt/slurm/bin/sacctmgr add cluster "${stack_name_lower_case}"
   fi
 
   # Restart the slurm control service daemon
   echo_stderr "Restarting slurm cluster"
   systemctl restart slurmctld
+}
+
+modify_slurm_port_range() {
+  : '
+  Necessary only for AWS PC 2.9.1
+  Seems to get the wrong port range 6817-6827
+  We change this to 6820 to 6830
+  Stops 6818 and 6819, used for slurmdb connections
+  being interfered with
+  '
+  sed -i 's/SlurmctldPort=6817-6827/SlurmctldPort=6820-6830/' "${SLURM_CONF_FILE}"
 }
 
 get_sinteractive_command() {
@@ -426,7 +467,6 @@ clean_conda_envs() {
     -c "conda clean --all --yes"
 }
 
-
 : '
 #################################################
 GLOBALS
@@ -472,7 +512,13 @@ SLURM_DEF_MEM_PER_CPU="4000" # Memory (MB) available per CPU
 # Line we wish to insert
 SLURM_CONF_REAL_MEM_LINE="NodeName=DEFAULT RealMemory=${SLURM_COMPUTE_NODE_REAL_MEM}"
 # Line we wish to place our snippet above
-SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"
+if [[ "$(this_parallel_cluster_version)" == "2.8.1" ]]; then
+  SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"
+elif [[ "$(this_parallel_cluster_version)" == "2.9.0" ]]; then
+  SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster.conf"
+else
+  SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster.conf"
+fi
 # Our template slurmdbd.conf to download
 # Little to no modification from the example shown here:
 # https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/
@@ -530,6 +576,9 @@ case "${cfn_node_type}" in
       # Add sinteractive
       echo_stderr "Adding sinteractive command to /usr/local/bin"
       get_sinteractive_command
+      # Modify Slurm Port Range
+      echo_stderr "Modifying slurm port range - done before trying connect to slurm database"
+      modify_slurm_port_range
       # Connect slurm to rds
       echo_stderr "Connecting to slurm rds database"
       connect_sacct_to_mysql_db
@@ -554,9 +603,12 @@ case "${cfn_node_type}" in
       # Clean conda env
       echo_stderr "Cleaning conda envs"
       clean_conda_envs
+
     ;;
     ComputeFleet)
+      # Do nothing
     ;;
     *)
+      # Do nothing
     ;;
 esac

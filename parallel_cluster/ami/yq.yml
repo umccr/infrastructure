@@ -5,7 +5,7 @@ schemaVersion: 1.0
 phases:
   - name: build
     steps:
-      - name: install brew and yq
+      - name: install-brew-and-yq
         action: ExecuteBash
         inputs:
           commands:

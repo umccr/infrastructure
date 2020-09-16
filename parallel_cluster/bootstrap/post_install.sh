@@ -1,19 +1,37 @@
 #!/usr/bin/env bash
 
 : '
+#################################################
+INTRO
+#################################################
 Run through initial set up of node at launch time.
 '
 
-# Base level functions
+: '
+#################################################
+BASE LEVEL FUNCTIONS
+#################################################
+'
 echo_stderr() {
+  : '
+  Writes output to stderr
+  '
+
   echo "${@}" 1>&2
 }
 
+
+: '
+#################################################
+AWS FUNCTIONS
+#################################################
+'
 this_instance_id() {
   : '
   Use the ec2-metadata command to return the instance id this ec2 instance is running on
   Assumes alinux2
   '
+
   local instance_id
   instance_id="$(ec2-metadata --instance-id | {
     # Returns instance-id: <instance_id>
@@ -27,7 +45,7 @@ this_instance_id() {
 this_cloud_formation_stack_name() {
   : '
   Returns the cloud formation stack
-  Single quoetes over query command are intentional
+  Single quotes over query command are intentional
   '
   local cloud_stack
   cloud_stack="$(aws ec2 describe-instances \
@@ -47,8 +65,6 @@ this_cloud_formation_stack_name() {
 }
 
 get_parallelcluster_filesystem_type() {
-  # Should be used to edit the following files
-
   : '
   Use this to choose if we need to set /efs or /fsx as our mount points
   '
@@ -91,87 +107,45 @@ get_parallelcluster_filesystem_type() {
   echo "${file_system_types}"
 }
 
-# Source config, tells us if we're on a compute or master node
-. "/etc/parallelcluster/cfnconfig"
+get_pc_s3_root() {
+  : '
+  Get the s3 root for the cluster files
+  '
+  local s3_cluster_root
+  s3_cluster_root="$(aws ssm get-parameter --name "${S3_BUCKET_DIR_SSM_KEY}" | {
+                     jq --raw-output '.Parameter.Value'
+                   })"
+  echo "${s3_cluster_root}"
+}
 
-if [[ ! -v cfn_node_type ]]; then
-  echo_stderr "cfn_node_type is not defined. Cannot determine if we're on a master or compute node. Exiting"
-  exit 1
-fi
+get_rds_endpoint() {
+  : '
+  Take the RDS endpoint from inside an SSM parameter
+  '
+  local rds_endpoint
+  rds_endpoint="$(aws ssm get-parameter --name "${SLURM_DBD_SSM_KEY_ENDPOINT}" | {
+                  jq --raw-output '.Parameter.Value'
+                })"
+  echo "${rds_endpoint}"
+}
 
-# Exit on failed command
-set -e
-
-# Globals
-S3_BUCKET_DIR="s3://umccr-research-dev/parallel-cluster"
-# Globals - Miscell
-# Which timezone are we in
-TIMEZONE="Australia/Melbourne"
-# Use get_parallelcluster_filesystem_type command to determine
-# filesystem mount point
-# /fsx if the filesystem is fsx
-# /efs if the filesystem is efs
-filesystem_type="$(get_parallelcluster_filesystem_type)"
-if [[ "${filesystem_type}" == "fsx" ]]; then
-  SHARED_FILESYSTEM_MOUNT="/fsx"
-elif [[ "${filesystem_type}" == "efs" ]]; then
-  SHARED_FILESYSTEM_MOUNT="/efs"
-else
-  # Set /efs as default
-  echo_stderr "Warning, couldn't find the type of filesystem we're on"
-  echo_stderr "Setting as /efs by default"
-  SHARED_FILESYSTEM_MOUNT="/efs"
-fi
+get_rds_passwd() {
+  : '
+  Take the RDS parameter SecureString, decrypt and return the value
+  '
+  local rds_passwd
+  rds_passwd="$(aws ssm get-parameter --name "${SLURM_DBD_SSM_KEY_PASSWD}" --with-decryption | {
+               jq --raw-output '.Parameter.Value'
+              })"
+  echo "${rds_passwd}"
+}
 
 
-# Globals - slurm
-# Slurm conf file we need to edit
-SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
-SLURM_SINTERACTIVE_S3="${S3_BUCKET_DIR}/slurm/scripts/sinteractive.sh"
-SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
-# Total mem on a m5.4xlarge parition is 64Gb
-# This value MUST be lower than the RealMemory attribute from `/opt/slurm/sbin/slurmd -C`
-# Otherwise slurm will put the nodes into 'drain' mode.
-# When run on a compute node - generally get around 63200 - subtract 2 Gb to be safe.
-SLURM_COMPUTE_NODE_REAL_MEM="62000"
-# If just CR_CPU, then slurm will only look at CPU
-# To determine if a node is full.
-SLURM_SELECT_TYPE_PARAMETERS="CR_CPU_Memory"
-SLURM_DEF_MEM_PER_CPU="4000" # Memory (MB) available per CPU
-# Line we wish to insert
-SLURM_CONF_REAL_MEM_LINE="NodeName=DEFAULT RealMemory=${SLURM_COMPUTE_NODE_REAL_MEM}"
-# Line we wish to place our snippet above
-SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"
-# Our template slurmdbd.conf to download
-# Little to no modification from the example shown here:
-# https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/
-SLURM_DBD_CONF_FILE_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-template.conf"
-SLURM_DBD_CONF_FILE_PATH="/opt/slurm/etc/slurmdbd.conf"
-# S3 Password
-SLURM_DBD_PWD_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-passwd.txt"
-SLURM_DBD_PWD_FILE_PATH="/root/slurmdbd-pwd.txt"
-# RDS Endpoint
-SLURM_DBD_ENDPOINT_S3="${S3_BUCKET_DIR}/slurm/conf/slurmdbd-endpoint.txt"
-SLURM_DBD_ENDPOINT_FILE_PATH="/root/slurmdbd-endpoint.txt"
-
-# Globals - Cromwell
-CROMWELL_SLURM_CONFIG_FILE_PATH="/opt/cromwell/configs/slurm.conf"
-CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
-CROMWELL_WEBSERVICE_PORT=8000
-# Remove from options.json file
-CROMWELL_WORKDIR="${SHARED_FILESYSTEM_MOUNT}/cromwell"
-CROMWELL_TMPDIR="$(mktemp -d --suffix _cromwell)"
-CROMWELL_LOG_LEVEL="DEBUG"
-CROMWELL_LOG_MODE="pretty"
-CROMWELL_MEM_MAX_HEAP_SIZE="4G"
-CROMWELL_START_UP_HEAP_SIZE="1G"
-CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
-CROMWELL_SERVER_PROC_ID=0
-
-# Globals - BCBIO
-BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
-
-# Functions
+: '
+#################################################
+SLURM FUNCTIONS
+#################################################
+'
 is_slurmdb_up() {
   : '
   Checks if slurmdb is talking to storage port
@@ -259,10 +233,6 @@ connect_sacct_to_mysql_db() {
   echo_stderr "Downloading necessary files for slurm dbd conf"
   aws s3 cp "${SLURM_DBD_CONF_FILE_S3}" \
     "${SLURM_DBD_CONF_FILE_PATH}"
-  aws s3 cp "${SLURM_DBD_PWD_S3}" \
-    "${SLURM_DBD_PWD_FILE_PATH}"
-  aws s3 cp "${SLURM_DBD_ENDPOINT_S3}" \
-    "${SLURM_DBD_ENDPOINT_FILE_PATH}"
 
   # Update slurmdbd.conf
   echo_stderr "Updating slurmdbd.conf"
@@ -271,8 +241,8 @@ connect_sacct_to_mysql_db() {
   # StoragePass
   # StorageHost
   sed -i "/^DbdHost=/s/.*/DbdHost=\"$(hostname -s)\"/" "${SLURM_DBD_CONF_FILE_PATH}"
-  sed -i "/^StoragePass=/s/.*/StoragePass=$(cat "${SLURM_DBD_PWD_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
-  sed -i "/^StorageHost=/s/.*/StorageHost=$(cat "${SLURM_DBD_ENDPOINT_FILE_PATH}")/" "${SLURM_DBD_CONF_FILE_PATH}"
+  sed -i "/^StoragePass=/s/.*/StoragePass=$(get_rds_passwd)/" "${SLURM_DBD_CONF_FILE_PATH}"
+  sed -i "/^StorageHost=/s/.*/StorageHost=$(get_rds_endpoint)/" "${SLURM_DBD_CONF_FILE_PATH}"
 
   # Delete password and endpoint files under /root
   rm -f "${SLURM_DBD_ENDPOINT_FILE_PATH}" "${SLURM_DBD_PWD_FILE_PATH}"
@@ -340,7 +310,7 @@ connect_sacct_to_mysql_db() {
 
 get_sinteractive_command() {
   # Ensure directory is available
-  mkdir -p "$(dirname ${SLURM_SINTERACTIVE_FILE_PATH})"
+  mkdir -p "$(dirname "${SLURM_SINTERACTIVE_FILE_PATH}")"
   # Download sinteractive command
   aws s3 cp "${SLURM_SINTERACTIVE_S3}" "${SLURM_SINTERACTIVE_FILE_PATH}"
   # Add as executable
@@ -349,32 +319,55 @@ get_sinteractive_command() {
   ln -s "${SLURM_SINTERACTIVE_FILE_PATH}" "/usr/local/bin/sinteractive"
 }
 
-start_cromwell() {
+: '
+#################################################
+USER SETUP FUNCTIONS
+#################################################
+'
+create_start_cromwell_script() {
   : '
   Start the cromwell service on launch of master node
   Placed logs under ~/cromwell-server.log for now
   '
 
+  # Set path
+  script_dir="$(dirname "${CROMWELL_SERVER_START_SCRIPT_PATH}")"
+
   # Make tmpdir writable - use sticky bit
   chmod 1777 "${CROMWELL_TMPDIR}"
 
+  # Create bin directory
   su - ec2-user \
-    -c "
-    nohup java \
-    \"-Duser.timezone=${TIMEZONE}\" \
-    \"-Duser.dir=${CROMWELL_WORKDIR}\" \
-    \"-Dconfig.file=${CROMWELL_SLURM_CONFIG_FILE_PATH}\" \
-    \"-Dwebservice.port=${CROMWELL_WEBSERVICE_PORT}\" \
-    \"-Djava.io.tmpdir=${CROMWELL_TMPDIR}\" \
-    \"-DLOG_LEVEL=${CROMWELL_LOG_LEVEL}\" \
-    \"-DLOG_MODE=${CROMWELL_LOG_MODE}\" \
-    \"-Xms${CROMWELL_START_UP_HEAP_SIZE}\" \
-    \"-Xmx${CROMWELL_MEM_MAX_HEAP_SIZE}\" \
-    \"-jar\" \"${CROMWELL_JAR_PATH}\" server > /home/ec2-user/cromwell-server.log 2>&1 &"
-  CROMWELL_SERVER_PROC_ID="$!"
-  logger "Starting cromwell under process ${CROMWELL_SERVER_PROC_ID}"
+    -c "mkdir -p \"${script_dir}\""
+
+  # Create a bash script for the user to run cromwell
+  {
+    echo -e "nohup java \\"
+    echo -e "\t-Duser.timezone=\"${TIMEZONE}\" \\"
+    echo -e "\t-Duser.dir=\"${CROMWELL_WORKDIR}\" \\"
+    echo -e "\t-Dconfig.file=\"${CROMWELL_SLURM_CONFIG_FILE_PATH}\" \\"
+    echo -e "\t-Dwebservice.port=\"${CROMWELL_WEBSERVICE_PORT}\" \\"
+    echo -e "\t-Djava.io.tmpdir=\"${CROMWELL_TMPDIR}\" \\"
+    echo -e "\t-DLOG_LEVEL=\"${CROMWELL_LOG_LEVEL}\" \\"
+    echo -e "\t-DLOG_MODE=\"${CROMWELL_LOG_MODE}\" \\"
+    echo -e "\t-Xms\"${CROMWELL_START_UP_HEAP_SIZE}\" \\"
+    echo -e "\t-Xmx\"${CROMWELL_MEM_MAX_HEAP_SIZE}\" \\"
+    echo -e "\t-jar \"${CROMWELL_JAR_PATH}\" \\"
+    echo -e "\t\tserver > \"/home/ec2-user/cromwell-server.log\" 2>&1 &"
+  } > "${CROMWELL_SERVER_START_SCRIPT_PATH}"
+
+  # Change executable permissions
+  chmod +x "${CROMWELL_SERVER_START_SCRIPT_PATH}"
+
+  # Change owner to ec2-user
+  chown ec2-user:ec2-user "${CROMWELL_SERVER_START_SCRIPT_PATH}"
 }
 
+: '
+#################################################
+CONDA UPDATE FUNCTIONS
+#################################################
+'
 update_cromwell_env() {
   # Update conda and the environment on startup
   : '
@@ -387,14 +380,27 @@ update_cromwell_env() {
 }
 
 update_bcbio_env() {
-  # Update conda and the environment on startup
   : '
-  Create cromwell env to submit to cromwell server
-  Add /opt/cromwell/scripts to PATH
+  Update conda and the environment on startup
   '
   # Create env for submitting workflows to cromwell
   su - ec2-user \
     -c "conda update --name \"${BCBIO_CONDA_ENV_NAME}\" --all --yes"
+}
+
+update_toil_env() {
+  : '
+  Update the toil environment on startup
+  '
+  su - ec2-user \
+    -c "conda update --name \"${TOIL_CONDA_ENV_NAME}\" --all --yes; \
+        conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
+        pip install --upgrade \"toil[all]\""
+  # FIXME --net=none when launching docker containers
+  # Could be a NetworkAccess Requirement?
+  su - ec2-user \
+    -c "conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
+        sed -i 's/net=none/net=host/g' \"\${CONDA_PREFIX}/lib/python3.8/site-packages/cwltool/docker.py\""
 }
 
 update_base_conda_env() {
@@ -403,6 +409,117 @@ update_base_conda_env() {
   su - ec2-user \
     -c "conda update --name \"base\" --all --yes"
 }
+
+write_shared_dir_to_bashrc() {
+  : '
+  Get SHARED_FILESYSTEM_MOUNT and write to ~/.bashrc
+  '
+  su - ec2-user \
+    -c "echo export SHARED_DIR=\\\"${SHARED_FILESYSTEM_MOUNT}\\\" >> /home/ec2-user/.bashrc"
+}
+
+clean_conda_envs() {
+  : '
+  Clean all conda envs
+  '
+  su - ec2-user \
+    -c "conda clean --all --yes"
+}
+
+
+: '
+#################################################
+GLOBALS
+#################################################
+'
+
+# Globals
+S3_BUCKET_DIR_SSM_KEY="/parallel_cluster/dev/s3_config_root"
+
+# Globals - Miscell
+# Which timezone are we in
+TIMEZONE="Australia/Melbourne"
+# Use get_parallelcluster_filesystem_type command to determine
+# filesystem mount point
+# /fsx if the filesystem is fsx
+# /efs if the filesystem is efs
+filesystem_type="$(get_parallelcluster_filesystem_type)"
+if [[ "${filesystem_type}" == "fsx" ]]; then
+  SHARED_FILESYSTEM_MOUNT="/fsx"
+elif [[ "${filesystem_type}" == "efs" ]]; then
+  SHARED_FILESYSTEM_MOUNT="/efs"
+else
+  # Set /efs as default
+  echo_stderr "Warning, couldn't find the type of filesystem we're on"
+  echo_stderr "Setting as /efs by default"
+  SHARED_FILESYSTEM_MOUNT="/efs"
+fi
+
+# Globals - slurm
+# Slurm conf file we need to edit
+SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
+SLURM_SINTERACTIVE_S3="$(get_pc_s3_root)/slurm/scripts/sinteractive.sh"
+SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
+# Total mem on a m5.4xlarge parition is 64Gb
+# This value MUST be lower than the RealMemory attribute from `/opt/slurm/sbin/slurmd -C`
+# Otherwise slurm will put the nodes into 'drain' mode.
+# When run on a compute node - generally get around 63200 - subtract 2 Gb to be safe.
+SLURM_COMPUTE_NODE_REAL_MEM="62000"
+# If just CR_CPU, then slurm will only look at CPU
+# To determine if a node is full.
+SLURM_SELECT_TYPE_PARAMETERS="CR_CPU_Memory"
+SLURM_DEF_MEM_PER_CPU="4000" # Memory (MB) available per CPU
+# Line we wish to insert
+SLURM_CONF_REAL_MEM_LINE="NodeName=DEFAULT RealMemory=${SLURM_COMPUTE_NODE_REAL_MEM}"
+# Line we wish to place our snippet above
+SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"
+# Our template slurmdbd.conf to download
+# Little to no modification from the example shown here:
+# https://aws.amazon.com/blogs/compute/enabling-job-accounting-for-hpc-with-aws-parallelcluster-and-amazon-rds/
+SLURM_DBD_CONF_FILE_S3="$(get_pc_s3_root)/slurm/conf/slurmdbd-template.conf"
+SLURM_DBD_CONF_FILE_PATH="/opt/slurm/etc/slurmdbd.conf"
+# S3 Password
+SLURM_DBD_SSM_KEY_PASSWD="/parallel_cluster/dev/slurm_rds_db_password"
+# RDS Endpoint
+SLURM_DBD_SSM_KEY_ENDPOINT="/parallel_cluster/dev/slurm_rds_endpoint"
+
+# Globals - Cromwell
+CROMWELL_SLURM_CONFIG_FILE_PATH="/opt/cromwell/configs/slurm.conf"
+CROMWELL_TOOLS_CONDA_ENV_NAME="cromwell_tools"
+CROMWELL_WEBSERVICE_PORT=8000
+# Remove from options.json file
+CROMWELL_WORKDIR="${SHARED_FILESYSTEM_MOUNT}/cromwell"
+CROMWELL_TMPDIR="$(mktemp -d --suffix _cromwell)"
+CROMWELL_LOG_LEVEL="INFO"
+CROMWELL_LOG_MODE="pretty"
+CROMWELL_MEM_MAX_HEAP_SIZE="4G"
+CROMWELL_START_UP_HEAP_SIZE="1G"
+CROMWELL_JAR_PATH="/opt/cromwell/jar/cromwell.jar"
+CROMWELL_SERVER_START_SCRIPT_PATH="/home/ec2-user/bin/start-cromwell-server.sh"
+
+# Globals - bcbio
+BCBIO_CONDA_ENV_NAME="bcbio_nextgen_vm"
+
+# Globals - Toil
+TOIL_CONDA_ENV_NAME="toil"
+
+: '
+#################################################
+START
+#################################################
+'
+
+# Exit on failed command
+set -e
+
+# Source config, tells us if we're on a compute or master node
+. "/etc/parallelcluster/cfnconfig"
+
+# Check cfn_node_type is defined
+if [[ ! -v cfn_node_type ]]; then
+  echo_stderr "cfn_node_type is not defined. Cannot determine if we're on a master or compute node. Exiting"
+  exit 1
+fi
 
 # Complete slurm and cromwell post-slurm installation
 case "${cfn_node_type}" in
@@ -425,9 +542,18 @@ case "${cfn_node_type}" in
       # Update cromwell env
       echo_stderr "Update cromwell conda env for ec2-user"
       update_cromwell_env
+      # Update toil env
+      echo_stderr "Update the toil env for ec2-user"
+      update_toil_env
       # Start cromwell service
-      echo_stderr "Starting cromwell"
-      start_cromwell
+      echo_stderr "Creating start cromwell script"
+      create_start_cromwell_script
+      # Write SHARED_DIR env var to bashrc
+      echo_stderr "Setting SHARED_DIR for user"
+      write_shared_dir_to_bashrc
+      # Clean conda env
+      echo_stderr "Cleaning conda envs"
+      clean_conda_envs
     ;;
     ComputeFleet)
     ;;

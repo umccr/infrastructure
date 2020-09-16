@@ -55,9 +55,10 @@ with the following specs:
      yum install -y -q \
         vim \
         wget
-      REGION="ap-southeast-2"
-      AWSTOE_URL="https://awstoe-${REGION}.s3.${REGION}.amazonaws.com/latest/linux/amd64/awstoe"
-     chmod +x /usr/bin/awstoe  
+      REGION="ap-southeast-2" 
+      AWSTOE_URL="https://awstoe-${REGION}.s3.${REGION}.amazonaws.com/latest/linux/amd64/awstoe" 
+      wget --output-document /usr/local/bin/awstoe "${AWSTOE_URL}"
+      chmod +x /usr/bin/awstoe  
     "
     ```
 4. Download your ami documents from s3 or copy and paste them from a local source

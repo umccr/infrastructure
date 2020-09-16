@@ -8,7 +8,7 @@ Split samplesheet out into separate override cycles files\
 Write to separate files
 If --v2 specified:
   * rename Settings.Adapter to Settings.AdapterRead1
-  * Reduce Data to columns Lane, Sample_ID, index, index2, Sample_Project
+  * Reduce Data to columns Lane, Sample_ID, index, index2
   * Add FileFormatVersion,2 to Header
   * Convert Reads from list to dict with Read1Cycles and Read2Cycles as keys
 """
@@ -29,6 +29,8 @@ logging.basicConfig(level=logging.DEBUG)
 SAMPLESHEET_HEADER_REGEX = r"^\[(\S+)\](,+)?"  # https://regex101.com/r/5nbe9I/1
 V2_SAMPLESHEET_HEADER_VALUES = {"Data": "BCLConvert_Data",
                                 "Settings": "BCLConvert_Settings"}
+V2_FILE_FORMAT_VERSION = "2"
+V2_DEFAULT_INSTRUMENT_TYPE = "NovaSeq 6000"
 
 
 def get_args():
@@ -235,7 +237,20 @@ def add_file_format_version_v2(samplesheet_header):
     :return:
     """
 
-    samplesheet_header['FileFormatVersion'] = 2
+    samplesheet_header['FileFormatVersion'] = V2_FILE_FORMAT_VERSION
+
+    return samplesheet_header
+
+
+def set_instrument_type(samplesheet_header):
+    """
+    Fix InstrumentType if it's not specified
+    :param samplesheet_header:
+    :return:
+    """
+
+    if "InstrumentType" not in samplesheet_header.keys():
+        samplesheet_header["InstrumentType"] = V2_DEFAULT_INSTRUMENT_TYPE
 
     return samplesheet_header
 
@@ -254,12 +269,12 @@ def update_settings_v2(samplesheet_settings):
 def truncate_data_columns_v2(samplesheet_data_df):
     """
     Truncate data columns to v2 columns
-    Lane,Sample_ID,index,index2,Sample_Project
+    Lane,Sample_ID,index,index2
     :param samplesheet_data_df:
     :return:
     """
 
-    samplesheet_data_df = samplesheet_data_df[["Lane", "Sample_ID", "index", "index2", "Sample_Project"]]
+    samplesheet_data_df = samplesheet_data_df[["Lane", "Sample_ID", "index", "index2"]]
 
     return samplesheet_data_df
 
@@ -283,6 +298,7 @@ def convert_samplesheet_to_v2(samplesheet_obj):
     :return:
     """
     samplesheet_obj["Header"] = add_file_format_version_v2(samplesheet_obj["Header"])
+    samplesheet_obj["Header"] = set_instrument_type(samplesheet_obj["Header"])
     samplesheet_obj["Settings"] = update_settings_v2(samplesheet_obj["Settings"])
     samplesheet_obj["Data"] = truncate_data_columns_v2(samplesheet_obj["Data"])
     samplesheet_obj["Reads"] = convert_reads_from_list_to_dict_v2(samplesheet_obj["Reads"])

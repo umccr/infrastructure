@@ -13,71 +13,67 @@ key_name              = romanvg
 vpc_settings          = tothill_network
 efs_settings          = awselasticfs
 s3_read_resource      = *
-cluster_type          = spot
 master_instance_type  = t2.medium
 # Until the SLURM_COMPUTE_NODE_REAL_MEM is part of a ssm-parameter this will
 # compute_instance_type will need to be uniform across each cluster template
-compute_instance_type = m5.4xlarge
 additional_iam_policies = arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 scheduler             = slurm
 pre_install           = s3://tothill-parallel-cluster-dev/bootstrap/pre_install.sh
 post_install          = s3://tothill-parallel-cluster-dev/bootstrap/post_install.sh
-initial_queue_size    = 1
 custom_ami            = ami-074416eece29e32ec
 master_root_volume_size  = 45  # Gb - for multiple conda installations
 compute_root_volume_size = 60  # Gb - for multiple docker containers to be pulled down to run commands
+# Set the queue
+queue_settings        = compute
+
 
 [cluster umccr_dev]
 base_os               = alinux2
 vpc_settings          = umccr_dev_network
 efs_settings          = awselasticfs
 s3_read_resource      = *
-cluster_type          = spot
 key_name              = alexis-wfh-dev
 # Need something substantial to hold the slurm database
 master_instance_type  = t2.medium
-# 16 CPUs and 64 Gb
-compute_instance_type = m5.4xlarge
 # Using additional_iam_policies over ec2_iam_role
 # Add SSM policy, so we can keep port 22 closed
 additional_iam_policies = arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 scheduler             = slurm
-initial_queue_size    = 1
 # Basic ami with installations of
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # See the ami readme for recreation of the custom_ami
-custom_ami            = ami-0f5bfcd72e192188e
+custom_ami            = ami-0cf68ccca246d4f2f
 pre_install           = s3://umccr-research-dev/parallel-cluster/bootstrap/pre_install.sh
 post_install          = s3://umccr-research-dev/parallel-cluster/bootstrap/post_install.sh
 master_root_volume_size  = 45  # Gb - for multiple conda installations
 compute_root_volume_size = 60  # Gb - for multiple docker containers to be pulled down to run commands
+# Set the queue
+queue_settings        = compute
 
 [cluster umccr_dev_fsx]
 base_os               = alinux2
 vpc_settings          = umccr_dev_network
 fsx_settings          = lustrefs
 s3_read_resource      = *
-cluster_type          = spot
 key_name              = alexis-wfh-dev
 # Need something substantial to hold the slurm database
 master_instance_type  = t2.medium
-# 16 CPUs and 64 Gb
-compute_instance_type = m5.4xlarge
 # Using additional_iam_policies over ec2_iam_role
 # Add SSM policy, so we can keep port 22 closed
 additional_iam_policies = arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 scheduler             = slurm
-initial_queue_size    = 1
 # Basic ami with installations of
 # R, python3.8, conda, pip, ruby, golang, rust
 # conda has been initialised to the ec2-user
 # See the ami readme for recreation of the custom_ami
-custom_ami           = ami-0f5bfcd72e192188e
+custom_ami            = ami-0cf68ccca246d4f2f
 pre_install           = s3://umccr-research-dev/parallel-cluster/bootstrap/pre_install.sh
 post_install          = s3://umccr-research-dev/parallel-cluster/bootstrap/post_install.sh
 master_root_volume_size = 45   # Gb - for multiple conda installations
 compute_root_volume_size = 60  # Gb - for multiple docker containers to be pulled down to run commands
+# Set the queue
+queue_settings        = compute
 
 ## Networks
 [vpc tothill_network]
@@ -113,3 +109,15 @@ shared_dir                = /fsx
 storage_capacity          = 1200
 # Default system
 deployment_type           = SCRATCH_2
+
+## Resource partitions / queues
+[queue compute]
+compute_resource_settings = himem,hicpu
+compute_type = spot
+
+## Compute resources
+[compute_resource himem]
+instance_type = m5.4xlarge  # 16 Cpus and 64 Gbs of RAM
+
+[compute_resource hicpu]
+instance_type = c5.4xlarge  # 16 Cpus and 32 Gbs of RAM

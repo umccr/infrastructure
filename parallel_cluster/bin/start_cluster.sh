@@ -173,7 +173,7 @@ instance_id="$(aws ec2 describe-instances \
                  --query "Reservations[*].Instances[*].[InstanceId]" \
                  --filters "Name=instance-state-name,Values=running" \
                            "Name=tag:Name,Values=Master" \
-                           "Name=tag:aws:cloudformation:stack-name,Values=parallelcluster-${cluster_name_arg}" \
+                           "Name=tag:ClusterName,Values=${cluster_name_arg}" \
                  --output text)"
 
 if [[ -z "${instance_id}" ]]; then

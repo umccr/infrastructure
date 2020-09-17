@@ -72,16 +72,16 @@ this_parallel_cluster_version() {
 
   local pc_version
   pc_version="$(aws ec2 describe-instances \
-                  --filters "Name=instance-id,Values=$(this_instance_id)" \
-                  --query='Reservations[*].Instances[*].Tags[?Key==`ClusterName`].Value[]' | {
-                  # Returns double nested like
-                  # [
-                  #  [
-                  #   "2.9.0"
-                  #  ]
-                  # ]
-                jq --raw-output '.[0][0]'
-               })"
+    --filters "Name=instance-id,Values=$(this_instance_id)" \
+    --query='Reservations[*].Instances[*].Tags[?Key==`ClusterName`].Value[]' | {
+    # Returns double nested like
+    # [
+    #  [
+    #   "2.9.1"
+    #  ]
+    # ]
+    jq --raw-output '.[0][0]'
+  })"
 
   # Returned pc-version
   echo "${pc_version}"
@@ -236,11 +236,12 @@ enable_mem_on_slurm() {
   # Prepend with REAL_MEM_LINE
   sed -i "${include_cluster_line_num}i${SLURM_CONF_REAL_MEM_LINE}" "${SLURM_CONF_FILE}"
 
+  # FIXME Hardcoded key-pair-vals should be put in a dict / json
+  sed -i '/^NodeName=compute-dy-c54xlarge/ s/$/ RealMemory=30000/' "${SLURM_COMPUTE_PARTITION_CONFIG_FILE}"
+  sed -i '/^NodeName=compute-dy-m54xlarge/ s/$/ RealMemory=62000/' "${SLURM_COMPUTE_PARTITION_CONFIG_FILE}"
+
   # Replace SelectTypeParameters default (CR_CPU) with (CR_CPU_MEMORY)
   sed -i "/^SelectTypeParameters=/s/.*/SelectTypeParameters=${SLURM_SELECT_TYPE_PARAMETERS}/" "${SLURM_CONF_FILE}"
-
-  # Add DefMemPerCpu to cluster line (final line of the config)
-  sed -i "/^PartitionName=/ s/$/ DefMemPerCPU=${SLURM_DEF_MEM_PER_CPU}/" "${SLURM_CONF_FILE}"
 
   # Restart slurm control service with changes to conf file
   systemctl restart slurmctld
@@ -409,12 +410,46 @@ create_start_cromwell_script() {
 CONDA UPDATE FUNCTIONS
 #################################################
 '
+
+has_conda_env() {
+  : '
+  Check if the conda env is in the environment
+  '
+  # Declare vars
+  local env_exists
+  local env_path="$1"
+
+  # Check if env exists
+  env_exists="$(su - ec2-user -c "conda env list --json" | {
+                # {
+                #  "envs": [
+                #    "/home/ec2-user/.conda"
+                #  ]
+                # }
+                jq --arg condaenv "${env_path}" '.["envs"] | index ( $condaenv )'
+              })"
+
+  # Return 1 if environment exists
+  # 0 otherwise
+  if [[ ! "${env_exists}" == null ]]; then
+    echo "1"
+  else
+    echo "0"
+  fi
+}
+
 update_cromwell_env() {
   # Update conda and the environment on startup
   : '
   Create cromwell env to submit to cromwell server
   Add /opt/cromwell/scripts to PATH
   '
+  # Check env is present in ami
+  if [[ "$(has_conda_env "/home/ec2-user/.conda/envs/${CROMWELL_TOOLS_CONDA_ENV_NAME}")" == "0" ]]; then
+    echo_stderr "${CROMWELL_TOOLS_CONDA_ENV_NAME} doesn't exist - not updating"
+    return
+  fi
+
   # Create env for submitting workflows to cromwell
   su - ec2-user \
     -c "conda update --name \"${CROMWELL_TOOLS_CONDA_ENV_NAME}\" --all --yes"
@@ -424,6 +459,12 @@ update_bcbio_env() {
   : '
   Update conda and the environment on startup
   '
+  # Check env is present in ami
+  if [[ "$(has_conda_env "/home/ec2-user/.conda/envs/${BCBIO_CONDA_ENV_NAME}")" == "0" ]]; then
+    echo_stderr "${BCBIO_CONDA_ENV_NAME} doesn't exist - not updating"
+    return
+  fi
+
   # Create env for submitting workflows to cromwell
   su - ec2-user \
     -c "conda update --name \"${BCBIO_CONDA_ENV_NAME}\" --all --yes"
@@ -433,6 +474,12 @@ update_toil_env() {
   : '
   Update the toil environment on startup
   '
+  # Check env is present in ami
+  if [[ "$(has_conda_env "/home/ec2-user/.conda/envs/${TOIL_CONDA_ENV_NAME}")" == "0" ]]; then
+    echo_stderr "${TOIL_CONDA_ENV_NAME} doesn't exist - not updating"
+    return
+  fi
+
   su - ec2-user \
     -c "conda update --name \"${TOIL_CONDA_ENV_NAME}\" --all --yes; \
         conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
@@ -498,6 +545,7 @@ fi
 # Globals - slurm
 # Slurm conf file we need to edit
 SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
+SLURM_COMPUTE_PARTITION_CONFIG_FILE="/opt/slurm/etc/pcluster/slurm_parallelcluster_compute_partition.conf"
 SLURM_SINTERACTIVE_S3="$(get_pc_s3_root)/slurm/scripts/sinteractive.sh"
 SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
 # Total mem on a m5.4xlarge parition is 64Gb
@@ -508,7 +556,6 @@ SLURM_COMPUTE_NODE_REAL_MEM="62000"
 # If just CR_CPU, then slurm will only look at CPU
 # To determine if a node is full.
 SLURM_SELECT_TYPE_PARAMETERS="CR_CPU_Memory"
-SLURM_DEF_MEM_PER_CPU="4000" # Memory (MB) available per CPU
 # Line we wish to insert
 SLURM_CONF_REAL_MEM_LINE="NodeName=DEFAULT RealMemory=${SLURM_COMPUTE_NODE_REAL_MEM}"
 # Line we wish to place our snippet above

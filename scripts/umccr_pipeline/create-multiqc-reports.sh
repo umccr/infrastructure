@@ -143,11 +143,6 @@ if test "$DEPLOY_ENV" = "prod"; then
     write_log "INFO: Running command: $cmd"
     eval "$cmd"
 
-    # Copy bcl2fastq report for Lab
-    cmd="cp $qc_base_path/Reports/${runfolder}/${runfolder}_bcl2fastq_qc.html $qc_base_path/Reports-Lab/"
-    write_log "INFO: running command: $cmd"
-    eval "$cmd"
-
     # Copy MultiQC report data to S3
     cmd="aws s3 sync $qc_base_path/Reports/${runfolder}/ ${rundata_s3_path}/${runfolder}"
     write_log "INFO: running command: $cmd"

@@ -60,7 +60,7 @@ Log in with 'ssm i-XXXXXXXX'   <---- Master instance ID
 $ ssm i-XXXXXXXXXX
 
 # Delete the cluster when finished
-$ ./bin/stop-cluster.sh <CLUSTER_NAME>
+$ ./bin/stop_cluster.sh <CLUSTER_NAME>
 ```
 
 ## Cluster Use

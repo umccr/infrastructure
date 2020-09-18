@@ -8,7 +8,7 @@ Split samplesheet out into separate override cycles files\
 Write to separate files
 If --v2 specified:
   * rename Settings.Adapter to Settings.AdapterRead1
-  * Reduce Data to columns Lane, Sample_ID, index, index2
+  * Reduce Data to columns Lane, Sample_ID, index, index2, Sample_Project
   * Add FileFormatVersion,2 to Header
   * Convert Reads from list to dict with Read1Cycles and Read2Cycles as keys
 """
@@ -21,6 +21,7 @@ import logging
 import argparse
 from pathlib import Path
 import sys
+from copy import deepcopy
 
 # Set logging level
 logging.basicConfig(level=logging.DEBUG)
@@ -269,12 +270,12 @@ def update_settings_v2(samplesheet_settings):
 def truncate_data_columns_v2(samplesheet_data_df):
     """
     Truncate data columns to v2 columns
-    Lane,Sample_ID,index,index2
+    Lane,Sample_ID,index,index2,Sample_Project
     :param samplesheet_data_df:
     :return:
     """
 
-    samplesheet_data_df = samplesheet_data_df[["Lane", "Sample_ID", "index", "index2"]]
+    samplesheet_data_df = samplesheet_data_df[["Lane", "Sample_ID", "index", "index2", "Sample_Project"]]
 
     return samplesheet_data_df
 
@@ -336,7 +337,7 @@ def write_out_samplesheets(samplesheet_obj, out_dir, is_override_cycles, is_v2):
     if is_override_cycles:
         for (override_cycle, override_cycle_df) in samplesheet_obj["Data"].groupby("OverrideCycles"):
             # Duplicate samplesheet_obj
-            samplesheet_obj_override_copy = samplesheet_obj.copy()
+            samplesheet_obj_override_copy = deepcopy(samplesheet_obj)
             # Convert df to csv string
             samplesheet_obj_override_copy["Data"] = override_cycle_df.drop(columns=["OverrideCycles"])
             # Update

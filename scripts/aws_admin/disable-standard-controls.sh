@@ -33,7 +33,14 @@ aws securityhub update-standards-control \
 aws securityhub update-standards-control \
     --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/3.1" \
     --control-status "DISABLED" \
-    --disabled-reason "Following https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-cis-to-disable.html"
+    --disabled-reason "Missing additional finding handlers"
+
+# CIS 3.2 - Ensure a log metric filter and alarm exist for AWS Management Console sign-in without MFA
+# Does not recognise federated users (who are using MFA). Additional filters needed to separate out real findings
+aws securityhub update-standards-control \
+    --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/3.1" \
+    --control-status "DISABLED" \
+    --disabled-reason "Does not differenciate between AWS users and SSO federation"
 
 
 # EC2.6 - VPC flow logging should be enabled in all VPCs

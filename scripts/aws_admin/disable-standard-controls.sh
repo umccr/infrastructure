@@ -28,6 +28,14 @@ aws securityhub update-standards-control \
     --control-status "DISABLED" \
     --disabled-reason "TBD"
 
+# CIS 3.1 - Ensure a log metric filter and alarm exist for unauthorized API calls
+# Too many findings drown out all other messages (further processing/filtering required, which is not yet in place)
+aws securityhub update-standards-control \
+    --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/cis-aws-foundations-benchmark/v/1.2.0/3.1" \
+    --control-status "DISABLED" \
+    --disabled-reason "Following https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-cis-to-disable.html"
+
+
 # EC2.6 - VPC flow logging should be enabled in all VPCs
 aws securityhub update-standards-control \
     --standards-control-arn "arn:aws:securityhub:$aws_region:$aws_account:control/aws-foundational-security-best-practices/v/1.0.0/EC2.6" \

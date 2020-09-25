@@ -6,6 +6,14 @@ echo_stderr(){
     echo "${@}" 1>&2
 }
 
+has_creds(){
+  : '
+  Are credentials present on CLI
+  '
+  aws sts get-caller-identity >/dev/null 2>&1
+  return "$?"
+}
+
 get_local_ip(){
   # Returns the local ip address
   local local_ip
@@ -55,6 +63,11 @@ append_ip_to_extra_parameters() {
                     })"
   echo "${extra_parameters}"
 }
+
+if ! has_creds; then
+  echo_stderr "Could not find credentials, please login to AWS before continuing"
+  exit 1
+fi
 
 if ! check_pcluster_version; then
   echo_stderr "Could not get version, from command 'pcluster version'."

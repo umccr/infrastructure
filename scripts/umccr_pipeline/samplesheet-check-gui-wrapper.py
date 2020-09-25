@@ -25,9 +25,12 @@ def show_error_modal(error_msg):
 
 args = main()
 print(f"Samplesheet: {args.samplesheet}")
+# Set check_only attribute to true
+args["check_only"] = True
+
 
 try:
-    ss.main(args.samplesheet, True)
+    ss.main(args)
 except ValueError as ve:
     print(ve)
     show_error_modal(str(ve))

@@ -5,10 +5,13 @@ Pull in library and metadata sheet from google
 """
 
 import pandas as pd
-from gspread_pandas import Spread
+from gspread_pandas import Spread, Client
+from openpyxl import load_workbook
 from umccr_utils.globals import METADATA_COLUMN_NAMES, METADATA_VALIDATION_COLUMN_NAMES
 from umccr_utils.logger import get_logger
 from umccr_utils.errors import ColumnNotFoundError
+from umccr_utils.globals import LIMS_SPREAD_SHEET_NAMES
+from oauth2client.service_account import ServiceAccountCredentials
 
 logger = get_logger()
 
@@ -187,3 +190,53 @@ def remove_blank_rows(lab_metadata_df):
         raise ValueError
 
     return truncated_lab_metadata_df
+
+
+def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run=False):
+    """
+    Simple steps here to
+    :param keyfile:
+    :param lims_spreadsheet_id:
+    :param data_rows:
+    :param failed_run:
+    :return:
+    """
+    scope = ['https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
+    client = Client(creds)
+
+    # Open LIMS spreadsheet
+    g_spreadsheet = client.open_by_key(lims_spreadsheet_id)
+    if failed_run:
+        # Open worksheet object
+        worksheet = g_spreadsheet.open(LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_FAILED"])
+    else:
+        worksheet = g_spreadsheet.open(LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"])
+
+    # Write rows to spreadsheet
+    worksheet.append_rows(values=data_rows,
+                          value_input_option="USER_ENTERED",
+                          insert_data_option="INSERT_ROWS")
+
+
+def write_to_local_lims(excel_file, data_df, failed_run=False):
+    """
+    Write / update rows on a local lims file, good for testing the workflow
+    Example here: https://stackoverflow.com/a/54186803
+    :param excel_file:
+    :param data_df:
+    :param failed_run:
+    :return:
+    """
+
+    # Load workbook
+    writer = pd.ExcelWriter(excel_file, engine="openpyxl", mode="a")
+    writer.book = load_workbook(excel_file)
+    # Append to sheet
+    if failed_run:
+        data_df.to_excel(writer, sheet_name=LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_FAILED"])
+    else:
+        data_df.to_excel(writer, sheet_name=LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"])
+
+    writer.save()
+    writer.close()

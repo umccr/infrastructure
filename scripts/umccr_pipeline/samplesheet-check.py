@@ -7,7 +7,7 @@ from pathlib import Path
 # Globals
 from umccr_utils.globals import LAB_SPREAD_SHEET_ID
 # Logger
-from umccr_utils.logger import set_logger
+from umccr_utils.logger import set_logger, set_basic_logger
 # Get Classes
 from umccr_utils.samplesheet import SampleSheet
 # Get functions
@@ -24,7 +24,11 @@ from umccr_utils.samplesheet import set_meta_data_by_library_id
 from umccr_utils.errors import SampleSheetHeaderError, SimilarIndexError, \
                                SampleNameFormatError, MetaDataError, OverrideCyclesError
 
-logger = set_logger()
+# Relative paths
+SCRIPT = Path(__file__)
+SCRIPT_DIR = SCRIPT.parent
+SCRIPT_NAME = SCRIPT.name
+logger = set_basic_logger()
 
 
 def get_args():
@@ -66,20 +70,6 @@ def check_args(args):
 
     global logger
 
-    # Get path to samplesheet
-    samplesheet_arg = getattr(args, "samplesheet")
-
-    # Convert to path-like object
-    samplesheet_path = Path(samplesheet_arg)
-
-    # Check file exists
-    if not samplesheet_path.is_file():
-        logger.error("Samplesheet path at {} does not exist".format(samplesheet_path))
-        sys.exit(1)
-
-    # Set samplesheet_path to attribute
-    setattr(args, "samplesheet", samplesheet_path)
-
     # Check deploy-env
     deploy_env_arg = getattr(args, "deploy_env", None)
     if deploy_env_arg is None:
@@ -94,6 +84,22 @@ def check_args(args):
             ))
         else:
             setattr(args, "deploy_env", deploy_env)
+
+    logger = set_logger(SCRIPT_DIR, SCRIPT, getattr(args, "deploy_env"))
+
+    # Get path to samplesheet
+    samplesheet_arg = getattr(args, "samplesheet")
+
+    # Convert to path-like object
+    samplesheet_path = Path(samplesheet_arg)
+
+    # Check file exists
+    if not samplesheet_path.is_file():
+        logger.error("Samplesheet path at {} does not exist".format(samplesheet_path))
+        sys.exit(1)
+
+    # Set samplesheet_path to attribute
+    setattr(args, "samplesheet", samplesheet_path)
 
     # Check output-dir
     outdir_arg = getattr(args, "outdir", None)

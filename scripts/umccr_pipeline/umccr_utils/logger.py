@@ -2,9 +2,31 @@
 
 import logging
 from logging.handlers import RotatingFileHandler
+from globals import LOG_FILE_PREFIX, LOGGER_STYLE
 
 
-def set_logger():
+def set_basic_logger():
+    """
+    Set the basic logger before we then take in the --deploy-env values to see where we write to
+    :return:
+    """
+    # Get a basic logger
+    logger = logging.getLogger(__name__)
+
+    # Get a stderr handler
+    console = logging.StreamHandler()
+
+    # Set level
+    console.setLevel(logging.DEBUG)
+
+    # Set format
+    formatter = logging.Formatter(LOGGER_STYLE)
+    console.setFormatter(formatter)
+
+    return logger
+
+
+def set_logger(script_dir, script, deploy_env):
     """
     Initialise a logger
     :return:
@@ -13,10 +35,12 @@ def set_logger():
     new_logger.setLevel(logging.DEBUG)
 
     # create a logging format
-    formatter = logging.Formatter('%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s')
+    formatter = logging.Formatter(LOGGER_STYLE)
 
     # create a file handler
-    file_handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
+    file_handler = RotatingFileHandler(filename=script_dir / script + LOG_FILE_PREFIX[deploy_env],
+                                       maxBytes=100000000, backupCount=5)
+    # Set Level
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 

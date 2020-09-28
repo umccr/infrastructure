@@ -15,23 +15,35 @@ GLOBALS used in projects
 
 import re
 
+METADATA_COLUMN_NAMES = {
+  "library_id": 'LibraryID',  # the internal ID for the library
+  "sample_name": 'SampleName',  # the sample name assigned by the lab
+  "sample_id": 'SampleID',  # the internal ID for the sample
+  "external_sample_id": 'ExternalSampleID',  # the external ID for the sample
+  "subject_id": 'SubjectID',  # the internal ID for the subject/patient
+  "external_subject_id": "ExternalSubjectID",  # The external subject ID
+  "phenotype": 'Phenotype',  # tumor, normal, negative-control, ...
+  "quality": 'Quality',  # Good, Poor, Borderline
+  "source": 'Source',  # tissue, FFPE, ...
+  "project_name": 'ProjectName',
+  "project_owner": 'ProjectOwner',
+  "experiment_id": "ExperimentID",
+  "type": 'Type',  # the assay type: WGS, WTS, 10X, ...
+  "override_cycles": "OverrideCycles",  # The Override cycles list for this run
+  "secondary_analysis": "Workflow",  # ?
+  "coverage": "Coverage (X)",  # ?
+  "idt_index": "IDT Index , unless stated",  # FIXME - this is a terrible column name
+  "run": "Run#",
+  "comments": "comments",
+  "rrna": "rRNA",
+  "qpc_id": "qPCR ID",
+  "sample_id_samplesheet": "Sample_ID (SampleSheet)"
+}
+
+
 """
 METADATA SPREAD SHEET 
 """
-
-METADATA_COLUMN_NAMES = {  # TODO there more columns than this
-  "subject_id": 'SubjectID',  # the internal ID for the subject/patient
-  "sample_id": 'SampleID',  # the internal ID for the sample
-  "sample_name": 'SampleName',  # the sample name assigned by the lab
-  "library_id": 'LibraryID',  # the internal ID for the library
-  "project_name": 'ProjectName',
-  "project_owner": 'ProjectOwner',
-  "type": 'Type',  # the assay type: WGS, WTS, 10X, ...
-  "phenotype": 'Phenotype',  # tumor, normal, negative-control, ...
-  "override_cycles": "OverrideCycles",  # The Override cycles list for this run
-  "source": 'Source',  # tissue, FFPE, ...
-  "quality": 'Quality',  # Good, Poor, Borderline
-}
 
 METADATA_VALIDATION_COLUMN_NAMES = {
        "val_phenotype": "PhenotypeValues",
@@ -146,6 +158,11 @@ LIMS_SPREAD_SHEET_ID = {
     "prod": '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'
 }
 
+LIMS_SPREAD_SHEET_NAMES = {
+    "SHEET_NAME_RUNS": "Sheet1",
+    "SHEET_NAME_FAILED": "Failed Runs"
+}
+
 LIMS_COLUMNS = {  # Columns in order!
   "illumina_id": 'IlluminaID',
   "run": 'Run',
@@ -153,9 +170,9 @@ LIMS_COLUMNS = {  # Columns in order!
   "subject_id": 'SubjectID',  # the internal ID for the subject/patient
   "sample_id": 'SampleID',  # the internal ID for the sample
   "library_id": 'LibraryID',  # the internal ID for the library
-  "subject_ext_id": 'ExternalSubjectID',  # the external (provided) ID for the subject/patient
-  "sample_ext_id": 'ExternalSampleID',  # is the external (provided) sample ID
-  "library_ext_id": 'ExternalLibraryID',  # is the external (provided) library ID
+  "external_subject_id": 'ExternalSubjectID',  # the external (provided) ID for the subject/patient
+  "external_sample_id": 'ExternalSampleID',  # is the external (provided) sample ID
+  "external_library_id": 'ExternalLibraryID',  # is the external (provided) library ID
   "sample_name": 'SampleName',  # the sample name assigned by the lab
   "project_owner": 'ProjectOwner',
   "project_name": 'ProjectName',
@@ -182,8 +199,12 @@ LIMS_COLUMNS = {  # Columns in order!
 LOGS
 """
 
-LOG_FILE_NAME = {}  # TODO - path to samplesheet-check-script.py . dirname + .dev.log" or + ".prod.log"
-                    # TODO - also needs to be set on the log file
+LOG_FILE_PREFIX = {
+    "dev": ".dev.log",
+    "prod": ".prod.log"
+}
+
+LOGGER_STYLE = "%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s"
 
 """
 INSTRUMENTS
@@ -202,3 +223,70 @@ FASTQ_S3_BUCKET = {
     "prod": 's3://umccr-fastq-data-prod/'
 }
 
+"""
+NOVASTOR PATHS
+"""
+
+NOVASTOR_RAW_BCL_DIR = {
+    "prod": "/storage/shared/raw",
+    "dev": "/storage/shared/dev"
+}
+
+NOVASTOR_FASTQ_OUTPUT_DIR = {
+    "prod": "/storage/shared/bcl2fastq_output",
+    "dev": "/storage/shared/dev/bcl2fastq_output"
+}
+
+NOVASTOR_CRED_PATHS = {
+    "google_write_token": "/home/limsadmin/.google/google-lims-updater-b50921f70155.json"
+}
+
+NOVASTOR_CSV_DIR = "/tmp"
+
+"""
+RUN NAME REGEXES
+
+A run comprises
+
+<YYMMDD>_<MACHINE_ID>_<RUN_ID>_<SLOT><FLOWCELL_ID>
+"""
+
+# Taken from
+# https://regexlib.com/REDetails.aspx?regexp_id=326
+# Test seen here
+# https://regex101.com/r/TCSmm5/3
+DATE_STR = r"(?:(?:\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\d|3[01])|(?:0[13456789]|1[012])" \
+           r"(?:0[1-9]|[12]\d|30)|02(?:0[1-9]|1\d|2[0-8])))|(?:[02468][048]|[13579][26])0229)"
+
+
+# https://regex101.com/r/2iCeNg/1
+MACHINE_STR = r"(?:{})".format("|".join(list(INSTRUMENT_NAMES.keys())))
+
+# RUN_STR
+RUNID_STR = r"(?:\d{4})"  # Four digit int
+
+SLOT_STR = r"(?:A|B)"
+
+# From
+# https://support.illumina.com/help/BaseSpace_ClarityLIMS_OLH_115205/Content/Source/ClarityLIMS/Integrations/ConfigurationUpdateRequiredforNovaSeqFlowcellBarcodeSuffixChange.htm
+FLOWCELL_REGEX_STR = {
+    "SP": r"\w{5}DRX[XY2357]",
+    "S1": r"\w{5}DRX[XY2357]",
+    "S2": r"\w{5}DMX[XY2357]",
+    "S4": r"\w{5}DSX[XY2357]"
+}
+
+# https://regex101.com/r/2gdY7O/1
+FLOWCELL_REGEX_STR["all"] = r'(?:{})'.format("|".join(list(FLOWCELL_REGEX_STR.values())))
+
+# Now combine all into a perfect - easy-to-read - capturing regex
+RUN_REGEX_OBJS = {
+    # https://regex101.com/r/AYy9es/1
+    "run": re.compile(r"({})_({})_({})_({})({})".format(
+        DATE_STR, MACHINE_STR, RUNID_STR, SLOT_STR, FLOWCELL_REGEX_STR
+    )),
+    # https://regex101.com/r/gBd5gx/1
+    "run_fullmatch": re.compile(r"{}_{}_{}_{}{}".format(
+        DATE_STR, MACHINE_STR, RUNID_STR, SLOT_STR, FLOWCELL_REGEX_STR
+    ))
+}

@@ -202,7 +202,8 @@ def strip_ns_from_indexes(samplesheetobj_data_df):
     """
 
     samplesheetobj_data_df['index'] = samplesheetobj_data_df['index'].apply(lambda x: x.rstrip("N"))
-    samplesheetobj_data_df['index2'] = samplesheetobj_data_df['index2'].apply(lambda x: x.rstrip("N"))
+    if 'index2' in samplesheetobj_data_df.columns.tolist():
+        samplesheetobj_data_df['index2'] = samplesheetobj_data_df['index2'].apply(lambda x: x.rstrip("N"))
 
     return samplesheetobj_data_df
 
@@ -262,7 +263,9 @@ def update_settings_v2(samplesheet_settings):
     :param samplesheet_settings:
     :return:
     """
-    samplesheet_settings["AdapterRead1"] = samplesheet_settings.pop("Adapter")
+
+    if "Adapter" in samplesheet_settings.keys():
+        samplesheet_settings["AdapterRead1"] = samplesheet_settings.pop("Adapter")
 
     return samplesheet_settings
 
@@ -275,7 +278,8 @@ def truncate_data_columns_v2(samplesheet_data_df):
     :return:
     """
 
-    samplesheet_data_df = samplesheet_data_df[["Lane", "Sample_ID", "index", "index2", "Sample_Project"]]
+    v2_columns = ["Lane", "Sample_ID", "index", "index2", "Sample_Project"]
+    samplesheet_data_df = samplesheet_data_df.filter(items=v2_columns)
 
     return samplesheet_data_df
 

@@ -83,7 +83,7 @@ echo "PULL ref data from S3 bucket"
 git clone https://github.com/umccr/reference_data reference_data
 cd reference_data
 dvc config cache.type reflink,hardlink,symlink
-dvc pull
+timer dvc pull
 cd ..
 publish S3PullRefGenome $duration
 

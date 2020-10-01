@@ -32,7 +32,7 @@ base_os               = alinux2
 vpc_settings          = umccr_dev_network
 efs_settings          = awselasticfs
 s3_read_resource      = *
-key_name              = alexis-wfh-dev
+key_name              = pc-default-key
 # Need something substantial to hold the slurm database
 master_instance_type  = t2.medium
 # Using additional_iam_policies over ec2_iam_role
@@ -56,7 +56,7 @@ base_os               = alinux2
 vpc_settings          = umccr_dev_network
 fsx_settings          = lustrefs
 s3_read_resource      = *
-key_name              = alexis-wfh-dev
+key_name              = pc-default-key
 # Need something substantial to hold the slurm database
 master_instance_type  = t2.medium
 # Using additional_iam_policies over ec2_iam_role

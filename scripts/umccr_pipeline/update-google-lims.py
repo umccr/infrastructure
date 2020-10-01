@@ -261,6 +261,60 @@ def get_run_attributes_from_run_name(run_name):
     return run_date, machine_id, run_number, slot_id, flowcell_id
 
 
+def get_lims_row(sample, args):
+    """
+    Get the lims row to create excel sheet
+    :param sample:
+    :param args:
+    :return:
+    """
+
+    fastq_pattern = sample.sample_project / \
+                        sample.unique_id / \
+                        sample.sample_df['Sample_Name'] + "*.fastq.gz"
+
+    num_fastq_files = len(list(args.bcl2fastq_run_dir.glob(fastq_pattern)))
+
+    s3_fastq_pattern = args.fastq_hpc_run_dir / \
+                       sample.sample_project / \
+                       sample.unique_id / \
+                       sample.sample_df['Sample_Name'] + "*.fastq.gz"
+
+    lims_data_row = [
+        args.runfolder,  # illumina_id
+        args.run_number,  # run
+        args.run_date,  # timestamp
+        sample.library_df[METADATA_COLUMN_NAMES["subject_id"]].item(),  # subject_id
+        sample.library_df[METADATA_COLUMN_NAMES["sample_id"]].item(),  # sample_id
+        sample.library_df[METADATA_COLUMN_NAMES["library_id"]].item(),  # library_id
+        sample.library_df[METADATA_COLUMN_NAMES["external_subject_id"]].item(),  # external_subject_id
+        sample.library_df[METADATA_COLUMN_NAMES["external_sample_id"]].item(),  # external_sample_id
+        "-",  # FIXME "external_library_id"
+        sample.library_df[METADATA_COLUMN_NAMES["sample_name"]].item(),  # sample_name
+        sample.library_df[METADATA_COLUMN_NAMES["project_owner"]].item(),  # project_owner
+        sample.library_df[METADATA_COLUMN_NAMES["project_name"]].item(),  # project_name
+        "-",  # FIXME "project_custodian"
+        sample.library_df[METADATA_COLUMN_NAMES["type"]].item(),  # type
+        sample.library_df[METADATA_COLUMN_NAMES["assay"]].item(),  # assay
+        sample.library_df[METADATA_COLUMN_NAMES["override_cycles"]].item(),  # override_cycles
+        sample.library_df[METADATA_COLUMN_NAMES["phenotype"]].item(),  # phenotype
+        sample.library_df[METADATA_COLUMN_NAMES["source"]].item(),  # source
+        sample.library_df[METADATA_COLUMN_NAMES["quality"]].item(),  # quality
+        "-",  # FIXME "topup"
+        "-",  # FIXME "SecondaryAnalysis"
+        sample.library_df[METADATA_COLUMN_NAMES["workflow"]].item(),  # workflow
+        '-',  # tags
+        s3_fastq_pattern,  # fastq
+        num_fastq_files,  # number_fastqs
+        '-',  # FIXME results
+        '-',  # trello
+        '-',  # notes
+        '-'  # 'To-Do'
+    ]
+
+    return lims_data_row
+
+
 def main():
     args = get_args()
     # Check args
@@ -289,50 +343,7 @@ def main():
 
     for samplesheet in samplesheets:
         for sample in samplesheet:
-            # Create a few more attributes for the sample
-            fastq_pattern = sample.sample_project / \
-                                sample.unique_id / \
-                                sample.sample_df['Sample_Name'] + "*.fastq.gz"
-
-            num_fastq_files = len(list(args.bcl2fastq_run_dir.glob(fastq_pattern)))
-
-            # Where they're uploaded?
-            s3_fastq_pattern = args.fastq_hpc_run_dir / \
-                                   sample.sample_project / \
-                                   sample.unique_id / \
-                                   sample.sample_df['Sample_Name'] + "*.fastq.gz"
-
-            lims_data_rows.append([
-                 args.runfolder,                                                           # illumina_id
-                 args.run_number,                                                          # run
-                 args.run_date,                                                            # timestamp
-                 sample.library_df[METADATA_COLUMN_NAMES["subject_id"]].item(),            # subject_id
-                 sample.library_df[METADATA_COLUMN_NAMES["sample_id"]].item(),             # sample_id
-                 sample.library_df[METADATA_COLUMN_NAMES["library_id"]].item(),            # library_id
-                 sample.library_df[METADATA_COLUMN_NAMES["external_subject_id"]].item(),   # external_subject_id
-                 sample.library_df[METADATA_COLUMN_NAMES["external_sample_id"]].item(),    # external_sample_id
-                 "-",                                                                      # FIXME "external_library_id"
-                 sample.library_df[METADATA_COLUMN_NAMES["sample_name"]].item(),           # sample_name
-                 sample.library_df[METADATA_COLUMN_NAMES["project_owner"]].item(),         # project_owner
-                 sample.library_df[METADATA_COLUMN_NAMES["project_name"]].item(),          # project_name
-                 "-",                                                                      # FIXME "project_custodian"
-                 sample.library_df[METADATA_COLUMN_NAMES["type"]].item(),                  # type
-                 sample.library_df[METADATA_COLUMN_NAMES["assay"]].item(),                 # assay
-                 sample.library_df[METADATA_COLUMN_NAMES["override_cycles"]].item(),       # override_cycles
-                 sample.library_df[METADATA_COLUMN_NAMES["phenotype"]].item(),             # phenotype
-                 sample.library_df[METADATA_COLUMN_NAMES["source"]].item(),                # source
-                 sample.library_df[METADATA_COLUMN_NAMES["quality"]].item(),               # quality
-                 "-",                                                                      # FIXME "topup"
-                 "-",                                                                      # FIXME "SecondaryAnalysis"
-                 sample.library_df[METADATA_COLUMN_NAMES["workflow"]].item(),              # workflow
-                 '-',                                                                      # tags
-                 s3_fastq_pattern,                                                         # fastq
-                 num_fastq_files,                                                          # number_fastqs
-                 '-',                                                                      # FIXME results
-                 '-',                                                                      # trello
-                 '-',                                                                      # notes
-                 '-'                                                                       # 'To-Do'
-                 ])
+            lims_data_rows.append(get_lims_row(sample, args))
 
     # Convert to pandas dataframe
     lims_data_df = pd.DataFrame(lims_data_rows, columns=LIMS_COLUMNS.values())

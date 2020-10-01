@@ -79,7 +79,12 @@ unzip awscliv2.zip
 ./aws/install
 
 echo "PULL ref data from S3 bucket"
-timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
+# timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
+git clone https://github.com/umccr/reference_data reference_data
+cd reference_data
+dvc config cache.type reflink,hardlink,symlink
+dvc pull
+cd ..
 publish S3PullRefGenome $duration
 
 echo "PULL input (bcbio results) from S3 bucket"
@@ -90,7 +95,7 @@ echo "umccrise version:"
 umccrise --version
 
 echo "RUN umccrise"
-timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes /work/genomes
+timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes /reference_data/genomes
 publish RunUMCCRISE $duration
 
 echo "PUSH results"

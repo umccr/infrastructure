@@ -34,14 +34,14 @@ class Sample:
     """
 
     # Initialise attributes
-    def __init__(self, sample_id, index, index2, lanes, project, sample_df):
+    def __init__(self, sample_id, index, index2, lane, project):
         """
         Initialise the sample object
         :param sample_id:
         :param index:
         :param index2:
-        :param lanes:
-        :param sample_df:
+        :param lane:
+        :param project
         """
 
         # Corresponds to the Sample_ID column in the sample sheet
@@ -49,16 +49,8 @@ class Sample:
         self.unique_id = sample_id
         self.index = index                      # The i7 index
         self.index2 = index2                    # The i5 index - could be None if a single indexed flowcell
-        self.lanes = set(lanes)                 # The unique list of lanes
+        self.lane = lane                        # The lane of the sample
         self.project = project                  # This may be useful at some point
-        self.sample_df = sample_df              # The subsetted dataframe of the samplesheet that contains this sample
-
-        # Strip Ns from the ends of index and index2
-        if self.index is not None:
-            self.index = self.index.rstrip("N")
-
-        if self.index2 is not None:
-            self.index2 = self.index2.rstrip("N")
 
         # Initialise read cycles and override_cycles
         self.read_cycle_counts = []
@@ -143,7 +135,7 @@ class Sample:
             logger.error("Could not get library ID from \"{}\"".format(self.library_id))
             raise SampleNameFormatError
         # Year is truncated with 20
-        self.year = '20{}'.format(year_re_match)
+        self.year = '20{}'.format(year_re_match.group(1))
 
     def set_override_cycles(self):
         """
@@ -158,12 +150,12 @@ class Sample:
         :return:
         """
         library_id_column_var = METADATA_COLUMN_NAMES["library_id"]
-        sample_id_column_var = METADATA_COLUMN_NAMES["subject_id"]
+        sample_id_column_var = METADATA_COLUMN_NAMES["sample_id"]
         library_id_var = self.library_id
         sample_id_var = self.sample_id
-        library_row = library_tracking_spreadsheet[self.year].query("`@library_id_column_var` == \"@library_id_var\""
-                                                                    " && "
-                                                                    "`@sample_id_column_var` == \"@sample_id_var\"")
+        query_str = "{} == \"{}\" & {} == \"{}\"".format(library_id_column_var, library_id_var,
+                                                         sample_id_column_var, sample_id_var)
+        library_row = library_tracking_spreadsheet[self.year].query(query_str)
 
         # Check library_row is just one row
         if library_row.shape[0] == 0:
@@ -171,8 +163,8 @@ class Sample:
                          "in columns {} and {} respectively".format(library_id_var, sample_id_var,
                                                                     library_id_column_var, sample_id_column_var))
             raise LibraryNotFoundError
-        elif library_row.shape[0] == 1:
-            logger.error("Got multiplpe rows back for library id '{}' and sample id '{}'"
+        elif not library_row.shape[0] == 1:
+            logger.error("Got multiple rows back for library id '{}' and sample id '{}'"
                          "in columns {} and {} respectively".format(library_id_var, sample_id_var,
                                                                     library_id_column_var, sample_id_column_var))
             raise MultipleLibraryError
@@ -205,14 +197,14 @@ class SampleSheet:
             settings_defined = False
 
         # Check we haven't double defined the configuration settings
-        if not (bool(self.samplesheet_path is None) ^ settings_defined):
+        if not (bool(self.samplesheet_path is not None) ^ settings_defined):
             """
             We can't have the samplesheet_path defined and the sections also defined
             """
             logger.error("Specify only the samplesheet path OR header, reads, settings")
             raise NotImplementedError
         # Check we haven't double defined the data settings
-        elif not (bool(self.samplesheet_path is None) ^ bool(self.samples is None) ^ bool(self.data is None)):
+        elif not (bool(self.samplesheet_path is not None) ^ bool(self.samples is not None) ^ bool(self.data is not None)):
             """
             Only one of samplesheet_path and samples can be specified
             Can we confirm this is legit
@@ -220,6 +212,10 @@ class SampleSheet:
             logger.error("Specify only the samplesheet path OR data OR samples. The latter two options"
                          "will also need to have header, reads and settings defined")
             raise NotImplementedError
+
+        # If there's a samplesheet path, we need to read it
+        if self.samplesheet_path is not None:
+            self.read()
 
     def read(self):
         """
@@ -292,6 +288,10 @@ class SampleSheet:
                     if column not in self.data.columns.tolist():
                         logger.error("Could not find column in samplesheet")
                         raise InvalidColumnError
+                # Strip Ns from index and index2
+                self.data['index'] = self.data['index'].apply(lambda x: x.rstrip("N"))
+                if 'index2' in self.data.columns.tolist():
+                    self.data['index2'] = self.data['index2'].apply(lambda x: x.rstrip("N"))
                 # TO then also add sample attributes
                 # Write out each sample
                 self.convert_data_to_samples()
@@ -309,13 +309,15 @@ class SampleSheet:
             logger.error("Tried to convert data attribute to samples object when data wasnt defined")
             raise ValueError
 
-        for sample, sample_df in self.data.groupby("Sample_ID"):
-            self.samples.append(Sample(lanes=sample_df["Lane"].unique().tolist(),
-                                       sample_id=sample_df["Sample_ID"].unique().item(),
-                                       index=sample_df["index"].unique().item(),
-                                       index2=sample_df["index2"].unique().item(),
-                                       project=sample_df["Sample_Project"].unique().item(),
-                                       sample_df=sample_df))
+        if self.samples is None:
+            self.samples = []
+
+        for row_index, sample_row in self.data.iterrows():
+            self.samples.append(Sample(lane=sample_row["Lane"],
+                                       sample_id=sample_row["Sample_ID"],
+                                       index=sample_row["index"],
+                                       index2=sample_row["index2"],
+                                       project=sample_row["Sample_Project"]))
 
     def add_sample(self, new_sample_to_add):
         """
@@ -345,6 +347,17 @@ class SampleSheet:
 
         self.samples.remove(sample_to_remove)
 
+    def get_lanes(self):
+        """
+        Iterate through samples and get the set of lanes in the samples
+        :return:
+        """
+        lanes = set()
+        for sample in self:
+            lanes.add(sample.lane)
+
+        return lanes
+
     def write(self, samplesheet_h):
         """
         Write samplesheet to file handle
@@ -352,20 +365,24 @@ class SampleSheet:
         :return:
         """
         # Write out header
+        samplesheet_h.write("[Header]\n")
         samplesheet_h.write("\n".join(map(str, ["{},{}".format(key, value)
                                                 for key, value in self.header.items()])))
         # Add new line before the next section
         samplesheet_h.write("\n\n")
         # Write out reads
+        samplesheet_h.write("[Reads]\n")
         samplesheet_h.write("\n".join(self.reads))
         # Add new line before the next section
         samplesheet_h.write("\n\n")
         # Write out settings
+        samplesheet_h.write("[Settings]\n")
         samplesheet_h.write("\n".join(map(str, ["{},{}".format(key, value)
                                                 for key, value in self.settings.items()])))
         # Add new line before the next section
         samplesheet_h.write("\n\n")
         # Write out data
+        samplesheet_h.write("[Data]\n")
         self.data.to_csv(samplesheet_h, index=False, header=True, sep=",")
         # Add final new line
         samplesheet_h.write("\n")
@@ -444,7 +461,7 @@ def check_samplesheet_header_metadata(samplesheet):
     required_keys = ["Assay", "Experiment Name"]
 
     for key in required_keys:
-        if samplesheet.get("Header", None).get(key, None) is None:
+        if samplesheet.header.get(key, None) is None:
             logger.error("{} not defined in Header!".format(key))
             has_error = True
 
@@ -467,12 +484,12 @@ def check_metadata_correspondence(samplesheet, library_tracking_spreadsheet, val
 
     for sample in samplesheet:
         # exclude 10X samples for now, as they usually don't comply
-        if sample.library_series[METADATA_COLUMN_NAMES["type"]].item() == '10X':
+        if sample.library_series[METADATA_COLUMN_NAMES["type"]] == '10X':
             logger.debug("Not checking metadata columns as this sample is '10X'")
             continue
 
         # check presence of subject ID
-        if sample.library_series[METADATA_COLUMN_NAMES["subject_id"]].item() == '':
+        if sample.library_series[METADATA_COLUMN_NAMES["subject_id"]] == '':
             logger.warn(f"No subject ID for {sample.sample_id}")
 
         # check controlled vocab: phenotype, type, source, quality
@@ -482,29 +499,29 @@ def check_metadata_correspondence(samplesheet, library_tracking_spreadsheet, val
             metadata_column = METADATA_COLUMN_NAMES[column]
             validation_column = METADATA_VALIDATION_COLUMN_NAMES["val_{}".format(column)]
 
-            if sample.library_series[metadata_column].item() not in validation_df[validation_column].tolist():
+            if sample.library_series[metadata_column] not in validation_df[validation_column].tolist():
                 if column in ["type", "phenotype", "quality", "source"]:
                     logger.warn("Unsupported {} '{}' for {}".format(metadata_column,
-                                                                    sample.library_series[metadata_column].item(),
+                                                                    sample.library_series[metadata_column],
                                                                     sample.sample_id))
                 elif column in ["project_name", "project_owner"]:
                     # More serious error here
                     # Project attributes are mandatory
                     logger.error("Project {} attribute not found for project {} in validation df for {}".
-                                 format(column, sample.library_series[metadata_column].item(), sample.sample_id))
+                                 format(column, sample.library_series[metadata_column], sample.sample_id))
                     has_error = True
 
         # check that the primary library for the topup exists
-        if SAMPLE_REGEX_OBJS["topup"].search(sample.Sample_Name):
+        if SAMPLE_REGEX_OBJS["topup"].search(sample.library_id) is not None:
+            logger.info("{} is a top up sample. Investigating the previous sample".format(sample.unique_id))
             orig_unique_id = SAMPLE_REGEX_OBJS["topup"].sub('', sample.unique_id)
             try:
                 # Recreate the original sample object
                 orig_sample = Sample(sample_id=orig_unique_id,
                                      index=None,
                                      index2=None,
-                                     lanes=[],
-                                     project=None,
-                                     sample_df=None)
+                                     lane=None,
+                                     project=None)
                 # Try get metadata for sample row
                 orig_sample.set_metadata_row_for_sample(library_tracking_spreadsheet)
             except LibraryNotFoundError:
@@ -529,42 +546,49 @@ def check_sample_sheet_for_index_clashes(samplesheet):
     logger.info("Checking SampleSheet for index clashes")
     has_error = False
 
-    for s_i, sample in enumerate(samplesheet.samples):
-        logger.info(f"Comparing indexes of sample {sample}")
-        for s2_i, sample_2 in enumerate(samplesheet.samples):
-            # Ensures we only do half of the n^2 logic.
-            if s2_i <= s_i:
-                # We've already done this comparison
-                # OR they're the same sample
-                continue
-            logger.info(f"Checking indexes of sample {sample} against {sample_2}")
-            if sample.Sample_ID == sample_2.Sample_ID:
-                # We're testing the sample on itself, next!
-                continue
-            if len(sample.lane.intersection(sample_2).lane) == 0:
-                # These samples aren't in the same lane.
-                continue
+    lanes = samplesheet.get_lanes()
 
-            # i7 check
-            # Strip i7 to min length of the two indexes
-            try:
-                compare_two_indexes(sample.index, sample_2.index)
-            except SimilarIndexError:
-                logger.error("indexes {} and {} are too similar to run in the same lane".format(sample.index,
-                                                                                                sample_2.index))
-                has_error = True
-            # We may not have an i5 index - continue on to next sample if so
-            if sample.index2 is None or sample_2.index is None:
+    for lane in lanes:
+        for s_i, sample in enumerate(samplesheet.samples):
+            # Ensures samples are in the same lane
+            if not sample.lane == lane:
                 continue
+            logger.info(f"Comparing indexes of sample {sample}")
+            for s2_i, sample_2 in enumerate(samplesheet.samples):
+                # Ensures samples are in the same lane
+                if not sample_2.lane == lane:
+                    continue
+                # Ensures we only do half of the n^2 logic.
+                if s2_i <= s_i:
+                    # We've already done this comparison
+                    # OR they're the same sample
+                    continue
 
-            # i5 check
-            # Strip i7 to min length of the two indexes
-            try:
-                compare_two_indexes(sample.index, sample_2.index)
-            except SimilarIndexError:
-                logger.error(
-                    "indexes {} and {} are too similar to run in the same lane".format(sample.index2, sample_2.index2))
-                has_error = True
+                logger.info(f"Checking indexes of sample {sample} against {sample_2}")
+                if sample.unique_id == sample_2.unique_id:
+                    # We're testing the sample on itself, next!
+                    continue
+
+                # i7 check
+                # Strip i7 to min length of the two indexes
+                try:
+                    compare_two_indexes(sample.index, sample_2.index)
+                except SimilarIndexError:
+                    logger.error("indexes {} and {} are too similar to run in the same lane".format(sample.index,
+                                                                                                    sample_2.index))
+                    has_error = True
+                # We may not have an i5 index - continue on to next sample if so
+                if sample.index2 is None or sample_2.index is None:
+                    continue
+
+                # i5 check
+                # Strip i7 to min length of the two indexes
+                try:
+                    compare_two_indexes(sample.index, sample_2.index)
+                except SimilarIndexError:
+                    logger.error(
+                        "indexes {} and {} are too similar to run in the same lane".format(sample.index2, sample_2.index2))
+                    has_error = True
 
     if not has_error:
         return
@@ -582,6 +606,9 @@ def check_override_cycles(samplesheet):
     """
     for sample in samplesheet:
         # for Y151;I8N2;I8N2;Y151 to ["Y151", "I8N2", "I8N2", "Y151"]
+        if sample.override_cycles == "":
+            logger.warning("Could not find override cycles for sample \"{}\"".format(sample.unique_id))
+            continue
         for cycle_set in sample.override_cycles.split(";"):
             # Makes sure that the cycles completes a fullmatch
             if OVERRIDE_CYCLES_OBJS["cycles_full_match"].fullmatch(cycle_set) is None:
@@ -651,10 +678,10 @@ def compare_two_indexes(first_index, second_index):
         raise SimilarIndexError
 
     # hamming distance returns a float - we then multiple this by the index length
-    h_float = distance.hamming(first_index, second_index)
+    h_float = distance.hamming(list(first_index), list(second_index))
 
-    if h_float * min_index_length >= 1:
-        logger.error("Indexes {} and {} are too similar")
+    if not h_float * min_index_length >= 1:
+        logger.error("Indexes {} and {} are too similar".format(first_index, second_index))
         raise SimilarIndexError
     else:
         return

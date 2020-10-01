@@ -154,10 +154,12 @@ def check_lab_metadata_columns(lab_metadata_df):
     :return:
     """
 
-    for column_name in METADATA_COLUMN_NAMES:
+    for column_key, column_name in METADATA_COLUMN_NAMES.items():
         logger.debug(f"Checking for column name {column_name}...")
         if column_name not in lab_metadata_df.columns.tolist():
             logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
+            logger.error("Columns in samplesheet are {}".format(", ".join(map(str, ["\"{}\"".format(col)
+                                                                                    for col in lab_metadata_df.columns.tolist()]))))
             raise ColumnNotFoundError
 
 
@@ -168,7 +170,7 @@ def check_validation_metadata_columns(validation_df):
     :return:
     """
 
-    for column_name in METADATA_VALIDATION_COLUMN_NAMES:
+    for column_key, column_name in METADATA_VALIDATION_COLUMN_NAMES.items():
         if column_name not in validation_df.columns.tolist():
             logger.error(f"Could not find column {column_name}. "
                          f"The file is not structured as expected! Aborting.")

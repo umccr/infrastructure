@@ -7,3 +7,6 @@ dependencies:
   - scipy
   - gooey
   - gspread-pandas
+  - openpyxl
+  - oauth2client
+  - xlrd

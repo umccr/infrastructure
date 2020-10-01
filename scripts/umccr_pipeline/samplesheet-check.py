@@ -85,7 +85,7 @@ def check_args(args):
         else:
             setattr(args, "deploy_env", deploy_env)
 
-    logger = set_logger(SCRIPT_DIR, SCRIPT, getattr(args, "deploy_env"))
+    logger = set_logger(SCRIPT_DIR, SCRIPT_NAME, getattr(args, "deploy_env"))
 
     # Get path to samplesheet
     samplesheet_arg = getattr(args, "samplesheet")
@@ -220,7 +220,9 @@ def main(args=None):
 
     # Iterate through sample sheets
     for override_cycles, samplesheet in sorted_samplesheets.items():
-        with open(args.outdir / "SampleSheet.{}.csv".format(override_cycles), "w") as samplesheet_h:
+        override_cycles_str = override_cycles.replace(";", "_")
+        out_file = args.outdir / "SampleSheet.{}.csv".format(override_cycles_str)
+        with open(out_file, "w") as samplesheet_h:
             samplesheet.write(samplesheet_h)
 
 

@@ -2,7 +2,7 @@
 
 import logging
 from logging.handlers import RotatingFileHandler
-from globals import LOG_FILE_PREFIX, LOGGER_STYLE
+from umccr_utils.globals import LOG_FILE_PREFIX, LOGGER_STYLE
 
 
 def set_basic_logger():
@@ -38,7 +38,7 @@ def set_logger(script_dir, script, deploy_env):
     formatter = logging.Formatter(LOGGER_STYLE)
 
     # create a file handler
-    file_handler = RotatingFileHandler(filename=script_dir / script + LOG_FILE_PREFIX[deploy_env],
+    file_handler = RotatingFileHandler(filename=script_dir / "{}{}".format(script, LOG_FILE_PREFIX[deploy_env]),
                                        maxBytes=100000000, backupCount=5)
     # Set Level
     file_handler.setLevel(logging.DEBUG)

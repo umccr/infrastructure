@@ -29,13 +29,8 @@ XXX
 
 1. Download [conda](https://www.anaconda.com/distribution/)
 2. Update the base conda environment: `conda update -n base conda`
-3. Create an environment with python 3.6 installed, name it something like *samplesheet_launcher_py3.6*
-4. Activate the env and install the following programs through pip:
-    * gspread
-    * gspread-pandas
-    * sample-sheet
-    * gooey
-    * git (installed through conda)
+3. Create an environment
+    * `conda env create --file env/samplesheet-check.yml --name samplesheet_check`
 5. Head to the conda prefix directory and create the following subdirectories:
     * `etc/conda/activate.d`
     * `secrets`

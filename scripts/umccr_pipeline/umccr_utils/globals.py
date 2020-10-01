@@ -34,10 +34,10 @@ METADATA_COLUMN_NAMES = {
   "coverage": "Coverage (X)",  # ?
   "idt_index": "IDT Index , unless stated",  # FIXME - this is a terrible column name
   "run": "Run#",
-  "comments": "comments",
+  "comments": "Comments",
   "rrna": "rRNA",
   "qpc_id": "qPCR ID",
-  "sample_id_samplesheet": "Sample_ID (SampleSheet)"
+  "sample_id_samplesheet": "SampleSheet"  # FIXME - this is named 'Sample_ID (SampleSheet)' in the dev spreadsheet
 }
 
 
@@ -54,7 +54,7 @@ METADATA_VALIDATION_COLUMN_NAMES = {
        "val_project_owner": "ProjectOwnerValues",
 }
 
-METADATA_COLUMN_NAMES.update(METADATA_VALIDATION_COLUMN_NAMES)
+#METADATA_COLUMN_NAMES.update(METADATA_VALIDATION_COLUMN_NAMES)
 
 """
 SAMPLE SHEET DATA COLUMNS

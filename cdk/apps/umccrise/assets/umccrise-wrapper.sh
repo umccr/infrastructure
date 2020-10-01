@@ -73,6 +73,11 @@ job_output_dir=/work/output/${S3_INPUT_DIR}-${timestamp}
 
 mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,validation}
 
+# Install the AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
+
 echo "PULL ref data from S3 bucket"
 timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
 publish S3PullRefGenome $duration

@@ -490,7 +490,7 @@ def check_metadata_correspondence(samplesheet, library_tracking_spreadsheet, val
 
         # check presence of subject ID
         if sample.library_series[METADATA_COLUMN_NAMES["subject_id"]] == '':
-            logger.warn(f"No subject ID for {sample.sample_id}")
+            logger.warning(f"No subject ID for {sample.sample_id}")
 
         # check controlled vocab: phenotype, type, source, quality
         columns_to_validate = ["type", "phenotype", "quality", "source", "project_name", "project_owner"]
@@ -543,7 +543,7 @@ def check_sample_sheet_for_index_clashes(samplesheet):
     :param samplesheet:
     :return:
     """
-    logger.info("Checking SampleSheet for index clashes")
+    logger.debug("Checking SampleSheet for index clashes")
     has_error = False
 
     lanes = samplesheet.get_lanes()
@@ -553,7 +553,7 @@ def check_sample_sheet_for_index_clashes(samplesheet):
             # Ensures samples are in the same lane
             if not sample.lane == lane:
                 continue
-            logger.info(f"Comparing indexes of sample {sample}")
+            logger.debug(f"Comparing indexes of sample {sample}")
             for s2_i, sample_2 in enumerate(samplesheet.samples):
                 # Ensures samples are in the same lane
                 if not sample_2.lane == lane:
@@ -564,7 +564,7 @@ def check_sample_sheet_for_index_clashes(samplesheet):
                     # OR they're the same sample
                     continue
 
-                logger.info(f"Checking indexes of sample {sample} against {sample_2}")
+                logger.debug(f"Checking indexes of sample {sample} against {sample_2}")
                 if sample.unique_id == sample_2.unique_id:
                     # We're testing the sample on itself, next!
                     continue
@@ -626,7 +626,8 @@ def check_override_cycles(samplesheet):
             sample.read_cycle_counts.append(read_cycles_sum)
     # Now we ensure all samples have the same read_cycle counts
     num_read_index_per_sample = set([len(sample.read_cycle_counts)
-                                     for sample in samplesheet])
+                                     for sample in samplesheet
+                                     if not len(sample.read_cycle_counts) == 0])
     # Check the number of segments for each section are even the same
     if len(num_read_index_per_sample) > 1:
         logger.error("Found an error with override cycles matches")
@@ -637,10 +638,17 @@ def check_override_cycles(samplesheet):
             logger.error("The following samples have {} read/index sections: {}".
                          format(num_read_index, ", ".join(map(str, samples_with_this_num_read_index))))
         raise OverrideCyclesError
+    else:
+        logger.info("Override cycles check 1/2 complete - "
+                    "All samples have the correct number of override cycles sections - {}".
+                    format(list(num_read_index_per_sample)[0]))
+
     # For each segment - check that the counts are the same
+    section_cycle_counts = []
     for read_index in range(list(num_read_index_per_sample)[0]):
         num_cycles_in_read_per_sample = set([sample.read_cycle_counts[read_index]
-                                             for sample in samplesheet])
+                                             for sample in samplesheet
+                                             if not len(sample.read_cycle_counts) == 0])
         if len(num_cycles_in_read_per_sample) > 1:
             logger.error("Found an error with override cycles matches for read/index section {}".format(read_index))
             for num_cycles in num_cycles_in_read_per_sample:
@@ -652,6 +660,12 @@ def check_override_cycles(samplesheet):
                              format(num_cycles,
                                     ", ".join(map(str, samples_with_this_cycle_count_in_this_read_index_section))))
             raise OverrideCyclesError
+        else:
+            section_cycle_counts.append(list(num_cycles_in_read_per_sample)[0])
+    else:
+        logger.info("Override cycles check 2/2 complete - "
+                    "All samples have the identical number of cycles per section - \"{}\"".
+                    format(", ".join(map(str, section_cycle_counts))))
 
 
 def compare_two_indexes(first_index, second_index):

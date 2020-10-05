@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 import os
 import argparse
@@ -7,7 +8,7 @@ from pathlib import Path
 # Globals
 from umccr_utils.globals import LAB_SPREAD_SHEET_ID
 # Logger
-from umccr_utils.logger import set_logger, set_basic_logger
+from umccr_utils.logger import set_logger, set_basic_logger, get_logger
 # Get Classes
 from umccr_utils.samplesheet import SampleSheet
 # Get functions
@@ -27,7 +28,7 @@ from umccr_utils.errors import SampleSheetHeaderError, SimilarIndexError, \
 # Relative paths
 SCRIPT = Path(__file__)
 SCRIPT_DIR = SCRIPT.parent
-SCRIPT_NAME = SCRIPT.name
+SCRIPT_STEM = SCRIPT.stem
 logger = set_basic_logger()
 
 
@@ -85,7 +86,9 @@ def check_args(args):
         else:
             setattr(args, "deploy_env", deploy_env)
 
-    logger = set_logger(SCRIPT_DIR, SCRIPT_NAME, getattr(args, "deploy_env"))
+    set_logger(SCRIPT_DIR, SCRIPT_STEM, getattr(args, "deploy_env"), log_level=args.log_level)
+
+    logger = get_logger()
 
     # Get path to samplesheet
     samplesheet_arg = getattr(args, "samplesheet")
@@ -162,7 +165,10 @@ def main(args=None):
     # Run some consistency checks
     logger.info("Get all years of samples in samplesheets")
     years = get_years_from_samplesheet(sample_sheet)
-    logger.info(f"Samplesheet contains IDs from {len(years)} years: {years}")
+    if len(list(years)) == 1:
+        logger.info("Samplesheet contains IDs from year: {}".format(list(years)[0]))
+    else:
+        logger.info("Samplesheet contains IDs from {} years: {}".format(len(years), ', '.join(map(str, list(years)))))
 
     # Initialise tracking sheet
     library_tracking_spreadsheet = collections.defaultdict(list)
@@ -196,7 +202,7 @@ def main(args=None):
         logger.error("Sample name was not appropriate.")
         sys.exit(1)
     except SimilarIndexError:
-        logger.error("Found at leaset two indexes that were too similar to each other")
+        logger.error("Found at least two indexes that were too similar to each other")
         sys.exit(1)
     except MetaDataError:
         logger.error("Metadata could not be extracted")

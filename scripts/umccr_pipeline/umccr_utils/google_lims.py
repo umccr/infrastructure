@@ -6,8 +6,9 @@ Pull in library and metadata sheet from google
 
 import pandas as pd
 from gspread_pandas import Spread, Client
+from gspread import authorize
 from openpyxl import load_workbook
-from umccr_utils.globals import METADATA_COLUMN_NAMES, METADATA_VALIDATION_COLUMN_NAMES
+from umccr_utils.globals import METADATA_COLUMN_NAMES, METADATA_VALIDATION_COLUMN_NAMES, GSERVICE_ACCOUNT
 from umccr_utils.logger import get_logger
 from umccr_utils.errors import ColumnNotFoundError
 from umccr_utils.globals import LIMS_SPREAD_SHEET_NAMES
@@ -203,22 +204,34 @@ def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run=Fal
     :param failed_run:
     :return:
     """
+    # Set creds and the scope
     scope = ['https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
-    client = Client(creds)
 
-    # Open LIMS spreadsheet
-    g_spreadsheet = client.open_by_key(lims_spreadsheet_id)
+    # Authorize client
+    client = authorize(creds)
+
+    # Get sheet name
     if failed_run:
-        # Open worksheet object
-        worksheet = g_spreadsheet.open(LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_FAILED"])
+        sheet_name = LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_FAILED"]
     else:
-        worksheet = g_spreadsheet.open(LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"])
+        sheet_name = LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"]
 
-    # Write rows to spreadsheet
-    worksheet.append_rows(values=data_rows,
-                          value_input_option="USER_ENTERED",
-                          insert_data_option="INSERT_ROWS")
+    # Set params and body
+    params = {
+        "valueInputOption": "USER_ENTERED",
+        "insertDataOption": "INSERT_ROWS"
+    }
+    body = {
+        "majorDimension": "ROWS",
+        "values": data_rows.values.tolist()
+    }
+
+    # Open by key
+    spreadsheet = client.open_by_key(lims_spreadsheet_id)
+
+    # Append values to sheet
+    spreadsheet.values_append(sheet_name, params=params, body=body)
 
 
 def write_to_local_lims(excel_file, data_df, failed_run=False):
@@ -234,11 +247,22 @@ def write_to_local_lims(excel_file, data_df, failed_run=False):
     # Load workbook
     writer = pd.ExcelWriter(excel_file, engine="openpyxl", mode="a")
     writer.book = load_workbook(excel_file)
-    # Append to sheet
+    writer.sheets = {ws.title: ws for ws in writer.book.worksheets}
+
+    # Get sheet name and start row of that sheet
     if failed_run:
-        data_df.to_excel(writer, sheet_name=LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_FAILED"])
+        sheet_name = LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_FAILED"]
+        start_row = writer.sheets[sheet_name].max_row
     else:
-        data_df.to_excel(writer, sheet_name=LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"])
+        sheet_name = LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"]
+        start_row = writer.sheets[LIMS_SPREAD_SHEET_NAMES["SHEET_NAME_RUNS"]].max_row
+
+    # Append to sheet
+    data_df.to_excel(writer,
+                     sheet_name=sheet_name,
+                     startrow=start_row,
+                     index=False,
+                     header=False)
 
     writer.save()
     writer.close()

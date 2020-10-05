@@ -1,19 +1,20 @@
+#!/usr/bin/env python3
 import os
+import re
 import sys
 import argparse
 import collections
 from datetime import datetime
-from sample_sheet import SampleSheet
 from pathlib import Path
-import datetime
 import pandas as pd
 import csv
 from umccr_utils.google_lims import get_library_sheet_from_google, write_to_google_lims, write_to_local_lims
-from umccr_utils.samplesheet import get_years_from_samplesheet
+from umccr_utils.samplesheet import get_years_from_samplesheet, SampleSheet
 from umccr_utils.logger import set_logger, set_basic_logger
 from umccr_utils.globals import LIMS_COLUMNS, LAB_SPREAD_SHEET_ID, LIMS_SPREAD_SHEET_ID, \
     NOVASTOR_CSV_DIR, NOVASTOR_RAW_BCL_DIR, NOVASTOR_FASTQ_OUTPUT_DIR, \
-    FASTQ_S3_BUCKET, RUN_REGEX_OBJS, INSTRUMENT_NAMES, METADATA_COLUMN_NAMES, NOVASTOR_CRED_PATHS
+    FASTQ_S3_BUCKET, RUN_REGEX_OBJS, INSTRUMENT_NAMES, METADATA_COLUMN_NAMES, NOVASTOR_CRED_PATHS, \
+    OVERRIDE_CYCLES_OBJS
 
 
 import warnings
@@ -28,7 +29,6 @@ def get_args():
     logger.debug("Setting up argument parser.")
     parser = argparse.ArgumentParser(description='Generate data for LIMS spreadsheet.')
     parser.add_argument('runfolder',
-                        required=True,
                         help="The run/runfolder name.")
     parser.add_argument("--deploy-env",
                         required=False,
@@ -91,7 +91,7 @@ def set_args(args):
         sys.exit(1)
 
     # Get run Attributes
-    run_date, machine_id, run_number, slot_id, flowcell_id = get_run_attributes_from_run_name(run_folder_arg.name)
+    run_date, machine_id, run_number, slot_id, flowcell_id = get_run_attributes_from_run_name(run_folder_arg)
 
     # Set each of these as arguments
     setattr(args, "run_date", run_date)
@@ -148,7 +148,7 @@ def set_args(args):
     # Check run dir
     if getattr(args, "failed_run", False):
         # Use the default sample sheet
-        samplesheet_path = raw_data_base_dir_path / "SampleSheet.csv"
+        samplesheet_path = raw_data_run_dir_path / "SampleSheet.csv"
         # Check samplesheet_path exists
         if not samplesheet_path.is_file():
             logger.error("--failed-run set to true {} should exist".format(samplesheet_path))
@@ -157,14 +157,43 @@ def set_args(args):
         setattr(args, "samplesheet_paths", [samplesheet_path])
     else:
         # Find the custom csvs
-        samplesheet_paths = list(raw_data_base_dir_path.glob("SampleSheet.*.csv"))
+        samplesheet_paths = list(raw_data_run_dir_path.glob("SampleSheet.*.csv"))
+
         # Ensure the list is greater than 1
         if len(samplesheet_paths) == 0:
             logger.error("No samplesheets were found in {} matching the pattern:"
-                         " 'SampleSheet.*.csv'".format(raw_data_base_dir_path))
+                         " 'SampleSheet.*.csv'".format(raw_data_run_dir_path))
             sys.exit(1)
+
+        samplesheet_paths_with_override_cycles_midfix = []
+
+        # For each path, check the override cycles midfix
+        for samplesheet_path in samplesheet_paths:
+            # Get override cycles midfix segment
+            override_cycles_re_obj = re.compile(r"SampleSheet.(\S+).csv").fullmatch(str(samplesheet_path.name))
+            if override_cycles_re_obj is None:
+                logger.warning("Skipping samplesheet {} as it doesn't have an 'override cycles' midfix".
+                               format(samplesheet_path))
+                continue
+            override_cycles_midfix = override_cycles_re_obj.group(1)
+            # Split by underscores
+            for override_cycles_segment in override_cycles_midfix.split("_"):
+                if OVERRIDE_CYCLES_OBJS["cycles_full_match"].fullmatch(override_cycles_segment) is None:
+                    # Place a warning
+                    logger.warning("Skipping samplesheet {} as it doesn't have the correct override cycles midfix."
+                                   "Segment \"{}\" isn't a valid override cycles segment"
+                                   .format(samplesheet_path, override_cycles_segment))
+                    break
+            else:
+                samplesheet_paths_with_override_cycles_midfix.append(samplesheet_path)
+
+        # Check at least one sample was appended
+        if len(samplesheet_paths_with_override_cycles_midfix) == 0:
+            logger.error("Could not find any samplesheets with the correct SampleSheet.<override_cycles>.csv pattern")
+            sys.exit(1)
+
         # Set attribute
-        setattr(args, "samplesheet_paths", samplesheet_paths)
+        setattr(args, "samplesheet_paths", samplesheet_paths_with_override_cycles_midfix)
 
     # Checking bc2fastq-base-dir exists
     bcl2fastq_base_dir_arg = getattr(args, "bcl2fastq_base_dir", None)
@@ -212,17 +241,13 @@ def set_args(args):
     update_local_lims_arg = getattr(args, "update_local_lims", None)
     skip_lims_update_arg = getattr(args, "skip_lims_update", False)
 
-    if creds_file_arg is None and update_local_lims_arg is None and skip_lims_update_arg is None:
-        logger.error("One (and only one) of --creds-file, --skip-lims-update and --update-local-lims"
-                     "arguments must be specified")
-        sys.exit(1)
-
-    if creds_file_arg is not None and not Path(creds_file_arg).is_file():
-        logger.error("Could not find file from --creds-file arg: \"{}\"".format(creds_file_arg))
-        sys.exit(1)
-
-    if update_local_lims_arg is not None and not Path(update_local_lims_arg).is_file():
-        logger.error("Could not find file from --update-local-lims: \"{}\"".format(update_local_lims_arg))
+    if update_local_lims_arg is not None:
+        if not Path(update_local_lims_arg).is_file():
+            logger.error("Could not find file from --update-local-lims: \"{}\"".format(update_local_lims_arg))
+    elif creds_file_arg is not None:
+        if not Path(creds_file_arg).is_file():
+            logger.error("Could not find file from --creds-file arg: \"{}\"".format(creds_file_arg))
+            sys.exit(1)
 
     # Set lims and trackingsheet values based on deploy env
     lab_spreadsheet_id = LAB_SPREAD_SHEET_ID[args.deploy_env]
@@ -250,7 +275,8 @@ def get_run_attributes_from_run_name(run_name):
     machine_id = run_regex_obj.group(2)
 
     # Run Number - Zero-Filled Four Digit Number
-    run_number = run_regex_obj.group(3)
+    # Convert to int for entry into excel
+    run_number = int(run_regex_obj.group(3))
 
     # Slot/Cartridge ID - either A or B
     slot_id = run_regex_obj.group(4)
@@ -269,42 +295,42 @@ def get_lims_row(sample, args):
     :return:
     """
 
-    fastq_pattern = sample.sample_project / \
-                        sample.unique_id / \
-                        sample.sample_df['Sample_Name'] + "*.fastq.gz"
+    fastq_pattern = Path(sample.project) / \
+                      sample.unique_id / \
+                      "{}.fastq.gz".format(sample.library_id)
 
-    num_fastq_files = len(list(args.bcl2fastq_run_dir.glob(fastq_pattern)))
+    num_fastq_files = len(list(args.bcl2fastq_run_dir.glob(str(fastq_pattern))))
 
     s3_fastq_pattern = args.fastq_hpc_run_dir / \
-                       sample.sample_project / \
+                       sample.project / \
                        sample.unique_id / \
-                       sample.sample_df['Sample_Name'] + "*.fastq.gz"
+                       "{}.fastq.gz".format(sample.library_id)
 
     lims_data_row = [
         args.runfolder,  # illumina_id
         args.run_number,  # run
         args.run_date,  # timestamp
-        sample.library_df[METADATA_COLUMN_NAMES["subject_id"]].item(),  # subject_id
-        sample.library_df[METADATA_COLUMN_NAMES["sample_id"]].item(),  # sample_id
-        sample.library_df[METADATA_COLUMN_NAMES["library_id"]].item(),  # library_id
-        sample.library_df[METADATA_COLUMN_NAMES["external_subject_id"]].item(),  # external_subject_id
-        sample.library_df[METADATA_COLUMN_NAMES["external_sample_id"]].item(),  # external_sample_id
+        sample.library_series[METADATA_COLUMN_NAMES["subject_id"]],  # subject_id
+        sample.library_series[METADATA_COLUMN_NAMES["sample_id"]],  # sample_id
+        sample.library_series[METADATA_COLUMN_NAMES["library_id"]],  # library_id
+        sample.library_series[METADATA_COLUMN_NAMES["external_subject_id"]],  # external_subject_id
+        sample.library_series[METADATA_COLUMN_NAMES["external_sample_id"]],  # external_sample_id
         "-",  # FIXME "external_library_id"
-        sample.library_df[METADATA_COLUMN_NAMES["sample_name"]].item(),  # sample_name
-        sample.library_df[METADATA_COLUMN_NAMES["project_owner"]].item(),  # project_owner
-        sample.library_df[METADATA_COLUMN_NAMES["project_name"]].item(),  # project_name
+        sample.library_series[METADATA_COLUMN_NAMES["sample_name"]],  # sample_name
+        sample.library_series[METADATA_COLUMN_NAMES["project_owner"]],  # project_owner
+        sample.library_series[METADATA_COLUMN_NAMES["project_name"]],  # project_name
         "-",  # FIXME "project_custodian"
-        sample.library_df[METADATA_COLUMN_NAMES["type"]].item(),  # type
-        sample.library_df[METADATA_COLUMN_NAMES["assay"]].item(),  # assay
-        sample.library_df[METADATA_COLUMN_NAMES["override_cycles"]].item(),  # override_cycles
-        sample.library_df[METADATA_COLUMN_NAMES["phenotype"]].item(),  # phenotype
-        sample.library_df[METADATA_COLUMN_NAMES["source"]].item(),  # source
-        sample.library_df[METADATA_COLUMN_NAMES["quality"]].item(),  # quality
+        sample.library_series[METADATA_COLUMN_NAMES["type"]],  # type
+        sample.library_series[METADATA_COLUMN_NAMES["assay"]],  # assay
+        sample.library_series[METADATA_COLUMN_NAMES["override_cycles"]],  # override_cycles
+        sample.library_series[METADATA_COLUMN_NAMES["phenotype"]],  # phenotype
+        sample.library_series[METADATA_COLUMN_NAMES["source"]],  # source
+        sample.library_series[METADATA_COLUMN_NAMES["quality"]],  # quality
         "-",  # FIXME "topup"
         "-",  # FIXME "SecondaryAnalysis"
-        sample.library_df[METADATA_COLUMN_NAMES["workflow"]].item(),  # workflow
+        sample.library_series[METADATA_COLUMN_NAMES["secondary_analysis"]],  # workflow
         '-',  # tags
-        s3_fastq_pattern,  # fastq
+        str(s3_fastq_pattern),  # fastq
         num_fastq_files,  # number_fastqs
         '-',  # FIXME results
         '-',  # trello
@@ -322,14 +348,16 @@ def main():
 
     # Initialise sample sheets
     logger.debug("Loading the sample sheets")
-    samplesheets = [SampleSheet(samplesheet_path)
+    samplesheets = [SampleSheet(samplesheet_path=samplesheet_path)
                     for samplesheet_path in args.samplesheet_paths]
 
     # Get the years from the sample sheet
     logger.debug("Getting the years of samples used from the samplesheets")
     years = set()
     for samplesheet in samplesheets:
-        years.add(get_years_from_samplesheet(samplesheet))
+        years_i = get_years_from_samplesheet(samplesheet)
+        for year in years_i:
+            years.add(year)
 
     # Loading the appropriate library tracking sheet for the run year
     logger.debug("Loading library tracking data.")
@@ -337,20 +365,24 @@ def main():
     for year in years:
         library_tracking_spreadsheet[year] = get_library_sheet_from_google(args.lab_spreadsheet_id, year)
 
-    ################################################################################
     # Initialise data rows
     lims_data_rows = []
 
     for samplesheet in samplesheets:
         for sample in samplesheet:
+            # Get sample metadata
+            sample.set_metadata_row_for_sample(library_tracking_spreadsheet=library_tracking_spreadsheet)
             lims_data_rows.append(get_lims_row(sample, args))
 
     # Convert to pandas dataframe
     lims_data_df = pd.DataFrame(lims_data_rows, columns=LIMS_COLUMNS.values())
 
+    # Drop duplicate rows - can occur with 10X data
+    lims_data_df = lims_data_df.drop_duplicates()
+
     # Write lims data df to csv if requested
     if getattr(args, "write_csv", False):
-        output_file = args.csv_outdir / args.runfolder + "-lims-sheet.csv"
+        output_file = args.csv_outdir / "{}-{}".format(args.runfolder, "lims-sheet.csv")
         lims_data_df.to_csv(output_file, index=False, header=True, sep=",", quoting=csv.QUOTE_MINIMAL)
 
     if getattr(args, "skip_lims_update", False):
@@ -364,7 +396,7 @@ def main():
         logger.info(f"Writing {lims_data_df.shape[0]} records to Google LIMS {args.lims_spreadsheet_id}")
         write_to_google_lims(keyfile=args.creds_file,
                              lims_spreadsheet_id=args.lims_spreadsheet_id,
-                             data_rows=lims_data_df.values.tolist(),
+                             data_rows=lims_data_df,
                              failed_run=args.failed_run)
 
     logger.info("All done.")

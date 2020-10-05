@@ -28,7 +28,8 @@ METADATA_COLUMN_NAMES = {
   "project_name": 'ProjectName',
   "project_owner": 'ProjectOwner',
   "experiment_id": "ExperimentID",
-  "type": 'Type',  # the assay type: WGS, WTS, 10X, ...
+  "type": 'Type',  # the sample type: WGS, WTS, 10X, ...
+  "assay": "Assay",  # the assay type; TsqNano, NebRNA ...
   "override_cycles": "OverrideCycles",  # The Override cycles list for this run
   "secondary_analysis": "Workflow",  # ?
   "coverage": "Coverage (X)",  # ?
@@ -37,7 +38,7 @@ METADATA_COLUMN_NAMES = {
   "comments": "Comments",
   "rrna": "rRNA",
   "qpc_id": "qPCR ID",
-  "sample_id_samplesheet": "SampleSheet"  # FIXME - this is named 'Sample_ID (SampleSheet)' in the dev spreadsheet
+  "sample_id_samplesheet": "Sample_ID (SampleSheet)"  # FIXME - this is named 'Sample_ID (SampleSheet)' in the dev spreadsheet
 }
 
 
@@ -142,6 +143,7 @@ OVERRIDE_CYCLES_OBJS = {
     "cycles": re.compile(OVERRIDE_CYCLES_STR["cycles"]),
     # https://regex101.com/r/U7bJUI/2
     "cycles_full_match": re.compile(OVERRIDE_CYCLES_STR["cycles_full_match"])
+
 }
 
 """
@@ -199,12 +201,12 @@ LIMS_COLUMNS = {  # Columns in order!
 LOGS
 """
 
-LOG_FILE_PREFIX = {
-    "dev": ".dev.log",
-    "prod": ".prod.log"
+LOG_FILE_SUFFIX = {
+    "dev": "dev.log",
+    "prod": "prod.log"
 }
 
-LOGGER_STYLE = "%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s"
+LOGGER_STYLE = "%(asctime)s - %(levelname)-8s - %(module)-25s - %(funcName)-40s : LineNo. %(lineno)-4d - %(message)s"
 
 """
 INSTRUMENTS
@@ -283,10 +285,12 @@ FLOWCELL_REGEX_STR["all"] = r'(?:{})'.format("|".join(list(FLOWCELL_REGEX_STR.va
 RUN_REGEX_OBJS = {
     # https://regex101.com/r/AYy9es/1
     "run": re.compile(r"({})_({})_({})_({})({})".format(
-        DATE_STR, MACHINE_STR, RUNID_STR, SLOT_STR, FLOWCELL_REGEX_STR
+        DATE_STR, MACHINE_STR, RUNID_STR, SLOT_STR, FLOWCELL_REGEX_STR['all']
     )),
     # https://regex101.com/r/gBd5gx/1
     "run_fullmatch": re.compile(r"{}_{}_{}_{}{}".format(
-        DATE_STR, MACHINE_STR, RUNID_STR, SLOT_STR, FLOWCELL_REGEX_STR
+        DATE_STR, MACHINE_STR, RUNID_STR, SLOT_STR, FLOWCELL_REGEX_STR['all']
     ))
 }
+
+GSERVICE_ACCOUNT = "data-portal@umccr-portal.iam.gserviceaccount.com"

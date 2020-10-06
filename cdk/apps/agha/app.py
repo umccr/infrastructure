@@ -21,7 +21,9 @@ agha_props = {
     'namespace': 'agha',
     'staging_bucket': 'agha-gdr-staging',
     'slack_host': slack_host,
-    'slack_channel': slack_channel
+    'slack_channel': slack_channel,
+    'manager_email': 'sarah.casauria@mcri.edu.au',
+    'sender_email': 'services@umccr.org'
 }
 
 

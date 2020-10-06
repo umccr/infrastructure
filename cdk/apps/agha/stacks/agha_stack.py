@@ -20,6 +20,16 @@ class AghaStack(core.Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name('AmazonS3ReadOnlyAccess')  # TODO: restrict!
             ]
         )
+        lambda_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ses:SendEmail",
+                    "ses:SendRawEmail"
+                ],
+                resources=["*"]
+            )
+        )
+
 
         pandas_layer = lmbda.LayerVersion(
             self,
@@ -60,7 +70,9 @@ class AghaStack(core.Stack):
             environment={
                 'STAGING_BUCKET': props['staging_bucket'],
                 'SLACK_HOST': props['slack_host'],
-                'SLACK_CHANNEL': props['slack_channel']
+                'SLACK_CHANNEL': props['slack_channel'],
+                'MANAGER_EMAIL': props['manager_email'],
+                'SENDER_EMAIL': props['sender_email']
             },
             role=lambda_role,
             layers=[

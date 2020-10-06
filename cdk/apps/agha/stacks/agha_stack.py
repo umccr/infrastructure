@@ -55,9 +55,15 @@ class AghaStack(core.Stack):
             environment={
                 'STAGING_BUCKET': props['staging_bucket'],
                 'SLACK_HOST': props['slack_host'],
-                'SLACK_CHANNEL': props['slack_channel']
+                'SLACK_CHANNEL': props['slack_channel'],
+                'MANAGER_EMAIL': props['manager_email'],
+                'SENDER_EMAIL': props['sender_email']
             },
-            role=lambda_role
+            role=lambda_role,
+            layers=[
+                pandas_layer,
+                scipy_layer
+            ]
         )
 
         lmbda.Function(

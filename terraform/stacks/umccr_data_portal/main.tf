@@ -1,23 +1,30 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
 
   backend "s3" {
-    bucket = "umccr-terraform-states"
-    key    = "umccr_data_portal/terraform.tfstate"
-    region = "ap-southeast-2"
+    bucket         = "umccr-terraform-states"
+    key            = "umccr_data_portal/terraform.tfstate"
+    region         = "ap-southeast-2"
+    dynamodb_table = "terraform-state-lock"
+  }
+
+  required_providers {
+    aws = {
+      version = "~> 3.7.0"
+      source = "hashicorp/aws"
+    }
+
+    github = {
+      version = "~> 3.0.0"
+    }
   }
 }
 
 ################################################################################
 # Generic resources
 
-provider "template" {
-  version = "~> 2.1"
-}
-
 provider "aws" {
   region = "ap-southeast-2"
-  version = "~> 2.65.0"
 }
 
 # for ACM certificate
@@ -30,7 +37,6 @@ provider "github" {
   # Token to be provided by GITHUB_TOKEN env variable
   # (i.e. export GITHUB_TOKEN=xxx)
   organization = "umccr"
-  version = "~> 2.2"
 }
 
 data "aws_region" "current" {}
@@ -43,6 +49,12 @@ locals {
 
   # Stack name in dash
   stack_name_dash = "data-portal"
+
+  default_tags = {
+    "Stack"       = local.stack_name_us
+    "Creator"     = "terraform"
+    "Environment" = terraform.workspace
+  }
 
   client_s3_origin_id           = "clientS3"
   data_portal_domain_prefix     = "data"
@@ -88,6 +100,7 @@ locals {
   LAMBDA_SECURITY_GROUP_IDS              = aws_security_group.lambda_security_group.id
   SSM_KEY_NAME_FULL_DB_URL               = aws_ssm_parameter.ssm_full_db_url.name
   SSM_KEY_NAME_DJANGO_SECRET_KEY         = data.aws_ssm_parameter.ssm_django_secret_key.name
+  SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID= data.aws_ssm_parameter.ssm_metadata_tacking_sheet_id.name
   SSM_KEY_NAME_LIMS_SPREADSHEET_ID       = data.aws_ssm_parameter.ssm_lims_spreadsheet_id.name
   SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON = data.aws_ssm_parameter.ssm_lims_service_account_json.name
   SLACK_CHANNEL                          = var.slack_channel[terraform.workspace]
@@ -95,6 +108,20 @@ locals {
 
 ################################################################################
 # Query for Pre-configured SSM Parameter Store
+# These are pre-populated outside of terraform i.e. manually using Console or CLI
+
+data "aws_ssm_parameter" "ssm_metadata_tacking_sheet_id" {
+  name = "/umccr/google/drive/tracking_sheet_id"
+}
+
+data "aws_ssm_parameter" "github_pat_oauth_token" {
+  # Note that OAuthToken = PAT, generated using https://github.com/settings/tokens
+  name = "/${local.stack_name_us}/github/pat_oauth_token"
+}
+
+data "aws_ssm_parameter" "github_codepipeline_share_token" {
+  name = "/${local.stack_name_us}/github/codepipeline_share_token"
+}
 
 data "aws_ssm_parameter" "google_oauth_client_id" {
   name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
@@ -168,26 +195,31 @@ resource "aws_s3_bucket" "client_bucket" {
   bucket = "${local.org_name}-${local.stack_name_dash}-client-${terraform.workspace}"
   acl    = "private"
 
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
   website {
     index_document = "index.html"
     error_document = "index.html"
   }
-}
 
-# Policy document for the client bucket
-data "template_file" "client_bucket_policy" {
-  template = file("policies/client_bucket_policy.json")
-
-  vars = {
-    client_bucket_arn          = aws_s3_bucket.client_bucket.arn
-    origin_access_identity_arn = aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn
-  }
+  tags = merge(local.default_tags)
 }
 
 # Attach the policy to the client bucket
 resource "aws_s3_bucket_policy" "client_bucket_policy" {
   bucket = aws_s3_bucket.client_bucket.id
-  policy = data.template_file.client_bucket_policy.rendered
+
+  # Policy document for the client bucket
+  policy = templatefile("policies/client_bucket_policy.json", {
+    client_bucket_arn          = aws_s3_bucket.client_bucket.arn
+    origin_access_identity_arn = aws_cloudfront_origin_access_identity.client_origin_access_identity.iam_arn
+  })
 }
 
 # Origin access identity for cloudfront to access client s3 bucket
@@ -247,6 +279,8 @@ resource "aws_cloudfront_distribution" "client_distribution" {
     response_code         = 200
     response_page_path    = "/index.html"
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Hosted zone for organisation domain
@@ -267,31 +301,22 @@ resource "aws_route53_record" "client_alias" {
   }
 }
 
-# FIXME SAN ordering issue, Workaround https://github.com/terraform-providers/terraform-provider-aws/issues/8531#issuecomment-489901445
-locals {
-	unsorted = [
-		"${aws_acm_certificate.client_cert.domain_validation_options.0.resource_record_name}!0",
-		"${aws_acm_certificate.client_cert.domain_validation_options.1.resource_record_name}!1"
-	]
-	sorted = sort(local.unsorted)
-	index = [
-		element(split("!", local.sorted[0]),1),
-		element(split("!", local.sorted[1]),1)
-	]
-}
-
 # Client certificate validation through a Route53 record
 resource "aws_route53_record" "client_cert_validation" {
-  zone_id = data.aws_route53_zone.org_zone.zone_id
-  #name    = aws_acm_certificate.client_cert.domain_validation_options[0].resource_record_name
-  #type    = aws_acm_certificate.client_cert.domain_validation_options[0].resource_record_type
-  #records = [aws_acm_certificate.client_cert.domain_validation_options[0].resource_record_value]
+  for_each = {
+    for dvo in aws_acm_certificate.client_cert.domain_validation_options: dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
 
-  # FIXME SAN ordering issue, Workaround https://github.com/terraform-providers/terraform-provider-aws/issues/8531#issuecomment-489901445
-  name    = lookup(aws_acm_certificate.client_cert.domain_validation_options[local.index[0]], "resource_record_name")
-  type    = lookup(aws_acm_certificate.client_cert.domain_validation_options[local.index[0]], "resource_record_type")
-  records = [lookup(aws_acm_certificate.client_cert.domain_validation_options[local.index[0]], "resource_record_value")]
-  ttl     = 300
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  type            = each.value.type
+  ttl             = 60
+  zone_id         = data.aws_route53_zone.org_zone.zone_id
 }
 
 # The certificate for client domain, validating using DNS
@@ -305,10 +330,9 @@ resource "aws_acm_certificate" "client_cert" {
 
   lifecycle {
     create_before_destroy = true
-
-    # FIXME SAN ordering issue, see https://github.com/terraform-providers/terraform-provider-aws/issues/8531
-    ignore_changes        = [subject_alternative_names]
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Optional automatic certificate validation
@@ -320,22 +344,13 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 
   provider                = aws.use1
   certificate_arn         = aws_acm_certificate.client_cert.arn
-  validation_record_fqdns = [aws_route53_record.client_cert_validation.fqdn]
+  validation_record_fqdns = [for record in aws_route53_record.client_cert_validation : record.fqdn]
 
   depends_on = [aws_route53_record.client_cert_validation]
 }
 
 ################################################################################
 # Back end configurations
-
-data "template_file" "sqs_iap_ens_event_policy" {
-  template = file("policies/sqs_iap_ens_event_policy.json")
-
-  vars = {
-    # Use the same name as the one below, if referring there will be cicurlar dependency
-    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
-  }
-}
 
 resource "aws_sqs_queue" "iap_ens_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-dlq"
@@ -346,11 +361,16 @@ resource "aws_sqs_queue" "iap_ens_event_dlq" {
 # See https://iap-docs.readme.io/docs/ens_create-an-amazon-sqs-queue
 resource "aws_sqs_queue" "iap_ens_event_queue" {
   name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
-  policy = data.template_file.sqs_iap_ens_event_policy.rendered
+  policy = templatefile("policies/sqs_iap_ens_event_policy.json", {
+    # Use the same name as above, if referring there will be circular dependency
+    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-queue"
+  })
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.iap_ens_event_dlq.arn
     maxReceiveCount = 3
   })
+
+  tags = merge(local.default_tags)
 }
 
 data "aws_s3_bucket" "s3_primary_data_bucket" {
@@ -361,18 +381,6 @@ data "aws_s3_bucket" "s3_run_data_bucket" {
   bucket = var.s3_run_data_bucket[terraform.workspace]
 }
 
-data "template_file" "sqs_s3_primary_data_event_policy" {
-  template = file("policies/sqs_s3_primary_data_event_policy.json")
-
-  vars = {
-    # Use the same name as the one below, if referring there will be circular dependency
-    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
-
-    s3_primary_data_bucket_arn = data.aws_s3_bucket.s3_primary_data_bucket.arn
-    s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
-  }
-}
-
 resource "aws_sqs_queue" "s3_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-dlq"
   message_retention_seconds = 1209600
@@ -381,11 +389,18 @@ resource "aws_sqs_queue" "s3_event_dlq" {
 # SQS Queue for S3 event delivery
 resource "aws_sqs_queue" "s3_event_queue" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
-  policy = data.template_file.sqs_s3_primary_data_event_policy.rendered
+  policy = templatefile("policies/sqs_s3_primary_data_event_policy.json", {
+    # Use the same name as above, if referring there will be circular dependency
+    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+    s3_primary_data_bucket_arn = data.aws_s3_bucket.s3_primary_data_bucket.arn
+    s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
+  })
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
     maxReceiveCount = 20
   })
+
+  tags = merge(local.default_tags)
 }
 
 # Enable primary data bucket s3 event notification to SQS
@@ -424,6 +439,8 @@ resource "aws_cognito_user_pool" "user_pool" {
   user_pool_add_ons {
     advanced_security_mode = "AUDIT"
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Google identity provider
@@ -433,9 +450,15 @@ resource "aws_cognito_identity_provider" "identity_provider" {
   provider_type = "Google"
 
   provider_details = {
-    client_id        = data.aws_ssm_parameter.google_oauth_client_id.value
-    client_secret    = data.aws_ssm_parameter.google_oauth_client_secret.value
-    authorize_scopes = "openid profile email"
+    client_id                     = data.aws_ssm_parameter.google_oauth_client_id.value
+    client_secret                 = data.aws_ssm_parameter.google_oauth_client_secret.value
+    authorize_scopes              = "openid profile email"
+    attributes_url                = "https://people.googleapis.com/v1/people/me?personFields="
+    attributes_url_add_attributes = true
+    authorize_url                 = "https://accounts.google.com/o/oauth2/v2/auth"
+    oidc_issuer                   = "https://accounts.google.com"
+    token_request_method          = "POST"
+    token_url                     = "https://www.googleapis.com/oauth2/v4/token"
   }
 
   attribute_mapping = {
@@ -460,35 +483,29 @@ resource "aws_cognito_identity_pool" "identity_pool" {
     provider_name           = aws_cognito_user_pool.user_pool.endpoint
     server_side_token_check = false
   }
-}
 
-# IAM role for the identity pool for authenticated identities
-data "template_file" "iam_role_authenticated_assume_role_policy" {
-  template = file("policies/iam_role_authenticated_assume_role_policy.json")
-
-  vars = {
-    identity_pool_id = aws_cognito_identity_pool.identity_pool.id
-  }
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role" "role_authenticated" {
   name = "${local.stack_name_us}_identity_pool_authenticated"
   path = local.iam_role_path
 
-  assume_role_policy = data.template_file.iam_role_authenticated_assume_role_policy.rendered
-}
+  # IAM role for the identity pool for authenticated identities
+  assume_role_policy = templatefile("policies/iam_role_authenticated_assume_role_policy.json", {
+    identity_pool_id = aws_cognito_identity_pool.identity_pool.id
+  })
 
-# IAM role policy for authenticated identities
-data "template_file" "iam_role_authenticated_policy" {
-  template = file("policies/iam_role_authenticated_policy.json")
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role_policy" "role_policy_authenticated" {
   name = "${local.stack_name_us}_authenticated_policy"
   role = aws_iam_role.role_authenticated.id
 
+  # IAM role policy for authenticated identities
   # Todo: we should have a explicit reference to our api
-  policy = data.template_file.iam_role_authenticated_policy.rendered
+  policy = templatefile("policies/iam_role_authenticated_policy.json", {})
 }
 
 # Attach the IAM role to the identity pool
@@ -552,34 +569,36 @@ resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
   acl           = "private"
-  force_destroy = true
-}
 
-# Base IAM role for codepipeline service
-data "template_file" "codepipeline_base_role_assume_role_policy" {
-  template = file("policies/codepipeline_base_role_assume_role_policy.json")
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role" "codepipeline_base_role" {
   name = "${local.stack_name_us}_codepipeline_base_role"
   path = local.iam_role_path
 
-  assume_role_policy = data.template_file.codepipeline_base_role_assume_role_policy.rendered
-}
+  # Base IAM role for codepipeline service
+  assume_role_policy = templatefile("policies/codepipeline_base_role_assume_role_policy.json", {})
 
-# Base IAM policy for codepiepline service role
-data "template_file" "codepipeline_base_role_policy" {
-  template = file("policies/codepipeline_base_role_policy.json")
-
-  vars = {
-    codepipeline_bucket_arn = aws_s3_bucket.codepipeline_bucket.arn
-  }
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role_policy" "codepipeline_base_role_policy" {
   name   = "${local.stack_name_us}_codepipeline_base_role_policy"
   role   = aws_iam_role.codepipeline_base_role.id
-  policy = data.template_file.codepipeline_base_role_policy.rendered
+
+  # Base IAM policy for codepiepline service role
+  policy = templatefile("policies/codepipeline_base_role_policy.json", {
+    codepipeline_bucket_arn = aws_s3_bucket.codepipeline_bucket.arn
+  })
 }
 
 # Codepipeline for client
@@ -604,11 +623,10 @@ resource "aws_codepipeline" "codepipeline_client" {
       version          = "1"
 
       configuration = {
-        Owner = local.org_name
-        Repo  = local.github_repo_client
-
-        # Use branch for current stage
-        Branch = var.github_branch[terraform.workspace]
+        Owner      = local.org_name
+        Repo       = local.github_repo_client
+        OAuthToken = data.aws_ssm_parameter.github_pat_oauth_token.value
+        Branch     = var.github_branch[terraform.workspace]
       }
     }
   }
@@ -629,6 +647,8 @@ resource "aws_codepipeline" "codepipeline_client" {
       }
     }
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Codepipeline for apis
@@ -653,11 +673,10 @@ resource "aws_codepipeline" "codepipeline_apis" {
       version          = "1"
 
       configuration = {
-        Owner = local.org_name
-        Repo  = local.github_repo_apis
-
-        # Use branch for current stage
-        Branch = var.github_branch[terraform.workspace]
+        Owner      = local.org_name
+        Repo       = local.github_repo_apis
+        OAuthToken = data.aws_ssm_parameter.github_pat_oauth_token.value
+        Branch     = var.github_branch[terraform.workspace]
       }
     }
   }
@@ -678,51 +697,43 @@ resource "aws_codepipeline" "codepipeline_apis" {
       }
     }
   }
-}
 
-# IAM role for code build (client)
-data "template_file" "codebuild_client_role_assume_role_policy" {
-  template = file("policies/codebuild_client_role_assume_role_policy.json")
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role" "codebuild_client_role" {
   name = "${local.stack_name_us}_codebuild_client_service_role"
   path = local.iam_role_path
 
-  assume_role_policy = data.template_file.codebuild_client_role_assume_role_policy.rendered
-}
+  # IAM role for code build (client)
+  assume_role_policy = templatefile("policies/codebuild_client_role_assume_role_policy.json", {})
 
-# IAM role for code build (client)
-data "template_file" "codebuild_apis_role_assume_role_policy" {
-  template = file("policies/codebuild_apis_role_assume_role_policy.json")
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role" "codebuild_apis_role" {
   name = "${local.stack_name_us}_codebuild_apis_service_role"
   path = local.iam_role_path
 
-  assume_role_policy = data.template_file.codebuild_apis_role_assume_role_policy.rendered
-}
+  # IAM role for code build (api)
+  assume_role_policy = templatefile("policies/codebuild_apis_role_assume_role_policy.json", {})
 
-# IAM policy specific for the apis side 
-data "template_file" "codebuild_apis_policy" {
-  template = file("policies/codebuild_apis_policy.json")
-
-  vars = {
-    subnet_id0 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[0],
-    subnet_id1 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[1],
-    subnet_id2 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[2],
-
-    region = data.aws_region.current.name,
-    account_id = data.aws_caller_identity.current.account_id
-  }
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_policy" "codebuild_apis_policy" {
   name        = "${local.stack_name_us}_codebuild_apis_service_policy"
   description = "Policy for CodeBuild for backend side of data portal"
 
-  policy = data.template_file.codebuild_apis_policy.rendered
+  # IAM policy specific for the apis side
+  policy = templatefile("policies/codebuild_apis_policy.json", {
+    subnet_id0 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[0],
+    subnet_id1 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[1],
+    subnet_id2 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[2],
+
+    region = data.aws_region.current.name,
+    account_id = data.aws_caller_identity.current.account_id
+  })
 }
 
 # Attach the base policy to the code build role for client
@@ -743,16 +754,12 @@ resource "aws_iam_role_policy_attachment" "codebuild_apis_role_attach_specific_p
   policy_arn = aws_iam_policy.codebuild_apis_policy.arn
 }
 
-# Base IAM policy for code build
-data "template_file" "codebuild_base_policy" {
-  template = file("policies/codebuild_base_policy.json")
-}
-
 resource "aws_iam_policy" "codebuild_base_policy" {
   name        = "codebuild-${local.stack_name_dash}-base-service-policy"
   description = "Base policy for CodeBuild for data portal site"
 
-  policy = data.template_file.codebuild_base_policy.rendered
+  # Base IAM policy for code build
+  policy = templatefile("policies/codebuild_base_policy.json", {})
 }
 
 # Codebuild project for client
@@ -825,6 +832,8 @@ resource "aws_codebuild_project" "codebuild_client" {
     location        = "https://github.com/${local.org_name}/${local.github_repo_client}.git"
     git_clone_depth = 1
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Codebuild project for apis
@@ -880,6 +889,11 @@ resource "aws_codebuild_project" "codebuild_apis" {
     environment_variable {
       name  = "SSM_KEY_NAME_FULL_DB_URL"
       value = local.SSM_KEY_NAME_FULL_DB_URL
+    }
+
+    environment_variable {
+      name  = "SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID"
+      value = local.SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID
     }
 
     environment_variable {
@@ -951,32 +965,46 @@ resource "aws_codebuild_project" "codebuild_apis" {
     location        = "https://github.com/${local.org_name}/${local.github_repo_apis}.git"
     git_clone_depth = 1
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Codepipeline webhook for client code repository
 resource "aws_codepipeline_webhook" "codepipeline_client_webhook" {
   name            = "webhook-github-client"
-  authentication  = "UNAUTHENTICATED"
+  authentication  = "GITHUB_HMAC"
   target_action   = "Source"
   target_pipeline = aws_codepipeline.codepipeline_client.name
+
+  authentication_configuration {
+    secret_token = data.aws_ssm_parameter.github_codepipeline_share_token.value
+  }
 
   filter {
     json_path    = "$.ref"
     match_equals = "refs/heads/{Branch}"
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Codepipeline webhook for apis code repository
 resource "aws_codepipeline_webhook" "codepipeline_apis_webhook" {
   name            = "webhook-github-apis"
-  authentication  = "UNAUTHENTICATED"
+  authentication  = "GITHUB_HMAC"
   target_action   = "Source"
   target_pipeline = aws_codepipeline.codepipeline_apis.name
+
+  authentication_configuration {
+    secret_token = data.aws_ssm_parameter.github_codepipeline_share_token.value
+  }
 
   filter {
     json_path    = "$.ref"
     match_equals = "refs/heads/{Branch}"
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Github repository of client
@@ -997,6 +1025,7 @@ resource "github_repository_webhook" "client_github_webhook" {
     url          = aws_codepipeline_webhook.codepipeline_client_webhook.url
     content_type = "json"
     insecure_ssl = false
+    secret       = data.aws_ssm_parameter.github_codepipeline_share_token.value
   }
 
   events = ["push"]
@@ -1010,32 +1039,27 @@ resource "github_repository_webhook" "apis_github_webhook" {
     url          = aws_codepipeline_webhook.codepipeline_apis_webhook.url
     content_type = "json"
     insecure_ssl = false
+    secret       = data.aws_ssm_parameter.github_codepipeline_share_token.value
   }
 
   events = ["push"]
-}
-
-# IAM role for lambda functions (to be use by Serverless framework)
-data "template_file" "lambda_apis_role_assume_role_policy" {
-  template = file("policies/lambda_apis_role_assume_role_policy.json")
 }
 
 resource "aws_iam_role" "lambda_apis_role" {
   name = "${local.stack_name_us}_lambda_apis_role"
   path = local.iam_role_path
 
-  assume_role_policy = data.template_file.lambda_apis_role_assume_role_policy.rendered
-}
+  # IAM role for lambda functions (to be use by Serverless framework)
+  assume_role_policy = templatefile("policies/lambda_apis_role_assume_role_policy.json", {})
 
-data "template_file" "lambda_apis_policy" {
-  template = file("policies/lambda_apis_policy.json")
+  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role_policy" "lambda_apis_role_policy" {
   name = "${local.stack_name_us}_lambda_apis_policy"
   role = aws_iam_role.lambda_apis_role.id
 
-  policy = data.template_file.lambda_apis_policy.rendered
+  policy = templatefile("policies/lambda_apis_policy.json", {})
 }
 
 ################################################################################
@@ -1060,6 +1084,8 @@ resource "aws_security_group" "lambda_security_group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Use a separate security group for CodeBuild for apis
@@ -1075,6 +1101,8 @@ resource "aws_security_group" "codebuild_apis_security_group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Security group for RDS
@@ -1102,6 +1130,8 @@ resource "aws_security_group" "rds_security_group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = merge(local.default_tags)
 }
 
 ################################################################################
@@ -1110,6 +1140,7 @@ resource "aws_security_group" "rds_security_group" {
 resource "aws_db_subnet_group" "rds" {
   name = "${local.stack_name_us}_db_subnet_group"
   subnet_ids = data.aws_subnet_ids.database_subnets_ids.ids
+  tags = merge(local.default_tags)
 }
 
 resource "aws_rds_cluster" "db" {
@@ -1134,6 +1165,8 @@ resource "aws_rds_cluster" "db" {
     min_capacity = var.rds_min_capacity[terraform.workspace]
     max_capacity = var.rds_max_capacity[terraform.workspace]
   }
+
+  tags = merge(local.default_tags)
 }
 
 # Composed database url for backend to use
@@ -1142,6 +1175,8 @@ resource "aws_ssm_parameter" "ssm_full_db_url" {
   type        = "SecureString"
   description = "Database url used by the Django app"
   value       = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+
+  tags = merge(local.default_tags)
 }
 
 ################################################################################
@@ -1170,6 +1205,8 @@ resource "aws_wafregional_web_acl" "api_web_acl" {
     rule_id  = aws_wafregional_rule.api_waf_sql_rule.id
     type     = "REGULAR"
   }
+
+  tags = merge(local.default_tags)
 }
 
 # SQL Injection protection
@@ -1183,6 +1220,8 @@ resource "aws_wafregional_rule" "api_waf_sql_rule" {
     negated = false
     type    = "SqlInjectionMatch"
   }
+
+  tags = merge(local.default_tags)
 }
 
 # SQL injection match set
@@ -1214,147 +1253,178 @@ resource "aws_wafregional_sql_injection_match_set" "sql_injection_match_set" {
 # Save these in SSM Parameter Store for frontend client localhost development purpose
 
 resource "aws_ssm_parameter" "cog_user_pool_id" {
-  name = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
+  type  = "String"
   value = aws_cognito_user_pool.user_pool.id
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "cog_identity_pool_id" {
-  name = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
+  type  = "String"
   value = aws_cognito_identity_pool.identity_pool.id
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "cog_app_client_id_local" {
-  name = "${local.ssm_param_key_client_prefix}/cog_app_client_id_local"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/cog_app_client_id_local"
+  type  = "String"
   value = aws_cognito_user_pool_client.user_pool_client_localhost.id
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "oauth_domain" {
-  name = "${local.ssm_param_key_client_prefix}/oauth_domain"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/oauth_domain"
+  type  = "String"
   value = aws_cognito_user_pool_domain.user_pool_client_domain.domain
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "oauth_redirect_in_local" {
-  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_local"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_local"
+  type  = "String"
   value = sort(aws_cognito_user_pool_client.user_pool_client_localhost.callback_urls)[0]
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "oauth_redirect_out_local" {
-  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_local"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_local"
+  type  = "String"
   value = sort(aws_cognito_user_pool_client.user_pool_client_localhost.logout_urls)[0]
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "oauth_redirect_in_stage" {
-  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_stage"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_stage"
+  type  = "String"
   value = local.oauth_redirect_url[terraform.workspace]
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "oauth_redirect_out_stage" {
-  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_stage"
-  type = "String"
+  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_stage"
+  type  = "String"
   value = local.oauth_redirect_url[terraform.workspace]
+  tags  = merge(local.default_tags)
 }
 
 # Save these in SSM Parameter Store for backend api localhost Serverless purpose
 
 resource "aws_ssm_parameter" "lambda_iam_role_arn" {
-  name = "${local.ssm_param_key_backend_prefix}/lambda_iam_role_arn"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/lambda_iam_role_arn"
+  type  = "String"
   value = local.LAMBDA_IAM_ROLE_ARN
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "lambda_subnet_ids" {
-  name = "${local.ssm_param_key_backend_prefix}/lambda_subnet_ids"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/lambda_subnet_ids"
+  type  = "String"
   value = local.LAMBDA_SUBNET_IDS
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "lambda_security_group_ids" {
-  name = "${local.ssm_param_key_backend_prefix}/lambda_security_group_ids"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/lambda_security_group_ids"
+  type  = "String"
   value = local.LAMBDA_SECURITY_GROUP_IDS
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "ssm_key_name_full_db_url" {
-  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_full_db_url"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_full_db_url"
+  type  = "String"
   value = local.SSM_KEY_NAME_FULL_DB_URL
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "ssm_key_name_django_secret_key" {
-  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_django_secret_key"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_django_secret_key"
+  type  = "String"
   value = local.SSM_KEY_NAME_DJANGO_SECRET_KEY
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "ssm_key_name_metadata_tacking_sheet_id" {
+  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_metadata_tracking_sheet_id"
+  type  = "String"
+  value = local.SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "ssm_key_name_lims_spreadsheet_id" {
-  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_spreadsheet_id"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_spreadsheet_id"
+  type  = "String"
   value = local.SSM_KEY_NAME_LIMS_SPREADSHEET_ID
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "ssm_key_name_lims_service_account_json" {
-  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_service_account_json"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_service_account_json"
+  type  = "String"
   value = local.SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "api_domain_name" {
-  name = "${local.ssm_param_key_backend_prefix}/api_domain_name"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/api_domain_name"
+  type  = "String"
   value = local.api_domain
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "s3_event_sqs_arn" {
-  name = "${local.ssm_param_key_backend_prefix}/s3_event_sqs_arn"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/s3_event_sqs_arn"
+  type  = "String"
   value = aws_sqs_queue.s3_event_queue.arn
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "iap_ens_event_sqs_arn" {
-  name = "${local.ssm_param_key_backend_prefix}/iap_ens_event_sqs_arn"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/iap_ens_event_sqs_arn"
+  type  = "String"
   value = aws_sqs_queue.iap_ens_event_queue.arn
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "certificate_arn" {
-  name = "${local.ssm_param_key_backend_prefix}/certificate_arn"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/certificate_arn"
+  type  = "String"
   value = aws_acm_certificate.client_cert.arn
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "waf_name" {
-  name = "${local.ssm_param_key_backend_prefix}/waf_name"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/waf_name"
+  type  = "String"
   value = aws_wafregional_web_acl.api_web_acl.name
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "serverless_deployment_bucket" {
-  name = "${local.ssm_param_key_backend_prefix}/serverless_deployment_bucket"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/serverless_deployment_bucket"
+  type  = "String"
   value = aws_s3_bucket.codepipeline_bucket.bucket
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "slack_channel" {
-  name = "${local.ssm_param_key_backend_prefix}/slack_channel"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/slack_channel"
+  type  = "String"
   value = local.SLACK_CHANNEL
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "ssm_key_name_iap_auth_token" {
-  name = "${local.ssm_param_key_backend_prefix}/ssm_key_name_iap_auth_token"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_iap_auth_token"
+  type  = "String"
   value = var.ssm_key_name_iap_auth_token
+  tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "serverless_stage" {
-  name = "${local.ssm_param_key_backend_prefix}/stage"
-  type = "String"
+  name  = "${local.ssm_param_key_backend_prefix}/stage"
+  type  = "String"
   value = terraform.workspace
+  tags  = merge(local.default_tags)
 }

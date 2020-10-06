@@ -70,6 +70,10 @@ output "SSM_KEY_NAME_DJANGO_SECRET_KEY" {
   value = aws_ssm_parameter.ssm_key_name_django_secret_key.value
 }
 
+output "SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID" {
+  value = aws_ssm_parameter.ssm_key_name_metadata_tacking_sheet_id.value
+}
+
 output "SSM_KEY_NAME_LIMS_SPREADSHEET_ID" {
   value = aws_ssm_parameter.ssm_key_name_lims_spreadsheet_id.value
 }

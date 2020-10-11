@@ -484,11 +484,6 @@ update_toil_env() {
     -c "conda update --name \"${TOIL_CONDA_ENV_NAME}\" --all --yes; \
         conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
         pip install --upgrade \"toil[all]\""
-  # FIXME --net=none when launching docker containers
-  # Could be a NetworkAccess Requirement?
-  su - ec2-user \
-    -c "conda activate \"${TOIL_CONDA_ENV_NAME}\"; \
-        sed -i 's/net=none/net=host/g' \"\${CONDA_PREFIX}/lib/python3.8/site-packages/cwltool/docker.py\""
 }
 
 update_base_conda_env() {
@@ -516,12 +511,136 @@ clean_conda_envs() {
 
 : '
 #################################################
+AWS SSM Functions
+#################################################
+'
+
+check_ssm_parameter_exists() {
+  : '
+  Check an ssm parameter exists
+  Returns 0 if present, 1 otherwise
+  '
+  local ssm_parameter_key
+
+  ssm_parameter_key="$1"
+
+  # Use get-parameters to see if key is in 'InvalidParameters'
+  invalid_length=$(aws ssm get-parameters --names "${ssm_parameter_key}" | {
+    #  WIll return something like this if not a parameter
+    #  {
+    #      "Parameters": [],
+    #      "InvalidParameters": [
+    #          "/parallel_cluster/dev/github_public_keys"
+    #      ]
+    #  }
+    #  OR this if a parameter
+    #  {
+    #      "Parameters": [
+    #          {
+    #              "Name": "/parallel_cluster/dev/github_public_keys",
+    #              ...
+    #              "DataType": "text"
+    #          }
+    #      ],
+    #      "InvalidParameters": []
+    #  }
+    jq --raw-output '.InvalidParameters | length'
+  })
+
+  # Return length
+  if [[ "${invalid_length}" == 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+write_ssm_parameter_to_file() {
+  : '
+  Get an ssm parametert and write it to a file
+  '
+  # Inputs
+  local ssm_parameter_key="$1"  # Input Parameter Key
+  local file_path="$2"  # Local path to write to
+  local secure_string="$3"  # Is the input parameter a secure string?
+
+  # Other local vars used
+  local ssm_as_str
+
+  if ! check_ssm_parameter_exists "${ssm_parameter_key}"; then
+    echo_stderr "Could not find parameter \"${ssm_parameter_key}\""
+    echo_stderr "Could not write to \"${file_path}\""
+    return 1
+  fi
+
+  if [[ "${secure_string}" == "true" ]]; then
+    # SSM Parameter is a secure string, use the '--with-decrpytion' parameter
+    ssm_as_str="$(aws ssm get-parameter --name "${ssm_parameter_key}" --with-decryption | {
+                    jq --raw-output '.Parameter.Value'
+                })"
+  else
+    # We don't need to add the '--with-decrpytion' parameter
+    ssm_as_str="$(aws ssm get-parameter --name "${ssm_parameter_key}" | {
+                    jq --raw-output '.Parameter.Value'
+                })"
+  fi
+
+  # Write ssm to file
+  su - ec2-user -c "echo \"${ssm_as_str}\" > \"${file_path}\""
+}
+
+: '
+#################################################
+GITHUB
+#################################################
+
+Not all GitHub repos have the parallel cluster public key
+The Public Key can be found under /parallel_cluster/dev/github_public_key
+and should be added to the "Deploy Keys" of the repo with read-only access.
+'
+
+get_github_access(){
+  : '
+  Write the GitHub private key to /home/ec2-user/.ssh/github
+  Write the GitHub ssh command to /home/ec2-user/.ssh/github.sh
+  '
+  # Set local vars
+  local github_private_key_path
+  local github_shell_path
+  github_private_key_path="/home/ec2-user/.ssh/github"
+  github_shell_path="/home/ec2-user/.ssh/github.sh"
+
+  # Write ssm parameters to local files
+  if ! write_ssm_parameter_to_file "${GITHUB_PRIVATE_KEY_SSM_KEY}" "${github_private_key_path}" "true"; then
+    echo_stderr "Couldn't successfully add file \"${github_private_key_path}\""
+    return 1
+  fi
+  if ! write_ssm_parameter_to_file "${GITHUB_GIT_SSH_SSM_KEY}" "${github_shell_path}" "false"; then
+    echo_stderr "Couldn't successfully add file \"${github_shell_path}\""
+    return 1
+  fi
+
+  # Change permissions for keys and scripts
+  chmod 400 "${github_private_key_path}"
+  chmod +x "${github_shell_path}"
+
+  # Write shell path to bashrc
+  su - ec2-user -c "echo \"export GIT_SSH=\\\"${github_shell_path}\\\"\" >> \"/home/ec2-user/.bashrc\""
+}
+
+: '
+#################################################
 GLOBALS
 #################################################
 '
 
 # Globals
-S3_BUCKET_DIR_SSM_KEY="/parallel_cluster/dev/s3_config_root"
+
+# Globals - SSM Parameters
+SSM_PARAMETER_ROOT="/parallel_cluster/dev"
+S3_BUCKET_DIR_SSM_KEY="${SSM_PARAMETER_ROOT}/s3_config_root"
+GITHUB_PRIVATE_KEY_SSM_KEY="${SSM_PARAMETER_ROOT}/github_private_key"
+GITHUB_GIT_SSH_SSM_KEY="${SSM_PARAMETER_ROOT}/github_ssh"
 
 # Globals - Miscell
 # Which timezone are we in
@@ -650,7 +769,9 @@ case "${cfn_node_type}" in
       # Clean conda env
       echo_stderr "Cleaning conda envs"
       clean_conda_envs
-
+      # Get GitHub Access
+      echo_stderr "Get GitHub access through the use of private/public key pairs in ssm parameters"
+      get_github_access
     ;;
     ComputeFleet)
       # Do nothing

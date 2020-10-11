@@ -166,6 +166,12 @@ you wish to save back to S3
 > /mnt/data       (mapping to s3://umccr-temp-dev for input datasets)
 > Those mount points are subject to change, this is a work in progress that requires human consensus.
 
+### Accessing private GitHub repos.
+We have a public/private key pair for accessing our GitHub repos,
+stored in AWS ssm parameters. If the repo of interest as this public key
+in the deploy keys section of the repo, you can clone it to any node using:   
+`git clone git@github.com:repo/path.git`
+
 ### Limitations
 
 The current cluster and scheduler (SLURM) run with minimal configuration, so there will be some limitations. Known points include:

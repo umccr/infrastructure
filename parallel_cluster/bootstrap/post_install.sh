@@ -227,14 +227,17 @@ enable_mem_on_slurm() {
     # However we lose around 800mb on average with overhead.
     # Take off 2GB to be safe
     # Workaround taken from https://github.com/aws/aws-parallelcluster/issues/1517#issuecomment-561775124
+    # Therefore compute-dy-c54xlarge becomes 30000 (Mb)
+    # And compute-dy-m54xlarge becomes 62000 (Mb)
+    # We also set the default memory to 2000 (Mb)
   '
   # Get line of INCLUDE_CLUSTER_LINE
   local include_cluster_line_num
   include_cluster_line_num=$(grep -n "${SLURM_CONF_INCLUDE_CLUSTER_LINE}" "${SLURM_CONF_FILE}" | {
                              cut -d':' -f1
                             })
-  # Prepend with REAL_MEM_LINE
-  sed -i "${include_cluster_line_num}i${SLURM_CONF_REAL_MEM_LINE}" "${SLURM_CONF_FILE}"
+  # Prepend with DefMemPerNode Line
+  sed -i "${include_cluster_line_num}i${SLURM_CONF_DEFAULT_MEM_PER_NODE_LINE}" "${SLURM_CONF_FILE}"
 
   # FIXME Hardcoded key-pair-vals should be put in a dict / json
   sed -i '/^NodeName=compute-dy-c54xlarge/ s/$/ RealMemory=30000/' "${SLURM_COMPUTE_PARTITION_CONFIG_FILE}"
@@ -288,6 +291,7 @@ connect_sacct_to_mysql_db() {
   # These are all commented out by default in the standard slurm file
   # Search for the commented out and add in.
   {
+    echo "# These lines have been appended to the slurm configuration file by the parallel cluster post-installation script"
     echo "JobAcctGatherType=jobacct_gather/linux"
     echo "JobAcctGatherFrequency=30"
     echo "AccountingStorageType=accounting_storage/slurmdbd"
@@ -667,16 +671,11 @@ SLURM_CONF_FILE="/opt/slurm/etc/slurm.conf"
 SLURM_COMPUTE_PARTITION_CONFIG_FILE="/opt/slurm/etc/pcluster/slurm_parallelcluster_compute_partition.conf"
 SLURM_SINTERACTIVE_S3="$(get_pc_s3_root)/slurm/scripts/sinteractive.sh"
 SLURM_SINTERACTIVE_FILE_PATH="/opt/slurm/scripts/sinteractive"
-# Total mem on a m5.4xlarge parition is 64Gb
-# This value MUST be lower than the RealMemory attribute from `/opt/slurm/sbin/slurmd -C`
-# Otherwise slurm will put the nodes into 'drain' mode.
-# When run on a compute node - generally get around 63200 - subtract 2 Gb to be safe.
-SLURM_COMPUTE_NODE_REAL_MEM="62000"
 # If just CR_CPU, then slurm will only look at CPU
 # To determine if a node is full.
 SLURM_SELECT_TYPE_PARAMETERS="CR_CPU_Memory"
 # Line we wish to insert
-SLURM_CONF_REAL_MEM_LINE="NodeName=DEFAULT RealMemory=${SLURM_COMPUTE_NODE_REAL_MEM}"
+SLURM_CONF_DEFAULT_MEM_PER_NODE_LINE="DefMemPerNode=2000"
 # Line we wish to place our snippet above
 if [[ "$(this_parallel_cluster_version)" == "2.8.1" ]]; then
   SLURM_CONF_INCLUDE_CLUSTER_LINE="include slurm_parallelcluster_nodes.conf"

@@ -279,21 +279,7 @@ resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
 }
 
 ################################################################################
-# Dedicated user to list store content
-
-module "agha_catalogue_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "agha_catalogue"
-  pgp_key  = "keybase:ametke"
-}
-
-resource "aws_iam_user_policy_attachment" "ahga_catalogue_store_list" {
-  user       = "${module.agha_catalogue_user.username}"
-  policy_arn = "${aws_iam_policy.agha_store_list_policy.arn}"
-}
-
-################################################################################
-# Users & groups
+# Users
 
 module "freisinger" {
   source   = "../../modules/iam_user/secure_user"
@@ -427,7 +413,12 @@ resource "aws_iam_user_login_profile" "sarah_console_login" {
   pgp_key = "keybase:freisinger"
 }
 
-# groups
+################################################################################
+# Groups
+resource "aws_iam_group" "default_users" {
+  name = "default_users"
+}
+
 resource "aws_iam_group" "admin" {
   name = "agha_gdr_admins"
 }
@@ -440,44 +431,79 @@ resource "aws_iam_group" "read" {
   name = "agha_gdr_read"
 }
 
+################################################################################
+# Group memberships
+resource "aws_iam_group_membership" "default_users" {
+  name  = "${aws_iam_group.default_users.name}_membership"
+  group = "${aws_iam_group.default_users.name}"
+  users = [
+    "${module.ametke.username}",
+    "${module.boxcroft.username}",
+    "${module.cassimons.username}",
+    "${module.deanmeisong.username}",
+    "${module.dnafault.username}",
+    "${module.ebenngarvan.username}",
+    "${module.freisinger.username}",
+    "${module.joecop.username}",
+    "${module.michaelblackpath.username}",
+    "${module.minw.username}",
+    "${module.rk_chw.username}",
+    "${module.sarah.username}",
+    "${module.scottwood.username}",
+    "${module.seanlianu.username}",
+    "${module.sebastian.username}",
+    "${module.sgao.username}",
+    "${module.shyrav.username}",
+    "${module.simonsadedin.username}"
+  ]
+}
+
 resource "aws_iam_group_membership" "admin_members" {
   name  = "${aws_iam_group.admin.name}_membership"
-  users = ["${module.freisinger.username}"]
   group = "${aws_iam_group.admin.name}"
+  users = ["${module.freisinger.username}"]
 }
 
 resource "aws_iam_group_membership" "submit_members" {
   name  = "${aws_iam_group.submit.name}_membership"
-  users = [
-    "${module.simonsadedin.username}",
-    "${module.sebastian.username}",
-    "${module.michaelblackpath.username}",
-    "${module.deanmeisong.username}",
-    "${module.scottwood.username}",
-    "${module.boxcroft.username}",
-    "${module.rk_chw.username}",
-    "${module.seanlianu.username}",
-    "${module.sgao.username}"
-  ]
   group = "${aws_iam_group.submit.name}"
+  users = [
+    "${module.boxcroft.username}",
+    "${module.deanmeisong.username}",
+    "${module.freisinger.username}",
+    "${module.michaelblackpath.username}",
+    "${module.rk_chw.username}",
+    "${module.scottwood.username}",
+    "${module.seanlianu.username}",
+    "${module.sebastian.username}",
+    "${module.sgao.username}",
+    "${module.simonsadedin.username}"
+  ]
 }
 
 resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
+  group = "${aws_iam_group.read.name}"
   users = [
     "${module.ametke.username}",
-    "${module.ebenngarvan.username}",
-    "${module.dnafault.username}",
-    "${module.shyrav.username}",
-    "${module.joecop.username}",
     "${module.cassimons.username}",
-    "${module.minw.username}"
+    "${module.dnafault.username}",
+    "${module.ebenngarvan.username}",
+    "${module.joecop.username}",
+    "${module.minw.username}",
+    "${module.shyrav.username}"
   ]
-  group = "${aws_iam_group.read.name}"
 }
 
 ################################################################################
-# Create access policies
+# Policies
+resource "aws_iam_policy" "default_user_policy" {
+  name   = "default_user_policy"
+  path   = "/"
+  policy = "${file("policies/default_user_policy.json")}"
+}
+
+# Access policies
 
 data "template_file" "agha_staging_ro_policy" {
   template = "${file("policies/bucket-ro-policy.json")}"
@@ -485,6 +511,11 @@ data "template_file" "agha_staging_ro_policy" {
   vars {
     bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
   }
+}
+resource "aws_iam_policy" "agha_staging_ro_policy" {
+  name   = "agha_staging_ro_policy"
+  path   = "/"
+  policy = "${data.template_file.agha_staging_ro_policy.rendered}"
 }
 
 data "template_file" "agha_staging_rw_policy" {
@@ -494,6 +525,11 @@ data "template_file" "agha_staging_rw_policy" {
     bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
   }
 }
+resource "aws_iam_policy" "agha_staging_rw_policy" {
+  name   = "agha_staging_rw_policy"
+  path   = "/"
+  policy = "${data.template_file.agha_staging_rw_policy.rendered}"
+}
 
 data "template_file" "agha_store_ro_policy" {
   template = "${file("policies/bucket-ro-policy.json")}"
@@ -501,6 +537,11 @@ data "template_file" "agha_store_ro_policy" {
   vars {
     bucket_name = "${aws_s3_bucket.agha_gdr_store.id}"
   }
+}
+resource "aws_iam_policy" "agha_store_ro_policy" {
+  name   = "agha_store_ro_policy"
+  path   = "/"
+  policy = "${data.template_file.agha_store_ro_policy.rendered}"
 }
 
 data "template_file" "agha_store_rw_policy" {
@@ -510,6 +551,11 @@ data "template_file" "agha_store_rw_policy" {
     bucket_name = "${aws_s3_bucket.agha_gdr_store.id}"
   }
 }
+resource "aws_iam_policy" "agha_store_rw_policy" {
+  name   = "agha_store_rw_policy"
+  path   = "/"
+  policy = "${data.template_file.agha_store_rw_policy.rendered}"
+}
 
 data "template_file" "agha_store_list_policy" {
   template = "${file("policies/bucket-list-policy.json")}"
@@ -518,31 +564,6 @@ data "template_file" "agha_store_list_policy" {
     bucket_name = "${aws_s3_bucket.agha_gdr_store.id}"
   }
 }
-
-resource "aws_iam_policy" "agha_staging_ro_policy" {
-  name   = "agha_staging_ro_policy"
-  path   = "/"
-  policy = "${data.template_file.agha_staging_ro_policy.rendered}"
-}
-
-resource "aws_iam_policy" "agha_staging_rw_policy" {
-  name   = "agha_staging_rw_policy"
-  path   = "/"
-  policy = "${data.template_file.agha_staging_rw_policy.rendered}"
-}
-
-resource "aws_iam_policy" "agha_store_ro_policy" {
-  name   = "agha_store_ro_policy"
-  path   = "/"
-  policy = "${data.template_file.agha_store_ro_policy.rendered}"
-}
-
-resource "aws_iam_policy" "agha_store_rw_policy" {
-  name   = "agha_store_rw_policy"
-  path   = "/"
-  policy = "${data.template_file.agha_store_rw_policy.rendered}"
-}
-
 resource "aws_iam_policy" "agha_store_list_policy" {
   name   = "agha_store_list_policy"
   path   = "/"
@@ -551,6 +572,13 @@ resource "aws_iam_policy" "agha_store_list_policy" {
 
 ################################################################################
 # Attach policies to user groups
+
+# default user policy
+resource "aws_iam_group_policy_attachment" "default_users_policy_attachment" {
+  group      = "${aws_iam_group.default_users.name}"
+  policy_arn = "${aws_iam_policy.default_user_policy.arn}"
+}
+
 
 # admin group policies
 resource "aws_iam_group_policy_attachment" "admin_staging_rw_policy_attachment" {
@@ -602,11 +630,6 @@ resource "aws_iam_user_policy_attachment" "agha_data_manager_policy" {
   policy_arn = "${aws_iam_policy.agha_data_manager_policy.arn}"
 }
 
-resource "aws_iam_policy" "default_user_policy" {
-  name   = "default_user_policy"
-  path   = "/"
-  policy = "${file("policies/default_user_policy.json")}"
-}
 resource "aws_iam_user_policy_attachment" "default_user_policy" {
   user       = "${module.sarah.username}"
   policy_arn = "${aws_iam_policy.default_user_policy.arn}"

@@ -2,22 +2,34 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "AllowManageAccessKeys",
+            "Sid": "AllowViewAccountInfo",
             "Effect": "Allow",
             "Action": [
-                "iam:GetUser",
-                "iam:ListAccessKeys",
-                "iam:UpdateAccessKey",
-                "iam:CreateAccessKey",
-                "iam:DeleteAccessKey"
+                "iam:GetAccountPasswordPolicy",
+                "iam:GetAccountSummary",       
+                "iam:ListVirtualMFADevices"
+            ],
+            "Resource": "*"
+        },       
+        {
+            "Sid": "AllowManageOwnPasswords",
+            "Effect": "Allow",
+            "Action": [
+                "iam:ChangePassword",
+                "iam:GetUser"
             ],
             "Resource": "arn:aws:iam::*:user/${aws:username}"
         },
         {
-            "Sid": "AllowViewAccountInfo",
+            "Sid": "AllowManageOwnAccessKeys",
             "Effect": "Allow",
-            "Action": "iam:ListVirtualMFADevices",
-            "Resource": "*"
+            "Action": [
+                "iam:CreateAccessKey",
+                "iam:DeleteAccessKey",
+                "iam:ListAccessKeys",
+                "iam:UpdateAccessKey"
+            ],
+            "Resource": "arn:aws:iam::*:user/${aws:username}"
         },
         {
             "Sid": "AllowManageOwnVirtualMFADevice",
@@ -34,11 +46,10 @@
             "Action": [
                 "iam:DeactivateMFADevice",
                 "iam:EnableMFADevice",
-                "iam:GetUser",
                 "iam:ListMFADevices",
                 "iam:ResyncMFADevice"
             ],
             "Resource": "arn:aws:iam::*:user/${aws:username}"
         }
-    ]
+   ]
 }

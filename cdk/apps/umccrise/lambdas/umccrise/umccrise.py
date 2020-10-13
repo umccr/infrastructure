@@ -82,7 +82,7 @@ def lambda_handler(event, context):
 
     # TODO: validate input parameters and continue appropriately
     # Mandatory parameters
-    input_dir = event['inputDir']
+    input_dir = event['inputDir'].strip('/')  # remove leading/trailing slashes
 
     # TODO: possibly need to check if requested image is available, otherwise the compute env might get invalidated
     # Get image version if configurable

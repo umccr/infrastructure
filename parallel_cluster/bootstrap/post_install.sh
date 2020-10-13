@@ -590,7 +590,7 @@ write_ssm_parameter_to_file() {
   fi
 
   # Write ssm to file
-  su - ec2-user -c "echo \"${ssm_as_str}\" > \"${file_path}\""
+  su - ec2-user -c "echo '${ssm_as_str}' > \"${file_path}\""
 }
 
 : '

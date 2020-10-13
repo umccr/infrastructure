@@ -290,6 +290,7 @@ class BatchStack(core.Stack):
             job_definition_name='cdk-umccrise-job-definition',
             parameters={'vcpus': '1'},
             container=job_container,
+            retry_attempts=2,
             timeout=core.Duration.hours(5)
         )
 

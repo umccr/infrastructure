@@ -12,12 +12,22 @@ The [`conf/pcluster_client.env.yml` mentioned below][conda_conf] will setup `aws
 
 You can follow the official [docs][install_doc] or [this][blog_1] blog post (section `Setting up your client environment`) to set up the client requirements for parallel cluster.
 
-```shell
+#### Conda env
+```bash
 conda env create \
   --file conf/pcluster_client.env.yml \
   --name pcluster
 ```
 
+> Updating env
+```bash
+git pull
+conda env update \
+  --file conf/pcluster_client.env.yml \
+  --name pcluster
+```
+
+#### SSM Shortcuts
 This SSM shell function should be added to your `.bashrc` or equivalent:
 
 ```shell

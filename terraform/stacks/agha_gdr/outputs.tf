@@ -269,16 +269,3 @@ output "agha_bot_user_access_key" {
 output "agha_bot_user_secret_access_key" {
   value = "${module.agha_bot_user.encrypted_secret_access_key}"
 }
-
-# output for serivce user: agha_catalogue_user
-output "agha_catalogue_user_username" {
-  value = "${module.agha_catalogue_user.username}"
-}
-
-output "agha_catalogue_user_access_key" {
-  value = "${module.agha_catalogue_user.access_key}"
-}
-
-output "agha_catalogue_user_secret_access_key" {
-  value = "${module.agha_catalogue_user.encrypted_secret_access_key}"
-}

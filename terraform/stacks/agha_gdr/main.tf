@@ -281,33 +281,33 @@ resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
 ################################################################################
 # Dedicated user to list store content
 
-module "agha_catalogue_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "agha_catalogue"
-  pgp_key  = "keybase:ametke"
-}
+# module "agha_catalogue_user" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "agha_catalogue"
+#   pgp_key  = "keybase:ametke"
+# }
 
-resource "aws_iam_user_policy_attachment" "ahga_catalogue_store_list" {
-  user       = "${module.agha_catalogue_user.username}"
-  policy_arn = "${aws_iam_policy.agha_store_list_policy.arn}"
-}
+# resource "aws_iam_user_policy_attachment" "ahga_catalogue_store_list" {
+#   user       = "${module.agha_catalogue_user.username}"
+#   policy_arn = "${aws_iam_policy.agha_store_list_policy.arn}"
+# }
 
 ################################################################################
 # Users & groups
 
-module "freisinger" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "freisinger"
-  pgp_key  = "keybase:freisinger"
-  email    = "florian.reisinger@umccr.org"
-}
+# module "freisinger" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "freisinger"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "florian.reisinger@umccr.org"
+# }
 
-module "ametke" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "ametke"
-  pgp_key  = "keybase:ametke"
-  email    = "Alejandro.Metke@csiro.au"
-}
+# module "ametke" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "ametke"
+#   pgp_key  = "keybase:ametke"
+#   email    = "Alejandro.Metke@csiro.au"
+# }
 
 module "simonsadedin" {
   source   = "../../modules/iam_user/secure_user"
@@ -316,26 +316,26 @@ module "simonsadedin" {
   email    = "simon.sadedin@vcgs.org.au"
 }
 
-module "sebastian" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "sebastian"
-  pgp_key  = "keybase:freisinger"
-  email    = "sebastian.lunke@vcgs.org.au"
-}
+# module "sebastian" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "sebastian"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "sebastian.lunke@vcgs.org.au"
+# }
 
-module "ebenngarvan" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "ebenngarvan"
-  pgp_key  = "keybase:ebenngarvan"
-  email    = "e.benn@garvan.org.au"
-}
+# module "ebenngarvan" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "ebenngarvan"
+#   pgp_key  = "keybase:ebenngarvan"
+#   email    = "e.benn@garvan.org.au"
+# }
 
-module "dnafault" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "dnafault"
-  pgp_key  = "keybase:freisinger"
-  email    = "d.degrave@garvan.org.au"
-}
+# module "dnafault" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "dnafault"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "d.degrave@garvan.org.au"
+# }
 
 module "shyrav" {
   source   = "../../modules/iam_user/secure_user"
@@ -344,54 +344,54 @@ module "shyrav" {
   email    = "s.ravishankar@garvan.org.au"
 }
 
-module "joecop" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "joecop"
-  pgp_key  = "keybase:freisinger"
-  email    = "j.copty@garvan.org.au"
-}
+# module "joecop" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "joecop"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "j.copty@garvan.org.au"
+# }
 
-module "michaelblackpath" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "michaelblackpath"
-  pgp_key  = "keybase:michaelblackpath"
-  email    = "Michael.Black2@health.wa.gov.au"
-}
+# module "michaelblackpath" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "michaelblackpath"
+#   pgp_key  = "keybase:michaelblackpath"
+#   email    = "Michael.Black2@health.wa.gov.au"
+# }
 
-module "deanmeisong" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "deanmeisong"
-  pgp_key  = "keybase:deanmeisong"
-  email    = "Meisong.Wang@anu.edu.au"
-}
+# module "deanmeisong" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "deanmeisong"
+#   pgp_key  = "keybase:deanmeisong"
+#   email    = "Meisong.Wang@anu.edu.au"
+# }
 
-module "scottwood" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "scottwood"
-  pgp_key  = "keybase:qimrbscott"
-  email    = "Scott.Wood@qimrberghofer.edu.au"
-}
+# module "scottwood" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "scottwood"
+#   pgp_key  = "keybase:qimrbscott"
+#   email    = "Scott.Wood@qimrberghofer.edu.au"
+# }
 
-module "cassimons" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "cassimons"
-  pgp_key  = "keybase:freisinger"
-  email    = "cas.simons@mcri.edu.au"
-}
+# module "cassimons" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "cassimons"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "cas.simons@mcri.edu.au"
+# }
 
-module "minw" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "minw"
-  pgp_key  = "keybase:freisinger"
-  email    = "min.wang@mcri.edu.au"
-}
+# module "minw" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "minw"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "min.wang@mcri.edu.au"
+# }
 
-module "boxcroft" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "boxcroft"
-  pgp_key  = "keybase:freisinger"
-  email    = "sarah.beecroft@perkins.org.au"
-}
+# module "boxcroft" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "boxcroft"
+#   pgp_key  = "keybase:freisinger"
+#   email    = "sarah.beecroft@perkins.org.au"
+# }
 
 module "rk_chw" {
   source   = "../../modules/iam_user/secure_user"
@@ -440,21 +440,21 @@ resource "aws_iam_group" "read" {
   name = "agha_gdr_read"
 }
 
-resource "aws_iam_group_membership" "admin_members" {
-  name  = "${aws_iam_group.admin.name}_membership"
-  users = ["${module.freisinger.username}"]
-  group = "${aws_iam_group.admin.name}"
-}
+# resource "aws_iam_group_membership" "admin_members" {
+#   name  = "${aws_iam_group.admin.name}_membership"
+#   users = ["${module.freisinger.username}"]
+#   group = "${aws_iam_group.admin.name}"
+# }
 
 resource "aws_iam_group_membership" "submit_members" {
   name  = "${aws_iam_group.submit.name}_membership"
   users = [
     "${module.simonsadedin.username}",
-    "${module.sebastian.username}",
-    "${module.michaelblackpath.username}",
-    "${module.deanmeisong.username}",
-    "${module.scottwood.username}",
-    "${module.boxcroft.username}",
+    # "${module.sebastian.username}",
+    # "${module.michaelblackpath.username}",
+    # "${module.deanmeisong.username}",
+    # "${module.scottwood.username}",
+    # "${module.boxcroft.username}",
     "${module.rk_chw.username}",
     "${module.seanlianu.username}",
     "${module.sgao.username}"
@@ -465,13 +465,13 @@ resource "aws_iam_group_membership" "submit_members" {
 resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
   users = [
-    "${module.ametke.username}",
-    "${module.ebenngarvan.username}",
-    "${module.dnafault.username}",
+    # "${module.ametke.username}",
+    # "${module.ebenngarvan.username}",
+    # "${module.dnafault.username}",
     "${module.shyrav.username}",
-    "${module.joecop.username}",
-    "${module.cassimons.username}",
-    "${module.minw.username}"
+    # "${module.joecop.username}",
+    # "${module.cassimons.username}",
+    # "${module.minw.username}"
   ]
   group = "${aws_iam_group.read.name}"
 }

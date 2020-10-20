@@ -160,7 +160,34 @@ INPUT_DIR="${SHARED_DIR}/input-data"
 mkdir -p "${INPUT_DIR}"
 ```
 
-First we use our IAP command on our local machine to extract a presigned url, then use X to download that
+First we use our IAP command on our local machine to generate an AWS command
+and use the `ssm_run` to then submit that workflow remotely. If you do not have `ssm_run` 
+(a wrapper on `aws ssm send-command`, you may wish to copy your `download_command` to the clipboard
+ and then launch the script from there). 
+Further more the `get_aws_sync_command` is also just a wrapper that converts the access credentials
+given in the `iap folders update` command from json format to an `aws s3 command` that can be used to
+upload or download data to GDS. 
+
+```bash
+# Initialise the download command
+download_command="$(iap folders update "gds://umccr-primary-data-dev/PD/SEQCII/hg38/SBJ_seqcii_020/" \
+                      --with-access \
+                      --output-format json | {
+                   # get_aws_sync_command turns the JQ into an aws s3 sync command
+                   # With the appropriate S3 variables and tokens
+                   get_iap_aws_sync_command \
+                     --dest '${SHARED_DIR}/input-data/iap/SBJ_seqcii_020'
+                  })"
+
+# Now send this through to sbatch
+echo "sbatch \
+        --job-name \"umccr_gds_sync\" \
+        --output \"logs/umccr_gds_sync_logs.log\" \
+        --error \"logs/umccr_gds_sync_logs.log\" \
+        --wrap '${download_command}'" | \
+ssm_run \
+  --instance-id i-0bce3c9f81597695a
+```
 
 ### Get presigned urls
 
@@ -213,7 +240,7 @@ direct_download_link="https://github.com/Boyle-Lab/Blacklist/raw/master/lists/hg
 sbatch --job-name "hg38-blacklist-download" \
   --output logs/hg38-blacklist-download.log --error logs/hg38-blacklist-download.log \
   --wrap "wget  \"${direct_download_link}\" \
-            --output-document \"${REF_DIR_BOYLE_LAB}hg38-blacklist.v2.bed.gz\""
+            --output-document \"${REF_DIR_BOYLE_LAB}/hg38-blacklist.v2.bed.gz\""
 ```
 
 ### Gridss-purple-linx smoke test download

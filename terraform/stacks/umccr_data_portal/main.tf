@@ -94,25 +94,11 @@ locals {
 
   github_repo_client = "data-portal-client"
   github_repo_apis   = "data-portal-apis"
-
-  LAMBDA_IAM_ROLE_ARN                    = aws_iam_role.lambda_apis_role.arn
-  LAMBDA_SUBNET_IDS                      = join(",", data.aws_subnet_ids.private_subnets_ids.ids)
-  LAMBDA_SECURITY_GROUP_IDS              = aws_security_group.lambda_security_group.id
-  SSM_KEY_NAME_FULL_DB_URL               = aws_ssm_parameter.ssm_full_db_url.name
-  SSM_KEY_NAME_DJANGO_SECRET_KEY         = data.aws_ssm_parameter.ssm_django_secret_key.name
-  SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID= data.aws_ssm_parameter.ssm_metadata_tacking_sheet_id.name
-  SSM_KEY_NAME_LIMS_SPREADSHEET_ID       = data.aws_ssm_parameter.ssm_lims_spreadsheet_id.name
-  SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON = data.aws_ssm_parameter.ssm_lims_service_account_json.name
-  SLACK_CHANNEL                          = var.slack_channel[terraform.workspace]
 }
 
 ################################################################################
 # Query for Pre-configured SSM Parameter Store
 # These are pre-populated outside of terraform i.e. manually using Console or CLI
-
-data "aws_ssm_parameter" "ssm_metadata_tacking_sheet_id" {
-  name = "/umccr/google/drive/tracking_sheet_id"
-}
 
 data "aws_ssm_parameter" "github_pat_oauth_token" {
   # Note that OAuthToken = PAT, generated using https://github.com/settings/tokens
@@ -129,18 +115,6 @@ data "aws_ssm_parameter" "google_oauth_client_id" {
 
 data "aws_ssm_parameter" "google_oauth_client_secret" {
   name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
-}
-
-data "aws_ssm_parameter" "ssm_lims_spreadsheet_id" {
-  name = "/${local.stack_name_us}/${terraform.workspace}/google/lims_spreadsheet_id"
-}
-
-data "aws_ssm_parameter" "ssm_lims_service_account_json" {
-  name = "/${local.stack_name_us}/${terraform.workspace}/google/lims_service_account_json"
-}
-
-data "aws_ssm_parameter" "ssm_django_secret_key" {
-  name = "/${local.stack_name_us}/${terraform.workspace}/django_secret_key"
 }
 
 data "aws_ssm_parameter" "rds_db_password" {
@@ -352,9 +326,27 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 ################################################################################
 # Back end configurations
 
+resource "aws_sqs_queue" "germline_queue" {
+  name = "${local.stack_name_dash}-germline-queue.fifo"
+  fifo_queue = true
+  content_based_deduplication = true
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  tags = merge(local.default_tags)
+}
+
+resource "aws_sqs_queue" "notification_queue" {
+  name = "${local.stack_name_dash}-notification-queue.fifo"
+  fifo_queue = true
+  content_based_deduplication = true
+  delay_seconds = 5
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  tags = merge(local.default_tags)
+}
+
 resource "aws_sqs_queue" "iap_ens_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-dlq"
   message_retention_seconds = 1209600
+  tags = merge(local.default_tags)
 }
 
 # SQS Queue for IAP Event Notification Service event delivery
@@ -369,6 +361,7 @@ resource "aws_sqs_queue" "iap_ens_event_queue" {
     deadLetterTargetArn = aws_sqs_queue.iap_ens_event_dlq.arn
     maxReceiveCount = 3
   })
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
 
   tags = merge(local.default_tags)
 }
@@ -384,6 +377,7 @@ data "aws_s3_bucket" "s3_run_data_bucket" {
 resource "aws_sqs_queue" "s3_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-dlq"
   message_retention_seconds = 1209600
+  tags = merge(local.default_tags)
 }
 
 # SQS Queue for S3 event delivery
@@ -399,6 +393,7 @@ resource "aws_sqs_queue" "s3_event_queue" {
     deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
     maxReceiveCount = 20
   })
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
 
   tags = merge(local.default_tags)
 }
@@ -857,91 +852,6 @@ resource "aws_codebuild_project" "codebuild_apis" {
     }
 
     environment_variable {
-      name  = "API_DOMAIN_NAME"
-      value = local.api_domain
-    }
-
-    # Parse the list of security group ids into a single string
-    environment_variable {
-      name  = "LAMBDA_SECURITY_GROUP_IDS"
-      value = local.LAMBDA_SECURITY_GROUP_IDS
-    }
-
-    # Parse the list of subnet ids into a single string
-    environment_variable {
-      name  = "LAMBDA_SUBNET_IDS"
-      value = local.LAMBDA_SUBNET_IDS
-    }
-
-    # ARN of the lambda iam role
-    environment_variable {
-      name  = "LAMBDA_IAM_ROLE_ARN"
-      value = local.LAMBDA_IAM_ROLE_ARN
-    }
-
-    # Name of the SSM KEY for django secret key
-    environment_variable {
-      name  = "SSM_KEY_NAME_DJANGO_SECRET_KEY"
-      value = local.SSM_KEY_NAME_DJANGO_SECRET_KEY
-    }
-
-    # Name of the SSM KEY for database url
-    environment_variable {
-      name  = "SSM_KEY_NAME_FULL_DB_URL"
-      value = local.SSM_KEY_NAME_FULL_DB_URL
-    }
-
-    environment_variable {
-      name  = "SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID"
-      value = local.SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID
-    }
-
-    environment_variable {
-      name  = "SSM_KEY_NAME_LIMS_SPREADSHEET_ID"
-      value = local.SSM_KEY_NAME_LIMS_SPREADSHEET_ID
-    }
-
-    environment_variable {
-      name  = "SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON"
-      value = local.SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON
-    }
-
-    environment_variable {
-      name  = "S3_EVENT_SQS_ARN"
-      value = aws_sqs_queue.s3_event_queue.arn
-    }
-
-    environment_variable {
-      name  = "IAP_ENS_EVENT_SQS_ARN"
-      value = aws_sqs_queue.iap_ens_event_queue.arn
-    }
-
-    environment_variable {
-      name  = "CERTIFICATE_ARN"
-      value = aws_acm_certificate.client_cert.arn
-    }
-
-    environment_variable {
-      name  = "WAF_NAME"
-      value = aws_wafregional_web_acl.api_web_acl.name
-    }
-
-    environment_variable {
-      name  = "SERVERLESS_DEPLOYMENT_BUCKET"
-      value = aws_s3_bucket.codepipeline_bucket.bucket
-    }
-
-    environment_variable {
-      name  = "SLACK_CHANNEL"
-      value = local.SLACK_CHANNEL
-    }
-
-    environment_variable {
-      name  = "SSM_KEY_NAME_IAP_AUTH_TOKEN"
-      value = var.ssm_key_name_iap_auth_token
-    }
-
-    environment_variable {
       name = "IAP_BASE_URL"      # this is used only within CodeBuild dind scope
       value = "http://localhost"
     }
@@ -952,6 +862,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
     }
   }
 
+  /* UNCOMMENT TO ADD VPC SUPPORT FOR CODEBUILD
   vpc_config {
     vpc_id = data.aws_vpc.main_vpc.id
     subnets = data.aws_subnet_ids.private_subnets_ids.ids
@@ -959,6 +870,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
       aws_security_group.codebuild_apis_security_group.id,
     ]
   }
+  */
 
   source {
     type            = "GITHUB"
@@ -1171,7 +1083,7 @@ resource "aws_rds_cluster" "db" {
 
 # Composed database url for backend to use
 resource "aws_ssm_parameter" "ssm_full_db_url" {
-  name        = "/${local.stack_name_us}/${terraform.workspace}/full_db_url"
+  name        = "${local.ssm_param_key_backend_prefix}/full_db_url"
   type        = "SecureString"
   description = "Database url used by the Django app"
   value       = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
@@ -1308,61 +1220,26 @@ resource "aws_ssm_parameter" "oauth_redirect_out_stage" {
   tags  = merge(local.default_tags)
 }
 
-# Save these in SSM Parameter Store for backend api localhost Serverless purpose
+# Save these in SSM Parameter Store for backend api
 
 resource "aws_ssm_parameter" "lambda_iam_role_arn" {
   name  = "${local.ssm_param_key_backend_prefix}/lambda_iam_role_arn"
   type  = "String"
-  value = local.LAMBDA_IAM_ROLE_ARN
+  value = aws_iam_role.lambda_apis_role.arn
   tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "lambda_subnet_ids" {
   name  = "${local.ssm_param_key_backend_prefix}/lambda_subnet_ids"
   type  = "String"
-  value = local.LAMBDA_SUBNET_IDS
+  value = join(",", data.aws_subnet_ids.private_subnets_ids.ids)
   tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "lambda_security_group_ids" {
   name  = "${local.ssm_param_key_backend_prefix}/lambda_security_group_ids"
   type  = "String"
-  value = local.LAMBDA_SECURITY_GROUP_IDS
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "ssm_key_name_full_db_url" {
-  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_full_db_url"
-  type  = "String"
-  value = local.SSM_KEY_NAME_FULL_DB_URL
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "ssm_key_name_django_secret_key" {
-  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_django_secret_key"
-  type  = "String"
-  value = local.SSM_KEY_NAME_DJANGO_SECRET_KEY
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "ssm_key_name_metadata_tacking_sheet_id" {
-  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_metadata_tracking_sheet_id"
-  type  = "String"
-  value = local.SSM_KEY_NAME_METADATA_TRACKING_SHEET_ID
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "ssm_key_name_lims_spreadsheet_id" {
-  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_spreadsheet_id"
-  type  = "String"
-  value = local.SSM_KEY_NAME_LIMS_SPREADSHEET_ID
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "ssm_key_name_lims_service_account_json" {
-  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_lims_service_account_json"
-  type  = "String"
-  value = local.SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON
+  value = aws_security_group.lambda_security_group.id
   tags  = merge(local.default_tags)
 }
 
@@ -1411,14 +1288,7 @@ resource "aws_ssm_parameter" "serverless_deployment_bucket" {
 resource "aws_ssm_parameter" "slack_channel" {
   name  = "${local.ssm_param_key_backend_prefix}/slack_channel"
   type  = "String"
-  value = local.SLACK_CHANNEL
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "ssm_key_name_iap_auth_token" {
-  name  = "${local.ssm_param_key_backend_prefix}/ssm_key_name_iap_auth_token"
-  type  = "String"
-  value = var.ssm_key_name_iap_auth_token
+  value = var.slack_channel[terraform.workspace]
   tags  = merge(local.default_tags)
 }
 
@@ -1426,5 +1296,19 @@ resource "aws_ssm_parameter" "serverless_stage" {
   name  = "${local.ssm_param_key_backend_prefix}/stage"
   type  = "String"
   value = terraform.workspace
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "sqs_notification_queue_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_notification_queue_arn"
+  type  = "String"
+  value = aws_sqs_queue.notification_queue.arn
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "sqs_germline_queue_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_germline_queue_arn"
+  type  = "String"
+  value = aws_sqs_queue.germline_queue.arn
   tags  = merge(local.default_tags)
 }

@@ -175,7 +175,7 @@ download_command="$(iap folders update "gds://umccr-primary-data-dev/PD/SEQCII/h
                       --output-format json | {
                    # get_aws_sync_command turns the JQ into an aws s3 sync command
                    # With the appropriate S3 variables and tokens
-                   get_aws_sync_command \
+                   get_iap_aws_sync_command \
                      --dest '${SHARED_DIR}/input-data/iap/SBJ_seqcii_020'
                   })"
 

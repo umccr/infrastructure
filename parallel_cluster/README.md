@@ -93,6 +93,20 @@ from the `ec2-user`, this is handy for debugging purposes:
 `ssh local-ip-of-running-compute node`.  
 Use sinfo to see the current list of running compute nodes.
 
+### Staging input and reference data
+You will likely need to download your input data and software.  
+Ensure that inputs are accessible to all nodes by placing it in the `${SHARED_DIR}` folder.  
+This is:
+  * `/efs` if using the efs configuration on `tothill` or `umccr_dev`
+  * `/fsx` if using the fsx configuration on `umccr_dev_fsx`
+  
+By default you will have read-only access to the s3 buckets.  
+You may use `aws s3 sync s3://<bucket_path> "${SHARED_DIR}/local_path` to download data
+into the shared file system.  
+
+> Compute nodes have a much higher bandwidth than the master nodes.    
+> Please run the sync commands on a compute node, see 'Using slurm' below.
+
 ### Using slurm
 See [sbatch guide][sbatch_guide] for more information
 Example batch script file
@@ -105,13 +119,6 @@ Example batch script file
 echo 'Foo'
 docker run --rm hello-world
 ```
-
-If you are submitting a job that requires a file that is exclusively on one node,
-you may consider using [sbcast][sbcast_guide] parameter to ensure that the file is
-copied to the worker node. Alternatively place the file inside a location that is shared
-by both the submission and execution node. 
-  * `/efs` if using the efs configuration on `tothill` or `umccr_dev`
-  * `/fsx` if using the fsx configuration on `umccr_dev_fsx`
 
 #### Legacy HPC compatible commands 
 
@@ -166,15 +173,10 @@ This means that all compute nodes have access to the same FS and don't necessari
 However, that also means the data put into EFS remains available (and chargeable) as long as the cluster remains. 
 So data will have to be cleaned up manually after it fulfilled it's purpose.
 
-One can also specify to use an `fsx lustre` filesystem. This will be faster but more expensive for most use cases.
+One can also specify to use an `fsx lustre` filesystem with the `umccr_fsx` config. This will be faster but more expensive for most use cases.
 
 Both EFS and FSX systems are purged on the deletion of the stack. Please ensure you have copied your data 
 you wish to save back to S3
-
-**Not yet implemented**
-> /mnt/refdata    (mapping s3://umccr-refdata-dev for all genomics reference data)
-> /mnt/data       (mapping to s3://umccr-temp-dev for input datasets)
-> Those mount points are subject to change, this is a work in progress that requires human consensus.
 
 ### Accessing private GitHub repos.
 We have a public/private key pair for accessing our GitHub repos,
@@ -207,6 +209,30 @@ The following worklows are working examples you can run through to see AWS Paral
 > Not this is not currently a working example due to a novel failure
 
 [bcbio variant calling example](working_examples/bcbio/bcbio-nextgen.md)
+
+## Uploading data back to s3
+
+By default, parallel cluster does not have write access to s3 buckets.  
+A workaround is taking your short-term local SSO credentials and importing them into parallel cluster.  
+
+From your local computer run:
+```
+aws2-wrap --profile "${AWS_PROFILE}" --export | xclip  # pbcopy if on a mac.
+```
+
+Then in the parallel cluster, paste these commands and run an sbatch job to upload the data.  
+Set `--export=ALL` to ensure that the environment variables are inherited by the compute node.  
+i.e
+
+```
+export AWS_ACCESS_KEY_ID="AB"
+export AWS_SECRET_ACCESS_KEY="CD"
+export AWS_SESSION_TOKEN="EF"
+export AWS_REGION="ap-southeast-2"
+
+sbatch --export=ALL --wrap "aws s3 sync \"${SHARED_DIR}/outputs\" \"s3://<bucket>\""
+```
+
 
 ## Troubleshooting
 

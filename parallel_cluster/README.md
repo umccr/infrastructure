@@ -101,11 +101,12 @@ This is:
   * `/fsx` if using the fsx configuration on `umccr_dev_fsx`
   
 By default you will have read-only access to the s3 buckets.  
-You may use `aws s3 sync s3://<bucket_path> "${SHARED_DIR}/local_path` to download data
+Use `sbatch --wrap "aws s3 sync s3://<bucket_path> "${SHARED_DIR}/local_path"` to download data
 into the shared file system.  
 
-> Compute nodes have a much higher bandwidth than the master nodes.    
-> Please run the sync commands on a compute node, see 'Using slurm' below.
+> Please run the sync commands on a compute node, see 'Using slurm' below for more info.
+> Compute nodes have a much higher bandwidth than the master nodes, hence why this command
+> is placed inside the sbatch script. 
 
 ### Using slurm
 See [sbatch guide][sbatch_guide] for more information
@@ -213,26 +214,27 @@ The following worklows are working examples you can run through to see AWS Paral
 ## Uploading data back to s3
 
 By default, parallel cluster does not have write access to s3 buckets.  
-A workaround is taking your short-term local SSO credentials and importing them into parallel cluster.  
+A workaround is taking your short-term local SSO credentials and importing them into parallel cluster.
+
+To do this you must have the following:
+1. Logged in to AWS on your local computer via sso
+2. Have your parallel cluster environment activated, OR at least have `aws2-wrap` in your PATH
+3. Have the `ssm_run` function sourced from [this GitHub repo](alexiswl_bashrc)  
 
 From your local computer run:
 ```
-aws2-wrap --profile "${AWS_PROFILE}" --export | xclip  # pbcopy if on a mac.
+export_env_vars="$(aws2-wrap --profile "${AWS_PROFILE}" --export | \
+                   sed 's/export //g' | \
+                   tr '\n' ',')"
+
+echo " sbatch --export \"${export_env_vars},ALL\" --wrap \"aws s3 sync /work/outputs/ s3://<bucket_path>\" | \
+ ssm_run --instance-id="<master_name>"
 ```
 
-Then in the parallel cluster, paste these commands and run an sbatch job to upload the data.  
-Set `--export=ALL` to ensure that the environment variables are inherited by the compute node.  
-i.e
-
-```
-export AWS_ACCESS_KEY_ID="AB"
-export AWS_SECRET_ACCESS_KEY="CD"
-export AWS_SESSION_TOKEN="EF"
-export AWS_REGION="ap-southeast-2"
-
-sbatch --export=ALL --wrap "aws s3 sync \"${SHARED_DIR}/outputs\" \"s3://<bucket>\""
-```
-
+> The space before the sbatch is for security reasons.  
+> Be aware you are running a command on a shared parallel cluster with your personal access tokens.  
+> By prefixing the command with a space, this prevents the tokens being exposed in the ec2-user's bash history.        
+> Please note this is not foolproof method. 
 
 ## Troubleshooting
 
@@ -279,3 +281,4 @@ Ensure you're setting `--cluster-template` correctly and pointing to the right c
 [sbcast_guide]: https://slurm.schedmd.com/sbcast.html
 [cromshell_repo]: https://github.com/broadinstitute/cromshell
 [aws_doesnt_support_pip_bug]: https://github.com/aws/aws-cli/issues/4947
+[alexiswl_bashrc]: https://github.com/alexiswl/bashrc/

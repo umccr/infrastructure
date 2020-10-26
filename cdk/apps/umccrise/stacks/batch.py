@@ -203,7 +203,7 @@ class BatchStack(core.Stack):
 
         my_compute_res = batch.ComputeResources(
             type=(batch.ComputeResourceType.SPOT if props['compute_env_type'].lower() == 'spot' else batch.ComputeResourceType.ON_DEMAND),
-            allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+            allocation_strategy=batch.AllocationStrategy.BEST_FIT,
             desiredv_cpus=0,
             maxv_cpus=320,
             minv_cpus=0,

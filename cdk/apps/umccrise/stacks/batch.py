@@ -27,23 +27,23 @@ class BatchStack(core.Stack):
 
         ################################################################################
         # Set up permissions
-        ro_buckets = set()
+        ro_buckets = list()
         for bucket in props['ro_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
                 self,
                 bucket,
                 bucket_name=bucket
             )
-            ro_buckets.add(tmp_bucket)
+            ro_buckets.append(tmp_bucket)
 
-        rw_buckets = set()
+        rw_buckets = list()
         for bucket in props['rw_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
                 self,
                 bucket,
                 bucket_name=bucket
             )
-            rw_buckets.add(tmp_bucket)
+            rw_buckets.append(tmp_bucket)
 
         batch_service_role = iam.Role(
             self,
@@ -203,7 +203,7 @@ class BatchStack(core.Stack):
 
         my_compute_res = batch.ComputeResources(
             type=(batch.ComputeResourceType.SPOT if props['compute_env_type'].lower() == 'spot' else batch.ComputeResourceType.ON_DEMAND),
-            allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+            allocation_strategy=batch.AllocationStrategy.BEST_FIT,
             desiredv_cpus=0,
             maxv_cpus=320,
             minv_cpus=0,
@@ -290,6 +290,7 @@ class BatchStack(core.Stack):
             job_definition_name='cdk-umccrise-job-definition',
             parameters={'vcpus': '1'},
             container=job_container,
+            retry_attempts=2,
             timeout=core.Duration.hours(5)
         )
 

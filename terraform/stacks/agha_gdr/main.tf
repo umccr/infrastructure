@@ -281,20 +281,6 @@ resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
 ################################################################################
 # Users
 
-module "freisinger" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "freisinger"
-  pgp_key  = "keybase:freisinger"
-  email    = "florian.reisinger@umccr.org"
-}
-
-module "ametke" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "ametke"
-  pgp_key  = "keybase:ametke"
-  email    = "Alejandro.Metke@csiro.au"
-}
-
 module "simonsadedin" {
   source   = "../../modules/iam_user/secure_user"
   username = "simonsadedin"
@@ -302,81 +288,11 @@ module "simonsadedin" {
   email    = "simon.sadedin@vcgs.org.au"
 }
 
-module "sebastian" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "sebastian"
-  pgp_key  = "keybase:freisinger"
-  email    = "sebastian.lunke@vcgs.org.au"
-}
-
-module "ebenngarvan" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "ebenngarvan"
-  pgp_key  = "keybase:ebenngarvan"
-  email    = "e.benn@garvan.org.au"
-}
-
-module "dnafault" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "dnafault"
-  pgp_key  = "keybase:freisinger"
-  email    = "d.degrave@garvan.org.au"
-}
-
 module "shyrav" {
   source   = "../../modules/iam_user/secure_user"
   username = "shyrav"
   pgp_key  = "keybase:freisinger"
   email    = "s.ravishankar@garvan.org.au"
-}
-
-module "joecop" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "joecop"
-  pgp_key  = "keybase:freisinger"
-  email    = "j.copty@garvan.org.au"
-}
-
-module "michaelblackpath" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "michaelblackpath"
-  pgp_key  = "keybase:michaelblackpath"
-  email    = "Michael.Black2@health.wa.gov.au"
-}
-
-module "deanmeisong" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "deanmeisong"
-  pgp_key  = "keybase:deanmeisong"
-  email    = "Meisong.Wang@anu.edu.au"
-}
-
-module "scottwood" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "scottwood"
-  pgp_key  = "keybase:qimrbscott"
-  email    = "Scott.Wood@qimrberghofer.edu.au"
-}
-
-module "cassimons" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "cassimons"
-  pgp_key  = "keybase:freisinger"
-  email    = "cas.simons@mcri.edu.au"
-}
-
-module "minw" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "minw"
-  pgp_key  = "keybase:freisinger"
-  email    = "min.wang@mcri.edu.au"
-}
-
-module "boxcroft" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "boxcroft"
-  pgp_key  = "keybase:freisinger"
-  email    = "sarah.beecroft@perkins.org.au"
 }
 
 module "rk_chw" {
@@ -431,47 +347,11 @@ resource "aws_iam_group" "read" {
   name = "agha_gdr_read"
 }
 
-################################################################################
-# Group memberships
-resource "aws_iam_group_membership" "default_users" {
-  name  = "${aws_iam_group.default_users.name}_membership"
-  group = "${aws_iam_group.default_users.name}"
-  users = [
-    "${module.ametke.username}",
-    "${module.boxcroft.username}",
-    "${module.cassimons.username}",
-    "${module.deanmeisong.username}",
-    "${module.dnafault.username}",
-    "${module.ebenngarvan.username}",
-    "${module.freisinger.username}",
-    "${module.joecop.username}",
-    "${module.michaelblackpath.username}",
-    "${module.minw.username}",
-    "${module.rk_chw.username}",
-    "${module.sarah.username}",
-    "${module.scottwood.username}",
-    "${module.seanlianu.username}",
-    "${module.sebastian.username}",
-    "${module.sgao.username}",
-    "${module.shyrav.username}",
-    "${module.simonsadedin.username}"
-  ]
-}
-
-resource "aws_iam_group_membership" "admin_members" {
-  name  = "${aws_iam_group.admin.name}_membership"
-  group = "${aws_iam_group.admin.name}"
-  users = ["${module.freisinger.username}"]
-}
-
 resource "aws_iam_group_membership" "submit_members" {
   name  = "${aws_iam_group.submit.name}_membership"
   group = "${aws_iam_group.submit.name}"
   users = [
-    "${module.boxcroft.username}",
-    "${module.deanmeisong.username}",
-    "${module.freisinger.username}",
-    "${module.michaelblackpath.username}",
+    "${module.simonsadedin.username}",
     "${module.rk_chw.username}",
     "${module.scottwood.username}",
     "${module.seanlianu.username}",
@@ -485,12 +365,6 @@ resource "aws_iam_group_membership" "read_members" {
   name  = "${aws_iam_group.read.name}_membership"
   group = "${aws_iam_group.read.name}"
   users = [
-    "${module.ametke.username}",
-    "${module.cassimons.username}",
-    "${module.dnafault.username}",
-    "${module.ebenngarvan.username}",
-    "${module.joecop.username}",
-    "${module.minw.username}",
     "${module.shyrav.username}"
   ]
 }

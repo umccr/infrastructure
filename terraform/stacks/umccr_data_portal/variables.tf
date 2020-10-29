@@ -90,7 +90,3 @@ variable "slack_channel" {
   }
   description = "Slack channel to send operational status message"
 }
-
-variable "ssm_key_name_iap_auth_token" {
-  default = "/iap/jwt-token"
-}

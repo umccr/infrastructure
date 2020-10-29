@@ -3,7 +3,7 @@ terraform {
 
   backend "s3" {
     bucket         = "agha-terraform-states"
-    key            = "infra/terraform.tfstate"
+    key            = "agha_infra/terraform.tfstate"
     region         = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
   }
@@ -24,302 +24,234 @@ locals {
   )}"
 }
 
-# ################################################################################
-# # S3 buckets
+################################################################################
+# S3 buckets
 
-# resource "aws_s3_bucket" "agha_gdr_staging" {
-#   bucket = "${var.agha_gdr_staging_bucket_name}"
-#   acl    = "private"
+resource "aws_s3_bucket" "agha_gdr_staging" {
+  bucket = var.agha_gdr_staging_bucket_name
+  acl    = "private"
 
-#   server_side_encryption_configuration {
-#     rule {
-#       apply_server_side_encryption_by_default {
-#         sse_algorithm = "AES256"
-#       }
-#     }
-#   }
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 
-#   lifecycle_rule {
-#     enabled = "1"
-#     noncurrent_version_expiration {
-#       days = 30
-#     }
+  lifecycle_rule {
+    enabled = "1"
+    noncurrent_version_expiration {
+      days = 30
+    }
 
-#     expiration {
-#       expired_object_delete_marker = true
-#     }
+    expiration {
+      expired_object_delete_marker = true
+    }
 
-#     abort_incomplete_multipart_upload_days = 7
-#   }
+    abort_incomplete_multipart_upload_days = 7
+  }
 
-#   lifecycle_rule {
-#     id      = "intelligent_tiering"
-#     enabled = "1"
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = "1"
 
-#     transition {
-#       storage_class = "INTELLIGENT_TIERING"
-#     }
+    transition {
+      storage_class = "INTELLIGENT_TIERING"
+    }
 
-#     abort_incomplete_multipart_upload_days = 7
-#   }
-
-
-#   versioning {
-#     enabled = true
-#   }
-
-#   tags = "${merge(
-#     local.common_tags,
-#     map(
-#       "Name", "${var.agha_gdr_staging_bucket_name}"
-#     )
-#   )}"
-# }
-# resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
-#   bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
-
-#   block_public_acls       = true
-#   block_public_policy     = true
-#   ignore_public_acls      = true
-#   restrict_public_buckets = true
-# }
+    abort_incomplete_multipart_upload_days = 7
+  }
 
 
-# resource "aws_s3_bucket" "agha_gdr_store" {
-#   bucket = "${var.agha_gdr_store_bucket_name}"
-#   acl    = "private"
+  versioning {
+    enabled = true
+  }
 
-#   server_side_encryption_configuration {
-#     rule {
-#       apply_server_side_encryption_by_default {
-#         sse_algorithm = "AES256"
-#       }
-#     }
-#   }
+  tags = merge(
+    local.common_tags,
+    map(
+      "Name", var.agha_gdr_staging_bucket_name
+    )
+  )
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
+  bucket = aws_s3_bucket.agha_gdr_staging.id
 
-#   versioning {
-#     enabled = true
-#   }
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
-#   lifecycle_rule {
-#     id      = "noncurrent_version_expiration"
-#     enabled = true
-#     noncurrent_version_expiration {
-#       days = 90
-#     }
 
-#     expiration {
-#       expired_object_delete_marker = true
-#     }
+resource "aws_s3_bucket" "agha_gdr_store" {
+  bucket = var.agha_gdr_store_bucket_name
+  acl    = "private"
 
-#     abort_incomplete_multipart_upload_days = 7
-#   }
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 
-#   tags = "${merge(
-#     local.common_tags,
-#     map(
-#       "Name", "${var.agha_gdr_store_bucket_name}"
-#     )
-#   )}"
+  versioning {
+    enabled = true
+  }
 
-#   lifecycle_rule {
-#     id      = "intelligent_tiering"
-#     enabled = true
+  lifecycle_rule {
+    id      = "noncurrent_version_expiration"
+    enabled = true
+    noncurrent_version_expiration {
+      days = 90
+    }
 
-#     transition {
-#       days          = 0
-#       storage_class = "INTELLIGENT_TIERING"
-#     }
+    expiration {
+      expired_object_delete_marker = true
+    }
 
-#     abort_incomplete_multipart_upload_days = 7
-#   }
-# }
-# resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
-#   bucket = "${aws_s3_bucket.agha_gdr_store.id}"
+    abort_incomplete_multipart_upload_days = 7
+  }
 
-#   block_public_acls       = true
-#   block_public_policy     = true
-#   ignore_public_acls      = true
-#   restrict_public_buckets = true
-# }
+  tags = merge(
+    local.common_tags,
+    map(
+      "Name", var.agha_gdr_store_bucket_name
+    )
+  )
 
-# # Attach bucket policy to deny object deletion
-# # https://aws.amazon.com/blogs/security/how-to-restrict-amazon-s3-bucket-access-to-a-specific-iam-role/
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = true
 
-# data "template_file" "store_bucket_policy" {
-#   template = "${file("policies/agha_bucket_policy.json")}"
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
 
-#   vars {
-#     bucket_name = "${aws_s3_bucket.agha_gdr_store.id}"
-#     account_id  = "${data.aws_caller_identity.current.account_id}"
-#     role_id     = "${aws_iam_role.s3_admin_delete.unique_id}"
-#   }
-# }
+    abort_incomplete_multipart_upload_days = 7
+  }
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
+  bucket = aws_s3_bucket.agha_gdr_store.id
 
-# resource "aws_s3_bucket_policy" "store_bucket_policy" {
-#   bucket = "${aws_s3_bucket.agha_gdr_store.id}"
-#   policy = "${data.template_file.store_bucket_policy.rendered}"
-# }
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
-# data "template_file" "staging_bucket_policy" {
-#   template = "${file("policies/agha_bucket_policy.json")}"
+# Attach bucket policy to deny object deletion
+# https://aws.amazon.com/blogs/security/how-to-restrict-amazon-s3-bucket-access-to-a-specific-iam-role/
 
-#   vars {
-#     bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
-#     account_id  = "${data.aws_caller_identity.current.account_id}"
-#     role_id     = "${aws_iam_role.s3_admin_delete.unique_id}"
-#   }
-# }
+data "template_file" "store_bucket_policy" {
+  template = file("policies/agha_bucket_policy.json")
 
-# resource "aws_s3_bucket_policy" "staging_bucket_policy" {
-#   bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
-#   policy = "${data.template_file.staging_bucket_policy.rendered}"
-# }
+  vars = {
+    bucket_name = aws_s3_bucket.agha_gdr_store.id
+    account_id  = data.aws_caller_identity.current.account_id
+    role_id     = aws_iam_role.s3_admin_delete.unique_id
+  }
+}
 
-# ################################################################################
-# # New dataset ready notification (i.e. manifest S3 creation event -> Slack) 
+resource "aws_s3_bucket_policy" "store_bucket_policy" {
+  bucket = aws_s3_bucket.agha_gdr_store.id
+  policy = data.template_file.store_bucket_policy.rendered
+}
 
-# resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
-#   bucket = "${aws_s3_bucket.agha_gdr_staging.id}"
+data "template_file" "staging_bucket_policy" {
+  template = file("policies/agha_bucket_policy.json")
 
-#   topic {
-#     topic_arn     = "${aws_sns_topic.s3_events.arn}"
-#     events        = ["s3:ObjectCreated:*"]
-#     filter_suffix = "manifest.txt"
-#   }
+  vars = {
+    bucket_name = aws_s3_bucket.agha_gdr_staging.id
+    account_id  = data.aws_caller_identity.current.account_id
+    role_id     = aws_iam_role.s3_admin_delete.unique_id
+  }
+}
 
-#   topic {
-#     topic_arn     = "${aws_sns_topic.s3_events.arn}"
-#     events        = ["s3:ObjectCreated:*"]
-#     filter_suffix = ".manifest"
-#   }
-# }
+resource "aws_s3_bucket_policy" "staging_bucket_policy" {
+  bucket = aws_s3_bucket.agha_gdr_staging.id
+  policy = data.template_file.staging_bucket_policy.rendered
+}
 
-# resource "aws_sns_topic" "s3_events" {
-#   name = "s3_manifest_event"
+################################################################################
+# Dedicated IAM role to delete S3 objects (otherwise not allowed)
 
-#   policy = <<POLICY
-# {
-#     "Version":"2012-10-17",
-#     "Statement":[{
-#         "Effect": "Allow",
-#         "Principal": {"AWS":"*"},
-#         "Action": "SNS:Publish",
-#         "Resource": "arn:aws:sns:*:*:s3_manifest_event",
-#         "Condition":{
-#             "ArnLike":{"aws:SourceArn":"${aws_s3_bucket.agha_gdr_staging.arn}"}
-#         }
-#     }]
-# }
-# POLICY
-# }
+data "template_file" "saml_assume_policy" {
+  template = file("policies/assume_role_saml.json")
 
-# resource "aws_sns_topic_subscription" "s3_manifest_event" {
-#   topic_arn = "${aws_sns_topic.s3_events.arn}"
-#   protocol  = "lambda"
-#   endpoint  = "${module.notify_slack_lambda.function_arn}"
-# }
+  vars = {
+    aws_account   = data.aws_caller_identity.current.account_id
+    saml_provider = var.saml_provider
+  }
+}
 
-# resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
-#   topic_arn = "${aws_sns_topic.s3_events.arn}"
-#   protocol  = "lambda"
-#   endpoint  = "${module.folder_lock_lambda.function_arn}"
-# }
+resource "aws_iam_role" "s3_admin_delete" {
+  name                 = "s3_admin_delete"
+  path                 = "/"
+  assume_role_policy   = data.template_file.saml_assume_policy.rendered
+  max_session_duration = "43200"
+}
 
-# resource "aws_lambda_permission" "slack_lambda_from_sns" {
-#   statement_id  = "AllowExecutionFromSNS"
-#   action        = "lambda:InvokeFunction"
-#   function_name = "${module.notify_slack_lambda.function_name}"
-#   principal     = "sns.amazonaws.com"
-#   source_arn    = "${aws_sns_topic.s3_events.arn}"
-# }
+resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
+  role       = aws_iam_role.s3_admin_delete.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
 
-# ################################################################################
-# # Lambdas
 
-# # Slack notification lambda
-# data "aws_secretsmanager_secret" "slack_webhook_id" {
-#   name = "slack/webhook/id"
-# }
+################################################################################
+# S3 event notification setup
 
-# data "aws_secretsmanager_secret_version" "slack_webhook_id" {
-#   secret_id = "${data.aws_secretsmanager_secret.slack_webhook_id.id}"
-# }
+resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
+  bucket = aws_s3_bucket.agha_gdr_staging.id
 
-# module "notify_slack_lambda" {
-#   # based on: https://github.com/claranet/terraform-aws-lambda
-#   source = "../../modules/lambda"
+  topic {
+    topic_arn     = aws_sns_topic.s3_events.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = "manifest.txt"
+  }
 
-#   function_name = "${var.stack_name}_slack_lambda"
-#   description   = "Lambda to send messages to Slack"
-#   handler       = "notify_slack.lambda_handler"
-#   runtime       = "python3.6"
-#   timeout       = 3
+  topic {
+    topic_arn     = aws_sns_topic.s3_events.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = ".manifest"
+  }
+}
 
-#   source_path = "${path.module}/lambdas/notify_slack.py"
 
-#   attach_policy = true
-#   policy        = "arn:aws:iam::aws:policy/IAMReadOnlyAccess"
+data "aws_iam_policy_document" "sns_publish" {
+  statement {
+    effect = "Allow"
 
-#   environment {
-#     variables {
-#       SLACK_HOST             = "hooks.slack.com"
-#       SLACK_WEBHOOK_ENDPOINT = "/services/${data.aws_secretsmanager_secret_version.slack_webhook_id.secret_string}"
-#       SLACK_CHANNEL          = "${var.slack_channel}"
-#     }
-#   }
+    actions = [
+      "SNS:Publish"
+    ]
 
-#   tags = "${merge(
-#     local.common_tags,
-#     map(
-#       "Description", "Lambda to send notifications to UMCCR Slack"
-#     )
-#   )}"
-# }
+    resources = [
+      "arn:aws:sns:*:*:s3_manifest_event",
+    ]
 
-# # Folder lock lambda
-# data "template_file" "folder_lock_lambda" {
-#   template = "${file("${path.module}/policies/folder_lock_lambda.json")}"
+    principals {
+      type = "AWS"
+      identifiers = [
+        "*"
+      ]
+    }
 
-#   vars {
-#     bucket_name = "${aws_s3_bucket.agha_gdr_staging.id}"
-#   }
-# }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
 
-# resource "aws_iam_policy" "folder_lock_lambda" {
-#   name   = "${var.stack_name}_folder_lock_lambda_${terraform.workspace}"
-#   path   = "/${var.stack_name}/"
-#   policy = "${data.template_file.folder_lock_lambda.rendered}"
-# }
+      values = [
+        aws_s3_bucket.agha_gdr_staging.arn
+      ]
+    }
+  }
+}
 
-# module "folder_lock_lambda" {
-#   # based on: https://github.com/claranet/terraform-aws-lambda
-#   source = "../../modules/lambda"
-
-#   function_name = "${var.stack_name}_folder_lock_lambda"
-#   description   = "Lambda to update bucket policy to deny put/delete"
-#   handler       = "folder_lock.lambda_handler"
-#   runtime       = "python3.7"
-#   timeout       = 3
-
-#   source_path = "${path.module}/lambdas/folder_lock.py"
-
-#   attach_policy = true
-#   policy        = "${aws_iam_policy.folder_lock_lambda.arn}"
-
-#   tags = "${merge(
-#     local.common_tags,
-#     map(
-#       "Description", "Lambda to update a bucket policy to Deny PutObject/DeleteObject whenever a specific flag file event was triggered"
-#     )
-#   )}"
-# }
-
-# # allow events from SNS topic for manifest notifications
-# resource "aws_lambda_permission" "folder_lock_sns_permission" {
-#   statement_id  = "AllowExecutionFromSNS"
-#   action        = "lambda:InvokeFunction"
-#   function_name = "${module.folder_lock_lambda.function_arn}"
-#   principal     = "sns.amazonaws.com"
-#   source_arn    = "${aws_sns_topic.s3_events.arn}"
-# }
+resource "aws_sns_topic" "s3_events" {
+  name = "s3_manifest_event"
+  policy = data.aws_iam_policy_document.sns_publish.json
+}

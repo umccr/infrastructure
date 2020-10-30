@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.12.6"
 
   backend "s3" {
     bucket         = "agha-terraform-states"
@@ -145,6 +145,8 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
 
 # Attach bucket policy to deny object deletion
 # https://aws.amazon.com/blogs/security/how-to-restrict-amazon-s3-bucket-access-to-a-specific-iam-role/
+# NOTE: no TF controlled bucket policy for the staging bucket,
+#       as it interferes with the policy update by the folder lock lambda
 
 data "template_file" "store_bucket_policy" {
   template = file("policies/agha_bucket_policy.json")
@@ -159,21 +161,6 @@ data "template_file" "store_bucket_policy" {
 resource "aws_s3_bucket_policy" "store_bucket_policy" {
   bucket = aws_s3_bucket.agha_gdr_store.id
   policy = data.template_file.store_bucket_policy.rendered
-}
-
-data "template_file" "staging_bucket_policy" {
-  template = file("policies/agha_bucket_policy.json")
-
-  vars = {
-    bucket_name = aws_s3_bucket.agha_gdr_staging.id
-    account_id  = data.aws_caller_identity.current.account_id
-    role_id     = aws_iam_role.s3_admin_delete.unique_id
-  }
-}
-
-resource "aws_s3_bucket_policy" "staging_bucket_policy" {
-  bucket = aws_s3_bucket.agha_gdr_staging.id
-  policy = data.template_file.staging_bucket_policy.rendered
 }
 
 ################################################################################
@@ -202,7 +189,7 @@ resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
 
 
 ################################################################################
-# S3 event notification setup
+# Publish S3 events to SNS topic
 
 resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
   bucket = aws_s3_bucket.agha_gdr_staging.id
@@ -255,3 +242,164 @@ resource "aws_sns_topic" "s3_events" {
   name = "s3_manifest_event"
   policy = data.aws_iam_policy_document.sns_publish.json
 }
+
+# Create Lambda subscriptions for the SNS topic:
+# to send notifications to Slack
+resource "aws_sns_topic_subscription" "s3_manifest_event" {
+  topic_arn = aws_sns_topic.s3_events.arn
+  protocol  = "lambda"
+  endpoint  = module.notify_slack_lambda.this_lambda_function_arn
+}
+
+# to lock the submission folder to prevent further manipulation
+resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
+  topic_arn = aws_sns_topic.s3_events.arn
+  protocol  = "lambda"
+  endpoint  = module.folder_lock_lambda.this_lambda_function_arn
+}
+
+################################################################################
+# Lambdas
+
+########################################
+# Lambda to send messages to Slack
+
+data "aws_secretsmanager_secret" "slack_webhook_id" {
+  name = "slack/webhook/id"
+}
+
+data "aws_secretsmanager_secret_version" "slack_webhook_id" {
+  secret_id = data.aws_secretsmanager_secret.slack_webhook_id.id
+}
+
+module "notify_slack_lambda" {
+  source = "terraform-aws-modules/lambda/aws"
+
+  function_name = "${var.stack_name}_slack_lambda"
+  description   = "Lambda to send messages to Slack"
+  handler       = "index.lambda_handler"
+  runtime       = "python3.8"
+
+  source_path = "./lambdas/notify_slack"
+
+  attach_policy = true
+  policy        = "arn:aws:iam::aws:policy/IAMReadOnlyAccess"
+
+  environment_variables = {
+      SLACK_HOST             = "hooks.slack.com"
+      SLACK_WEBHOOK_ENDPOINT = "/services/${data.aws_secretsmanager_secret_version.slack_webhook_id.secret_string}"
+      SLACK_CHANNEL          = var.slack_channel
+  }
+
+  tags = merge(
+    local.common_tags,
+    map(
+      "Name", "${var.stack_name}_slack_lambda",
+      "Description", "Lambda to send notifications to UMCCR Slack"
+    )
+  )
+}
+
+# allow events from SNS topic for manifest notifications
+resource "aws_lambda_permission" "slack_lambda_from_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = module.notify_slack_lambda.this_lambda_function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.s3_events.arn
+}
+
+########################################
+# Lambda to lock a submission folder
+
+module "folder_lock_lambda" {
+  source = "terraform-aws-modules/lambda/aws"
+
+  function_name = "${var.stack_name}_folder_lock_lambda"
+  description   = "Lambda to lock a submission folder"
+  handler       = "index.lambda_handler"
+  runtime       = "python3.8"
+
+  source_path = "./lambdas/folder_lock"
+
+  attach_policy = true
+  policy        = aws_iam_policy.folder_lock_lambda.arn
+
+  tags = local.common_tags
+}
+
+data "template_file" "folder_lock_lambda" {
+  template = file("${path.module}/policies/folder_lock_lambda.json")
+
+  vars = {
+    bucket_name = aws_s3_bucket.agha_gdr_staging.id
+  }
+}
+
+resource "aws_iam_policy" "folder_lock_lambda" {
+  name   = "${var.stack_name}_folder_lock_lambda"
+  path   = "/${var.stack_name}/"
+  policy = data.template_file.folder_lock_lambda.rendered
+}
+
+# allow events from SNS topic for manifest notifications
+resource "aws_lambda_permission" "folder_lock_from_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = module.folder_lock_lambda.this_lambda_function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.s3_events.arn
+}
+
+
+################################################################################
+# CloudWatch Event Rule to match batch events and call Slack lambda
+
+resource "aws_cloudwatch_event_rule" "batch_failure" {
+  name        = "${var.stack_name}_capture_batch_job_failure"
+  description = "Capture Batch Job Failures"
+
+  event_pattern = <<PATTERN
+{
+  "detail-type": [
+    "Batch Job State Change"
+  ],
+  "source": [
+    "aws.batch"
+  ],
+  "detail": {
+    "status": [
+      "FAILED"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "batch_failure" {
+  rule      = aws_cloudwatch_event_rule.batch_failure.name
+  target_id = "${var.stack_name}_send_batch_failure_to_slack_lambda"
+  arn       = module.notify_slack_lambda.this_lambda_function_arn
+
+  input_transformer {
+    input_paths = {
+      job    = "$.detail.jobName"
+      title  = "$.detail-type"
+      status = "$.detail.status"
+    }
+
+    # https://serverfault.com/questions/904992/how-to-use-input-transformer-for-cloudwatch-rule-target-ssm-run-command-aws-ru
+    input_template = "{ \"topic\": <title>, \"title\": <job>, \"message\": <status> }"
+  }
+}
+
+resource "aws_lambda_permission" "batch_failure" {
+  statement_id  = "${var.stack_name}_allow_batch_failure_to_invoke_slack_lambda"
+  action        = "lambda:InvokeFunction"
+  function_name = module.notify_slack_lambda.this_lambda_function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.batch_failure.arn
+}
+
+# NOTE: SUCCESS events are not supported, as there are too many
+#       (success is assumed if there is no failure)

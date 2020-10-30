@@ -19,3 +19,7 @@ variable "agha_gdr_store_bucket_name" {
 variable "saml_provider" {
   default = "GoogleApps"
 }
+
+variable "slack_channel" {
+  default = "#agha-gdr"
+}

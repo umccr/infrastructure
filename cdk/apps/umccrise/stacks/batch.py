@@ -144,7 +144,9 @@ class BatchStack(core.Stack):
             }
         ]
 
-        # Set up custom user data to configure the Batch instances
+        ##### Set up custom user data to configure the Batch instances
+
+        # Set up local assets/files to be uploaded to S3 (so they are available when UserData requires them)
         umccrise_wrapper_asset = assets.Asset(
             self,
             'UmccriseWrapperAsset',
@@ -159,6 +161,8 @@ class BatchStack(core.Stack):
         )
         user_data_asset.grant_read(batch_instance_role)
 
+        # Now create the actual UserData
+        # I.e. download the batch-user-data asset and run it with required parameters
         user_data = ec2.UserData.for_linux()
         local_path = user_data.add_s3_download_command(
             bucket=user_data_asset.bucket,
@@ -252,7 +256,7 @@ class BatchStack(core.Stack):
             vcpus=32,
             memory_limit_mib=100000,
             command=[
-                "/opt/container/umccrise-wrapper.sh",
+                "while [ ! -f /opt/container/umccrise-wrapper.sh ]; do sleep 2; done; /opt/container/umccrise-wrapper.sh",
                 "Ref::vcpus"
             ],
             mount_points=[

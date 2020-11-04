@@ -74,7 +74,8 @@ class BatchStack(core.Stack):
             ),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AmazonEC2RoleforSSM'),
-                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AmazonEC2ContainerServiceforEC2Role')
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AmazonEC2ContainerServiceforEC2Role'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/CloudWatchAgentServerRole')
             ]
         )
         batch_instance_role.add_to_policy(
@@ -182,6 +183,8 @@ class BatchStack(core.Stack):
         mime_wrapper.add_commands('curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
         mime_wrapper.add_commands('unzip awscliv2.zip')
         mime_wrapper.add_commands('sudo ./aws/install --bin-dir /usr/bin')
+        # also install cloudwatch agent to diagnose problems with the instance(s)
+        mime_wrapper.add_commands('yum -y install amazon-cloudwatch-agent')
         # insert our actual user data payload
         mime_wrapper.add_commands(user_data.render())
         mime_wrapper.add_commands('--==MYBOUNDARY==--')
@@ -320,7 +323,7 @@ class BatchStack(core.Stack):
             'UmccriseLambda',
             function_name='umccrise_batch_lambda',
             handler='umccrise.lambda_handler',
-            runtime=lmbda.Runtime.PYTHON_3_7,
+            runtime=lmbda.Runtime.PYTHON_3_8,
             code=lmbda.Code.from_asset('lambdas/umccrise'),
             environment={
                 'JOBNAME_PREFIX': "UMCCRISE_",

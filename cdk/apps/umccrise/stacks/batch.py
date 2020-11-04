@@ -161,6 +161,13 @@ class BatchStack(core.Stack):
         )
         user_data_asset.grant_read(batch_instance_role)
 
+        cw_agent_config_asset = assets.Asset(
+            self,
+            'CwAgentConfigAsset',
+            path=os.path.join(dirname, '..', 'assets', "cw-agent-config-addon.json")
+        )
+        cw_agent_config_asset.grant_read(batch_instance_role)
+
         # Now create the actual UserData
         # I.e. download the batch-user-data asset and run it with required parameters
         user_data = ec2.UserData.for_linux()
@@ -170,7 +177,10 @@ class BatchStack(core.Stack):
         )
         user_data.add_execute_file_command(
             file_path=local_path,
-            arguments=f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key}"
+            arguments=[
+                f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key}",
+                f"s3://{cw_agent_config_asset.bucket.bucket_name}/{cw_agent_config_asset.s3_object_key}"
+            ]
         )
 
         # Generate user data wrapper to comply with LaunchTemplate required MIME multi-part archive format for user data
@@ -256,7 +266,7 @@ class BatchStack(core.Stack):
             vcpus=32,
             memory_limit_mib=100000,
             command=[
-                "while [ ! -f /opt/container/umccrise-wrapper.sh ]; do sleep 2; done; /opt/container/umccrise-wrapper.sh",
+                "/opt/container/umccrise-wrapper.sh",
                 "Ref::vcpus"
             ],
             mount_points=[

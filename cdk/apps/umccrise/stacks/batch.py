@@ -177,10 +177,7 @@ class BatchStack(core.Stack):
         )
         user_data.add_execute_file_command(
             file_path=local_path,
-            arguments=[
-                f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key}",
-                f"s3://{cw_agent_config_asset.bucket.bucket_name}/{cw_agent_config_asset.s3_object_key}"
-            ]
+            arguments=f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key} s3://{cw_agent_config_asset.bucket.bucket_name}/{cw_agent_config_asset.s3_object_key}"
         )
 
         # Generate user data wrapper to comply with LaunchTemplate required MIME multi-part archive format for user data

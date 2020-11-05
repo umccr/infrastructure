@@ -227,8 +227,8 @@ class BatchStack(core.Stack):
                 subnet_type=ec2.SubnetType.PRIVATE,
                 # availability_zones=["ap-southeast-2a"]
             ),
-            security_groups=[batch_security_group]
-            # compute_resources_tags=core.Tag('Creator', 'Batch')
+            security_groups=[batch_security_group],
+            compute_resources_tags={'Creator': 'Batch', 'Stack': 'umccrise'}
         )
         # XXX: How to add more than one tag above??
         # https://github.com/aws/aws-cdk/issues/7350

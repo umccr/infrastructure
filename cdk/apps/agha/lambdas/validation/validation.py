@@ -6,6 +6,7 @@ import boto3
 import http.client
 import pandas as pd
 
+MANIFEST_REQUIRED_COLUMNS = ('filename', 'checksum', 'agha_study_id')
 AWS_REGION = boto3.session.Session().region_name
 STAGING_BUCKET = os.environ.get('STAGING_BUCKET')
 SLACK_HOST = os.environ.get('SLACK_HOST')
@@ -127,6 +128,16 @@ def get_manifest_df(prefix: str):
     return df
 
 
+def check_manifest_headers(manifest_df):
+    msgs = list()
+    manifest_ok = True
+    for col_name in MANIFEST_REQUIRED_COLUMNS:
+        if col_name not in manifest_df.columns:
+            manifest_ok = False
+            msgs.append(f"Column '{col_name}' not found in manifest!")
+    return manifest_ok, msgs
+
+
 def get_listing(prefix: str):
     # get the S3 object listing for the prefix
     files = list()
@@ -179,30 +190,38 @@ def lambda_handler(event, context):
     # Build validation messages
     val_messages = list()
     manifest_df = get_manifest_df(submission_prefix)
-    val_msg = f"Entries in manifest: {len(manifest_df)}"
-    print(val_msg)
-    val_messages.append(val_msg)
+
+    manifest_ok, msgs = check_manifest_headers(manifest_df)
+    if not manifest_ok:
+        val_messages.extend(msgs)
+        print(f"Manifest has formatting errors: {msgs}")
+
+    message = f"Entries in manifest: {len(manifest_df)}"
+    print(message)
+    val_messages.append(message)
 
     s3_files = set(get_listing(submission_prefix))
-    val_msg = f"Entries on S3 (including manifest): {len(s3_files)}"
-    print(val_msg)
-    val_messages.append(val_msg)
-
-    manifest_files = set(manifest_df['filename'].to_list())
-    files_not_on_s3 = manifest_files.difference(s3_files)
-    message = f"Entries in manifest, but not on S3: {len(files_not_on_s3)}"
+    message = f"Entries on S3 (including manifest): {len(s3_files)}"
     print(message)
     val_messages.append(message)
 
-    files_not_in_manifeset = s3_files.difference(manifest_files)
-    message = f"Entries on S3, but not in manifest: {len(files_not_in_manifeset)}"
-    print(message)
-    val_messages.append(message)
+    # Only run comparison if the manifest is ok
+    if manifest_ok:
+        manifest_files = set(manifest_df['filename'].to_list())
+        files_not_on_s3 = manifest_files.difference(s3_files)
+        message = f"Entries in manifest, but not on S3: {len(files_not_on_s3)}"
+        print(message)
+        val_messages.append(message)
 
-    files_in_both = manifest_files.intersection(s3_files)
-    message = f"Entries common in manifest and S3: {len(files_in_both)}"
-    print(message)
-    val_messages.append(message)
+        files_not_in_manifeset = s3_files.difference(manifest_files)
+        message = f"Entries on S3, but not in manifest: {len(files_not_in_manifeset)}"
+        print(message)
+        val_messages.append(message)
+
+        files_in_both = manifest_files.intersection(s3_files)
+        message = f"Entries common in manifest and S3: {len(files_in_both)}"
+        print(message)
+        val_messages.append(message)
 
     slack_response = call_slack_webhook(
         topic="AGHA submission quick validation",

@@ -15,7 +15,7 @@ ssm_client = boto3.client('ssm')
 ro_bucket_names = ssm_client.get_parameter(Name='/cdk/umccrise/batch/ro_buckets')['Parameter']['Value'].split(',')
 rw_bucket_names = ssm_client.get_parameter(Name='/cdk/umccrise/batch/rw_buckets')['Parameter']['Value'].split(',')
 container_image = ssm_client.get_parameter(Name='/cdk/umccrise/batch/default_container_image')['Parameter']['Value']
-ec2_ami = ssm_client.get_parameter(Name='/cdk/umccrise/batch/ami')['Parameter']['Value']
+ec2_ami = ssm_client.get_parameter(Name='/cdk/umccrise/batch/ami')['Parameter']['Value']  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
 compute_env_type = ssm_client.get_parameter(Name='/cdk/umccrise/batch/compute_env_type')['Parameter']['Value']
 # TODO: the following are Lambda specific and could be loaded directly by the Lambda
 # pro: cleaner infra code

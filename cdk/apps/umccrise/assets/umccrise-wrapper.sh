@@ -29,6 +29,7 @@ CONTAINER_MOUNT_POINT="/work"
 INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type/)
 AMI_ID=$(curl http://169.254.169.254/latest/meta-data/ami-id/)
 UMCCRISE_VERSION=$(umccrise --version | sed 's/umccrise, version //') #get rid of unnecessary version text
+REFDATA_DIR="/work/reference_data.git"
 
 
 function timer { # arg?: command + args
@@ -80,8 +81,13 @@ unzip awscliv2.zip
 
 echo "PULL ref data from S3 bucket"
 # timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
-git clone https://github.com/umccr/reference_data /work/reference_data.git
-cd /work/reference_data.git
+if [ -d "$REFDATA_DIR" ]; then
+  echo "Refdata dir already exists. Skipping git clone"
+else
+  echo "Cloning refdata repo"
+  git clone https://github.com/umccr/reference_data $REFDATA_DIR
+fi
+cd $REFDATA_DIR
 dvc config cache.type reflink,hardlink,symlink
 timer dvc pull
 cd /
@@ -95,7 +101,7 @@ echo "umccrise version:"
 umccrise --version
 
 echo "RUN umccrise"
-timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes /work/reference_data.git/genomes
+timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes ${REFDATA_DIR}/genomes
 publish RunUMCCRISE $duration
 
 echo "PUSH results"

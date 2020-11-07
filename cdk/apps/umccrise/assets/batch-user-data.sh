@@ -14,7 +14,21 @@ yum install -y amazon-cloudwatch-agent
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a append-config -m ec2 -s -c file:${LOCAL_CWA_CONFIG}
 ls -al /opt/
 mkdir /opt/container
-aws s3 cp ${S3_WRAPPER} ${LOCAL_WRAPPER}
+# Try loop to retrieve wrapper script
+waitTime=1
+i=0
+while [ $i -lt 10 ]; do
+       echo "Try: $i"
+       aws s3 cp ${S3_WRAPPER} ${LOCAL_WRAPPER}
+       if [ $? -ne 0 ]; then     # check exit code of S3 command
+       sleep $waitTime           # sleep
+       let i+=1                  # increment i
+       let waitTime+=2           # increase sleep time on each iteration
+       else
+               i=10              # break out of loop if exit code is 0
+       fi
+done
+# continue with normal business
 ls -al /opt/container/
 chmod 755 ${LOCAL_WRAPPER}
 ls -al /opt/container/

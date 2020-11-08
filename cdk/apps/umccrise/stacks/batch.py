@@ -225,7 +225,7 @@ class BatchStack(core.Stack):
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE,
-                # availability_zones=["ap-southeast-2a"]
+                availability_zones=["ap-southeast-2a"]
             ),
             security_groups=[batch_security_group],
             compute_resources_tags={

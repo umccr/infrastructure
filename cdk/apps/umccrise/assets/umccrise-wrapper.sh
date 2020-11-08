@@ -30,6 +30,7 @@ INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type/)
 AMI_ID=$(curl http://169.254.169.254/latest/meta-data/ami-id/)
 UMCCRISE_VERSION=$(umccrise --version | sed 's/umccrise, version //') #get rid of unnecessary version text
 REFDATA_DIR="/work/reference_data.git"
+DVC_LOCK_FILE=".dvc/tmp/lock"
 
 
 function timer { # arg?: command + args
@@ -88,6 +89,23 @@ else
   git clone https://github.com/umccr/reference_data $REFDATA_DIR
 fi
 cd $REFDATA_DIR
+# git pull just in case
+git pull
+
+# Wait (a max time) until DVC lock is released
+# RefData pull should take around 20min, so we set the max time at 30min
+MAX_WAIT_TIME=$((30*60)) # convert to seconds
+waitTime=30
+actualWaitTime=0
+while test -f "$DVC_LOCK_FILE"; do
+    let actualWaitTime+=$waitTime
+    if test $actualWaitTime -gt $MAX_WAIT_TIME; then
+        break
+    fi
+    echo "DVC lock found. Waiting for $waitTime"
+    sleep $waitTime
+done
+# continue with normal business
 dvc config cache.type reflink,hardlink,symlink
 timer dvc pull
 cd /

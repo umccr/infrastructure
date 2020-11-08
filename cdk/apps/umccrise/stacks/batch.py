@@ -241,7 +241,7 @@ class BatchStack(core.Stack):
         my_compute_env = batch.ComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
-            compute_environment_name="cdk-umccr_ise-batch-compute-env",
+            compute_environment_name="cdk-umccrise-batch-compute-env",
             service_role=batch_service_role,
             compute_resources=my_compute_res
         )

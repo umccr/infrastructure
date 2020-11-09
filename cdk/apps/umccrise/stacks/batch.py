@@ -203,7 +203,10 @@ class BatchStack(core.Stack):
             launch_template_name='UmccriseBatchComputeLaunchTemplate',
             launch_template_data={
                 'userData': core.Fn.base64(mime_wrapper.render()),
-                'blockDeviceMappings': block_device_mappings
+                'blockDeviceMappings': block_device_mappings,
+                'metadataOptions': {
+                    'httpTokens' : 'required'
+                }
             }
         )
 

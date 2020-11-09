@@ -26,8 +26,9 @@ fi
 export AWS_DEFAULT_REGION="ap-southeast-2"
 CLOUDWATCH_NAMESPACE="UMCCRISE"
 CONTAINER_MOUNT_POINT="/work"
-INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type/)
-AMI_ID=$(curl http://169.254.169.254/latest/meta-data/ami-id/)
+METADATA_TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+INSTANCE_TYPE=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/instance-type/)
+AMI_ID=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/ami-id/)
 UMCCRISE_VERSION=$(umccrise --version | sed 's/umccrise, version //') #get rid of unnecessary version text
 REFDATA_DIR="/work/reference_data.git"
 DVC_LOCK_FILE=".dvc/tmp/lock"

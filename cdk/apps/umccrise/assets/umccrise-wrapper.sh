@@ -98,14 +98,25 @@ git pull
 MAX_WAIT_TIME=$((30*60)) # convert to seconds
 waitTime=30
 actualWaitTime=0
-while test -f "$DVC_LOCK_FILE"; do
-    let actualWaitTime+=$waitTime
-    if test $actualWaitTime -gt $MAX_WAIT_TIME; then
-        break
-    fi
-    echo "DVC lock found. Waiting for $waitTime"
-    sleep $waitTime
-done
+if [ -f "$DVC_LOCK_FILE" ]
+then
+    # dvc lock file contains PID
+    PID=$(cat $DVC_LOCK_FILE)
+    # If PID exist and is still running, another dvc pull process need to wait
+    # Otherwise, will encounter Unable to acquire lock https://dvc.org/doc/user-guide/troubleshooting#lock-issue
+    # dvc pull has internal multi-threads to download data in parallel, default is 4 * cpu_count()
+    # See https://dvc.org/doc/command-reference/pull#options for -j, --jobs option to tweak
+    # Also note about open file descriptors limit https://dvc.org/doc/user-guide/troubleshooting#many-files
+    # Could consider `wait $PID` approach
+    while ps -p "$PID" &>/dev/null; do
+        let actualWaitTime+=$waitTime
+        if test $actualWaitTime -gt $MAX_WAIT_TIME; then
+            break
+        fi
+        echo "DVC pull process found. Waiting for $waitTime seconds"
+        sleep $waitTime
+    done
+fi
 # continue with normal business
 dvc config cache.type reflink,hardlink,symlink
 timer dvc pull

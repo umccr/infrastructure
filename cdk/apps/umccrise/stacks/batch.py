@@ -191,7 +191,7 @@ class BatchStack(core.Stack):
         mime_wrapper.add_commands('yum -y install unzip')
         mime_wrapper.add_commands('cd /opt')
         mime_wrapper.add_commands('curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
-        mime_wrapper.add_commands('unzip awscliv2.zip')
+        mime_wrapper.add_commands('unzip -qq awscliv2.zip')
         mime_wrapper.add_commands('sudo ./aws/install --bin-dir /usr/bin')
         # insert our actual user data payload
         mime_wrapper.add_commands(user_data.render())

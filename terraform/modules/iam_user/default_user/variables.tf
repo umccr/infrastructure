@@ -1,5 +1,25 @@
 # module inputs
-# i.e. the arguments to the module component
 variable "username" {
-  type = "string"
+  type = string
+}
+
+variable "pgp_key" {
+  type    = string
+  default = "keybase:freisinger"
+}
+
+# variables to tags
+variable "keybase" {
+  type    = string
+  default = null
+}
+
+variable "full_name" {
+  type    = string
+  default = null
+}
+
+variable "email" {
+  type    = string
+  default = null
 }

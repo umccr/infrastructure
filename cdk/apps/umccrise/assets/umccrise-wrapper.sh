@@ -77,8 +77,8 @@ job_output_dir=/work/output/${S3_INPUT_DIR}-${timestamp}
 mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,validation}
 
 # Install the AWS CLI
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -qq awscliv2.zip
 ./aws/install
 
 echo "PULL ref data from S3 bucket"

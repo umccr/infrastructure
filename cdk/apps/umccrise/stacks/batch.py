@@ -190,7 +190,7 @@ class BatchStack(core.Stack):
         # install AWS CLI, as it's unexpectedly missing from the AWS Linux 2 AMI...
         mime_wrapper.add_commands('yum -y install unzip')
         mime_wrapper.add_commands('cd /opt')
-        mime_wrapper.add_commands('curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
+        mime_wrapper.add_commands('curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
         mime_wrapper.add_commands('unzip -qq awscliv2.zip')
         mime_wrapper.add_commands('sudo ./aws/install --bin-dir /usr/bin')
         # insert our actual user data payload

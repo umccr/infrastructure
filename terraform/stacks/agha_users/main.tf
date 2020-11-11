@@ -64,13 +64,16 @@ module "foobar" {
   keybase   = "foobarkeybase"
   email     = "foo@bar.com"
 }
-
+resource "aws_iam_user_login_profile" "foobar" {
+  user    = module.foobar.username
+  pgp_key = "keybase:freisinger"
+}
 ################################################################################
 # Groups
 
 # Submitters
 resource "aws_iam_group" "submitter" {
-  name = "agha_gdr_submitter"
+  name = "agha_gdr_submitters"
   path = "/agha/"
 }
 
@@ -133,8 +136,8 @@ data "template_file" "agha_store_ro_policy" {
 }
 
 resource "aws_iam_policy" "default_user_policy" {
-  name   = "default_user_policy"
-  path   = "/agha/"
+  name_prefix = "default_user_policy"
+  path        = "/agha/"
   # policy = data.template_file.default_user_policy.rendered
   policy = file("policies/default-user-policy.json")
 }
@@ -146,15 +149,15 @@ resource "aws_iam_policy" "default_user_policy" {
 # }
 
 resource "aws_iam_policy" "agha_staging_rw_policy" {
-  name   = "agha_staging_rw_policy"
-  path   = "/agha/"
-  policy = data.template_file.agha_staging_rw_policy.rendered
+  name_prefix = "agha_staging_rw_policy"
+  path        = "/agha/"
+  policy      = data.template_file.agha_staging_rw_policy.rendered
 }
 
 resource "aws_iam_policy" "agha_store_ro_policy" {
-  name   = "agha_store_ro_policy"
-  path   = "/agha/"
-  policy = data.template_file.agha_store_ro_policy.rendered
+  name_prefix = "agha_store_ro_policy"
+  path        = "/agha/"
+  policy      = data.template_file.agha_store_ro_policy.rendered
 }
 
 ################################################################################

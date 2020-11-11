@@ -13,13 +13,17 @@
 
 # foobar
 output "foobar_username" {
-  value = "${module.foobar.username}"
+  value = module.foobar.username
 }
 
 output "foobar_access_key" {
-  value = "${module.foobar.access_key}"
+  value = module.foobar.access_key
 }
 
 output "foobar_secret_access_key" {
-  value = "${module.foobar.encrypted_secret_access_key}"
+  value = module.foobar.encrypted_secret_access_key
+}
+
+output "foobar_console_login" {
+  value = aws_iam_user_login_profile.foobar.encrypted_password
 }

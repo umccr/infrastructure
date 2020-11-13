@@ -85,12 +85,13 @@ echo "PULL ref data from S3 bucket"
 # timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
 if [ -d "$REFDATA_DIR" ]; then
   echo "Refdata dir already exists. Skipping git clone"
+  sleep 5  # give the cloning process some time
 else
   echo "Cloning refdata repo"
   git clone https://github.com/umccr/reference_data $REFDATA_DIR
 fi
 cd $REFDATA_DIR
-# git pull just in case
+# git pull just in case the clone is not completely finished
 git pull
 
 # Wait (a max time) until DVC lock is released
@@ -101,7 +102,7 @@ actualWaitTime=0
 if [ -f "$DVC_LOCK_FILE" ]
 then
     # dvc lock file contains PID
-    PID=$(cat $DVC_LOCK_FILE)
+    PID=$(cat $DVC_LOCK_FILE | xargs) # let xargs strip off whitespace
     # If PID exist and is still running, another dvc pull process need to wait
     # Otherwise, will encounter Unable to acquire lock https://dvc.org/doc/user-guide/troubleshooting#lock-issue
     # dvc pull has internal multi-threads to download data in parallel, default is 4 * cpu_count()

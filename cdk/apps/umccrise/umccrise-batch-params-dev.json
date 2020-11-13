@@ -2,7 +2,7 @@
     "Account": "843407916570",
     "Parameters":{
         "/cdk/umccrise/batch/ami": {
-            "Value": "ami-029bf83e14803c25f",
+            "Value": "ami-00e4b147599c13588",
             "Type": "String"
         },
         "/cdk/umccrise/batch/compute_env_type": {

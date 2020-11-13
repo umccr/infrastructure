@@ -10,7 +10,7 @@
             "Type": "String"
         },
         "/cdk/umccrise/batch/default_container_image": {
-            "Value": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise:1.0.4-0ac93f8d00",
+            "Value": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise:1.1.3-rc.2-e6232d42d8",
             "Type": "String"
         },
         "/cdk/umccrise/batch/image_configurable": {

@@ -291,7 +291,7 @@ class BatchStack(core.Stack):
             parameters={'vcpus': '1'},
             container=job_container,
             retry_attempts=2,
-            timeout=core.Duration.hours(5)
+            timeout=core.Duration.hours(6)
         )
 
         ################################################################################

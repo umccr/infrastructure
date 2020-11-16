@@ -180,7 +180,7 @@ class BatchStack(core.Stack):
         mime_wrapper.add_commands('yum -y install unzip')
         mime_wrapper.add_commands('cd /opt')
         mime_wrapper.add_commands('curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
-        mime_wrapper.add_commands('unzip awscliv2.zip')
+        mime_wrapper.add_commands('unzip -qq awscliv2.zip')
         mime_wrapper.add_commands('sudo ./aws/install --bin-dir /usr/bin')
         # insert our actual user data payload
         mime_wrapper.add_commands(user_data.render())
@@ -290,6 +290,7 @@ class BatchStack(core.Stack):
             job_definition_name='cdk-umccrise-job-definition',
             parameters={'vcpus': '1'},
             container=job_container,
+            retry_attempts=2,
             timeout=core.Duration.hours(5)
         )
 

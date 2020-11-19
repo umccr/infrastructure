@@ -27,23 +27,23 @@ class BatchStack(core.Stack):
 
         ################################################################################
         # Set up permissions
-        ro_buckets = set()
+        ro_buckets = list()
         for bucket in props['ro_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
                 self,
                 bucket,
                 bucket_name=bucket
             )
-            ro_buckets.add(tmp_bucket)
+            ro_buckets.append(tmp_bucket)
 
-        rw_buckets = set()
+        rw_buckets = list()
         for bucket in props['rw_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
                 self,
                 bucket,
                 bucket_name=bucket
             )
-            rw_buckets.add(tmp_bucket)
+            rw_buckets.append(tmp_bucket)
 
         batch_service_role = iam.Role(
             self,
@@ -291,7 +291,7 @@ class BatchStack(core.Stack):
             parameters={'vcpus': '1'},
             container=job_container,
             retry_attempts=2,
-            timeout=core.Duration.hours(6)
+            timeout=core.Duration.hours(9)
         )
 
         ################################################################################

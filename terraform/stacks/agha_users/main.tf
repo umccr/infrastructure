@@ -57,15 +57,24 @@ data "aws_s3_bucket" "agha_gdr_store" {
 # }
 
 # AGHA Users
-module "foobar" {
+module "simon" {
   source    = "../../modules/iam_user/default_user"
-  username  = "foobar"
-  full_name = "Foo X Bar"
-  keybase   = "foobarkeybase"
-  email     = "foo@bar.com"
+  username  = "simon"
+  full_name = "Simon Sadedin"
+  keybase   = "keybase:freisinger"
+  email     = "simon.sadedin@vcgs.org.au"
 }
-resource "aws_iam_user_login_profile" "foobar" {
-  user    = module.foobar.username
+
+# Data Manager
+module "sarah_dm" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "sarah_dm"
+  full_name = "Sarah Casauria"
+  keybase   = "keybase:freisinger"
+  email     = "sarah.casauria@mcri.edu.au"
+}
+resource "aws_iam_user_login_profile" "sarah_dm" {
+  user    = module.sarah_dm.username
   pgp_key = "keybase:freisinger"
 }
 ################################################################################
@@ -84,7 +93,8 @@ resource "aws_iam_group_membership" "submitter" {
   name  = "${aws_iam_group.submitter.name}_membership"
   group = aws_iam_group.submitter.name
   users = [
-    module.foobar.username,
+    module.simon.username,
+    module.sarah_dm.username,
   ]
 }
 
@@ -107,18 +117,6 @@ resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
 ################################################################################
 # Create access policies
 
-# data "template_file" "default_user_policy" {
-#   template = file("policies/default-user-policy.json")
-# }
-
-# data "template_file" "agha_staging_ro_policy" {
-#   template = file("policies/bucket-ro-policy.json")
-
-#   vars = {
-#     bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
-#   }
-# }
-
 data "template_file" "agha_staging_rw_policy" {
   template = file("policies/bucket-rw-policy.json")
 
@@ -138,15 +136,8 @@ data "template_file" "agha_store_ro_policy" {
 resource "aws_iam_policy" "default_user_policy" {
   name_prefix = "default_user_policy"
   path        = "/agha/"
-  # policy = data.template_file.default_user_policy.rendered
   policy = file("policies/default-user-policy.json")
 }
-
-# resource "aws_iam_policy" "agha_staging_ro_policy" {
-#   name   = "agha_staging_ro_policy"
-#   path   = "/agha/"
-#   policy = data.template_file.agha_staging_ro_policy.rendered
-# }
 
 resource "aws_iam_policy" "agha_staging_rw_policy" {
   name_prefix = "agha_staging_rw_policy"

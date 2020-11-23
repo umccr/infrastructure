@@ -66,32 +66,11 @@ module "simonsadedin" {
   email    = "simon.sadedin@vcgs.org.au"
 }
 
-module "shyrav" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "shyrav"
-  pgp_key  = "keybase:freisinger"
-  email    = "s.ravishankar@garvan.org.au"
-}
-
 module "rk_chw" {
   source   = "../../modules/iam_user/secure_user"
   username = "rk_chw"
   pgp_key  = "keybase:freisinger"
   email    = "rahul.krishnaraj@health.nsw.gov.au"
-}
-
-module "seanlianu" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "seanlianu"
-  pgp_key  = "keybase:freisinger"
-  email    = "sean.li@anu.edu.au"
-}
-
-module "sgao" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "sgao"
-  pgp_key  = "keybase:freisinger"
-  email    = "song.gao@sa.gov.au"
 }
 
 # Special user (sarah) for AGHA data manager/curator
@@ -124,19 +103,9 @@ resource "aws_iam_group_membership" "submit_members" {
   name  = "${aws_iam_group.submit.name}_membership"
   users = [
     "${module.simonsadedin.username}",
-    "${module.rk_chw.username}",
-    "${module.seanlianu.username}",
-    "${module.sgao.username}"
+    "${module.rk_chw.username}"
   ]
   group = "${aws_iam_group.submit.name}"
-}
-
-resource "aws_iam_group_membership" "read_members" {
-  name  = "${aws_iam_group.read.name}_membership"
-  users = [
-    "${module.shyrav.username}"
-  ]
-  group = "${aws_iam_group.read.name}"
 }
 
 ################################################################################
@@ -237,12 +206,6 @@ resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
   policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
 }
 
-# read group policies
-resource "aws_iam_group_policy_attachment" "read_store_rw_policy_attachment" {
-  group      = "${aws_iam_group.read.name}"
-  policy_arn = "${aws_iam_policy.agha_store_ro_policy.arn}"
-}
-
 # permission attachments for data manager
 resource "aws_iam_user_policy_attachment" "ro_staging_sarah" {
   user       = "${module.sarah.username}"
@@ -281,10 +244,5 @@ resource "aws_iam_group_policy_attachment" "admin_default_user_attachment" {
 
 resource "aws_iam_group_policy_attachment" "submit_default_user_attachment" {
   group      = "${aws_iam_group.submit.name}"
-  policy_arn = "${aws_iam_policy.default_user_policy.arn}"
-}
-
-resource "aws_iam_group_policy_attachment" "read_default_user_attachment" {
-  group      = "${aws_iam_group.read.name}"
   policy_arn = "${aws_iam_policy.default_user_policy.arn}"
 }

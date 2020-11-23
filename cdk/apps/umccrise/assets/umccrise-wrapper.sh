@@ -31,7 +31,7 @@ INSTANCE_TYPE=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://16
 AMI_ID=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/ami-id/)
 UMCCRISE_VERSION=$(umccrise --version | sed 's/umccrise, version //') #get rid of unnecessary version text
 REFDATA_DIR="/work/reference_data.git"
-DVC_LOCK_FILE=".dvc/tmp/lock"
+DVC_CACHE_DIR="/work/dvc/cache/"
 
 
 function timer { # arg?: command + args
@@ -77,47 +77,22 @@ job_output_dir=/work/output/${S3_INPUT_DIR}-${timestamp}
 mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,validation}
 
 # Install the AWS CLI
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -qq awscliv2.zip
 ./aws/install
 
-echo "PULL ref data from S3 bucket"
-# timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
-if [ -d "$REFDATA_DIR" ]; then
-  echo "Refdata dir already exists. Skipping git clone"
-else
-  echo "Cloning refdata repo"
-  git clone https://github.com/umccr/reference_data $REFDATA_DIR
-fi
+echo "PULL referenece data"
+# clone the refData repo making sure we are not clashing with another process
+while [ -d "$REFDATA_DIR" ]; do
+  echo "Refdata dir already exists. Creating new one..."
+  REFDATA_DIR="${REFDATA_DIR}_1"
+done
+git clone https://github.com/umccr/reference_data $REFDATA_DIR
 cd $REFDATA_DIR
-# git pull just in case
-git pull
 
-# Wait (a max time) until DVC lock is released
-# RefData pull should take around 20min, so we set the max time at 30min
-MAX_WAIT_TIME=$((30*60)) # convert to seconds
-waitTime=30
-actualWaitTime=0
-if [ -f "$DVC_LOCK_FILE" ]
-then
-    # dvc lock file contains PID
-    PID=$(cat $DVC_LOCK_FILE)
-    # If PID exist and is still running, another dvc pull process need to wait
-    # Otherwise, will encounter Unable to acquire lock https://dvc.org/doc/user-guide/troubleshooting#lock-issue
-    # dvc pull has internal multi-threads to download data in parallel, default is 4 * cpu_count()
-    # See https://dvc.org/doc/command-reference/pull#options for -j, --jobs option to tweak
-    # Also note about open file descriptors limit https://dvc.org/doc/user-guide/troubleshooting#many-files
-    # Could consider `wait $PID` approach
-    while ps -p "$PID" &>/dev/null; do
-        let actualWaitTime+=$waitTime
-        if test $actualWaitTime -gt $MAX_WAIT_TIME; then
-            break
-        fi
-        echo "DVC pull process found. Waiting for $waitTime seconds"
-        sleep $waitTime
-    done
-fi
-# continue with normal business
+# use a common cache dir for all DVC repos/processes
+mkdir -p $DVC_CACHE_DIR
+dvc cache dir $DVC_CACHE_DIR
 dvc config cache.type reflink,hardlink,symlink
 timer dvc pull
 cd /

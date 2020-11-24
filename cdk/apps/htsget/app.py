@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-import boto3
+
 from aws_cdk import core
 from stacks.goserver import GoServerStack
 
@@ -9,7 +9,7 @@ aws_region = os.environ.get('CDK_DEFAULT_REGION')
 aws_env = {'account': account_id, 'region': aws_region}
 
 htsget_props = {
-    'namespace': 'htsget-server-go'
+    'namespace': 'htsget-refserver'
 }
 
 app = core.App()

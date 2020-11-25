@@ -38,7 +38,7 @@
                 "iam:DeleteVirtualMFADevice",
                 "iam:ListVirtualMFADevices"
             ],
-            "Resource": "arn:aws:iam::*:mfa/agha/${aws:username}"
+            "Resource": "arn:aws:iam::*:mfa/${aws:username}"
         },
         {
             "Sid": "AllowManageOwnUserMFA",

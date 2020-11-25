@@ -6,8 +6,7 @@
             "Effect": "Allow",
             "Action": [
                 "iam:GetAccountPasswordPolicy",
-                "iam:GetAccountSummary",       
-                "iam:ListVirtualMFADevices"
+                "iam:GetAccountSummary"
             ],
             "Resource": "*"
         },       
@@ -18,7 +17,7 @@
                 "iam:ChangePassword",
                 "iam:GetUser"
             ],
-            "Resource": "arn:aws:iam::*:user/${aws:username}"
+            "Resource": "arn:aws:iam::*:user/agha/${aws:username}"
         },
         {
             "Sid": "AllowManageOwnAccessKeys",
@@ -29,16 +28,17 @@
                 "iam:ListAccessKeys",
                 "iam:UpdateAccessKey"
             ],
-            "Resource": "arn:aws:iam::*:user/${aws:username}"
+            "Resource": "arn:aws:iam::*:user/agha/${aws:username}"
         },
         {
             "Sid": "AllowManageOwnVirtualMFADevice",
             "Effect": "Allow",
             "Action": [
                 "iam:CreateVirtualMFADevice",
-                "iam:DeleteVirtualMFADevice"
+                "iam:DeleteVirtualMFADevice",
+                "iam:ListVirtualMFADevices"
             ],
-            "Resource": "arn:aws:iam::*:mfa/${aws:username}"
+            "Resource": "arn:aws:iam::*:mfa/agha/${aws:username}"
         },
         {
             "Sid": "AllowManageOwnUserMFA",
@@ -49,7 +49,7 @@
                 "iam:ListMFADevices",
                 "iam:ResyncMFADevice"
             ],
-            "Resource": "arn:aws:iam::*:user/${aws:username}"
+            "Resource": "arn:aws:iam::*:user/agha/${aws:username}"
         }
    ]
 }

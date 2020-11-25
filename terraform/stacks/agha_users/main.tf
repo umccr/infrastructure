@@ -65,6 +65,14 @@ module "simon" {
   email     = "simon.sadedin@vcgs.org.au"
 }
 
+module "shyrav" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "shyrav"
+  full_name = "Shyamsundar Ravishankar"
+  keybase   = "keybase:freisinger"
+  email     = "s.ravishankar@garvan.org.au"
+}
+
 # Data Manager
 module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
@@ -77,8 +85,15 @@ resource "aws_iam_user_login_profile" "sarah_dm" {
   user    = module.sarah_dm.username
   pgp_key = "keybase:freisinger"
 }
+
 ################################################################################
 # Groups
+
+# Default
+resource "aws_iam_group" "default" {
+  name = "agha_gdr_default"
+  path = "/agha/"
+}
 
 # Submitters
 resource "aws_iam_group" "submitter" {
@@ -86,25 +101,47 @@ resource "aws_iam_group" "submitter" {
   path = "/agha/"
 }
 
-################################################################################
+# Consumers
+resource "aws_iam_group" "consumer" {
+  name = "agha_gdr_consumers"
+  path = "/agha/"
+}
+
+# Data Controllers
+resource "aws_iam_group" "data_controller" {
+  name = "agha_gdr_controller"
+  path = "/agha/"
+}
+
+####################
 # Group memberships
 
+# Default
+resource "aws_iam_group_membership" "default" {
+  name  = "${aws_iam_group.default.name}_membership"
+  group = aws_iam_group.default.name
+  users = [
+    module.simon.username,
+    module.sarah_dm.username,
+    module.shyrav.username
+  ]
+}
+
+resource "aws_iam_group_policy_attachment" "default_user_policy_attachment" {
+  group      = aws_iam_group.default.name
+  policy_arn = aws_iam_policy.default_user_policy.arn
+}
+
+# Submitters
 resource "aws_iam_group_membership" "submitter" {
   name  = "${aws_iam_group.submitter.name}_membership"
   group = aws_iam_group.submitter.name
   users = [
-    module.simon.username,
-    module.sarah_dm.username,
+    module.simon.username
   ]
 }
 
-# submitter group policies
-resource "aws_iam_group_policy_attachment" "submit_default_user_policy_attachment" {
-  group      = aws_iam_group.submitter.name
-  policy_arn = aws_iam_policy.default_user_policy.arn
-}
-
-resource "aws_iam_group_policy_attachment" "submit_store_rw_policy_attachment" {
+resource "aws_iam_group_policy_attachment" "submit_staging_rw_policy_attachment" {
   group      = aws_iam_group.submitter.name
   policy_arn = aws_iam_policy.agha_staging_rw_policy.arn
 }
@@ -114,8 +151,55 @@ resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
 }
 
+# Consumers
+resource "aws_iam_group_membership" "consumer" {
+  name  = "${aws_iam_group.consumer.name}_membership"
+  group = aws_iam_group.consumer.name
+  users = [
+    module.shyrav.username
+  ]
+}
+
+resource "aws_iam_group_policy_attachment" "consumer_store_ro_policy_attachment" {
+  group      = aws_iam_group.consumer.name
+  policy_arn = aws_iam_policy.agha_store_ro_policy.arn
+}
+
+# Controllers
+resource "aws_iam_group_membership" "data_controller" {
+  name  = "${aws_iam_group.data_controller.name}_membership"
+  group = aws_iam_group.data_controller.name
+  users = [
+    module.sarah_dm.username
+  ]
+}
+
+resource "aws_iam_group_policy_attachment" "controller_additional_policy_attachment" {
+  group      = aws_iam_group.data_controller.name
+  policy_arn = aws_iam_policy.data_controller_policy.arn
+}
+
+resource "aws_iam_group_policy_attachment" "controller_staging_ro_policy_attachment" {
+  group      = aws_iam_group.data_controller.name
+  policy_arn = aws_iam_policy.agha_staging_ro_policy.arn
+}
+
+resource "aws_iam_group_policy_attachment" "controller_store_ro_policy_attachment" {
+  group      = aws_iam_group.data_controller.name
+  policy_arn = aws_iam_policy.agha_store_ro_policy.arn
+}
+
+
 ################################################################################
 # Create access policies
+
+data "template_file" "agha_staging_ro_policy" {
+  template = file("policies/bucket-ro-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
+  }
+}
 
 data "template_file" "agha_staging_rw_policy" {
   template = file("policies/bucket-rw-policy.json")
@@ -137,6 +221,18 @@ resource "aws_iam_policy" "default_user_policy" {
   name_prefix = "default_user_policy"
   path        = "/agha/"
   policy = file("policies/default-user-policy.json")
+}
+
+resource "aws_iam_policy" "data_controller_policy" {
+  name_prefix = "data_controller_policy"
+  path        = "/agha/"
+  policy = file("policies/data-controller-policy.json")
+}
+
+resource "aws_iam_policy" "agha_staging_ro_policy" {
+  name_prefix = "agha_staging_ro_policy"
+  path        = "/agha/"
+  policy      = data.template_file.agha_staging_ro_policy.rendered
 }
 
 resource "aws_iam_policy" "agha_staging_rw_policy" {

@@ -61,7 +61,8 @@ module "simon" {
   source    = "../../modules/iam_user/default_user"
   username  = "simon"
   full_name = "Simon Sadedin"
-  keybase   = "keybase:freisinger"
+  keybase   = "simonsadedin"
+  pgp_key   = "keybase:freisinger"
   email     = "simon.sadedin@vcgs.org.au"
 }
 
@@ -69,7 +70,8 @@ module "shyrav" {
   source    = "../../modules/iam_user/default_user"
   username  = "shyrav"
   full_name = "Shyamsundar Ravishankar"
-  keybase   = "keybase:freisinger"
+  keybase   = "shyrav"
+  pgp_key   = "keybase:freisinger"
   email     = "s.ravishankar@garvan.org.au"
 }
 
@@ -78,7 +80,8 @@ module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
   username  = "sarah_dm"
   full_name = "Sarah Casauria"
-  keybase   = "keybase:freisinger"
+  keybase   = "scasauria"
+  pgp_key   = "keybase:freisinger"
   email     = "sarah.casauria@mcri.edu.au"
 }
 resource "aws_iam_user_login_profile" "sarah_dm" {

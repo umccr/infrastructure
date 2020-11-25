@@ -5,7 +5,6 @@ variable "username" {
 
 variable "pgp_key" {
   type    = string
-  default = "keybase:freisinger"
 }
 
 # variables to tags

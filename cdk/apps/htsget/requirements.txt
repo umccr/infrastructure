@@ -1,11 +1,1 @@
-aws-cdk.core
-aws-cdk.aws_ec2
-aws-cdk.aws_ecs
-aws-cdk.aws_iam
-aws_cdk.aws_ssm
-aws_cdk.aws_route53
-aws_cdk.aws_route53_targets
-aws-cdk.aws_certificatemanager
-aws-cdk.aws_elasticloadbalancingv2
-aws-cdk.aws_apigatewayv2
-aws-cdk.aws_apigatewayv2_integrations
+-e .

@@ -41,20 +41,11 @@ data "aws_s3_bucket" "agha_gdr_store" {
 
 # # Dedicated user to generate long lived presigned URLs
 # # See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
-# module "agha_bot_user" {
-#   source   = "../../modules/iam_user/default_user"
-#   username = "agha_bot"
-# }
-
-# resource "aws_iam_user_policy_attachment" "ahga_bot_staging_ro" {
-#   user       = module.agha_bot_user.username
-#   policy_arn = aws_iam_policy.agha_staging_ro_policy.arn
-# }
-
-# resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
-#   user       = module.agha_bot_user.username
-#   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
-# }
+module "agha_presign" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "agha_presign"
+  pgp_key   = "keybase:freisinger"
+}
 
 # AGHA Users
 module "simon" {
@@ -75,7 +66,7 @@ module "shyrav" {
   email     = "s.ravishankar@garvan.org.au"
 }
 
-# Data Manager
+# Data Manager/Controller
 module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
   username  = "sarah_dm"
@@ -140,6 +131,7 @@ resource "aws_iam_group_membership" "submitter" {
   name  = "${aws_iam_group.submitter.name}_membership"
   group = aws_iam_group.submitter.name
   users = [
+    module.agha_presign.username,
     module.simon.username
   ]
 }

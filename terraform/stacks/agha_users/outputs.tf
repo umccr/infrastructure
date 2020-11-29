@@ -1,15 +1,15 @@
-# agha_bot
-# output "agha_bot_username" {
-#   value = "${module.agha_bot.username}"
-# }
+# agha_presign
+output "agha_presign_username" {
+  value = "${module.agha_presign.username}"
+}
 
-# output "agha_bot_access_key" {
-#   value = "${module.agha_bot.access_key}"
-# }
+output "agha_presign_access_key" {
+  value = "${module.agha_presign.access_key}"
+}
 
-# output "agha_bot_secret_access_key" {
-#   value = "${module.agha_bot.encrypted_secret_access_key}"
-# }
+output "agha_presign_secret_access_key" {
+  value = "${module.agha_presign.encrypted_secret_access_key}"
+}
 
 # sarah_dm
 output "sarah_dm_username" {

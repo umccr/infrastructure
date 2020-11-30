@@ -13,13 +13,14 @@ setuptools.setup(
 
     author="UMCCR",
 
-    package_dir={"": "stacks"},
+    package_dir={"": "htsget"},
     packages=setuptools.find_packages(where="htsget"),
 
     install_requires=[
         "aws-cdk.core",
         "aws-cdk.aws_ec2",
         "aws-cdk.aws_ecs",
+        "aws-cdk.aws_ecr",
         "aws-cdk.aws_iam",
         "aws_cdk.aws_ssm",
         "aws_cdk.aws_route53",

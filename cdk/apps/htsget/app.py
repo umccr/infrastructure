@@ -2,17 +2,26 @@
 import os
 
 from aws_cdk import core
-from stacks.goserver import GoServerStack
+from htsget.common import CommonStack
+from htsget.goserver import GoServerStack
 
 account_id = os.environ.get('CDK_DEFAULT_ACCOUNT')
 aws_region = os.environ.get('CDK_DEFAULT_REGION')
 aws_env = {'account': account_id, 'region': aws_region}
 
 htsget_props = {
-    'namespace': 'htsget-refserver'
+    'namespace': "htsget-refserver"
 }
 
 app = core.App()
+
+common = CommonStack(
+    app,
+    "htsget-common",
+    props=htsget_props,
+    env=aws_env
+)
+htsget_props['ecr_repo'] = common.ecr_repo
 
 GoServerStack(
     app,

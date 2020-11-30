@@ -2,6 +2,7 @@ from aws_cdk import (
     core,
     aws_ec2 as ec2,
     aws_ecs as ecs,
+    aws_ecr as ecr,
     aws_iam as iam,
     aws_ssm as ssm,
     aws_route53 as route53,
@@ -19,6 +20,8 @@ class GoServerStack(core.Stack):
         super().__init__(scope, id_, **kwargs)
 
         namespace = props['namespace']
+        htsget_refserver_ecr_repo: ecr.Repository = props['ecr_repo']
+        htsget_refserver_image_tag = "1.4.1"
 
         # ---
 
@@ -147,7 +150,10 @@ class GoServerStack(core.Stack):
 
         main_container: ecs.ContainerDefinition = task.add_container(
             namespace,
-            image=ecs.ContainerImage.from_registry("quay.io/victorskl/htsget-refserver:1.4.1"),
+            image=ecs.ContainerImage.from_ecr_repository(
+                repository=htsget_refserver_ecr_repo,
+                tag=htsget_refserver_image_tag,
+            ),
             essential=True,
             command=["./htsget-refserver", "-config", "/usr/src/app/config/config.json"],
             logging=ecs.LogDriver.aws_logs(stream_prefix=f"{namespace}", ),

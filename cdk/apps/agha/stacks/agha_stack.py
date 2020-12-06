@@ -52,6 +52,7 @@ class AghaStack(core.Stack):
             function_name=f"{props['namespace']}_validation_lambda",
             handler='validation.lambda_handler',
             runtime=lmbda.Runtime.PYTHON_3_7,
+            timeout=core.Duration.seconds(10),
             code=lmbda.Code.from_asset('lambdas/validation'),
             environment={
                 'STAGING_BUCKET': props['staging_bucket'],

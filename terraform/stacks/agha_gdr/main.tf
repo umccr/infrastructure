@@ -59,13 +59,6 @@ resource "aws_iam_user_policy_attachment" "ahga_bot_store_ro" {
 ################################################################################
 # Users & groups
 
-module "simonsadedin" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "simonsadedin"
-  pgp_key  = "keybase:simonsadedin"
-  email    = "simon.sadedin@vcgs.org.au"
-}
-
 module "rk_chw" {
   source   = "../../modules/iam_user/secure_user"
   username = "rk_chw"
@@ -102,7 +95,6 @@ resource "aws_iam_group" "read" {
 resource "aws_iam_group_membership" "submit_members" {
   name  = "${aws_iam_group.submit.name}_membership"
   users = [
-    "${module.simonsadedin.username}",
     "${module.rk_chw.username}"
   ]
   group = "${aws_iam_group.submit.name}"

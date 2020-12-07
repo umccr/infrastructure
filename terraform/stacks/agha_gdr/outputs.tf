@@ -1,18 +1,5 @@
 # output user details
 
-# simonsadedin
-output "simonsadedin_username" {
-  value = "${module.simonsadedin.username}"
-}
-
-output "simonsadedin_access_key" {
-  value = "${module.simonsadedin.access_key}"
-}
-
-output "simonsadedin_secret_access_key" {
-  value = "${module.simonsadedin.encrypted_secret_access_key}"
-}
-
 # rk_chw
 output "rk_chw_username" {
   value = "${module.rk_chw.username}"

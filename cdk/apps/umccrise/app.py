@@ -41,7 +41,8 @@ common_dev_props = {
 
 cicd_dev_props = {
     'namespace': 'umccrise-cicd',
-    'codebuild_project_name': codebuild_project_name
+    'codebuild_project_name': codebuild_project_name,
+    'refdata_bucket': refdata_bucket,
 }
 
 batch_props = {

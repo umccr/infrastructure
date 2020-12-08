@@ -61,7 +61,7 @@ variable "localhost_url" {
 
 variable "rds_auto_pause" {
   default = {
-    prod = false,
+    prod = false
     dev  = false
   }
   description = "Whether to keep RDS serverless alive or pause if no load"
@@ -69,7 +69,7 @@ variable "rds_auto_pause" {
 
 variable "rds_min_capacity" {
   default = {
-    prod = 1,
+    prod = 1
     dev  = 1
   }
   description = "The minimum capacity in Aurora Capacity Units (ACUs)"
@@ -77,10 +77,26 @@ variable "rds_min_capacity" {
 
 variable "rds_max_capacity" {
   default = {
-    prod = 16,
+    prod = 16
     dev  = 1
   }
   description = "The maximum capacity in Aurora Capacity Units (ACUs)"
+}
+
+variable "rds_backup_retention_period" {
+  default = {
+    prod = 7
+    dev  = 1
+  }
+  description = "RDS Aurora managed automated backup, must have 1 at least for Aurora Serverless DB"
+}
+
+variable "create_aws_backup" {
+  default = {
+    prod = 1
+    dev  = 0
+  }
+  description = "Create AWS Backup for RDS Aurora Serverless DB, 1 create, 0 not"
 }
 
 variable "slack_channel" {

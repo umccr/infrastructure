@@ -26,6 +26,7 @@ locals {
 
 ################################################################################
 # S3 buckets
+# Note: changes to public access block requires the temporary detachment of an SCP blocking it on org level
 
 resource "aws_s3_bucket" "agha_gdr_staging" {
   bucket = var.agha_gdr_staging_bucket_name
@@ -162,6 +163,73 @@ resource "aws_s3_bucket_policy" "store_bucket_policy" {
   bucket = aws_s3_bucket.agha_gdr_store.id
   policy = data.template_file.store_bucket_policy.rendered
 }
+
+##### Archive bucket
+resource "aws_s3_bucket" "agha_gdr_archive" {
+  bucket = var.agha_gdr_archive_bucket_name
+  acl    = "private"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  tags = merge(
+    local.common_tags,
+    map(
+      "Name", var.agha_gdr_archive_bucket_name
+    )
+  )
+
+  lifecycle_rule {
+    id      = "deep_archive"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      days = 180
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_archive" {
+  bucket = aws_s3_bucket.agha_gdr_archive.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+data "template_file" "archive_bucket_policy" {
+  template = file("policies/agha_bucket_policy.json")
+
+  vars = {
+    bucket_name = aws_s3_bucket.agha_gdr_archive.id
+    account_id  = data.aws_caller_identity.current.account_id
+    role_id     = aws_iam_role.s3_admin_delete.unique_id
+  }
+}
+resource "aws_s3_bucket_policy" "archive_bucket_policy" {
+  bucket = aws_s3_bucket.agha_gdr_archive.id
+  policy = data.template_file.archive_bucket_policy.rendered
+}
+
 
 ################################################################################
 # Dedicated IAM role to delete S3 objects (otherwise not allowed)

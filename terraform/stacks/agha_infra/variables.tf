@@ -6,6 +6,10 @@ variable "stack_name" {
 
 ########################################
 # S3 buckets
+variable "agha_gdr_archive_bucket_name" {
+  default = "agha-gdr-archive"
+}
+
 variable "agha_gdr_staging_bucket_name" {
   default = "agha-gdr-staging"
 }

@@ -380,12 +380,18 @@ resource "aws_sqs_queue" "s3_event_dlq" {
   tags = merge(local.default_tags)
 }
 
-# SQS Queue for S3 event delivery
+# SNS topic for S3 event fanout
+resource "aws_s3_sns_fanout" "s3_event_sns_fanout" {
+  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-fanout"
+  tags = merge(local.default_tags)
+}
+
+# SQS Queue for S3 event delivery to general S3 event consumer
 resource "aws_sqs_queue" "s3_event_queue" {
-  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
   policy = templatefile("policies/sqs_s3_primary_data_event_policy.json", {
     # Use the same name as above, if referring there will be circular dependency
-    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
     s3_primary_data_bucket_arn = data.aws_s3_bucket.s3_primary_data_bucket.arn
     s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
   })
@@ -398,32 +404,32 @@ resource "aws_sqs_queue" "s3_event_queue" {
   tags = merge(local.default_tags)
 }
 
-# Enable primary data bucket s3 event notification to SQS
+# Enable primary data bucket s3 event notification to SNS
 resource "aws_s3_bucket_notification" "s3_inventory_notification" {
   bucket = data.aws_s3_bucket.s3_primary_data_bucket.id
 
-  queue {
-    queue_arn = aws_sqs_queue.s3_event_queue.arn
-
-    events = [
-      "s3:ObjectCreated:*",
-      "s3:ObjectRemoved:*",
-    ]
-  }
+//  queue {
+//    queue_arn = aws_sqs_queue.s3_event_queue.arn
+//
+//    events = [
+//      "s3:ObjectCreated:*",
+//      "s3:ObjectRemoved:*",
+//    ]
+//  }
 }
 
 # Enable run data bucket s3 event notification to SQS
 resource "aws_s3_bucket_notification" "s3_run_data_notification" {
   bucket = data.aws_s3_bucket.s3_run_data_bucket.id
 
-  queue {
-    queue_arn = aws_sqs_queue.s3_event_queue.arn
-
-    events = [
-      "s3:ObjectCreated:*",
-      "s3:ObjectRemoved:*",
-    ]
-  }
+//  queue {
+//    queue_arn = aws_sqs_queue.s3_event_queue.arn
+//
+//    events = [
+//      "s3:ObjectCreated:*",
+//      "s3:ObjectRemoved:*",
+//    ]
+//  }
 }
 
 # Cognito

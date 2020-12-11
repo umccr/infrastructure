@@ -408,28 +408,22 @@ resource "aws_sqs_queue" "s3_event_queue" {
 resource "aws_s3_bucket_notification" "s3_inventory_notification" {
   bucket = data.aws_s3_bucket.s3_primary_data_bucket.id
 
-//  queue {
-//    queue_arn = aws_sqs_queue.s3_event_queue.arn
-//
-//    events = [
-//      "s3:ObjectCreated:*",
-//      "s3:ObjectRemoved:*",
-//    ]
-//  }
+  topic {
+    topic_arn     = s3_event_sns_fanout.topic.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = [".log", ".snakemake"]
+  }
 }
 
 # Enable run data bucket s3 event notification to SQS
 resource "aws_s3_bucket_notification" "s3_run_data_notification" {
   bucket = data.aws_s3_bucket.s3_run_data_bucket.id
 
-//  queue {
-//    queue_arn = aws_sqs_queue.s3_event_queue.arn
-//
-//    events = [
-//      "s3:ObjectCreated:*",
-//      "s3:ObjectRemoved:*",
-//    ]
-//  }
+  topic {
+    topic_arn     = s3_event_sns_fanout.topic.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = [".log", ".snakemake"]
+  }
 }
 
 # Cognito

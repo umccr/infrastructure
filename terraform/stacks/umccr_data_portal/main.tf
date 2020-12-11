@@ -381,7 +381,7 @@ resource "aws_sqs_queue" "s3_event_dlq" {
 }
 
 # SNS topic for S3 event fanout
-resource "aws_s3_sns_fanout" "s3_event_sns_fanout" {
+resource "aws_s3_sns_topic" "s3_event_sns_fanout" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-fanout"
   tags = merge(local.default_tags)
 }

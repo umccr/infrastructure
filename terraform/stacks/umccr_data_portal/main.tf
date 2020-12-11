@@ -387,7 +387,7 @@ resource "aws_s3_sns_topic" "s3_event_sns_fanout" {
 }
 
 # SQS Queue for S3 event delivery to general S3 event consumer
-resource "aws_sqs_queue" "s3_event_queue" {
+resource "aws_sqs_queue" "s3_event_queue_all" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
   policy = templatefile("policies/sqs_s3_primary_data_event_policy.json", {
     # Use the same name as above, if referring there will be circular dependency
@@ -401,6 +401,11 @@ resource "aws_sqs_queue" "s3_event_queue" {
   })
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
 
+  tags = merge(local.default_tags)
+}
+
+resource "aws_sqs_queue" "s3_event_queue_cancer_report" {
+  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-cancer-report-queue"
   tags = merge(local.default_tags)
 }
 

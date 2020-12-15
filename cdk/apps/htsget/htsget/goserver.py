@@ -269,5 +269,5 @@ class GoServerStack(core.Stack):
         core.CfnOutput(
             self,
             "HtsgetEndpoint",
-            value=custom_domain.domain_name,
+            value=custom_domain.name,
         )

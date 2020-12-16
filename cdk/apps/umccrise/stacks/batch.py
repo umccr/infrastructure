@@ -110,7 +110,6 @@ class BatchStack(core.Stack):
             instance_profile_name='UmccriseBatchInstanceProfile',
             roles=[batch_instance_role.role_name]
         )
-        batch_instance_profile.add_depends_on(batch_instance_role)
 
         ################################################################################
         # Network

@@ -16,7 +16,7 @@ variable "wts_report_trigger_file" {
 variable "workspace_wts_report_image_id" {
   default = {
     prod = "ami-0b4c6e88a004d42ec"
-    dev = "ami-0d49b1b22eabc9826"
+    dev = "ami-0b4c6e88a004d42ec"
   }
 }
 

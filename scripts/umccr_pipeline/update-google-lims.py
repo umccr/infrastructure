@@ -335,7 +335,7 @@ if __name__ == "__main__":
     # global variables
     # TODO: should be refactored in proper class variables
     library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
-    for year in ('2019', '2020'):  # TODO: this could be determined scanning though all SampleSheets
+    for year in ('2019', '2020', '2021'):  # TODO: this could be determined scanning though all SampleSheets
         library_tracking_spreadsheet[year] = get_library_sheet_from_google(year)
 
     ################################################################################

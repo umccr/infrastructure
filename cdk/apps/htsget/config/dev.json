@@ -5,7 +5,8 @@
       "host": "https://htsget.dev.umccr.org/",
       "docsDir": "./deployments/ga4gh/prod/docs/",
       "tempDir": "/tmp/",
-      "logFile": "/usr/src/app/htsget-refserver.log"
+      "logFile": "/usr/src/app/htsget-refserver.log",
+      "corsAllowedOrigins": "https://data.umccr.org, https://data.dev.umccr.org"
     },
     "reads": {
       "enabled": true,
@@ -46,7 +47,7 @@
         "createdAt": "2019-09-15T12:00:00Z",
         "updatedAt": "2020-09-04T14:40:00Z",
         "environment": "production",
-        "version": "1.4.1"
+        "version": "1.4.1_1"
       }
     },
     "variants": {
@@ -84,7 +85,7 @@
         "createdAt": "2020-08-31T08:00:00Z",
         "updatedAt": "2020-09-04T14:40:00Z",
         "environment": "production",
-        "version": "1.4.1"
+        "version": "1.4.1_1"
       }
     }
   }

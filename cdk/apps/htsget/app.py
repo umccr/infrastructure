@@ -10,7 +10,9 @@ aws_region = os.environ.get('CDK_DEFAULT_REGION')
 aws_env = {'account': account_id, 'region': aws_region}
 
 htsget_props = {
-    'namespace': "htsget-refserver"
+    'namespace': "htsget-refserver",
+    'htsget_refserver_image_tag': "1.4.1_1",
+    'cors_allowed_origins':  ["https://data.umccr.org", "https://data.dev.umccr.org"],
 }
 
 app = core.App()

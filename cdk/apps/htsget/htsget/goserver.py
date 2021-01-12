@@ -21,7 +21,8 @@ class GoServerStack(core.Stack):
 
         namespace = props['namespace']
         htsget_refserver_ecr_repo: ecr.Repository = props['ecr_repo']
-        htsget_refserver_image_tag = "1.4.1"
+        htsget_refserver_image_tag = props['htsget_refserver_image_tag']
+        cors_allowed_origins = props['cors_allowed_origins']
 
         # ---
 
@@ -236,6 +237,20 @@ class GoServerStack(core.Stack):
             self,
             f"{namespace}-apigw",
             default_domain_mapping=apigwv2.DefaultDomainMappingOptions(domain_name=custom_domain),
+            cors_preflight=apigwv2.CorsPreflightOptions(
+                allow_origins=cors_allowed_origins,
+                allow_headers=["*"],
+                allow_methods=[
+                    apigwv2.HttpMethod.GET,
+                    apigwv2.HttpMethod.OPTIONS,
+                    apigwv2.HttpMethod.HEAD,
+                    apigwv2.HttpMethod.DELETE,
+                    apigwv2.HttpMethod.POST,
+                    apigwv2.HttpMethod.PUT,
+                    apigwv2.HttpMethod.PATCH,
+                ],
+                allow_credentials=True,
+            )
         )
         http_api.add_routes(
             methods=[apigwv2.HttpMethod.ANY],

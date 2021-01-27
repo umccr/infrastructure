@@ -16,8 +16,9 @@ cdk destroy
 
 ## Architecture
 ```
-  ACM
-   |      (authz)             |           [private subnets]
+        GA4GH Passport                       GA4GH htsget
+  ACM        |                                     |
+   |   (Lambda Authz)         |           (private subnets)
 Route53 > APIGWv2 > VpcLink > | ALB > (autoscaling) ECS Fargate Cluster
                               |
 ```
@@ -56,3 +57,47 @@ Alternatively, use AWS SSM Console UI.
     aws ssm put-parameter --name '/htsget/refserver/config' --type String --tier Advanced --value file://config/dev.json --overwrite
     ```
 2. Terminate any existing running `htsget-refserver` main containers
+
+
+## Lambda Development
+
+
+[GA4GH Passport Clearinghouse](https://github.com/ga4gh-duri/ga4gh-duri.github.io/blob/master/researcher_ids/ga4gh_passport_v1.md) is implemented as AWS API Gateway v2's [Lambda Authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html). 
+
+- **TL;DR** dev workflow:
+    ```
+    make test
+    make deploy
+    ```
+
+- This lambda authorizer Python module is inside [lambdas/ppauthz](lambdas/ppauthz).
+
+- For current trusted Passport Brokers, see `TRUSTED_BROKERS` module variable in [ppauthz.py](lambdas/ppauthz/ppauthz.py).
+   
+    > 🙋‍♂️ You will need to have compliant Passport Visa Token from this list of trusted brokers; in order to call UMCCR *secured* htsget endpoints.
+
+- To run tests:
+  
+    **TL;DR:**
+    ```
+    make test
+    ```
+
+    ```
+    cd lambdas/ppauthz
+    python -m unittest
+    python -m unittest test_ppauthz.PassportAuthzUnitTest.test_handler
+    python -m unittest test_ppauthz.PassportAuthzIntegrationTest.test_handler_it
+    ```
+    > 🙋‍♂️Read more in the PyDoc string!
+
+- If you update this [lambdas/requirements.txt](lambdas/requirements.txt) file:
+  
+    **TL;DR:**
+    ```
+    make refresh_deploy
+    ```
+  
+    If you update Lambda Python dependency, make sure to delete [lambdas/.build](lambdas/.build) staging directory. Before applying `cdk diff && cdk deploy`.
+    
+    > 🙋‍♂️ Lambda Python dependency is packaged and deployed as Lambda Layer. It contains **platform dependant cryptography** library. Hence, required AWS Lambda Docker image to build and packaging it!

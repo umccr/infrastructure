@@ -1,3 +1,6 @@
+import os
+
+import docker
 from aws_cdk import (
     core,
     aws_ec2 as ec2,
@@ -11,6 +14,7 @@ from aws_cdk import (
     aws_elasticloadbalancingv2 as elbv2,
     aws_apigatewayv2 as apigwv2,
     aws_apigatewayv2_integrations as apigwv2i,
+    aws_lambda as lmbda,
 )
 
 
@@ -24,7 +28,7 @@ class GoServerStack(core.Stack):
         htsget_refserver_image_tag = props['htsget_refserver_image_tag']
         cors_allowed_origins = props['cors_allowed_origins']
 
-        # ---
+        # --- Query deployment env specific config from SSM Parameter Store
 
         cert_apse2_arn = ssm.StringParameter.from_string_parameter_name(
             self,
@@ -54,7 +58,7 @@ class GoServerStack(core.Stack):
             string_parameter_name="/htsget/domain",
         )
 
-        # ---
+        # --- Query main VPC and setup Security Groups
 
         vpc = ec2.Vpc.from_lookup(
             self,
@@ -96,7 +100,7 @@ class GoServerStack(core.Stack):
             description="Allow traffic from Load balancer to ECS service"
         )
 
-        # ---
+        # --- Setup ECS Fargate cluster
 
         config_vol = ecs.Volume(
             name="config-vol",
@@ -192,6 +196,8 @@ class GoServerStack(core.Stack):
             security_groups=[sg_ecs_service, ],
         )
 
+        # --- Setup Application Load Balancer in front of ECS cluster
+
         lb = elbv2.ApplicationLoadBalancer(
             self,
             f"{namespace}-lb",
@@ -221,11 +227,17 @@ class GoServerStack(core.Stack):
             value=lb.load_balancer_dns_name
         )
 
+        # --- Setup APIGatewayv2 HttpApi using VpcLink private integration to ALB/ECS in private subnets
+
         vpc_link = apigwv2.VpcLink(
             self,
             f"{namespace}-VpcLink",
             vpc=vpc,
             security_groups=[sg_ecs_service, sg_elb, ]
+        )
+        self.apigwv2_alb_integration = apigwv2i.HttpAlbIntegration(
+            listener=listener,
+            vpc_link=vpc_link,
         )
         custom_domain = apigwv2.DomainName(
             self,
@@ -233,7 +245,7 @@ class GoServerStack(core.Stack):
             certificate=cert_apse2,
             domain_name=domain_name.string_value,
         )
-        http_api = apigwv2.HttpApi(
+        self.http_api = apigwv2.HttpApi(
             self,
             f"{namespace}-apigw",
             default_domain_mapping=apigwv2.DefaultDomainMappingOptions(domain_name=custom_domain),
@@ -252,19 +264,13 @@ class GoServerStack(core.Stack):
                 allow_credentials=True,
             )
         )
-        http_api.add_routes(
-            methods=[apigwv2.HttpMethod.ANY],
-            path="/{proxy+}",
-            integration=apigwv2i.HttpAlbIntegration(
-                listener=listener,
-                vpc_link=vpc_link,
-            ),
-        )
         core.CfnOutput(
             self,
             "ApiEndpoint",
-            value=http_api.api_endpoint
+            value=self.http_api.api_endpoint
         )
+
+        # --- Setup DNS for the custom domain
 
         hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
             self,
@@ -286,3 +292,122 @@ class GoServerStack(core.Stack):
             "HtsgetEndpoint",
             value=custom_domain.name,
         )
+
+        # Add catch all routes
+        rt_catchall = apigwv2.HttpRoute(
+            self,
+            "CatchallRoute",
+            http_api=self.http_api,
+            route_key=apigwv2.HttpRouteKey.with_(
+                path="/{proxy+}",
+                method=apigwv2.HttpMethod.ANY
+            ),
+            integration=self.apigwv2_alb_integration
+        )
+        rt_catchall_cfn: apigwv2.CfnRoute = rt_catchall.node.default_child
+        rt_catchall_cfn.authorization_type = "AWS_IAM"
+
+        # Comment this to opt-out setting up experimental Passport + htsget
+        self.setup_ga4gh_passport()
+
+    def setup_ga4gh_passport(self):
+        """Experimental setup for GA4GH Passport + htsget
+
+        This add lambda function as authorizer hook into ApiGatewayv2 HttpApi.
+
+        Lambda function implements GA4GH Passport Clearinghouse -- claims verification logic -- to decide
+        whether to allow the said claim to pass access htsget endpoint or, deny otherwise.
+        """
+
+        # --- Setup Authz lambda function that implement GA4GH Passport Clearinghouse component
+
+        function_name = "htsget_passport_authz_lambda"
+        lmbda_deps_file = "lambdas/requirements.txt"
+        lmbda_deps_out = f"lambdas/.build/{function_name}"
+
+        # Setup Python dependencies as Lambda layer
+        if not os.path.exists(lmbda_deps_out):
+            dkr_client = docker.from_env()
+            dkr_image = dkr_client.images.pull(repository="lambci/lambda", tag="build-python3.7")
+            cmd = f"pip install -r {lmbda_deps_file} -t {lmbda_deps_out}/python"
+            dkr_client.containers.run(
+                image=dkr_image.tags[0],
+                command=cmd,
+                auto_remove=True,
+                volumes={
+                    os.getcwd(): {
+                        'bind': "/var/task",
+                        'mode': "rw",
+                    },
+                }
+            )
+
+        authzr_func = lmbda.Function(
+            self,
+            "PassportAuthzLambda",
+            function_name=function_name,
+            handler="ppauthz.handler",
+            runtime=lmbda.Runtime.PYTHON_3_7,
+            code=lmbda.Code.from_asset("lambdas/ppauthz"),
+            timeout=core.Duration.seconds(20),
+            layers=[
+                lmbda.LayerVersion(
+                    self,
+                    "PassportAuthzLambdaDeps",
+                    code=lmbda.Code.from_asset(lmbda_deps_out)
+                )
+            ]
+        )
+
+        # --- Setup GA4GH Passport ApiGatewayv2 Authorizer
+
+        authzr_uri = f"arn:aws:apigateway:{self.region}:lambda:path/2015-03-31/functions/" \
+                     f"{authzr_func.function_arn}/invocations"
+
+        authzr = apigwv2.CfnAuthorizer(
+            self,
+            "PassportAuthorizer",
+            api_id=self.http_api.http_api_id,
+            authorizer_type="REQUEST",
+            authorizer_uri=authzr_uri,
+            authorizer_result_ttl_in_seconds=300,
+            authorizer_payload_format_version="2.0",
+            identity_source=[
+                "$request.header.Authorization",
+            ],
+            enable_simple_responses=True,
+            name="PassportAuthorizer",
+        )
+
+        authzr_arn = f"arn:aws:execute-api:{self.region}:{self.account}:" \
+                     f"{self.http_api.http_api_id}/authorizers/{authzr.ref}"
+        core.CfnOutput(
+            self,
+            "PassportAuthorizerArn",
+            value=authzr_arn
+        )
+
+        # Allow ApiGatewayv2 to invoke authz lambda function
+        authzr_func.add_permission(
+            "ApiGatewayInvokePermission",
+            principal=iam.ServicePrincipal("apigateway.amazonaws.com"),
+            action="lambda:InvokeFunction",
+            source_arn=authzr_arn,
+        )
+
+        # --- Add protected endpoint routes in ApiGatewayv2 HttpApi for secured data serving with htsget backend!
+
+        # Add route protected with GA4GH Passport
+        rt_protected_pp = apigwv2.HttpRoute(
+            self,
+            "PassportProtectedRoute",
+            http_api=self.http_api,
+            route_key=apigwv2.HttpRouteKey.with_(
+                path="/reads/giab.NA12878.NIST7086.2",
+                method=apigwv2.HttpMethod.ANY
+            ),
+            integration=self.apigwv2_alb_integration
+        )
+        rt_protected_pp_cfn: apigwv2.CfnRoute = rt_protected_pp.node.default_child
+        rt_protected_pp_cfn.authorizer_id = authzr.ref
+        rt_protected_pp_cfn.authorization_type = "CUSTOM"

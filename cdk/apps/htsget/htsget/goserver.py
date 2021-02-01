@@ -328,7 +328,7 @@ class GoServerStack(core.Stack):
         # Setup Python dependencies as Lambda layer
         if not os.path.exists(lmbda_deps_out):
             dkr_client = docker.from_env()
-            dkr_image = dkr_client.images.pull(repository="lambci/lambda", tag="build-python3.7")
+            dkr_image = dkr_client.images.pull(repository="lambci/lambda", tag="build-python3.8")
             cmd = f"pip install -r {lmbda_deps_file} -t {lmbda_deps_out}/python"
             dkr_client.containers.run(
                 image=dkr_image.tags[0],
@@ -347,7 +347,7 @@ class GoServerStack(core.Stack):
             "PassportAuthzLambda",
             function_name=function_name,
             handler="ppauthz.handler",
-            runtime=lmbda.Runtime.PYTHON_3_7,
+            runtime=lmbda.Runtime.PYTHON_3_8,
             code=lmbda.Code.from_asset("lambdas/ppauthz"),
             timeout=core.Duration.seconds(20),
             layers=[

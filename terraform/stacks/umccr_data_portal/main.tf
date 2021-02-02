@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.13"
+  required_version = ">= 0.14"
 
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -15,7 +15,8 @@ terraform {
     }
 
     github = {
-      version = "~> 3.0.0"
+      version = "~> 4.3.1"
+      source = "integrations/github"
     }
   }
 }

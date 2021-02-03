@@ -66,6 +66,15 @@ module "shyrav" {
   email     = "s.ravishankar@garvan.org.au"
 }
 
+module "rk_chw" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "rk_chw"
+  full_name = "Rahul Krishnaraj"
+  keybase   = "rk_chw"
+  pgp_key   = "keybase:freisinger"
+  email     = "rahul.krishnaraj@health.nsw.gov.au"
+}
+
 # Data Manager/Controller
 module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
@@ -115,9 +124,10 @@ resource "aws_iam_group_membership" "default" {
   name  = "${aws_iam_group.default.name}_membership"
   group = aws_iam_group.default.name
   users = [
-    module.simon.username,
+    module.rk_chw.username,
     module.sarah_dm.username,
-    module.shyrav.username
+    module.shyrav.username,
+    module.simon.username,
   ]
 }
 
@@ -132,7 +142,8 @@ resource "aws_iam_group_membership" "submitter" {
   group = aws_iam_group.submitter.name
   users = [
     module.agha_presign.username,
-    module.simon.username
+    module.rk_chw.username,
+    module.simon.username,
   ]
 }
 

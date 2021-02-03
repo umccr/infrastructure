@@ -53,3 +53,16 @@ output "shyrav_access_key" {
 output "shyrav_secret_access_key" {
   value = module.shyrav.encrypted_secret_access_key
 }
+
+# rk_chw
+output "rk_chw_username" {
+  value = module.rk_chw.username
+}
+
+output "rk_chw_access_key" {
+  value = module.rk_chw.access_key
+}
+
+output "rk_chw_secret_access_key" {
+  value = module.rk_chw.encrypted_secret_access_key
+}

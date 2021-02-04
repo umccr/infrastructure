@@ -75,6 +75,15 @@ module "rk_chw" {
   email     = "rahul.krishnaraj@health.nsw.gov.au"
 }
 
+module "yingzhu" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "yingzhu"
+  full_name = "Ying Zhu"
+  keybase   = "yingzhu"
+  pgp_key   = "keybase:freisinger"
+  email     = "Ying.Zhu@health.nsw.gov.au"
+}
+
 # Data Manager/Controller
 module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
@@ -128,6 +137,7 @@ resource "aws_iam_group_membership" "default" {
     module.sarah_dm.username,
     module.shyrav.username,
     module.simon.username,
+    module.yingzhu.username,
   ]
 }
 
@@ -144,6 +154,7 @@ resource "aws_iam_group_membership" "submitter" {
     module.agha_presign.username,
     module.rk_chw.username,
     module.simon.username,
+    module.yingzhu.username,
   ]
 }
 

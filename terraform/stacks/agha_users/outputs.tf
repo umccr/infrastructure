@@ -66,3 +66,16 @@ output "rk_chw_access_key" {
 output "rk_chw_secret_access_key" {
   value = module.rk_chw.encrypted_secret_access_key
 }
+
+# yingzhu
+output "yingzhu_username" {
+  value = module.yingzhu.username
+}
+
+output "yingzhu_access_key" {
+  value = module.yingzhu.access_key
+}
+
+output "yingzhu_secret_access_key" {
+  value = module.yingzhu.encrypted_secret_access_key
+}

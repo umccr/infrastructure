@@ -1,4 +1,0 @@
-iap_jwt_token = {
-  dev  = "eyJra...<paste-here>"
-  prod = "eyJra...<paste-here>"
-}

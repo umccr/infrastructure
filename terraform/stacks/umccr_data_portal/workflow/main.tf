@@ -10,7 +10,7 @@ terraform {
 
   required_providers {
     aws = {
-      version = "~> 3.7.0"
+      version = "~> 3.26.0"
       source = "hashicorp/aws"
     }
   }
@@ -19,8 +19,6 @@ terraform {
 provider "aws" {
   region = "ap-southeast-2"
 }
-
-variable "iap_jwt_token" {}
 
 locals {
   token_desc = {
@@ -174,14 +172,6 @@ locals {
     }
     EOT
   }
-}
-
-resource "aws_ssm_parameter" "iap_jwt_token" {
-  name        = "/iap/jwt-token"
-  type        = "SecureString"
-  value       = var.iap_jwt_token[terraform.workspace]
-  tier        = local.token_tier[terraform.workspace]
-  description = local.token_desc[terraform.workspace]
 }
 
 #--- BCL Convert

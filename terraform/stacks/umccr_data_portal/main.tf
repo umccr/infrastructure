@@ -34,9 +34,8 @@ provider "aws" {
 }
 
 provider "github" {
-  # Token to be provided by GITHUB_TOKEN env variable
-  # (i.e. export GITHUB_TOKEN=xxx)
   organization = "umccr"
+  token        = data.external.get_gh_token_from_ssm.result.gh_token
 }
 
 data "aws_region" "current" {}
@@ -94,6 +93,14 @@ locals {
 
   github_repo_client = "data-portal-client"
   github_repo_apis   = "data-portal-apis"
+}
+
+data "external" "get_gh_token_from_ssm" {
+  program = ["${path.module}/scripts/get_gh_token_from_ssm.sh"]
+  query = {
+    # reusing the PAT token, but could use dedicated token with narrow scope
+    ssm_param_name = "/${local.stack_name_us}/github/pat_oauth_token"
+  }
 }
 
 ################################################################################

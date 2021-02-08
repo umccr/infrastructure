@@ -382,7 +382,7 @@ resource "aws_sqs_queue" "s3_event_dlq" {
 }
 
 # SNS topic for S3 event fanout
-resource "aws_s3_sns_topic" "s3_event_sns_fanout" {
+resource "aws_sns_topic" "s3_event_sns_fanout" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-fanout"
   tags = merge(local.default_tags)
 }
@@ -415,9 +415,9 @@ resource "aws_s3_bucket_notification" "s3_inventory_notification" {
   bucket = data.aws_s3_bucket.s3_primary_data_bucket.id
 
   topic {
-    topic_arn     = s3_event_sns_fanout.topic.arn
+    topic_arn     = aws_sns_topic.s3_event_sns_fanout.arn
     events        = ["s3:ObjectCreated:*"]
-    filter_suffix = [".log", ".snakemake"]
+    #filter_suffix = [".log", ".snakemake"]
   }
 }
 
@@ -426,9 +426,9 @@ resource "aws_s3_bucket_notification" "s3_run_data_notification" {
   bucket = data.aws_s3_bucket.s3_run_data_bucket.id
 
   topic {
-    topic_arn     = s3_event_sns_fanout.topic.arn
+    topic_arn     = aws_sns_topic.s3_event_sns_fanout.arn
     events        = ["s3:ObjectCreated:*"]
-    filter_suffix = [".log", ".snakemake"]
+    #filter_suffix = [".log", ".snakemake"]
   }
 }
 
@@ -1338,7 +1338,7 @@ resource "aws_ssm_parameter" "api_domain_name" {
 resource "aws_ssm_parameter" "s3_event_sqs_arn" {
   name  = "${local.ssm_param_key_backend_prefix}/s3_event_sqs_arn"
   type  = "String"
-  value = aws_sqs_queue.s3_event_queue.arn
+  value = aws_sqs_queue.s3_event_queue_all.arn
   tags  = merge(local.default_tags)
 }
 

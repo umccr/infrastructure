@@ -20,8 +20,7 @@ provider "registry.terraform.io/hashicorp/aws" {
 }
 
 provider "registry.terraform.io/hashicorp/github" {
-  version     = "4.3.1"
-  constraints = "~> 4.3.1"
+  version = "4.3.1"
   hashes = [
     "h1:N52LsKnHIapZxRdLdMSfHRP08rSDlsF2Ih4MxzSxfvY=",
     "zh:00bb9050d5f469aaf27b40a19da70c277ba2ed7123e3a5a6840e0ca4b08a945f",

@@ -387,6 +387,18 @@ resource "aws_sns_topic" "s3_event_sns_fanout" {
   tags = merge(local.default_tags)
 }
 
+resource "aws_sns_topic_subscription" "s3_event_sns_to_all_events_queue" {
+  topic_arn = aws_sns_topic.s3_event_sns_fanout.topic.arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.s3_event_queue_all.arn
+}
+
+resource "aws_sns_topic_subscription" "s3_event_sns_fanout_to_cancer_report" {
+  topic_arn = aws_sns_topic.s3_event_sns_fanout.topic.arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.s3_event_queue_cancer_report.arn
+}
+
 # SQS Queue for S3 event delivery to general S3 event consumer
 resource "aws_sqs_queue" "s3_event_queue_all" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
@@ -417,7 +429,6 @@ resource "aws_s3_bucket_notification" "s3_inventory_notification" {
   topic {
     topic_arn     = aws_sns_topic.s3_event_sns_fanout.arn
     events        = ["s3:ObjectCreated:*"]
-    #filter_suffix = [".log", ".snakemake"]
   }
 }
 
@@ -428,7 +439,6 @@ resource "aws_s3_bucket_notification" "s3_run_data_notification" {
   topic {
     topic_arn     = aws_sns_topic.s3_event_sns_fanout.arn
     events        = ["s3:ObjectCreated:*"]
-    #filter_suffix = [".log", ".snakemake"]
   }
 }
 

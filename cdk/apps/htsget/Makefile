@@ -4,8 +4,11 @@ install:
 test:
 	@(cd lambdas/ppauthz && python -m unittest)
 
-deploy:
-	@(cdk diff && cdk deploy --all)
+diff:
+	@cdk diff
+
+deploy: diff
+	@cdk deploy --all
 
 refresh:
 	@rm -rf lambdas/.build

@@ -32,7 +32,7 @@ TRUSTED_BROKERS = {
 
 def raise_error(message: dict):
     print(json.dumps(message))
-    raise ValueError(message)
+    raise ValueError(message.get('message', "Unexpected error occurred"))
 
 
 def extract_token(event) -> str:
@@ -119,26 +119,30 @@ def handler(event, context):
     """Lambda handler entrypoint for GA4GH Passport Clearinghouse for htsget endpoint authz"""
 
     is_authorized = False
+    message = ""
 
-    encoded_token = extract_token(event)
-    verify_jwt_structure(encoded_token)
-    claims = get_verified_jwt_claims(encoded_token)
+    try:
+        encoded_token = extract_token(event)
+        verify_jwt_structure(encoded_token)
+        claims = get_verified_jwt_claims(encoded_token)
 
-    ga4gh_visa_v1 = claims['ga4gh_visa_v1']
-    visa_type = ga4gh_visa_v1['type']
-    visa_asserted = ga4gh_visa_v1['asserted']
-    visa_value = ga4gh_visa_v1['value']
-    visa_source = ga4gh_visa_v1['source']
-    visa_by: str = ga4gh_visa_v1.get('by', "null")
+        ga4gh_visa_v1 = claims['ga4gh_visa_v1']
+        visa_type = ga4gh_visa_v1['type']
+        visa_asserted = ga4gh_visa_v1['asserted']
+        visa_value = ga4gh_visa_v1['value']
+        visa_source = ga4gh_visa_v1['source']
+        visa_by: str = ga4gh_visa_v1.get('by', "null")
 
-    # TODO ACL access rule?
-    if visa_type == "ControlledAccessGrants" and "umccr" in visa_value:
-        is_authorized = True
+        # TODO ACL access rule?
+        if visa_type == "ControlledAccessGrants" and "umccr" in visa_value:
+            is_authorized = True
+    except ValueError as e:
+        message = str(e)
 
     authz_resp = {
         'isAuthorized': is_authorized,
         'context': {
-            'visa_by': str(visa_by)
+            'message': str(message)
         }
     }
 

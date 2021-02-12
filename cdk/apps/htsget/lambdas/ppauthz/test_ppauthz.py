@@ -77,8 +77,9 @@ class PassportAuthzUnitTest(TestCase):
         cd lambdas/ppauthz
         python -m unittest test_ppauthz.PassportAuthzUnitTest.test_handler
         """
-        with self.assertRaises(ValueError):
-            ppauthz.handler(self.mock_event, None)
+        lmbda_resp = ppauthz.handler(self.mock_event, None)
+        print(lmbda_resp)
+        self.assertFalse(lmbda_resp['isAuthorized'])
 
 
 class PassportAuthzIntegrationTest(TestCase):

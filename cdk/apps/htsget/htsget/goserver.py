@@ -397,17 +397,25 @@ class GoServerStack(core.Stack):
 
         # --- Add protected endpoint routes in ApiGatewayv2 HttpApi for secured data serving with htsget backend!
 
-        # Add route protected with GA4GH Passport
-        rt_protected_pp = apigwv2.HttpRoute(
-            self,
-            "PassportProtectedRoute",
-            http_api=self.http_api,
-            route_key=apigwv2.HttpRouteKey.with_(
-                path="/reads/giab.NA12878.NIST7086.2",
-                method=apigwv2.HttpMethod.ANY
-            ),
-            integration=self.apigwv2_alb_integration
-        )
-        rt_protected_pp_cfn: apigwv2.CfnRoute = rt_protected_pp.node.default_child
-        rt_protected_pp_cfn.authorizer_id = authzr.ref
-        rt_protected_pp_cfn.authorization_type = "CUSTOM"
+        # Add route to protected resources with GA4GH Passport
+        resources = [
+            "/reads/giab.NA12878.NIST7086.2",
+            "/reads/data/giab.NA12878.NIST7086.2",
+            "/variants/giab.NA12878",
+            "/variants/data/giab.NA12878",
+        ]
+
+        for idx, res in enumerate(resources, start=1):
+            rt_protected_pp = apigwv2.HttpRoute(
+                self,
+                f"PassportProtectedRoute{idx}",
+                http_api=self.http_api,
+                route_key=apigwv2.HttpRouteKey.with_(
+                    path=f"{res}",
+                    method=apigwv2.HttpMethod.ANY
+                ),
+                integration=self.apigwv2_alb_integration
+            )
+            rt_protected_pp_cfn: apigwv2.CfnRoute = rt_protected_pp.node.default_child
+            rt_protected_pp_cfn.authorizer_id = authzr.ref
+            rt_protected_pp_cfn.authorization_type = "CUSTOM"

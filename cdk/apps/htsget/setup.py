@@ -17,6 +17,7 @@ setuptools.setup(
     packages=setuptools.find_packages(where="htsget"),
 
     install_requires=[
+        "docker",
         "aws-cdk.core",
         "aws-cdk.aws_ec2",
         "aws-cdk.aws_ecs",
@@ -29,6 +30,7 @@ setuptools.setup(
         "aws-cdk.aws_elasticloadbalancingv2",
         "aws-cdk.aws_apigatewayv2",
         "aws-cdk.aws_apigatewayv2_integrations",
+        "aws-cdk.aws_lambda",
     ],
 
     python_requires=">=3.6",

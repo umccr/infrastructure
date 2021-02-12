@@ -1,1 +1,2 @@
+-r lambdas/requirements.txt
 -e .

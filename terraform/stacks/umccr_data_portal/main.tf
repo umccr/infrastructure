@@ -1271,6 +1271,13 @@ resource "aws_ssm_parameter" "cog_app_client_id_local" {
   tags  = merge(local.default_tags)
 }
 
+resource "aws_ssm_parameter" "cog_app_client_id_stage" {
+  name  = "${local.ssm_param_key_client_prefix}/cog_app_client_id_stage"
+  type  = "String"
+  value = aws_cognito_user_pool_client.user_pool_client.id
+  tags  = merge(local.default_tags)
+}
+
 resource "aws_ssm_parameter" "oauth_domain" {
   name  = "${local.ssm_param_key_client_prefix}/oauth_domain"
   type  = "String"

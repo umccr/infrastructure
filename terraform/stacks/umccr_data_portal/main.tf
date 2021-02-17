@@ -132,6 +132,10 @@ data "aws_ssm_parameter" "rds_db_username" {
   name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
 }
 
+data "aws_ssm_parameter" "htsget_domain" {
+  name = "/htsget/domain"
+}
+
 ################################################################################
 # Query Main VPC configurations from networking stack
 
@@ -791,6 +795,11 @@ resource "aws_codebuild_project" "codebuild_client" {
     environment_variable {
       name  = "API_URL"
       value = local.api_domain
+    }
+
+    environment_variable {
+      name  = "HTSGET_URL"
+      value = data.aws_ssm_parameter.htsget_domain.value
     }
 
     environment_variable {

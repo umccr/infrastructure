@@ -11,7 +11,7 @@ aws_env = {'account': account_id, 'region': aws_region}
 
 htsget_props = {
     'namespace': "htsget-refserver",
-    'htsget_refserver_image_tag': "1.4.1_1",
+    'htsget_refserver_image_tag': "1.4.1_2",
     'cors_allowed_origins':  ["https://data.umccr.org", "https://data.dev.umccr.org"],
 }
 

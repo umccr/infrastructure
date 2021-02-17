@@ -58,6 +58,26 @@ class GoServerStack(core.Stack):
             string_parameter_name="/htsget/domain",
         )
 
+        # --- Cognito parameters are from data portal terraform stack
+
+        cog_user_pool_id = ssm.StringParameter.from_string_parameter_name(
+            self,
+            "CogUserPoolID",
+            string_parameter_name="/data_portal/client/cog_user_pool_id",
+        )
+
+        cog_app_client_id_stage = ssm.StringParameter.from_string_parameter_name(
+            self,
+            "CogAppClientIDStage",
+            string_parameter_name="/data_portal/client/cog_app_client_id_stage",
+        )
+
+        cog_app_client_id_local = ssm.StringParameter.from_string_parameter_name(
+            self,
+            "CogAppClientIDLocal",
+            string_parameter_name="/data_portal/client/cog_app_client_id_local",
+        )
+
         # --- Query main VPC and setup Security Groups
 
         vpc = ec2.Vpc.from_lookup(
@@ -115,6 +135,15 @@ class GoServerStack(core.Stack):
         task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 actions=[
+                    "s3:GetBucketLocation",
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:ListMultipartUploadParts",
+                    "s3:GetObjectTagging",
+                    "s3:GetObjectVersionTagging",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
                     "ssm:GetParameterHistory",
                     "ssm:GetParametersByPath",
                     "ssm:GetParameters",
@@ -293,6 +322,24 @@ class GoServerStack(core.Stack):
             value=custom_domain.name,
         )
 
+        cognito_authzr = apigwv2.CfnAuthorizer(
+            self,
+            "CognitoAuthorizer",
+            api_id=self.http_api.http_api_id,
+            authorizer_type="JWT",
+            identity_source=[
+                "$request.header.Authorization",
+            ],
+            name="CognitoAuthorizer",
+            jwt_configuration=apigwv2.CfnAuthorizer.JWTConfigurationProperty(
+                audience=[
+                    cog_app_client_id_stage.string_value,
+                    cog_app_client_id_local.string_value,
+                ],
+                issuer=f"https://cognito-idp.{self.region}.amazonaws.com/{cog_user_pool_id.string_value}"
+            )
+        )
+
         # Add catch all routes
         rt_catchall = apigwv2.HttpRoute(
             self,
@@ -305,7 +352,8 @@ class GoServerStack(core.Stack):
             integration=self.apigwv2_alb_integration
         )
         rt_catchall_cfn: apigwv2.CfnRoute = rt_catchall.node.default_child
-        rt_catchall_cfn.authorization_type = "AWS_IAM"
+        rt_catchall_cfn.authorizer_id = cognito_authzr.ref
+        rt_catchall_cfn.authorization_type = "JWT"
 
         # Comment this to opt-out setting up experimental Passport + htsget
         self.setup_ga4gh_passport()

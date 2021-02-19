@@ -32,6 +32,26 @@ locals {
 ################################################################################
 # Worker instance
 
+data "aws_ami" "aws_linux_2" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["amzn-ami-*-x86_64-gp2"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+data "aws_security_groups" "test" {
+  filter {
+    name   = "group-name"
+    values = ["main-vpc-sg-outbound"]
+  }
+}
+
 data "template_file" "userdata" {
   template = "${file("${path.module}/templates/userdata.tpl")}"
 
@@ -41,11 +61,13 @@ data "template_file" "userdata" {
 }
 
 resource "aws_instance" "worker_instance" {
-  ami                  = "${var.instance_ami}"
+  ami                  = "${data.aws_ami.aws_linux_2.id}"
   instance_type        = "${var.instance_type}"
   iam_instance_profile = "${var.instance_profile_name}"
 
   user_data = "${data.template_file.userdata.rendered}"
+
+  security_groups = ["${data.aws_security_groups.test.ids}"]
 
   root_block_device {
     volume_type           = "gp2"

@@ -5,10 +5,6 @@ variable "stack_name" {
   default = "primary_data_worker"
 }
 
-variable "instance_ami" {
-  default = "ami-02fd0b06f06d93dfc"
-}
-
 variable "instance_type" {
   default = "t2.micro"
 }
@@ -18,7 +14,7 @@ variable "instance_vol_size" {
 }
 
 variable "instance_profile_name" {
-  default = "AmazonEC2InstanceProfileforSSM"
+  default = "ssm_manual_instance_role"
 }
 
 ################################################################################

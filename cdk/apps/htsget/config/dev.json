@@ -6,7 +6,8 @@
       "docsDir": "./deployments/ga4gh/prod/docs/",
       "tempDir": "/tmp/",
       "logFile": "/usr/src/app/htsget-refserver.log",
-      "corsAllowedOrigins": "https://data.umccr.org, https://data.dev.umccr.org"
+      "corsAllowedOrigins": "https://data.umccr.org, https://data.dev.umccr.org",
+      "awsAssumeRole": true
     },
     "reads": {
       "enabled": true,

@@ -347,7 +347,7 @@ class GoServerStack(core.Stack):
             http_api=self.http_api,
             route_key=apigwv2.HttpRouteKey.with_(
                 path="/{proxy+}",
-                method=apigwv2.HttpMethod.ANY
+                method=apigwv2.HttpMethod.GET
             ),
             integration=self.apigwv2_alb_integration
         )

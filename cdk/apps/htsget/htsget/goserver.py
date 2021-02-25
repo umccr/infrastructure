@@ -233,9 +233,10 @@ class GoServerStack(core.Stack):
             vpc=vpc,
             internet_facing=False,
             security_group=sg_elb,
+            deletion_protection=True,
         )
-        listener = lb.add_listener(
-            "LBListener",
+        http_listener = lb.add_listener(
+            "HttpLBListener",
             port=80,
         )
         health_check = elbv2.HealthCheck(
@@ -243,7 +244,7 @@ class GoServerStack(core.Stack):
             path="/reads/service-info",
             timeout=core.Duration.seconds(5)
         )
-        listener.add_targets(
+        http_listener.add_targets(
             "LBtoECS",
             port=3000,
             protocol=elbv2.ApplicationProtocol.HTTP,
@@ -265,7 +266,7 @@ class GoServerStack(core.Stack):
             security_groups=[sg_ecs_service, sg_elb, ]
         )
         self.apigwv2_alb_integration = apigwv2i.HttpAlbIntegration(
-            listener=listener,
+            listener=http_listener,
             vpc_link=vpc_link,
         )
         custom_domain = apigwv2.DomainName(

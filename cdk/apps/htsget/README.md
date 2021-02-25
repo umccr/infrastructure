@@ -25,6 +25,9 @@ Route53 > APIGWv2 > VpcLink > | ALB > (autoscaling) ECS Fargate Cluster
 
 Architecture very similar to this article:
 - [Access Private applications on AWS Fargate using Amazon API Gateway PrivateLink](https://aws.amazon.com/blogs/compute/access-private-applications-on-aws-fargate-using-amazon-api-gateway-privatelink/).
+- [Configuring private integrations with Amazon API Gateway HTTP APIs](https://aws.amazon.com/blogs/compute/configuring-private-integrations-with-amazon-api-gateway-http-apis/)
+
+![1-ALB-Example.png](https://d2908q01vomqb2.cloudfront.net/1b6453892473a467d07372d45eb05abc2031647a/2021/02/04/1-ALB-Example.png)
 
 ![graph1.png](https://d2908q01vomqb2.cloudfront.net/1b6453892473a467d07372d45eb05abc2031647a/2019/06/17/graph1.png)
 

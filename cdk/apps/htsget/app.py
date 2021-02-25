@@ -12,7 +12,7 @@ aws_env = {'account': account_id, 'region': aws_region}
 htsget_props = {
     'namespace': "htsget-refserver",
     'htsget_refserver_image_tag': "1.4.1_2",
-    'cors_allowed_origins':  ["https://data.umccr.org", "https://data.dev.umccr.org"],
+    'cors_allowed_origins': ["https://data.umccr.org", "https://data.dev.umccr.org"],
 }
 
 app = core.App()
@@ -31,5 +31,14 @@ GoServerStack(
     props=htsget_props,
     env=aws_env
 )
+
+tags = {
+    'Stack': htsget_props['namespace'],
+    'Creator': "cdk",
+    'Environment': account_id,
+}
+
+for k, v in tags.items():
+    core.Tags.of(app).add(key=k, value=v)
 
 app.synth()

@@ -345,6 +345,14 @@ resource "aws_sqs_queue" "germline_queue" {
   tags = merge(local.default_tags)
 }
 
+resource "aws_sqs_queue" "tn_queue" {
+  name = "${local.stack_name_dash}-tn-queue"
+  fifo_queue = true
+  content_based_deduplication = true
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  tags = merge(local.default_tags)
+}
+
 resource "aws_sqs_queue" "notification_queue" {
   name = "${local.stack_name_dash}-notification-queue.fifo"
   fifo_queue = true
@@ -1412,5 +1420,12 @@ resource "aws_ssm_parameter" "sqs_germline_queue_arn" {
   name  = "${local.ssm_param_key_backend_prefix}/sqs_germline_queue_arn"
   type  = "String"
   value = aws_sqs_queue.germline_queue.arn
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "sqs_tn_queue_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_tn_queue_arn"
+  type  = "String"
+  value = aws_sqs_queue.tn_queue.arn
   tags  = merge(local.default_tags)
 }

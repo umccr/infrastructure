@@ -2,11 +2,11 @@
   "htsgetConfig": {
     "props": {
       "port": "3000",
-      "host": "https://htsget.dev.umccr.org/",
+      "host": "https://htsget.prod.umccr.org/",
       "docsDir": "./deployments/ga4gh/prod/docs/",
       "tempDir": "/tmp/",
       "logFile": "/usr/src/app/htsget-refserver.log",
-      "corsAllowedOrigins": "https://data.umccr.org, https://data.dev.umccr.org",
+      "corsAllowedOrigins": "https://data.umccr.org, https://data.prod.umccr.org",
       "awsAssumeRole": true
     },
     "reads": {

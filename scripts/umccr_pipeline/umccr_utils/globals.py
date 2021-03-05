@@ -33,7 +33,7 @@ METADATA_COLUMN_NAMES = {
   "override_cycles": "OverrideCycles",  # The Override cycles list for this run
   "secondary_analysis": "Workflow",  # ?
   "coverage": "Coverage (X)",  # ?
-  "idt_index": "IDT Index , unless stated",  # FIXME - this is a terrible column name
+  "truseq_index": "TruSeq Index, unless stated",  # FIXME - this is a terrible column name
   "run": "Run#",
   "comments": "Comments",
   "rrna": "rRNA",

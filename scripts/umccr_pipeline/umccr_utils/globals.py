@@ -108,6 +108,12 @@ LIBRARY_REGEX_STR["id"] = r"(?:{}|{})(?:{}|{})?".format(
     EXPERIMENT_REGEX_STR["rerun"]
 )
 
+LIBRARY_REGEX_STR["year"] = r"{}(?:{}|{})?".format(
+    LIBRARY_REGEX_STR["year"],
+    EXPERIMENT_REGEX_STR["top_up"],
+    EXPERIMENT_REGEX_STR["rerun"]
+)
+
 SAMPLE_REGEX_OBJS = {
     # Sample ID: https://regex101.com/r/Z7fvHt/1
     "sample_id": re.compile(SAMPLE_ID_REGEX_STR["sample_id"]),

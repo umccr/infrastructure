@@ -26,9 +26,12 @@ fi
 export AWS_DEFAULT_REGION="ap-southeast-2"
 CLOUDWATCH_NAMESPACE="UMCCRISE"
 CONTAINER_MOUNT_POINT="/work"
-INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type/)
-AMI_ID=$(curl http://169.254.169.254/latest/meta-data/ami-id/)
+METADATA_TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+INSTANCE_TYPE=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/instance-type/)
+AMI_ID=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/ami-id/)
 UMCCRISE_VERSION=$(umccrise --version | sed 's/umccrise, version //') #get rid of unnecessary version text
+REFDATA_DIR="/work/reference_data.git"
+DVC_CACHE_DIR="/work/dvc/cache/"
 
 
 function timer { # arg?: command + args
@@ -74,17 +77,25 @@ job_output_dir=/work/output/${S3_INPUT_DIR}-${timestamp}
 mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,validation}
 
 # Install the AWS CLI
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
+curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -qq awscliv2.zip
 ./aws/install
 
-echo "PULL ref data from S3 bucket"
-# timer aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
-git clone https://github.com/umccr/reference_data reference_data
-cd reference_data
+echo "PULL referenece data"
+# clone the refData repo making sure we are not clashing with another process
+while [ -d "$REFDATA_DIR" ]; do
+  echo "Refdata dir already exists. Creating new one..."
+  REFDATA_DIR="${REFDATA_DIR}_1"
+done
+git clone https://github.com/umccr/reference_data $REFDATA_DIR
+cd $REFDATA_DIR
+
+# use a common cache dir for all DVC repos/processes
+mkdir -p $DVC_CACHE_DIR
+dvc cache dir $DVC_CACHE_DIR
 dvc config cache.type reflink,hardlink,symlink
 timer dvc pull
-cd ..
+cd /
 publish S3PullRefGenome $duration
 
 echo "PULL input (bcbio results) from S3 bucket"
@@ -95,7 +106,7 @@ echo "umccrise version:"
 umccrise --version
 
 echo "RUN umccrise"
-timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes /reference_data/genomes
+timer umccrise /work/bcbio_project/${S3_INPUT_DIR} -j ${avail_cpus} -o ${job_output_dir} --genomes ${REFDATA_DIR}/genomes
 publish RunUMCCRISE $duration
 
 echo "PUSH results"

@@ -16,11 +16,11 @@ class CICDStack(core.Stack):
         refdata = s3.Bucket.from_bucket_attributes(
             self,
             'reference_data',
-            bucket_name='umccr-refdata-dev'
+            bucket_name=props['refdata_bucket'],
         )
 
         build_env = cb.BuildEnvironment(
-            build_image=cb.LinuxBuildImage.from_docker_registry("docker:dind"),
+            build_image=cb.LinuxBuildImage.STANDARD_4_0,
             privileged=True,
             compute_type=cb.ComputeType.LARGE)
 

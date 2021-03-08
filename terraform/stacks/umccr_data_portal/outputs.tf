@@ -62,22 +62,6 @@ output "LAMBDA_SECURITY_GROUP_IDS" {
   value = aws_ssm_parameter.lambda_security_group_ids.value
 }
 
-output "SSM_KEY_NAME_FULL_DB_URL" {
-  value = aws_ssm_parameter.ssm_key_name_full_db_url.value
-}
-
-output "SSM_KEY_NAME_DJANGO_SECRET_KEY" {
-  value = aws_ssm_parameter.ssm_key_name_django_secret_key.value
-}
-
-output "SSM_KEY_NAME_LIMS_SPREADSHEET_ID" {
-  value = aws_ssm_parameter.ssm_key_name_lims_spreadsheet_id.value
-}
-
-output "SSM_KEY_NAME_LIMS_SERVICE_ACCOUNT_JSON" {
-  value = aws_ssm_parameter.ssm_key_name_lims_service_account_json.value
-}
-
 output "API_DOMAIN_NAME" {
   value = aws_ssm_parameter.api_domain_name.value
 }
@@ -96,16 +80,4 @@ output "CERTIFICATE_ARN" {
 
 output "WAF_NAME" {
   value = aws_ssm_parameter.waf_name.value
-}
-
-output "SERVERLESS_DEPLOYMENT_BUCKET" {
-  value = aws_ssm_parameter.serverless_deployment_bucket.value
-}
-
-output "SLACK_CHANNEL" {
-  value = aws_ssm_parameter.slack_channel.value
-}
-
-output "SSM_KEY_NAME_IAP_AUTH_TOKEN" {
-  value = aws_ssm_parameter.ssm_key_name_iap_auth_token.value
 }

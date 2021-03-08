@@ -26,7 +26,18 @@
                 "sqs:ReceiveMessage",
                 "sqs:DeleteMessage",
                 "sqs:GetQueueAttributes",
-                "ssm:*"
+                "sqs:ListQueues",
+                "sqs:ListQueueTags",
+                "sqs:SendMessage",
+                "sqs:GetQueueUrl",
+                "sqs:ChangeMessageVisibility",
+                "sqs:SendMessageBatch",
+                "sqs:DeleteMessageBatch",
+                "sqs:ChangeMessageVisibilityBatch",
+                "ssm:GetParameterHistory",
+                "ssm:GetParametersByPath",
+                "ssm:GetParameters",
+                "ssm:GetParameter"
             ],
             "Resource": "*"
         }

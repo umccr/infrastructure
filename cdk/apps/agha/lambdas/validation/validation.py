@@ -1,25 +1,105 @@
 import os
-import csv
+import io
+import re
 import json
 import boto3
 import http.client
+import pandas as pd
 
+MANIFEST_REQUIRED_COLUMNS = ('filename', 'checksum', 'agha_study_id')
+AWS_REGION = boto3.session.Session().region_name
 STAGING_BUCKET = os.environ.get('STAGING_BUCKET')
-SLACK_HOST = os.environ.get("SLACK_HOST")
-SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL")
-HEADERS = {
-    'Content-Type': 'application/json',
-}
+SLACK_HOST = os.environ.get('SLACK_HOST')
+SLACK_CHANNEL = os.environ.get('SLACK_CHANNEL')
+MANAGER_EMAIL = os.environ.get('MANAGER_EMAIL')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+HEADERS = {'Content-Type': 'application/json'}
+EMAIL_SUBJECT = '[AGHA service] Submission received'
+aws_id_pattern = '[0-9A-Z]{21}'
+email_pattern = '[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+USER_RE = re.compile(f"AWS:({aws_id_pattern})")
+SSO_RE = re.compile(f"AWS:({aws_id_pattern}):({email_pattern})")
 
 s3_client = boto3.client('s3')
 ssm_client = boto3.client('ssm')
+iam_client = boto3.client('iam')
+ses_client = boto3.client('ses',region_name=AWS_REGION)
 SLACK_WEBHOOK_ENDPOINT = ssm_client.get_parameter(
     Name='/slack/webhook/endpoint',
     WithDecryption=True
     )['Parameter']['Value']
+validation_messages = list()
 
 
-# TODO: use common Slack lambda or support better message format
+def get_name_email_from_principalid(principal_id):
+    if USER_RE.fullmatch(principal_id):
+        user_id = re.search(USER_RE, principal_id).group(1)
+        user_list = iam_client.list_users()
+        for user in user_list['Users']:
+            if user['UserId'] == user_id:
+                username = user['UserName']
+        user_details = iam_client.get_user(UserName=username)
+        tags = user_details['User']['Tags']
+        for tag in tags:
+            if tag['Key'] == 'email':
+                email = tag['Value']
+        return username, email
+    elif SSO_RE.fullmatch(principal_id):
+        email = re.search(SSO_RE, principal_id).group(2)
+        username = email.split('@')[0]
+        return username, email
+    else:
+        print(f"Unsupported principalId format")
+        return None, None
+
+
+def make_email_body_html(submission, submitter, messages):
+    body_html = f"""
+    <html>
+        <head></head>
+        <body>
+            <h1>{submission}</h1>
+            <p>New AGHA submission rceived from {submitter}</p>
+            <p>This is a generated message, please do not reply</p>
+            <h2>Quick validation</h2>
+            PLACEHOLDER
+        </body>
+    </html>"""
+    insert = ''
+    for msg in messages:
+        insert += f"{msg}<br>\n"
+    body_html = body_html.replace('PLACEHOLDER', insert)
+    return body_html
+
+
+def send_email(recipients, sender, subject_text, body_html):
+    try:
+        #Provide the contents of the email.
+        response = ses_client.send_email(
+            Destination={
+                'ToAddresses': recipients,
+            },
+            Message={
+                'Subject': {
+                    'Charset': 'utf8',
+                    'Data': subject_text,
+                },
+                'Body': {
+                    'Html': {
+                        'Charset': 'utf8',
+                        'Data': body_html,
+                    }
+                }
+            },
+            Source=sender,
+        )
+    # Display an error if something goes wrong
+    except ClientError as e:
+        return(e.response['Error']['Message'])
+    else:
+        return("Email sent! Message ID:" + response['MessageId'] )
+
+
 def call_slack_webhook(topic, title, message):
     connection = http.client.HTTPSConnection(SLACK_HOST)
 
@@ -41,32 +121,40 @@ def call_slack_webhook(topic, title, message):
     return response.status
 
 
-def remove_prefix(text, prefix):
-    if text.startswith(prefix):
-        return text[len(prefix):]
-    return text
+def get_manifest_df(prefix: str):
+    global STAGING_BUCKET
+    global validation_messages
+    print(f"Getting manifest from : {STAGING_BUCKET}/{prefix}")
+    try:
+        obj = s3_client.get_object(Bucket=STAGING_BUCKET, Key=f"{prefix}/manifest.txt")
+    except Exception as e:
+        print(f"Error trying to read manifest S3 object: {e}")
+        validation_messages.append(f"Error trying to read manifest S3 object: {e}")
+        return None
 
-# TODO: use pandas DataFrames for better analysis?
-# def get_manifest_df(prefix: str):
-#     obj = s3_client.get_object(Bucket=STAGING_BUCKET, Key=f"{prefix}/manifest.txt")
-#     return pd.read_csv(obj['Body'], sep='\t')
+    try:
+        df = pd.read_csv(io.BytesIO(obj['Body'].read()), sep='\t', encoding='utf8')
+    except Exception as e:
+        print(f"Error trying convert manifest into DataFrame: {e}")
+        validation_messages.append(f"Error trying convert manifest into DataFrame: {e}")
+        return None
+
+    return df
 
 
-def get_manifest(prefix: str):
-    obj = s3_client.get_object(Bucket=STAGING_BUCKET, Key=f"{prefix}/manifest.txt")
-    lines = obj['Body'].read().decode('utf-8').split('\n')
-    reader = csv.DictReader(lines, delimiter='\t')
-    manifest = list()
-    for row in reader:
-        manifest.append(row)
-    return manifest
+def check_manifest_headers(manifest_df):
+    global validation_messages
+    manifest_ok = True
 
+    if not manifest_df:
+        validation_messages.append("No manifest to read!")
+        return False
 
-def get_filenames_from_manifest(manifest):
-    filenames = list()
-    for item in manifest:
-        filenames.append(item['filename'])
-    return filenames
+    for col_name in MANIFEST_REQUIRED_COLUMNS:
+        if col_name not in manifest_df.columns:
+            manifest_ok = False
+            validation_messages.append(f"Column '{col_name}' not found in manifest!")
+    return manifest_ok
 
 
 def get_listing(prefix: str):
@@ -99,48 +187,73 @@ def extract_filenames(listing: list):
 
 def lambda_handler(event, context):
     print(f"Received event: {json.dumps(event)}")
+    global validation_messages
 
     message = event['Records'][0]['Sns']['Message']
     print(f"Extracted message: {message}")
     message = json.loads(message)
 
-    bucket_name = message["Records"][0]["s3"]["bucket"]["name"]  # TODO: should probably be more robust
+    bucket_name = message["Records"][0]["s3"]["bucket"]["name"]
     if bucket_name != STAGING_BUCKET:
         raise ValueError(f"Buckets don't match received {bucket_name}, expected {STAGING_BUCKET}")
+
     obj_key = message["Records"][0]["s3"]["object"]["key"]
     submission_prefix = os.path.dirname(obj_key)
     print(f"Submission with prefix: {submission_prefix}")
+    validation_messages.append(f"Validation messages:")
 
-    messages = list()
-    manifest = get_manifest(submission_prefix)
-    message = f"Entries in manifest: {len(manifest)}"
-    print(message)
-    messages.append(message)
+    msg_record = msg_record = message['Records'][0]
+    if msg_record.get('eventSource') == 'aws:s3' and msg_record.get('userIdentity'):
+        principal_id = msg_record['userIdentity']['principalId']
+        name, email = get_name_email_from_principalid(principal_id)
+        print(f"Extracted name/email: {name}/{email}")
 
-    s3_files = set(get_listing(submission_prefix))
-    message = f"Entries on S3: {len(s3_files)}"
-    print(message)
-    messages.append(message)
+    # Build validation messages
+    manifest_df = get_manifest_df(submission_prefix)
 
-    manifest_files = set(get_filenames_from_manifest(manifest))
-    files_not_on_s3 = manifest_files.difference(s3_files)
-    message = f"Entries in manifest, but not on S3: {len(files_not_on_s3)}"
-    print(message)
-    messages.append(message)
+    if manifest_df is not None:
+        check_manifest_headers(manifest_df)
 
-    files_not_in_manifeset = s3_files.difference(manifest_files)
-    message = f"Entries on S3, but not in manifest: {len(files_not_in_manifeset)}"
-    print(message)
-    messages.append(message)
+        message = f"Entries in manifest: {len(manifest_df)}"
+        print(message)
+        validation_messages.append(message)
 
-    files_in_both = manifest_files.intersection(s3_files)
-    message = f"Entries common in manifest and S3: {len(files_in_both)}"
-    print(message)
-    messages.append(message)
+        s3_files = set(get_listing(submission_prefix))
+        message = f"Entries on S3 (including manifest): {len(s3_files)}"
+        print(message)
+        validation_messages.append(message)
+
+        manifest_files = set(manifest_df['filename'].to_list())
+        files_not_on_s3 = manifest_files.difference(s3_files)
+        message = f"Entries in manifest, but not on S3: {len(files_not_on_s3)}"
+        print(message)
+        validation_messages.append(message)
+
+        files_not_in_manifeset = s3_files.difference(manifest_files)
+        message = f"Entries on S3, but not in manifest: {len(files_not_in_manifeset)}"
+        print(message)
+        validation_messages.append(message)
+
+        files_in_both = manifest_files.intersection(s3_files)
+        message = f"Entries common in manifest and S3: {len(files_in_both)}"
+        print(message)
+        validation_messages.append(message)
 
     slack_response = call_slack_webhook(
         topic="AGHA submission quick validation",
-        title=f"Submission: {submission_prefix}",
-        message='\n'.join(messages)
+        title=f"Submission: {submission_prefix} ({name})",
+        message='\n'.join(validation_messages)
     )
     print(f"Slack call response: {slack_response}")
+
+    print(f"Sending email to {name}/{email}")
+    response = send_email(
+        recipients=[MANAGER_EMAIL, email],
+        sender=SENDER_EMAIL,
+        subject_text=EMAIL_SUBJECT,
+        body_html=make_email_body_html(
+            submission=submission_prefix,
+            submitter=name,
+            messages=validation_messages)
+    )
+    print(f"Email send response: {response}")

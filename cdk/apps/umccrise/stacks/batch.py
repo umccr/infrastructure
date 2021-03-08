@@ -27,23 +27,23 @@ class BatchStack(core.Stack):
 
         ################################################################################
         # Set up permissions
-        ro_buckets = set()
+        ro_buckets = list()
         for bucket in props['ro_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
                 self,
                 bucket,
                 bucket_name=bucket
             )
-            ro_buckets.add(tmp_bucket)
+            ro_buckets.append(tmp_bucket)
 
-        rw_buckets = set()
+        rw_buckets = list()
         for bucket in props['rw_buckets']:
             tmp_bucket = s3.Bucket.from_bucket_name(
                 self,
                 bucket,
                 bucket_name=bucket
             )
-            rw_buckets.add(tmp_bucket)
+            rw_buckets.append(tmp_bucket)
 
         batch_service_role = iam.Role(
             self,
@@ -144,7 +144,9 @@ class BatchStack(core.Stack):
             }
         ]
 
-        # Set up custom user data to configure the Batch instances
+        ##### Set up custom user data to configure the Batch instances
+
+        # Set up local assets/files to be uploaded to S3 (so they are available when UserData requires them)
         umccrise_wrapper_asset = assets.Asset(
             self,
             'UmccriseWrapperAsset',
@@ -159,6 +161,15 @@ class BatchStack(core.Stack):
         )
         user_data_asset.grant_read(batch_instance_role)
 
+        cw_agent_config_asset = assets.Asset(
+            self,
+            'CwAgentConfigAsset',
+            path=os.path.join(dirname, '..', 'assets', "cw-agent-config-addon.json")
+        )
+        cw_agent_config_asset.grant_read(batch_instance_role)
+
+        # Now create the actual UserData
+        # I.e. download the batch-user-data asset and run it with required parameters
         user_data = ec2.UserData.for_linux()
         local_path = user_data.add_s3_download_command(
             bucket=user_data_asset.bucket,
@@ -166,7 +177,7 @@ class BatchStack(core.Stack):
         )
         user_data.add_execute_file_command(
             file_path=local_path,
-            arguments=f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key}"
+            arguments=f"s3://{umccrise_wrapper_asset.bucket.bucket_name}/{umccrise_wrapper_asset.s3_object_key} s3://{cw_agent_config_asset.bucket.bucket_name}/{cw_agent_config_asset.s3_object_key}"
         )
 
         # Generate user data wrapper to comply with LaunchTemplate required MIME multi-part archive format for user data
@@ -179,8 +190,8 @@ class BatchStack(core.Stack):
         # install AWS CLI, as it's unexpectedly missing from the AWS Linux 2 AMI...
         mime_wrapper.add_commands('yum -y install unzip')
         mime_wrapper.add_commands('cd /opt')
-        mime_wrapper.add_commands('curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
-        mime_wrapper.add_commands('unzip awscliv2.zip')
+        mime_wrapper.add_commands('curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"')
+        mime_wrapper.add_commands('unzip -qq awscliv2.zip')
         mime_wrapper.add_commands('sudo ./aws/install --bin-dir /usr/bin')
         # insert our actual user data payload
         mime_wrapper.add_commands(user_data.render())
@@ -192,7 +203,10 @@ class BatchStack(core.Stack):
             launch_template_name='UmccriseBatchComputeLaunchTemplate',
             launch_template_data={
                 'userData': core.Fn.base64(mime_wrapper.render()),
-                'blockDeviceMappings': block_device_mappings
+                'blockDeviceMappings': block_device_mappings,
+                'metadataOptions': {
+                    'httpTokens' : 'required'
+                }
             }
         )
 
@@ -203,7 +217,7 @@ class BatchStack(core.Stack):
 
         my_compute_res = batch.ComputeResources(
             type=(batch.ComputeResourceType.SPOT if props['compute_env_type'].lower() == 'spot' else batch.ComputeResourceType.ON_DEMAND),
-            allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+            allocation_strategy=batch.AllocationStrategy.BEST_FIT,
             desiredv_cpus=0,
             maxv_cpus=320,
             minv_cpus=0,
@@ -214,10 +228,14 @@ class BatchStack(core.Stack):
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE,
-                # availability_zones=["ap-southeast-2a"]
+                availability_zones=["ap-southeast-2a"]
             ),
-            security_groups=[batch_security_group]
-            # compute_resources_tags=core.Tag('Creator', 'Batch')
+            security_groups=[batch_security_group],
+            compute_resources_tags={
+                'Creator': 'Batch',
+                'Stack': 'umccrise',
+                'Name': 'BatchWorker'
+                }
         )
         # XXX: How to add more than one tag above??
         # https://github.com/aws/aws-cdk/issues/7350
@@ -226,7 +244,7 @@ class BatchStack(core.Stack):
         my_compute_env = batch.ComputeEnvironment(
             self,
             'UmccriseBatchComputeEnv',
-            compute_environment_name="cdk-umccr_ise-batch-compute-env",
+            compute_environment_name="cdk-umccrise-batch-compute-env",
             service_role=batch_service_role,
             compute_resources=my_compute_res
         )
@@ -290,6 +308,7 @@ class BatchStack(core.Stack):
             job_definition_name='cdk-umccrise-job-definition',
             parameters={'vcpus': '1'},
             container=job_container,
+            retry_attempts=2,
             timeout=core.Duration.hours(5)
         )
 

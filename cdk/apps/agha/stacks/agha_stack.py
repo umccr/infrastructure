@@ -16,10 +16,21 @@ class AghaStack(core.Stack):
             assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole'),
-                iam.ManagedPolicy.from_aws_managed_policy_name('AmazonSSMReadOnlyAccess'),  # TODO: restrict!
-                iam.ManagedPolicy.from_aws_managed_policy_name('AmazonS3ReadOnlyAccess')  # TODO: restrict!
+                iam.ManagedPolicy.from_aws_managed_policy_name('AmazonSSMReadOnlyAccess'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('AmazonS3ReadOnlyAccess'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('IAMReadOnlyAccess')
             ]
         )
+        lambda_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ses:SendEmail",
+                    "ses:SendRawEmail"
+                ],
+                resources=["*"]
+            )
+        )
+
 
         pandas_layer = lmbda.LayerVersion(
             self,
@@ -41,26 +52,14 @@ class AghaStack(core.Stack):
             function_name=f"{props['namespace']}_validation_lambda",
             handler='validation.lambda_handler',
             runtime=lmbda.Runtime.PYTHON_3_7,
+            timeout=core.Duration.seconds(10),
             code=lmbda.Code.from_asset('lambdas/validation'),
             environment={
                 'STAGING_BUCKET': props['staging_bucket'],
                 'SLACK_HOST': props['slack_host'],
-                'SLACK_CHANNEL': props['slack_channel']
-            },
-            role=lambda_role
-        )
-
-        lmbda.Function(
-            self,
-            'PlaygroundLambda',
-            function_name=f"{props['namespace']}_playground_lambda",
-            handler='playground.lambda_handler',
-            runtime=lmbda.Runtime.PYTHON_3_7,
-            code=lmbda.Code.from_asset('lambdas/playground'),
-            environment={
-                'STAGING_BUCKET': props['staging_bucket'],
-                'SLACK_HOST': props['slack_host'],
-                'SLACK_CHANNEL': props['slack_channel']
+                'SLACK_CHANNEL': props['slack_channel'],
+                'MANAGER_EMAIL': props['manager_email'],
+                'SENDER_EMAIL': props['sender_email']
             },
             role=lambda_role,
             layers=[

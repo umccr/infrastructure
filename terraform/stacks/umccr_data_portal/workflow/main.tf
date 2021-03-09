@@ -116,58 +116,54 @@ locals {
   }
 
   germline_wfl_version = {
-    dev  = "0.2-inputcsv-redir"
-    prod = "0.2-inputcsv-redir-8277438"
+    dev  = "3.7.5--1.3.5"
+    prod = "3.7.5--1.3.5-<commit-id>"  # TODO
   }
 
   germline_input = {
     dev = <<-EOT
     {
-      "sample-name": "PLACEHOLDER",
-      "fastq-directory": {
-        "class": "Directory",
-        "location": "PLACEHOLDER"
-      },
-      "fastq-list": {
-        "class": "File",
-        "location": "PLACEHOLDER"
-      },
-      "refdata-dragen": {
-        "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/3.5.2_ht.tar"
-      },
-      "sites-somalier": {
+      "sample_name": null,
+      "fastq_list_rows": null,
+      "sites_somalier": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/somalier/sites.hg38.vcf.gz"
       },
-      "reference-somalier": {
+      "genome_version": "hg38",
+      "hla_reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/hg38.fa"
+        "location": "gds://umccr-refdata-dev/optitype/hla_reference_dna.fasta"
+      }
+      "reference_fasta": {
+        "class": "File",
+        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"
+      },
+      "reference_tar_dragen": {
+        "class": "File",
+        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
       }
     }
     EOT
     prod = <<-EOT
     {
-      "sample-name": "PLACEHOLDER",
-      "fastq-directory": {
-        "class": "Directory",
-        "location": "PLACEHOLDER"
-      },
-      "fastq-list": {
-        "class": "File",
-        "location": "PLACEHOLDER"
-      },
-      "refdata-dragen": {
-        "class": "File",
-        "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/3.5.2_ht.tar"
-      },
-      "sites-somalier": {
+      "sample_name": null,
+      "fastq_list_rows": null,
+      "sites_somalier": {
         "class": "File",
         "location": "gds://umccr-refdata-prod/somalier/sites.hg38.vcf.gz"
       },
-      "reference-somalier": {
+      "genome_version": "hg38",
+      "hla_reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/hg38.fa"
+        "location": "gds://umccr-refdata-prod/optitype/hla_reference_dna.fasta"
+      }
+      "reference_fasta": {
+        "class": "File",
+        "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/hg38.fa"
+      },
+      "reference_tar_dragen": {
+        "class": "File",
+        "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
       }
     }
     EOT

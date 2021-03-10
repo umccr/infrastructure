@@ -37,11 +37,12 @@ XXX
 2. Update the base conda environment: `conda update -n base conda`
    
 3. Create & activate an environment
-    * `conda env create --name samplesheet_check`
+    * `conda create --name samplesheet_check`
     * `conda activate samplesheet_check`
    
 4. Install git 
-    * `conda install -c anaconda git`
+    * `conda install -c conda-forge git`
+    * `git --version`  (must be greater than 2.25)
    
 5. Head to the conda prefix directory and create the following subdirectories:
    > On WINDOWS you can use the `%CONDA_PREFIX%` env var.
@@ -55,7 +56,7 @@ XXX
    The following command will generate the `google_secret.json` file
 
    ```shell
-   aws ssm get-parameter "${ssm_key}" --with-decryption | \
+   aws ssm get-parameter --name "${ssm_key}" --with-decryption | \
    jq --raw-output '.Parameter.Value | fromjson' > google_secret.json 
    ```
 
@@ -63,7 +64,11 @@ XXX
 7. Set env vars in `activate.d`:  
    > This will make sure the environment variable GSPREAD_PANDAS_CONFIG_DIR is set when the conda env is activated  
    
-   `echo set GSPREAD_PANDAS_CONFIG_DIR=^%CONDA_PREFIX^%\secrets >> %CONDA_PREFIX%\etc\conda\activate.d\env_vars.bat`
+   * `echo set GSPREAD_PANDAS_CONFIG_DIR=^%CONDA_PREFIX^%\secrets >> %CONDA_PREFIX%\etc\conda\activate.d\env_vars.bat`
+   
+   > Confirm with
+   
+   * type %CONDA_PREFIX%\etc\conda\activate.d\env_vars.bat
    
 8. Install the infrastructure repo:
    > Installed under %CONDA_PREFIX%\git\infrastructure.  
@@ -74,8 +79,11 @@ XXX
    cd git\infrastructure
    # Initialise directory and activate spare checkout
    git init
-   git sparse checkout
-   echo scripts/umccr_pipeline >> .git/info/sparse-checkout
+   # Initialise and set sparse checkout
+   git sparse-checkout init --cone
+   git sparse-checkout set scripts\umccr_pipeline
+   # Confirm with
+   type .git\info\sparse-checkout
    # Add infrastructure remote to folder
    git remote add -f origin https://github.com/umccr/infrastructure.git
    # Pull
@@ -89,12 +97,12 @@ XXX
    > samplesheet_check.bat
    
    ```commandline
-   %windir%\system32\cmd.exe /k ""%HOMEPATH%\Anaconda3\Scripts\activate.bat" "%HOMEPATH%\Anaconda3\envs\samplesheet_check" && python "%HOMEPATH%\Anaconda3\envs\samplesheet_check\git\infrastructure\scripts\umccr_pipeline\samplesheet-check-gui-wrapper.py" && exit"```
+   %windir%\system32\cmd.exe /k ""%HOMEPATH%\Anaconda3\Scripts\activate.bat" "%HOMEPATH%\Anaconda3\envs\samplesheet_check" && python "%HOMEPATH%\Anaconda3\envs\samplesheet_check\git\infrastructure\scripts\umccr_pipeline\samplesheet-check-gui-wrapper.py" && exit"
    ```
 
    b. Update git repo and installations
    > update_samplesheet_check_script.bat   
 
    ```commandline
-   %windir%\system32\cmd.exe /k ""%HOMEPATH%\Anaconda3\Scripts\activate.bat" "%HOMEPATH%\Anaconda3\envs\samplesheet_check" && git pull && conda env update --name samplesheet_check --file "%HOMEPATH%\Anaconda3\envs\samplesheet_check\git\infrastructure\scripts\umccr_pipeline\env\samplesheet-check.yml" exit"```
+   %windir%\system32\cmd.exe /k ""%HOMEPATH%\Anaconda3\Scripts\activate.bat" "%HOMEPATH%\Anaconda3\envs\samplesheet_check" && cd "%HOMEPATH%\Anaconda3\envs\samplesheet_check\git\infrastructure && git pull && conda env update --name samplesheet_check --file "%HOMEPATH%\Anaconda3\envs\samplesheet_check\git\infrastructure\scripts\umccr_pipeline\env\samplesheet-check.yml" && exit"
    ```

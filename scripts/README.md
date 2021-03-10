@@ -32,34 +32,41 @@ XXX
 ## Installing Samplesheet check on a windows machine
 **WARNING** *requires basic understanding of Windows operating systems and non-conforming terminal syntax:*
 
-1. Download [conda](https://www.anaconda.com/distribution/)
+1. Download and install [anaconda3](https://www.anaconda.com/distribution/)
+    * Select all presets.  
+    * Anaconda should be installed into `%HOMEPATH%\Anaconda3`
    
-2. Update the base conda environment: `conda update -n base conda --yes`
+2. Run the anaconda command prompt executable from the Start Menu:
+    * You should see `(base)` at start of your command prompt line.  
+
+3. Update the base conda environment: `conda update --name base conda --yes`
    
-3. Create & activate an environment
+4. Create & activate an environment
     * `conda create --name samplesheet_check --yes`
     * `conda activate samplesheet_check`
    
-4. Install git 
+5. Install git 
     * `conda install --channel conda-forge git --yes`
     * `git --version`  (must be greater than 2.25)
    
-5. Head to the conda prefix directory and create the following subdirectories:
+6. Head to the conda prefix directory and create the following subdirectories in the conda directory:
    > On WINDOWS you can use the `%CONDA_PREFIX%` env var.
     * `etc\conda\activate.d`
     * `secrets`
     * `git\infrastructure`
    
-6. Ask Florian or Alexis for the `google_secret.json` secret key.
+7. Ask [Florian](mailto:florian.reisigner@umccr.org) or [Alexis](mailto:alexis.lucattini@umccr.org) for the `google_secret.json` secret key.
    > This can be found in the ssm parameter `/data_portal/dev/google/lims_service_account_json`
    
    The following command will generate the `google_secret.json` file
 
    ```shell
-   aws ssm get-parameter --name "${ssm_key}" --with-decryption | \
-   jq --raw-output '.Parameter.Value | fromjson' > google_secret.json 
+   aws ssm get-parameter \
+     --name "${ssm_key}" \
+     --with-decryption | \
+   jq --raw-output \
+     '.Parameter.Value | fromjson' > google_secret.json 
    ```
-
    * Place this file in the folder `%CONDA_PREFIX%\secrets` with the name `google_secret.json`
 7. Set env vars in `activate.d`:  
    > This will make sure the environment variable GSPREAD_PANDAS_CONFIG_DIR is set when the conda env is activated  
@@ -95,8 +102,10 @@ XXX
    git pull origin master  # samplesheet-check-update-script branch for now
    ```
      
-9. Now create two one-liner `.bat` files on the Desktop using the scripts below
-   > You will need to run the update-git repo and installations before launching the samplesheet launcher.
+9. Now create two one-liner `.bat` files on the user's desktop using the scripts below
+   > You will need to first run the update-git repo before launching the samplesheet launcher.
+   > This update-git repo will install all pre-requisites into the repository.  
+   > This may take some time.  
 
    a. Samplesheet launcher
    > samplesheet_check.bat

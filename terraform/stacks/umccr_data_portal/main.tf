@@ -346,7 +346,7 @@ resource "aws_sqs_queue" "germline_queue" {
 }
 
 resource "aws_sqs_queue" "tn_queue" {
-  name = "${local.stack_name_dash}-tn-queue"
+  name = "${local.stack_name_dash}-tn-queue.fifo"
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
@@ -1081,7 +1081,7 @@ resource "aws_db_subnet_group" "rds" {
 
 resource "aws_rds_cluster" "db" {
   cluster_identifier  = "${local.stack_name_dash}-aurora-cluster"
-  engine              = "aurora"                                  # (for MySQL 5.6-compatible Aurora)
+  engine              = "aurora-mysql"
   engine_mode         = "serverless"
   skip_final_snapshot = true
 
@@ -1103,6 +1103,8 @@ resource "aws_rds_cluster" "db" {
   }
 
   backup_retention_period = var.rds_backup_retention_period[terraform.workspace]
+
+  deletion_protection = true
 
   tags = merge(local.default_tags)
 }

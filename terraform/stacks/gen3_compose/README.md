@@ -23,3 +23,7 @@ terraform workspace select dev
 terraform plan
 terraform apply 
 ```
+
+## Usage
+
+Please see [USERDOC](userdoc)

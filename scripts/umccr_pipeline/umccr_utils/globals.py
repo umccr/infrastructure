@@ -299,4 +299,15 @@ RUN_REGEX_OBJS = {
     ))
 }
 
+"""
+GOOGLE ACCOUNT
+"""
+
 GSERVICE_ACCOUNT = "data-portal@umccr-portal.iam.gserviceaccount.com"
+
+
+"""
+INDEX DISTANCES
+"""
+
+MIN_INDEX_HAMMING_DISTANCE = 2

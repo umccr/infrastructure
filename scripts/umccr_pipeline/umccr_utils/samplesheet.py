@@ -18,7 +18,7 @@ from umccr_utils.errors import SampleSheetFormatError, SampleDuplicateError, Sam
     SampleSheetHeaderError, MetaDataError, InvalidColumnError, SampleNameFormatError, OverrideCyclesError
 
 # Regexes
-from umccr_utils.globals import SAMPLE_REGEX_OBJS, SAMPLESHEET_REGEX_OBJS, OVERRIDE_CYCLES_OBJS
+from umccr_utils.globals import SAMPLE_REGEX_OBJS, SAMPLESHEET_REGEX_OBJS, OVERRIDE_CYCLES_OBJS, MIN_INDEX_HAMMING_DISTANCE
 
 # Column name validations
 from umccr_utils.globals import METADATA_COLUMN_NAMES, METADATA_VALIDATION_COLUMN_NAMES, \
@@ -694,7 +694,7 @@ def compare_two_indexes(first_index, second_index):
     # hamming distance returns a float - we then multiple this by the index length
     h_float = distance.hamming(list(first_index), list(second_index))
 
-    if not h_float * min_index_length >= 1:
+    if not h_float * min_index_length >= MIN_INDEX_HAMMING_DISTANCE:
         logger.error("Indexes {} and {} are too similar".format(first_index, second_index))
         raise SimilarIndexError
     else:

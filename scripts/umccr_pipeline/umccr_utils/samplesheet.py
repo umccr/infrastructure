@@ -284,9 +284,9 @@ class SampleSheet:
                         logger.error("Could not find column \"{}\" in samplesheet".format(column))
                         raise ColumnNotFoundError
                 # Ensure each of the columns are valid columns
-                for column in VALID_SAMPLE_SHEET_DATA_COLUMN_NAMES["v1"]:
-                    if column not in self.data.columns.tolist():
-                        logger.error("Could not find column in samplesheet")
+                for column in self.data.columns.tolist():
+                    if column not in VALID_SAMPLE_SHEET_DATA_COLUMN_NAMES["v1"]:
+                        logger.error("Could not find column \"{}\" in samplesheet".format(column))
                         raise InvalidColumnError
                 # Strip Ns from index and index2
                 self.data['index'] = self.data['index'].apply(lambda x: x.rstrip("N"))
@@ -313,11 +313,21 @@ class SampleSheet:
             self.samples = []
 
         for row_index, sample_row in self.data.iterrows():
-            self.samples.append(Sample(lane=sample_row["Lane"],
+            self.samples.append(Sample(lane=sample_row["Lane"]
+                                            if "Lane" in sample_row.keys()
+                                            # Set default to 1 so we can still compare indexes across
+                                            # entire samplesheet
+                                            else 1,
                                        sample_id=sample_row["Sample_ID"],
                                        index=sample_row["index"],
-                                       index2=sample_row["index2"],
-                                       project=sample_row["Sample_Project"]))
+                                       index2=sample_row["index2"]
+                                              if "index2" in sample_row.keys()
+                                              else None,
+                                       project=sample_row["Sample_Project"]
+                                               if "Sample_Project" in sample_row.keys()
+                                               else None
+                                       )
+                                )
 
     def add_sample(self, new_sample_to_add):
         """
@@ -353,6 +363,13 @@ class SampleSheet:
         :return:
         """
         lanes = set()
+
+        # For the purposes of testing, we'll just return '1' if lane is not specified
+        if "Lane" not in self.data.columns.tolist():
+            logger.info("Attempting to get 'lanes' but no lanes defined, "
+                        "returning set(1) for purpose of checking indexes")
+            return {1}
+
         for sample in self:
             lanes.add(sample.lane)
 
@@ -555,6 +572,8 @@ def check_sample_sheet_for_index_clashes(samplesheet):
                 continue
             logger.debug(f"Comparing indexes of sample {sample}")
             for s2_i, sample_2 in enumerate(samplesheet.samples):
+                # Reset for each sample we're comparing against
+                sample_has_i7_error = False
                 # Ensures samples are in the same lane
                 if not sample_2.lane == lane:
                     continue
@@ -574,21 +593,37 @@ def check_sample_sheet_for_index_clashes(samplesheet):
                 try:
                     compare_two_indexes(sample.index, sample_2.index)
                 except SimilarIndexError:
-                    logger.error("indexes {} and {} are too similar to run in the same lane".format(sample.index,
-                                                                                                    sample_2.index))
-                    has_error = True
+                    # Not a failure - we might have different i5 indexes for the sample
+                    logger.warning("i7 indexes {} and {} are too similar to run in the same lane".format(sample.index,
+                                                                                                         sample_2.index))
+                    logger.warning("This may be okay if i5 indexes are different enough")
+                    sample_has_i7_error = True
+
                 # We may not have an i5 index - continue on to next sample if so
-                if sample.index2 is None or sample_2.index is None:
+                if sample.index2 is None or sample_2.index2 is None:
+                    # If the i7 was too close then this is a fail
+                    if sample_has_i7_error:
+                        logger.error("i7 indexes {} and {} are too similar to run in the same lane".format(sample.index,
+                                                                                                           sample_2.index))
+                        has_error = True
                     continue
 
                 # i5 check
-                # Strip i7 to min length of the two indexes
+                # Strip i5 to min length of the two indexes
                 try:
-                    compare_two_indexes(sample.index, sample_2.index)
+                    compare_two_indexes(sample.index2, sample_2.index2)
                 except SimilarIndexError:
-                    logger.error(
-                        "indexes {} and {} are too similar to run in the same lane".format(sample.index2, sample_2.index2))
-                    has_error = True
+                    logger.warning("i5 indexes {} and {} are too similar to run in the same lane."
+                                   "This might be okay if i7 indexes are different enough".format(sample.index2,
+                                                                                                  sample_2.index2))
+                    if sample_has_i7_error:
+                        logger.error("i7 indexes {} and {} are too similar to run in the same lane"
+                                     "with i5 indexes {} and {} are too similar to run in the same lane ".format(sample.index,
+                                                                                                                 sample_2.index,
+                                                                                                                 sample.index2,
+                                                                                                                 sample_2.index2)
+                                     )
+                        has_error = True
 
     if not has_error:
         return
@@ -695,7 +730,7 @@ def compare_two_indexes(first_index, second_index):
     h_float = distance.hamming(list(first_index), list(second_index))
 
     if not h_float * min_index_length >= MIN_INDEX_HAMMING_DISTANCE:
-        logger.error("Indexes {} and {} are too similar".format(first_index, second_index))
+        logger.debug("Indexes {} and {} are too similar".format(first_index, second_index))
         raise SimilarIndexError
     else:
         return

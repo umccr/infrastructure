@@ -62,8 +62,8 @@ SAMPLE SHEET DATA COLUMNS
 """
 
 REQUIRED_SAMPLE_SHEET_DATA_COLUMN_NAMES = {
-    "v1": ["Lane", "Sample_ID", "Sample_Name", "index"],
-    "v2": ["Lane", "Sample_ID", "index"]
+    "v1": ["Sample_ID", "Sample_Name", "index"],
+    "v2": ["Sample_ID", "index"]
 }
 
 VALID_SAMPLE_SHEET_DATA_COLUMN_NAMES = {

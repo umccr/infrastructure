@@ -182,7 +182,7 @@ def main(args=None):
         else:
             library_tracking_spreadsheet[year] = get_local_lab_metadata(args.local_metadata_xlsx, year)
 
-            # Get google validation sheet
+    # Get google validation sheet
     if getattr(args, "local_metadata_xlsx", None) is None:
         validation_df = import_library_sheet_validation_from_google(LAB_SPREAD_SHEET_ID[args.deploy_env])
     else:

@@ -130,7 +130,7 @@ class Sample:
         Get the year from the library id by appending 20 on the end
         :return:
         """
-        year_re_match = SAMPLE_REGEX_OBJS.get("year").fullmatch(self.library_id)
+        year_re_match = SAMPLE_REGEX_OBJS.get("year").match(self.library_id)
         if year_re_match is None:
             logger.error("Could not get library ID from \"{}\"".format(self.library_id))
             raise SampleNameFormatError
@@ -281,7 +281,7 @@ class SampleSheet:
                 # Ensure each of the required SAMPLE_SHEET_DATA_COLUMNS exists
                 for column in REQUIRED_SAMPLE_SHEET_DATA_COLUMN_NAMES["v1"]:
                     if column not in self.data.columns.tolist():
-                        logger.error("Could not find column in samplesheet")
+                        logger.error("Could not find column \"{}\" in samplesheet".format(column))
                         raise ColumnNotFoundError
                 # Ensure each of the columns are valid columns
                 for column in VALID_SAMPLE_SHEET_DATA_COLUMN_NAMES["v1"]:

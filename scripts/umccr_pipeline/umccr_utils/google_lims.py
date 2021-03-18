@@ -132,6 +132,11 @@ def read_gsuite_excel_file(gsuite_file_id, sheet_name):
 
     spread = Spread(gsuite_file_id)
 
+    for sheet in spread.sheets:
+        s_name = getattr(sheet, "_properties")["title"]
+        if s_name.lower() == sheet_name.lower():
+            sheet_name = s_name
+
     return spread.sheet_to_df(sheet=sheet_name, index=0, header_rows=1, start_row=1)
 
 
@@ -144,6 +149,10 @@ def read_local_excel_file(local_path, sheet_name):
     """
 
     xl = pd.ExcelFile(local_path)
+
+    for s_name in xl.sheet_names:
+        if s_name.lower() == sheet_name.lower():
+            sheet_name = s_name
 
     return xl.parse(sheet_name=sheet_name, header=0)
 

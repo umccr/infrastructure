@@ -1264,6 +1264,155 @@ resource "aws_wafregional_sql_injection_match_set" "sql_injection_match_set" {
   }
 }
 
+####################################################################################
+# Notification: CloudWatch alarms send through SNS topic to ChatBot to Slack #data-portal channel
+
+resource "aws_sns_topic" "portal_ops_sns_topic" {
+  name = "DataPortalTopic"
+  display_name = "Data Portal related topics"
+  tags = merge(local.default_tags)
+}
+
+data "aws_iam_policy_document" "portal_ops_sns_topic_policy_doc" {
+  policy_id = "__default_policy_ID"
+
+  statement {
+    actions = [
+      "SNS:GetTopicAttributes",
+      "SNS:SetTopicAttributes",
+      "SNS:AddPermission",
+      "SNS:RemovePermission",
+      "SNS:DeleteTopic",
+      "SNS:Subscribe",
+      "SNS:ListSubscriptionsByTopic",
+      "SNS:Publish",
+      "SNS:Receive",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceOwner"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    resources = [aws_sns_topic.portal_ops_sns_topic.arn]
+
+    sid = "__default_statement_ID"
+  }
+
+  statement {
+    actions = ["SNS:Publish"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["codestar-notifications.amazonaws.com"]
+    }
+
+    resources = [aws_sns_topic.portal_ops_sns_topic.arn]
+  }
+}
+
+resource "aws_sns_topic_policy" "portal_ops_sns_topic_access_policy" {
+  arn    = aws_sns_topic.portal_ops_sns_topic.arn
+  policy = data.aws_iam_policy_document.portal_ops_sns_topic_policy_doc.json
+}
+
+resource "aws_cloudwatch_metric_alarm" "s3_event_sqs_dlq_alarm" {
+  alarm_name = "DataPortalS3EventSQSDLQ"
+  alarm_description = "Data Portal S3 Events SQS DLQ having > 0 messages"
+  alarm_actions = [
+    aws_sns_topic.portal_ops_sns_topic.arn
+  ]
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods = 1
+  datapoints_to_alarm = 1
+  period = 60
+  threshold = 0.0
+  namespace = "AWS/SQS"
+  statistic = "Sum"
+  metric_name = "ApproximateNumberOfMessagesVisible"
+  dimensions = {
+    QueueName = aws_sqs_queue.s3_event_dlq.name
+  }
+  tags = merge(local.default_tags)
+}
+
+resource "aws_cloudwatch_metric_alarm" "ica_ens_event_sqs_dlq_alarm" {
+  alarm_name = "DataPortalIAPENSEventSQSDLQ"
+  alarm_description = "Data Portal IAP ENS Event SQS DLQ having > 0 messages"
+  alarm_actions = [
+    aws_sns_topic.portal_ops_sns_topic.arn
+  ]
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods = 1
+  datapoints_to_alarm = 1
+  period = 60
+  threshold = 0.0
+  namespace = "AWS/SQS"
+  statistic = "Sum"
+  metric_name = "ApproximateNumberOfMessagesVisible"
+  dimensions = {
+    QueueName = aws_sqs_queue.iap_ens_event_dlq.name
+  }
+  tags = merge(local.default_tags)
+}
+
+################################################################################
+# Notification: CodeBuild build status send through SNS topic to ChatBot to
+# Slack channel #arteria-dev (for DEV account) Or #data-portal (for PROD account)
+
+data "aws_sns_topic" "chatbot_topic" {
+  name = "AwsChatBotTopic"
+}
+
+locals {
+  codebuild_notification_target = {
+    prod = aws_sns_topic.portal_ops_sns_topic.arn
+    dev  = data.aws_sns_topic.chatbot_topic.arn
+  }
+}
+
+resource "aws_codestarnotifications_notification_rule" "apis_build_status" {
+  name = "${local.stack_name_us}_apis_code_build_status"
+  resource = aws_codebuild_project.codebuild_apis.arn
+  detail_type = "BASIC"
+
+  target {
+    address = local.codebuild_notification_target[terraform.workspace]
+  }
+
+  event_type_ids = [
+    "codebuild-project-build-state-failed",
+    "codebuild-project-build-state-succeeded",
+  ]
+
+  tags = merge(local.default_tags)
+}
+
+resource "aws_codestarnotifications_notification_rule" "client_build_status" {
+  name = "${local.stack_name_us}_client_code_build_status"
+  resource = aws_codebuild_project.codebuild_client.arn
+  detail_type = "BASIC"
+
+  target {
+    address = local.codebuild_notification_target[terraform.workspace]
+  }
+
+  event_type_ids = [
+    "codebuild-project-build-state-failed",
+    "codebuild-project-build-state-succeeded",
+  ]
+
+  tags = merge(local.default_tags)
+}
+
 ################################################################################
 # Save configurations in SSM Parameter Store
 

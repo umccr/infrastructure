@@ -37,7 +37,9 @@
                 "ssm:GetParameterHistory",
                 "ssm:GetParametersByPath",
                 "ssm:GetParameters",
-                "ssm:GetParameter"
+                "ssm:GetParameter",
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords"
             ],
             "Resource": "*"
         }

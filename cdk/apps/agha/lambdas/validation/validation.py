@@ -146,7 +146,7 @@ def check_manifest_headers(manifest_df):
     global validation_messages
     manifest_ok = True
 
-    if not manifest_df:
+    if manifest_df is not None:
         validation_messages.append("No manifest to read!")
         return False
 

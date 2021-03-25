@@ -304,4 +304,4 @@ GSERVICE_ACCOUNT = "data-portal@umccr-portal.iam.gserviceaccount.com"
 INDEX DISTANCES
 """
 
-MIN_INDEX_HAMMING_DISTANCE = 2
+MIN_INDEX_HAMMING_DISTANCE = 3

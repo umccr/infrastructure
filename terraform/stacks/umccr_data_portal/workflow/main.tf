@@ -91,6 +91,23 @@ locals {
     EOT
   }
 
+  bcl_convert_tso500_settings= {
+    dev = <<-EOT
+    {
+      "adapter_behaviour": "trim",
+      "minimum_trimmed_read_length": 35,
+      "mask_short_reads": 35
+    }
+    EOT
+    prod = <<-EOT
+    {
+      "adapter_behaviour": "trim",
+      "minimum_trimmed_read_length": 35,
+      "mask_short_reads": 35
+    }
+    EOT
+  }
+
   germline_wfl_id = {
     dev  = "wfl.5cc28c147e4e4dfa9e418523188aacec"
     prod = "wfl.d6f51b67de5b4d309dddf4e411362be7"
@@ -176,6 +193,13 @@ resource "aws_ssm_parameter" "bcl_convert_input" {
   type = "String"
   description = "BCL Convert Workflow Input JSON"
   value = local.bcl_convert_input[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "bcl_convert_tso500_settings" {
+  name = "/iap/workflow/bcl_convert/tso500_settings"
+  type = "String"
+  description = "BCL Convert Workflow tso500 settings"
+  value = local.bcl_convert_tso500_settings[terraform.workspace]
 }
 
 # --- Germline

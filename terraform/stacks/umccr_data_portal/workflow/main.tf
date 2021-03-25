@@ -85,7 +85,8 @@ locals {
       "bcl_input_directory": {
         "class": "Directory",
         "location": "PLACEHOLDER"
-      }
+      },
+      "settings_by_override_cycles": null
     }
     EOT
   }

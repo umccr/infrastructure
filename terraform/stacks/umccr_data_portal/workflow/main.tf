@@ -46,31 +46,21 @@ locals {
   bcl_convert_input = {
     dev = <<-EOT
     {
-      "v2-out-split-by-override-cycles": true,
-      "strict-mode-bcl-conversion": true,
-      "samplesheet": {
+      "samplesheet_output_format_split_by_override_cycles": true,
+      "strict_mode_bcl_conversion": true,
+      "sample_sheet": {
         "class": "File",
         "location": "PLACEHOLDER"
       },
-      "samples": [
-        "PLACEHOLDER_1",
-        "PLACEHOLDER_2"
+      "override_cycles_by_sample": [
+        "PLACEHOLDER_1"
       ],
-      "override-cycles": [
-        "PLACEHOLDER_3",
-        "PLACEHOLDER_4"
-      ],
-      "runfolder-name": "PLACEHOLDER",
-      "outdir-split-by-override-cycles": "samplesheets-by-override-cycles",
-      "module-multiqc": "interop",
-      "ignore-missing-samples-split-by-override-cycles": true,
-      "dummyFile-multiqc": {
-        "class": "File",
-        "location": "PLACEHOLDER"
-      },
-      "delete-undetermined-bcl-conversions": true,
-      "bcl-sample-project-subdirectories-bcl-conversion": true,
-      "bcl-input-directory": {
+      "runfolder_name": "PLACEHOLDER",
+      "outdir_split_by_override_cycles": "samplesheets-by-override-cycles",
+      "ignore_missing_samples_split_by_override_cycles": true,
+      "delete_undetermined_indices_bcl_conversion": true,
+      "bcl_sampleproject_subdirectories_bcl_conversion": true,
+      "bcl_input_directory": {
         "class": "Directory",
         "location": "PLACEHOLDER"
       }
@@ -78,31 +68,21 @@ locals {
     EOT
     prod = <<-EOT
     {
-      "v2-out-split-by-override-cycles": true,
-      "strict-mode-bcl-conversion": true,
-      "samplesheet": {
+      "samplesheet_output_format_split_by_override_cycles": true,
+      "strict_mode_bcl_conversion": true,
+      "sample_sheet": {
         "class": "File",
         "location": "PLACEHOLDER"
       },
-      "samples": [
-        "PLACEHOLDER_1",
-        "PLACEHOLDER_2"
+      "override_cycles_by_sample": [
+        "PLACEHOLDER_1"
       ],
-      "override-cycles": [
-        "PLACEHOLDER_3",
-        "PLACEHOLDER_4"
-      ],
-      "runfolder-name": "PLACEHOLDER",
-      "outdir-split-by-override-cycles": "samplesheets-by-override-cycles",
-      "module-multiqc": "interop",
-      "ignore-missing-samples-split-by-override-cycles": true,
-      "dummyFile-multiqc": {
-        "class": "File",
-        "location": "PLACEHOLDER"
-      },
-      "delete-undetermined-bcl-conversions": true,
-      "bcl-sample-project-subdirectories-bcl-conversion": true,
-      "bcl-input-directory": {
+      "runfolder_name": "PLACEHOLDER",
+      "outdir_split_by_override_cycles": "samplesheets-by-override-cycles",
+      "ignore_missing_samples_split_by_override_cycles": true,
+      "delete_undetermined_indices_bcl_conversion": true,
+      "bcl_sampleproject_subdirectories_bcl_conversion": true,
+      "bcl_input_directory": {
         "class": "Directory",
         "location": "PLACEHOLDER"
       }

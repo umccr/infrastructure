@@ -123,26 +123,24 @@ locals {
   germline_input = {
     dev = <<-EOT
     {
-      "sample-name": "PLACEHOLDER",
-      "fastq-directory": {
-        "class": "Directory",
-        "location": "PLACEHOLDER"
-      },
-      "fastq-list": {
-        "class": "File",
-        "location": "PLACEHOLDER"
-      },
-      "refdata-dragen": {
-        "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/3.5.2_ht.tar"
-      },
-      "sites-somalier": {
+      "sample_name": null,
+      "fastq_list_rows": null,
+      "sites_somalier": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/somalier/sites.hg38.vcf.gz"
       },
-      "reference-somalier": {
+      "genome_version": "hg38",
+      "hla_reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/hg38.fa"
+        "location": "gds://umccr-refdata-dev/optitype/hla_reference_dna.fasta"
+      }
+      "reference_fasta": {
+        "class": "File",
+        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"
+      },
+      "reference_tar_dragen": {
+        "class": "File",
+        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
       }
     }
     EOT

@@ -18,21 +18,21 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  common_tags = "${map(
+  common_tags = map(
     "Environment", "agha",
-    "Stack", "${var.stack_name}"
-  )}"
+    "Stack", var.stack_name
+  )
 }
 
 ################################################################################
 # S3 buckets
 
 data "aws_s3_bucket" "agha_gdr_staging" {
-  bucket = "${var.agha_gdr_staging_bucket_name}"
+  bucket = var.agha_gdr_staging_bucket_name
 }
 
 data "aws_s3_bucket" "agha_gdr_store" {
-  bucket = "${var.agha_gdr_store_bucket_name}"
+  bucket = var.agha_gdr_store_bucket_name
 }
 
 
@@ -82,6 +82,15 @@ module "yingzhu" {
   keybase   = "yingzhu"
   pgp_key   = "keybase:freisinger"
   email     = "Ying.Zhu@health.nsw.gov.au"
+}
+
+module "seanlianu" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "seanlianu"
+  full_name = "Sean Li"
+  keybase   = "seanlianu"
+  pgp_key   = "keybase:freisinger"
+  email     = "sean.li@anu.edu.au"
 }
 
 # Data Manager/Controller
@@ -138,6 +147,7 @@ resource "aws_iam_group_membership" "default" {
     module.shyrav.username,
     module.simon.username,
     module.yingzhu.username,
+    module.seanlianu.username,
   ]
 }
 
@@ -155,6 +165,7 @@ resource "aws_iam_group_membership" "submitter" {
     module.rk_chw.username,
     module.simon.username,
     module.yingzhu.username,
+    module.seanlianu.username,
   ]
 }
 

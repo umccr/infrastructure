@@ -1,14 +1,14 @@
 # agha_presign
 output "agha_presign_username" {
-  value = "${module.agha_presign.username}"
+  value = module.agha_presign.username
 }
 
 output "agha_presign_access_key" {
-  value = "${module.agha_presign.access_key}"
+  value = module.agha_presign.access_key
 }
 
 output "agha_presign_secret_access_key" {
-  value = "${module.agha_presign.encrypted_secret_access_key}"
+  value = module.agha_presign.encrypted_secret_access_key
 }
 
 # sarah_dm
@@ -78,4 +78,17 @@ output "yingzhu_access_key" {
 
 output "yingzhu_secret_access_key" {
   value = module.yingzhu.encrypted_secret_access_key
+}
+
+# seanlianu
+output "seanlianu_username" {
+  value = module.seanlianu.username
+}
+
+output "seanlianu_access_key" {
+  value = module.seanlianu.access_key
+}
+
+output "seanlianu_secret_access_key" {
+  value = module.seanlianu.encrypted_secret_access_key
 }

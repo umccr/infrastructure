@@ -39,7 +39,7 @@ locals {
   }
 
   bcl_convert_wfl_version = {
-    dev  = "1.0.7"
+    dev  = "3.7.5"
     prod = "1.0.7-75d4446"
   }
 
@@ -49,7 +49,7 @@ locals {
       "bcl_input_directory": {
         "class": "Directory",
         "location": "PLACEHOLDER"
-      }
+      },
       "samplesheet": {
         "class": "File",
         "location": "PLACEHOLDER"
@@ -61,7 +61,7 @@ locals {
       "bcl_sampleproject_subdirectories_bcl_conversion": true,
       "strict_mode_bcl_conversion": true,
       "delete_undetermined_indices_bcl_conversion": true,
-      "runfolder_name": "PLACEHOLDER",
+      "runfolder_name": "PLACEHOLDER"
     }
     EOT
     prod = <<-EOT
@@ -104,7 +104,7 @@ locals {
   }
 
   germline_wfl_version = {
-    dev  = "0.2-inputcsv-redir"
+    dev  = "3.7.5--1.3.5"
     prod = "0.2-inputcsv-redir-8277438"
   }
 
@@ -121,7 +121,7 @@ locals {
       "hla_reference_fasta": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/optitype/hla_reference_dna.fasta"
-      }
+      },
       "reference_fasta": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"

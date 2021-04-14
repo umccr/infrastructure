@@ -146,7 +146,7 @@ def manifest_headers_ok(manifest_df):
     global validation_messages
     is_ok = True
 
-    if manifest_df is not None:
+    if manifest_df is None:
         validation_messages.append("No manifest to read!")
         return False
 
@@ -155,17 +155,6 @@ def manifest_headers_ok(manifest_df):
             is_ok = False
             validation_messages.append(f"Column '{col_name}' not found in manifest!")
     return is_ok
-
-
-def manifest_ok(manifest_df):
-    if manifest_df is None:
-        return False
-
-    if not manifest_headers_ok(manifest_df):
-        return False
-
-    # TODO: add other checks
-    return True
 
 
 def get_listing(prefix: str):
@@ -222,7 +211,7 @@ def lambda_handler(event, context):
     # Build validation messages
     manifest_df = get_manifest_df(submission_prefix)
 
-    if manifest_ok(manifest_df):
+    if manifest_headers_ok(manifest_df):
         message = f"Entries in manifest: {len(manifest_df)}"
         print(message)
         validation_messages.append(message)

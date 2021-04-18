@@ -1362,6 +1362,26 @@ resource "aws_cloudwatch_metric_alarm" "s3_event_sqs_dlq_alarm" {
   tags = merge(local.default_tags)
 }
 
+resource "aws_cloudwatch_metric_alarm" "report_event_sqs_dlq_alarm" {
+  alarm_name = "DataPortalReportEventSQSDLQ"
+  alarm_description = "Data Portal Report Events SQS DLQ having > 0 messages"
+  alarm_actions = [
+    aws_sns_topic.portal_ops_sns_topic.arn
+  ]
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods = 1
+  datapoints_to_alarm = 1
+  period = 60
+  threshold = 0.0
+  namespace = "AWS/SQS"
+  statistic = "Sum"
+  metric_name = "ApproximateNumberOfMessagesVisible"
+  dimensions = {
+    QueueName = aws_sqs_queue.report_event_dlq.name
+  }
+  tags = merge(local.default_tags)
+}
+
 resource "aws_cloudwatch_metric_alarm" "ica_ens_event_sqs_dlq_alarm" {
   alarm_name = "DataPortalIAPENSEventSQSDLQ"
   alarm_description = "Data Portal IAP ENS Event SQS DLQ having > 0 messages"

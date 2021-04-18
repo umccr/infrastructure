@@ -393,6 +393,24 @@ resource "aws_sqs_queue" "iap_ens_event_queue" {
   tags = merge(local.default_tags)
 }
 
+resource "aws_sqs_queue" "report_event_dlq" {
+  name = "${local.stack_name_dash}-report-event-dlq"
+  message_retention_seconds = 1209600
+  tags = merge(local.default_tags)
+}
+
+resource "aws_sqs_queue" "report_event_queue" {
+  name = "${local.stack_name_dash}-report-event-queue"
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.report_event_dlq.arn
+    maxReceiveCount = 20
+  })
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+
+  tags = merge(local.default_tags)
+}
+
 resource "aws_sqs_queue" "s3_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-dlq"
   message_retention_seconds = 1209600
@@ -1578,5 +1596,12 @@ resource "aws_ssm_parameter" "sqs_tn_queue_arn" {
   name  = "${local.ssm_param_key_backend_prefix}/sqs_tn_queue_arn"
   type  = "String"
   value = aws_sqs_queue.tn_queue.arn
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "sqs_report_event_queue_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_report_event_queue_arn"
+  type  = "String"
+  value = aws_sqs_queue.report_event_queue.arn
   tags  = merge(local.default_tags)
 }

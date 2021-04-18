@@ -337,6 +337,14 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 ################################################################################
 # Back end configurations
 
+data "aws_s3_bucket" "s3_primary_data_bucket" {
+  bucket = var.s3_primary_data_bucket[terraform.workspace]
+}
+
+data "aws_s3_bucket" "s3_run_data_bucket" {
+  bucket = var.s3_run_data_bucket[terraform.workspace]
+}
+
 resource "aws_sqs_queue" "germline_queue" {
   name = "${local.stack_name_dash}-germline-queue.fifo"
   fifo_queue = true
@@ -385,14 +393,6 @@ resource "aws_sqs_queue" "iap_ens_event_queue" {
   tags = merge(local.default_tags)
 }
 
-data "aws_s3_bucket" "s3_primary_data_bucket" {
-  bucket = var.s3_primary_data_bucket[terraform.workspace]
-}
-
-data "aws_s3_bucket" "s3_run_data_bucket" {
-  bucket = var.s3_run_data_bucket[terraform.workspace]
-}
-
 resource "aws_sqs_queue" "s3_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-dlq"
   message_retention_seconds = 1209600
@@ -401,10 +401,10 @@ resource "aws_sqs_queue" "s3_event_dlq" {
 
 # SQS Queue for S3 event delivery
 resource "aws_sqs_queue" "s3_event_queue" {
-  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+  name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
   policy = templatefile("policies/sqs_s3_primary_data_event_policy.json", {
     # Use the same name as above, if referring there will be circular dependency
-    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-quque"
+    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
     s3_primary_data_bucket_arn = data.aws_s3_bucket.s3_primary_data_bucket.arn
     s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
   })
@@ -418,7 +418,7 @@ resource "aws_sqs_queue" "s3_event_queue" {
 }
 
 # Enable primary data bucket s3 event notification to SQS
-resource "aws_s3_bucket_notification" "s3_inventory_notification" {
+resource "aws_s3_bucket_notification" "primary_data_notification" {
   bucket = data.aws_s3_bucket.s3_primary_data_bucket.id
 
   queue {
@@ -432,7 +432,7 @@ resource "aws_s3_bucket_notification" "s3_inventory_notification" {
 }
 
 # Enable run data bucket s3 event notification to SQS
-resource "aws_s3_bucket_notification" "s3_run_data_notification" {
+resource "aws_s3_bucket_notification" "run_data_notification" {
   bucket = data.aws_s3_bucket.s3_run_data_bucket.id
 
   queue {

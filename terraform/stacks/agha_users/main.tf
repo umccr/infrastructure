@@ -162,6 +162,7 @@ resource "aws_iam_group_membership" "submitter" {
   group = aws_iam_group.submitter.name
   users = [
     module.agha_presign.username,
+    module.sarah_dm.username,
     module.rk_chw.username,
     module.simon.username,
     module.yingzhu.username,

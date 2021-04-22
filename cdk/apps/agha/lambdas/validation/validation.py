@@ -28,7 +28,6 @@ SLACK_WEBHOOK_ENDPOINT = ssm_client.get_parameter(
     Name='/slack/webhook/endpoint',
     WithDecryption=True
     )['Parameter']['Value']
-validation_messages = list()
 
 
 def get_name_email_from_principalid(principal_id):
@@ -123,37 +122,23 @@ def call_slack_webhook(topic, title, message):
 
 def get_manifest_df(prefix: str):
     global STAGING_BUCKET
-    global validation_messages
     print(f"Getting manifest from : {STAGING_BUCKET}/{prefix}")
-    try:
-        obj = s3_client.get_object(Bucket=STAGING_BUCKET, Key=f"{prefix}/manifest.txt")
-    except Exception as e:
-        print(f"Error trying to read manifest S3 object: {e}")
-        validation_messages.append(f"Error trying to read manifest S3 object: {e}")
-        return None
-
-    try:
-        df = pd.read_csv(io.BytesIO(obj['Body'].read()), sep='\t', encoding='utf8')
-    except Exception as e:
-        print(f"Error trying convert manifest into DataFrame: {e}")
-        validation_messages.append(f"Error trying convert manifest into DataFrame: {e}")
-        return None
-
+    obj = s3_client.get_object(Bucket=STAGING_BUCKET, Key=f"{prefix}/manifest.txt")
+    df = pd.read_csv(io.BytesIO(obj['Body'].read()), sep='\t', encoding='utf8')
     return df
 
 
-def manifest_headers_ok(manifest_df):
-    global validation_messages
+def manifest_headers_ok(manifest_df, msgs):
     is_ok = True
 
     if manifest_df is None:
-        validation_messages.append("No manifest to read!")
+        msgs.append("No manifest to read!")
         return False
 
     for col_name in MANIFEST_REQUIRED_COLUMNS:
         if col_name not in manifest_df.columns:
             is_ok = False
-            validation_messages.append(f"Column '{col_name}' not found in manifest!")
+            msgs.append(f"Column '{col_name}' not found in manifest!")
     return is_ok
 
 
@@ -187,7 +172,7 @@ def extract_filenames(listing: list):
 
 def lambda_handler(event, context):
     print(f"Received event: {json.dumps(event)}")
-    global validation_messages
+    validation_messages = list()
 
     message = event['Records'][0]['Sns']['Message']
     print(f"Extracted message: {message}")
@@ -209,9 +194,13 @@ def lambda_handler(event, context):
         print(f"Extracted name/email: {name}/{email}")
 
     # Build validation messages
-    manifest_df = get_manifest_df(submission_prefix)
+    try:
+        manifest_df = get_manifest_df(submission_prefix)
+    except Exception as e:
+        print(f"Error trying convert manifest into DataFrame: {e}")
+        validation_messages.append(f"Error trying convert manifest into DataFrame: {e}")
 
-    if manifest_headers_ok(manifest_df):
+    if manifest_headers_ok(manifest_df, validation_messages):
         message = f"Entries in manifest: {len(manifest_df)}"
         print(message)
         validation_messages.append(message)
@@ -237,6 +226,8 @@ def lambda_handler(event, context):
         print(message)
         validation_messages.append(message)
 
+    print(f"Sending validation messages to Slack and Email.")
+    print(validation_messages)
     slack_response = call_slack_webhook(
         topic="AGHA submission quick validation",
         title=f"Submission: {submission_prefix} ({name})",

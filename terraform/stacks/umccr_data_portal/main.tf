@@ -894,12 +894,12 @@ resource "aws_codebuild_project" "codebuild_apis" {
     }
 
     environment_variable {
-      name = "IAP_BASE_URL"      # this is used only within CodeBuild dind scope
+      name = "ICA_BASE_URL"      # this is used only within CodeBuild dind scope
       value = "http://localhost"
     }
 
     environment_variable {
-      name = "IAP_AUTH_TOKEN"
+      name = "ICA_ACCESS_TOKEN"
       value = "any_value_work"  # this is used only within CodeBuild dind Prism mock stack for build test purpose only
     }
   }
@@ -1097,6 +1097,32 @@ resource "aws_db_subnet_group" "rds" {
   tags = merge(local.default_tags)
 }
 
+resource "aws_rds_cluster_parameter_group" "db_parameter_group" {
+  name        = "${local.stack_name_dash}-db-parameter-group"
+  family      = "aurora-mysql5.7"
+  description = "${local.stack_name_us} RDS Aurora cluster parameter group"
+
+  parameter {
+    # Set to max 1GB. See https://dev.mysql.com/doc/refman/5.7/en/packet-too-large.html
+    name  = "max_allowed_packet"
+    value = 1073741824
+  }
+
+  parameter {
+    # Set to 3x. See https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_net_read_timeout
+    name  = "net_read_timeout"
+    value = 30 * 3  # 30s (default) * 3
+  }
+
+  parameter {
+    # Set to 3x. See https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_net_write_timeout
+    name  = "net_write_timeout"
+    value = 60 * 3  # 60s (default) * 3
+  }
+
+  tags = merge(local.default_tags)
+}
+
 resource "aws_rds_cluster" "db" {
   cluster_identifier  = "${local.stack_name_dash}-aurora-cluster"
   engine              = "aurora-mysql"
@@ -1113,6 +1139,8 @@ resource "aws_rds_cluster" "db" {
   db_subnet_group_name = aws_db_subnet_group.rds.name
 
   enable_http_endpoint = true  # Enable RDS Data API (needed for Query Editor)
+
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.db_parameter_group.name
 
   scaling_configuration {
     auto_pause   = var.rds_auto_pause[terraform.workspace]

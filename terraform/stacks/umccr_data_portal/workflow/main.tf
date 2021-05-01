@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.14"
+  required_version = ">= 0.15"
 
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -10,8 +10,8 @@ terraform {
 
   required_providers {
     aws = {
-      version = "~> 3.26.0"
       source = "hashicorp/aws"
+      version = "3.37.0"
     }
   }
 }
@@ -40,7 +40,7 @@ locals {
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5"
-    prod = "1.0.7-75d4446"
+    prod = "3.7.5-9118962"
   }
 
   bcl_convert_input = {
@@ -66,34 +66,22 @@ locals {
     EOT
     prod = <<-EOT
     {
-      "v2-out-split-by-override-cycles": true,
-      "strict-mode-bcl-conversion": true,
+      "bcl_input_directory": {
+        "class": "Directory",
+        "location": "PLACEHOLDER"
+      },
       "samplesheet": {
         "class": "File",
         "location": "PLACEHOLDER"
       },
-      "samples": [
-        "PLACEHOLDER_1",
-        "PLACEHOLDER_2"
-      ],
-      "override-cycles": [
-        "PLACEHOLDER_3",
-        "PLACEHOLDER_4"
-      ],
-      "runfolder-name": "PLACEHOLDER",
-      "outdir-split-by-override-cycles": "samplesheets-by-override-cycles",
-      "module-multiqc": "interop",
-      "ignore-missing-samples-split-by-override-cycles": true,
-      "dummyFile-multiqc": {
-        "class": "File",
-        "location": "PLACEHOLDER"
-      },
-      "delete-undetermined-bcl-conversions": true,
-      "bcl-sample-project-subdirectories-bcl-conversion": true,
-      "bcl-input-directory": {
-        "class": "Directory",
-        "location": "PLACEHOLDER"
-      }
+      "settings_by_samples": [],
+      "samplesheet_outdir": "samplesheets-by-assay-type",
+      "ignore_missing_samples": true,
+      "samplesheet_output_format": "v2",
+      "bcl_sampleproject_subdirectories_bcl_conversion": true,
+      "strict_mode_bcl_conversion": true,
+      "delete_undetermined_indices_bcl_conversion": true,
+      "runfolder_name": "PLACEHOLDER"
     }
     EOT
   }

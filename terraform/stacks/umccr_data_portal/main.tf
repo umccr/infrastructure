@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.14"
+  required_version = ">= 0.15"
 
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -10,12 +10,13 @@ terraform {
 
   required_providers {
     aws = {
-      version = "~> 3.7.0"
       source = "hashicorp/aws"
+      version = "3.37.0"
     }
 
     github = {
-      version = "~> 3.0.0"
+      source = "integrations/github"
+      version = "4.9.2"
     }
   }
 }
@@ -34,8 +35,8 @@ provider "aws" {
 }
 
 provider "github" {
-  organization = "umccr"
-  token        = data.external.get_gh_token_from_ssm.result.gh_token
+  owner = "umccr"
+  token = data.external.get_gh_token_from_ssm.result.gh_token
 }
 
 data "aws_region" "current" {}

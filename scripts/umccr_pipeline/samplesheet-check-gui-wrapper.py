@@ -1,3 +1,4 @@
+import logging
 from gooey import Gooey, GooeyParser
 ss = __import__('samplesheet-check')
 
@@ -8,7 +9,14 @@ def main():
     parser.add_argument('samplesheet',
                         metavar='samplesheet',
                         help='The Samplesheet to check',
-                        widget='FileChooser')
+                        widget='FileChooser',
+                        gooey_options=dict(wildcard="Sample Sheets (*.csv);*.csv"))
+    parser.add_argument("--dev-mode",
+                        metavar="Developer Mode",
+                        default=False,
+                        action="store_true",
+                        help="Use only for development purposes",
+                        widget="CheckBox")
 
     return parser.parse_args()
 
@@ -25,9 +33,19 @@ def show_error_modal(error_msg):
 
 args = main()
 print(f"Samplesheet: {args.samplesheet}")
+# Set check_only attribute to true
+setattr(args, "check_only", True)
+# Set log-level
+if getattr(args, "dev_mode", True):
+    setattr(args, "log_level", logging.DEBUG)
+    setattr(args, "deploy_env", "dev")
+else:
+    setattr(args, "log_level", logging.INFO)
+    setattr(args, "deploy_env", "prod")
+
 
 try:
-    ss.main(args.samplesheet, True)
+    ss.main(args)
 except ValueError as ve:
     print(ve)
     show_error_modal(str(ve))

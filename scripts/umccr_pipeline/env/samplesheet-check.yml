@@ -1,0 +1,12 @@
+name: samplesheet_check
+channels:
+  - anaconda
+  - conda-forge
+dependencies:
+  - git
+  - scipy
+  - gooey
+  - gspread-pandas
+  - openpyxl
+  - oauth2client
+  - xlrd

@@ -1,437 +1,412 @@
+#!/usr/bin/env python3
 import os
+import re
 import sys
 import argparse
-import re
-import csv
-from glob import glob
+import collections
 from datetime import datetime
-from sample_sheet import SampleSheet
-import logging
-from logging.handlers import RotatingFileHandler
-import gspread  # maybe move to https://github.com/aiguofer/gspread-pandas
-from gspread_pandas import Spread
-from oauth2client.service_account import ServiceAccountCredentials
+from pathlib import Path
+import pandas as pd
+import csv
+from umccr_utils.google_lims import get_library_sheet_from_google, write_to_google_lims, write_to_local_lims
+from umccr_utils.samplesheet import get_years_from_samplesheet, SampleSheet
+from umccr_utils.logger import set_logger, set_basic_logger
+from umccr_utils.globals import LIMS_COLUMNS, LAB_SPREAD_SHEET_ID, LIMS_SPREAD_SHEET_ID, \
+    NOVASTOR_CSV_DIR, NOVASTOR_RAW_BCL_DIR, NOVASTOR_FASTQ_OUTPUT_DIR, \
+    FASTQ_S3_BUCKET, RUN_REGEX_OBJS, INSTRUMENT_NAMES, METADATA_COLUMN_NAMES, NOVASTOR_CRED_PATHS, \
+    OVERRIDE_CYCLES_OBJS
+
 
 import warnings
 warnings.simplefilter("ignore")
 
-################################################################################
-# CONSTANTS
 
-SHEET_NAME_RUNS = 'Sheet1'
-SHEET_NAME_FAILED = 'Failed Runs'
-DEPLOY_ENV = os.getenv('DEPLOY_ENV')
-if not DEPLOY_ENV:
-    raise ValueError("DEPLOY_ENV needs to be set!")
-SCRIPT = os.path.basename(__file__)
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-
-# The column names of the Google LIMS (in order!)
-# Names and values should be kept in sync between the lab internal library tracking sheet and the Google LIMS
-illumina_id_column_name = 'IlluminaID'
-run_column_name = 'Run'
-timestamp_column_name = 'Timestamp'
-subject_id_column_name = 'SubjectID'  # the internal ID for the subject/patient
-sample_id_column_name = 'SampleID'  # the internal ID for the sample
-library_id_column_name = 'LibraryID'  # the internal ID for the library
-subject_ext_id_column_name = 'ExternalSubjectID'  # the external (provided) ID for the subject/patient
-sample_ext_id_column_name = 'ExternalSampleID'  # is the external (provided) sample ID
-library_ext_id_column_name = 'ExternalLibraryID'  # is the external (provided) library ID
-sample_name_column_name = 'SampleName'  # the sample name assigned by the lab
-project_owner_column_name = 'ProjectOwner'
-project_name_column_name = 'ProjectName'
-project_custodian_column_name = 'ProjectCustodian'
-type_column_name = 'Type'  # the assay type: WGS, WTS, 10X, ...
-assay_column_name = 'Assay'
-override_cycles_column_name = 'OverrideCycles'
-phenotype_column_name = 'Phenotype'  # tomor, normal, negative-control, ...
-source_column_name = 'Source'  # tissue, FFPE, ...
-quality_column_name = 'Quality'  # Good, Poor, Borderline
-topup_column_name = 'Topup'
-secondary_analysis_column_name = 'SecondaryAnalysis'
-workflow_column_name = 'Workflow'
-tags_column_name = 'Tags'
-fastq_column_name = 'FASTQ'
-number_fastqs_column_name = 'NumberFASTQS'
-results_column_name = 'Results'
-trello_column_name = 'Trello'
-notes_column_name = 'Notes'
-todo_column_name = 'ToDo'
-# List of column names expected to be found in the tracking sheet
-metadata_column_names = (
-    library_id_column_name,
-    sample_name_column_name,
-    sample_id_column_name,
-    sample_ext_id_column_name,
-    subject_id_column_name,
-    subject_ext_id_column_name,
-    phenotype_column_name,
-    quality_column_name,
-    source_column_name,
-    project_name_column_name,
-    project_owner_column_name,
-    type_column_name,
-    assay_column_name,
-    override_cycles_column_name,
-    workflow_column_name
-)
-# Instrument ID mapping
-instrument_name = {
-    "A01052": "Po",
-    "A00130": "Baymax"
-}
-
-# column headers of the LIMS spreadsheet (in order!)
-sheet_column_headers = (
-    illumina_id_column_name,
-    run_column_name,
-    timestamp_column_name,
-    subject_id_column_name,
-    sample_id_column_name,
-    library_id_column_name,
-    subject_ext_id_column_name,
-    sample_ext_id_column_name,
-    library_ext_id_column_name,
-    sample_name_column_name,
-    project_owner_column_name,
-    project_name_column_name,
-    project_custodian_column_name,
-    type_column_name,
-    assay_column_name,
-    override_cycles_column_name,
-    phenotype_column_name,
-    source_column_name,
-    quality_column_name,
-    topup_column_name,
-    secondary_analysis_column_name,
-    workflow_column_name,
-    tags_column_name,
-    fastq_column_name,
-    number_fastqs_column_name,
-    results_column_name,
-    trello_column_name,
-    notes_column_name,
-    todo_column_name)
-
-# define argument defaults
-if DEPLOY_ENV == 'prod':
-    raw_data_base_dir = '/storage/shared/raw'
-    bcl2fastq_base_dir = '/storage/shared/bcl2fastq_output'
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".log")
-    lims_spreadsheet_id = '1aaTvXrZSdA1ekiLEpW60OeNq2V7D_oEMBzTgC-uDJAM'  # 'Google LIMS' in Team Drive
-    lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'  # Lab metadata tracking sheet (prod)
-else:
-    raw_data_base_dir = '/storage/shared/dev'
-    bcl2fastq_base_dir = '/storage/shared/dev/bcl2fastq_output'
-    LOG_FILE_NAME = os.path.join(SCRIPT_DIR, SCRIPT + ".dev.log")
-    lims_spreadsheet_id = '1vX89Km1D8dm12aTl_552GMVPwOkEHo6sdf1zgI6Rq0g'  # 'Google LIMS dev' in Team Drive
-    lab_spreadsheet_id = '1Pgz13btHOJePiImo-NceA8oJKiQBbkWI5D2dLdKpPiY'  # Lab metadata tracking sheet (dev)
-
-# lab_spreadsheet_id = '1pZRph8a6-795odibsvhxCqfC6l0hHZzKbGYpesgNXOA'
-runfolder_name_expected_length = 29
-fastq_hpc_base_dir = 's3://umccr-fastq-data-prod/'
-csv_outdir = '/tmp'
-write_csv = False
-creds_file = "/home/limsadmin/.google/google-lims-updater-b50921f70155.json"
-skip_lims_update = False
-failed_run = False
-
-# pre-compile regex patterns
-runfolder_pattern = re.compile('([12][0-9][01][0-9][0123][0-9])_(A01052|A00130)_([0-9]{4})_[A-Z0-9]{10}')
-
-
-################################################################################
-# METHODS
-
-def getLogger():
-    new_logger = logging.getLogger(__name__)
-    new_logger.setLevel(logging.DEBUG)
-
-    # create a logging format
-    formatter = logging.Formatter('%(asctime)s - %(module)s - %(name)s - %(levelname)s : %(lineno)d - %(message)s')
-
-    # create a file handler
-    file_handler = RotatingFileHandler(filename=LOG_FILE_NAME, maxBytes=100000000, backupCount=5)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-
-    # create a console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-    console_handler.setFormatter(formatter)
-
-    # add the handlers to the logger
-    new_logger.addHandler(file_handler)
-    new_logger.addHandler(console_handler)
-
-    return new_logger
-
-
-def get_year_from_lib_id(library_id):
-    # TODO: check library ID format and make sure we have proper years
-    if library_id.startswith('LPRJ'):
-        return '20' + library_id[4:6]
-    else:
-        return '20' + library_id[1:3]
-
-
-def get_library_sheet_from_google(year):
-    logger.info(f"Loading tracking data for year {year}")
-    spread = Spread(lab_spreadsheet_id)
-    library_tracking_spreadsheet_df = spread.sheet_to_df(sheet=year, index=0, header_rows=1, start_row=1)
-    hit = library_tracking_spreadsheet_df.iloc[0]
-    logger.debug(f"First record: {hit}")
-    for column_name in metadata_column_names:
-        logger.debug(f"Checking for column name {column_name}...")
-        if column_name not in hit:
-            logger.error(f"Could not find column {column_name}. The file is not structured as expected! Aborting.")
-            exit(-1)
-    logger.info(f"Loaded {len(library_tracking_spreadsheet_df.index)} records from library tracking sheet.")
-    return library_tracking_spreadsheet_df
-
-
-def get_meta_data_by_library_id(library_id):
-    year = get_year_from_lib_id(library_id)
-    library_tracking_spreadsheet_df = library_tracking_spreadsheet.get(year)
-    try:
-        hit = library_tracking_spreadsheet_df[library_tracking_spreadsheet_df[library_id_column_name] == library_id]
-    except (KeyError, NameError, TypeError, Exception) as er:
-        logger.error(f"Error trying to find library ID {library_id}! Error: {er}")
-
-    # We expect exactly one matching record, not more, not less!
-    if len(hit) == 1:
-        logger.debug(f"Unique entry found for sample ID {library_id}")
-    elif len(hit) > 1:
-        logger.error(f"Multiple entries for library ID {library_id}!")
-        raise ValueError(f"Multiple entries for library ID {library_id}!")
-    else:
-        logger.error(f"No entry for library ID {library_id}")
-        raise ValueError(f"No entry for library ID {library_id}")
-    return hit
-
-
-def write_csv_file(output_file, column_headers, data_rows):
-    with open(output_file, 'w', newline='') as csvfile:
-        sheetwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        sheetwriter.writerow(column_headers)
-        for row in data_rows:
-            sheetwriter.writerow(row)
-
-
-def next_available_row(worksheet):
-    str_list = list(filter(None, worksheet.col_values(1)))  # fastest
-    return len(str_list)+1
-
-
-def write_to_google_lims(keyfile, lims_spreadsheet_id, data_rows, failed_run):
-    # follow example from:
-    # https://www.twilio.com/blog/2017/02/an-easy-way-to-read-and-write-to-a-google-spreadsheet-in-python.html
-    scope = ['https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scope)
-    client = gspread.authorize(creds)
-
-    params = {
-        'valueInputOption': 'USER_ENTERED',
-        'insertDataOption': 'INSERT_ROWS'
-    }
-    body = {
-        'majorDimension': 'ROWS',
-        'values': list(data_rows)
-    }
-
-    spreadsheet = client.open_by_key(lims_spreadsheet_id)
-    if failed_run:
-        spreadsheet.values_append(SHEET_NAME_FAILED, params, body)
-    else:
-        spreadsheet.values_append(SHEET_NAME_RUNS, params, body)
-
-
-def split_at(s, c, n):
-    words = s.split(c)
-    return c.join(words[:n]), c.join(words[n:])
-
-
-if __name__ == "__main__":
-    logger = getLogger()
-    logger.info(f"Invocation with parameters: {sys.argv[1:]}")
-
-    ################################################################################
-    # argument parsing
-
+def get_args():
+    """
+    Get arguments from the commandline
+    :return:
+    """
     logger.debug("Setting up argument parser.")
     parser = argparse.ArgumentParser(description='Generate data for LIMS spreadsheet.')
     parser.add_argument('runfolder',
                         help="The run/runfolder name.")
+    parser.add_argument("--deploy-env",
+                        required=False,
+                        choices=["dev", "prod"],
+                        help="Used to determine lims sheet ID and metadata ID paths."
+                             "If not specified, DEPLOY_ENV env var must be specified")
     parser.add_argument('--raw-data-base-dir',
-                        help="The path to raw data (where to find the raw data folders, i.e. the runfolder).",
-                        default=raw_data_base_dir)
+                        help="The path to raw data (where to find the raw data folders, i.e. the runfolder)."
+                             "Use the --deploy")
     parser.add_argument('--bcl2fastq-base-dir',
-                        help="The base path (where to find the bcl2fastq output).",
-                        default=bcl2fastq_base_dir)
+                        help="The base path (where to find the bcl2fastq output).")
     parser.add_argument('--fastq-hpc-base-dir',
-                        help="The destination base path (depends on HPC env. ",
-                        default=fastq_hpc_base_dir)
+                        help="The destination base path (depends on HPC env. ",)
     parser.add_argument('--csv-outdir',
                         help="Where to write the CSV output file to. Default=/tmp).",
-                        default=csv_outdir)
+                        default=NOVASTOR_CSV_DIR)
     parser.add_argument('--write-csv', action='store_true',
                         help="Use this flag to write a CSV file.")
-    parser.add_argument('--lims-spreadsheet-id',
-                        help="The name of the Google LIMS spreadsheet.",
-                        default=lims_spreadsheet_id)
-    parser.add_argument('--creds-file',
-                        help="The Google credentials file to grant access to the spreadsheet.",
-                        default=creds_file)
-    parser.add_argument('--skip-lims-update', action='store_true',
-                        help="Use this flag to skip the update of the Google LIMS.")
+
+    write_parser = parser.add_mutually_exclusive_group()
+
+    write_parser.add_argument('--creds-file',
+                              required=False,
+                              help="The Google credentials file to grant access to the spreadsheet."
+                                   "Must be specified if --skip-lims-update is not specified",
+                              default=NOVASTOR_CRED_PATHS["google_write_token"])
+    write_parser.add_argument("--update-local-lims",
+                              required=False,
+                              help="Update a local LIMS file instead. Useful for debugging purposes."
+                                   "File must exist with the right sheet names and headers."
+                                   "Not compatibile with --skip-lims-update or --creds-file parameters")
+    write_parser.add_argument('--skip-lims-update', action='store_true',
+                              default=False,
+                              help="Use this flag to skip the update of the Google LIMS.")
     parser.add_argument('--failed-run', action='store_true',
+                        default=False,
                         help="Use this flag to indicate a failed run (updates the Failed Runs sheet).")
 
     logger.debug("Parsing arguments.")
-    args = parser.parse_args()
-    if args.raw_data_base_dir:
-        raw_data_base_dir = args.raw_data_base_dir
-    if args.bcl2fastq_base_dir:
-        bcl2fastq_base_dir = args.bcl2fastq_base_dir
-    if args.fastq_hpc_base_dir:
-        fastq_hpc_base_dir = args.fastq_hpc_base_dir
-    if args.csv_outdir:
-        csv_outdir = args.csv_outdir
-    if args.write_csv:
-        write_csv = True
-    if args.lims_spreadsheet_id:
-        lims_spreadsheet_id = args.lims_spreadsheet_id
-    if args.creds_file:
-        creds_file = args.creds_file
-    if args.skip_lims_update:
-        skip_lims_update = True
-    if args.failed_run:
-        failed_run = True
-    runfolder = args.runfolder
+    return parser.parse_args()
 
-    # extract date and run number from runfolder name
-    logger.debug("Parsing runfolder name.")
-    if len(runfolder) != runfolder_name_expected_length:
-        raise ValueError(f"Runfolder name {runfolder} did not match the expected \
-                          length of {runfolder_name_expected_length} characters!")
-    try:
-        run_date = re.search(runfolder_pattern, runfolder).group(1)
-        run_inst_id = re.search(runfolder_pattern, runfolder).group(2)
-        run_no = re.search(runfolder_pattern, runfolder).group(3)
-    except AttributeError:
-        raise ValueError(f"Runfolder name {runfolder} did not match expected format: {runfolder_pattern}")
 
-    run_timestamp = datetime.strptime(run_date, '%y%m%d').strftime('%Y-%m-%d')
-    run_year = datetime.strptime(run_date, '%y%m%d').strftime('%Y')
-    run_number = int(run_no)
-    logger.info(f"Extracted run number/year/timestamp: {run_number}/{run_year}/{run_timestamp}")
-    logger.info(f"Extracted instrument ID: {run_inst_id} ({instrument_name[run_inst_id]})")
+def set_args(args):
+    """
+    Ensure args are right
+    :param args:
+    :return:
+    """
 
-    # set raw data base path according to instrument
-    runfolder_base_dir = os.path.join(raw_data_base_dir, instrument_name[run_inst_id])
+    # Now we know the deploy-env, we can set the file handle
+    global logger
 
-    # load the library tracking sheet for the run year
-    logger.debug("Loading library tracking data.")
-    # global variables
-    # TODO: should be refactored in proper class variables
-    library_tracking_spreadsheet = dict()  # dict of sheets as dataframes
-    for year in ('2019', '2020', '2021'):  # TODO: this could be determined scanning though all SampleSheets
-        library_tracking_spreadsheet[year] = get_library_sheet_from_google(year)
+    # Check runfolder regex
+    # Runfolder is a subdirectory of --raw-data-base-dir
+    run_folder_arg = getattr(args, "runfolder", None)
 
-    ################################################################################
-    # Generate LIMS records from SampleSheet
+    # Check run folder matches regex
+    if RUN_REGEX_OBJS["run_fullmatch"].fullmatch(run_folder_arg) is None:
+        logger.error("Could not match \"{}\" with run regex. Exiting".format(run_folder_arg))
+        sys.exit(1)
 
-    lims_data_rows = set()
+    # Get run Attributes
+    run_date, machine_id, run_number, slot_id, flowcell_id = get_run_attributes_from_run_name(run_folder_arg)
 
-    if failed_run:
-        logger.info("Processing failed run. Using original sample sheet.")
-        samplesheet_path_pattern = os.path.join(runfolder_base_dir, runfolder, 'SampleSheet.csv')
+    # Set each of these as arguments
+    setattr(args, "run_date", run_date)
+    setattr(args, "machine_id", machine_id)
+    setattr(args, "run_number", run_number)
+    setattr(args, "slot_id", slot_id)
+    setattr(args, "flowcell_id", flowcell_id)
+
+    # Check DEPLOY_ENV env var exists if --deploy-env not set
+    deploy_env_arg = getattr(args, "deploy_env", None)
+    if deploy_env_arg is None:
+        # Check for DEPLOY_ENV env var
+        deploy_env_var = os.environ["DEPLOY_ENV"]
+        if deploy_env_var is None:
+            logger.error("--deploy-env arg not set and DEPLOY_ENV environment variable is also not set.")
+            sys.exit(1)
+        elif deploy_env_var not in ["dev", "prod"]:
+            logger.error("DEPLOY_ENV environment variable must be set to 'dev' or 'prod'. Alternatively"
+                         "specify with --deploy-env on commandline")
+            sys.exit(1)
+        else:
+            setattr(args, "deploy_env", deploy_env_var)
+
+    # New the logger
+    set_logger(SCRIPT_DIR, SCRIPT, getattr(args, "deploy_env"))
+
+    # Check directories exists
+    # Checking raw base directory exists
+    raw_data_base_dir_arg = getattr(args, "raw_data_base_dir", None)
+    if raw_data_base_dir_arg is None:
+        raw_data_base_dir_arg = NOVASTOR_RAW_BCL_DIR[getattr(args, "deploy_env")]
+        # Take from globals
+        logger.debug("--raw-data-base-dir not specified. Using globals val {}".format(raw_data_base_dir_arg))
+    raw_data_base_dir_path = Path(raw_data_base_dir_arg)
+    # Check bcl directory exists
+    if not raw_data_base_dir_path.is_dir():
+        logger.error("--raw-data-base-dir directory {} does not exist".format(raw_data_base_dir_arg))
+        sys.exit(1)
+    # Don't write back yet since we also extend this by the instrument name and run folder path
+    raw_data_base_dir_path = raw_data_base_dir_path / INSTRUMENT_NAMES[machine_id]
+    # Create base directory
+    if not raw_data_base_dir_path.is_dir():
+        logger.error("Could not find directory {}".format(raw_data_base_dir_path))
+        sys.exit(1)
+    setattr(args, "raw_data_base_dir", raw_data_base_dir_path)
+    # Now create the raw_data_run_dir attribute
+    raw_data_run_dir_path = raw_data_base_dir_path / run_folder_arg
+    # Check directory exists
+    if not raw_data_run_dir_path.is_dir():
+        logger.error("Could not find directory{}".format(raw_data_run_dir_path))
+    setattr(args, "raw_data_run_dir", raw_data_run_dir_path)
+
+    # We use this along with the 'failed' attribute to collect the sample sheets
+    # Check run dir
+    if getattr(args, "failed_run", False):
+        # Use the default sample sheet
+        samplesheet_path = raw_data_run_dir_path / "SampleSheet.csv"
+        # Check samplesheet_path exists
+        if not samplesheet_path.is_file():
+            logger.error("--failed-run set to true {} should exist".format(samplesheet_path))
+            sys.exit(1)
+        # Set attribute as a list
+        setattr(args, "samplesheet_paths", [samplesheet_path])
     else:
-        logger.info("Processing successful run. Using generated sample sheet(s).")
-        samplesheet_path_pattern = os.path.join(runfolder_base_dir, runfolder, 'SampleSheet.csv.custom.*')
+        # Find the custom csvs
+        samplesheet_paths = list(raw_data_run_dir_path.glob("SampleSheet.*.csv"))
 
-    samplesheet_paths = glob(samplesheet_path_pattern)
-    if len(samplesheet_paths) < 1:
-        raise ValueError("No sample sheets found!")
-    logger.info(f"Using {len(samplesheet_paths)} sample sheet(s).")
+        # Ensure the list is greater than 1
+        if len(samplesheet_paths) == 0:
+            logger.error("No samplesheets were found in {} matching the pattern:"
+                         " 'SampleSheet.*.csv'".format(raw_data_run_dir_path))
+            sys.exit(1)
 
-    for samplesheet in samplesheet_paths:
-        logger.info(f"Processing samplesheet {samplesheet}")
-        name, extension = os.path.splitext(samplesheet)
-        samples = SampleSheet(samplesheet).samples
-        logger.info(f"Found {len(samples)} samples.")
-        for sample in samples:
-            logger.debug(f"Looking up metadata with {sample.Sample_Name} for samplesheet.Sample_ID (UMCCR SampleID); " +
-                         f"{sample.Sample_ID} and samplesheet.sample_Name (UMCCR LibraryID): {sample.Sample_Name}")
-            column_values = get_meta_data_by_library_id(sample.Sample_Name)
+        samplesheet_paths_with_override_cycles_midfix = []
 
-            fastq_pattern = os.path.join(bcl2fastq_base_dir, runfolder, sample.Sample_Project,
-                                         sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
-            s3_fastq_pattern = os.path.join(fastq_hpc_base_dir, runfolder, sample.Sample_Project,
-                                            sample.Sample_ID, sample.Sample_Name + "*.fastq.gz")
-
-            logger.debug('Looking for FASTQs: ' + fastq_pattern)
-            fastq_file_paths = glob(fastq_pattern)
-            if len(fastq_file_paths) < 1:
-                logger.warn(f"Found no FASTQ files for sample {sample.Sample_ID}!")
-
-            # splitting the combined sample name
-            if sample.Sample_ID.startswith('NTC') or sample.Sample_ID.startswith('PTC'):
-                s_id, es_id = split_at(sample.Sample_ID, '_', 2)
+        # For each path, check the override cycles midfix
+        for samplesheet_path in samplesheet_paths:
+            # Get override cycles midfix segment
+            override_cycles_re_obj = re.compile(r"SampleSheet.(\S+).csv").fullmatch(str(samplesheet_path.name))
+            if override_cycles_re_obj is None:
+                logger.warning("Skipping samplesheet {} as it doesn't have an 'override cycles' midfix".
+                               format(samplesheet_path))
+                continue
+            override_cycles_midfix = override_cycles_re_obj.group(1)
+            # Split by underscores
+            for override_cycles_segment in override_cycles_midfix.split("_"):
+                if OVERRIDE_CYCLES_OBJS["cycles_full_match"].fullmatch(override_cycles_segment) is None:
+                    # Place a warning
+                    logger.warning("Skipping samplesheet {} as it doesn't have the correct override cycles midfix."
+                                   "Segment \"{}\" isn't a valid override cycles segment"
+                                   .format(samplesheet_path, override_cycles_segment))
+                    break
             else:
-                s_id, es_id = split_at(sample.Sample_ID, '_', 1)
-            print(f"Split SampleID {sample.Sample_ID} into intID {s_id} and extID {es_id}")
-            print(f"Inserting values {column_values}")
-            # double check LibraryID
-            if not sample.Sample_Name == column_values[library_id_column_name].item():
-                raise ValueError(f"Library IDs did not match. Samplesheet: {sample.Sample_Name} " +
-                                 f"Tracking sheet: {column_values[library_id_column_name].item()}")
-            lims_data_rows.add((runfolder,
-                                run_number,
-                                run_timestamp,
-                                column_values[subject_id_column_name].item(),
-                                column_values[sample_id_column_name].item(),
-                                column_values[library_id_column_name].item(),
-                                column_values[subject_ext_id_column_name].item(),
-                                column_values[sample_ext_id_column_name].item(),
-                                '-',  # ExternalLibraryID
-                                column_values[sample_name_column_name].item(),
-                                column_values[project_owner_column_name].item(),
-                                column_values[project_name_column_name].item(),
-                                '-',  # ProjectCustodian
-                                column_values[type_column_name].item(),
-                                column_values[assay_column_name].item(),
-                                column_values[override_cycles_column_name].item(),
-                                column_values[phenotype_column_name].item(),
-                                column_values[source_column_name].item(),
-                                column_values[quality_column_name].item(),
-                                '-',  # Topup
-                                '-',  # SecondaryAnalysis
-                                column_values[workflow_column_name].item(),
-                                '-',  # Tags
-                                s3_fastq_pattern,
-                                len(fastq_file_paths),
-                                '-',  # Results
-                                '-',  # Trello
-                                '-',  # Notes
-                                '-'  # ToDo
-                                ))
+                samplesheet_paths_with_override_cycles_midfix.append(samplesheet_path)
 
-    ################################################################################
-    # write the data into a CSV file
+        # Check at least one sample was appended
+        if len(samplesheet_paths_with_override_cycles_midfix) == 0:
+            logger.error("Could not find any samplesheets with the correct SampleSheet.<override_cycles>.csv pattern")
+            sys.exit(1)
 
-    if write_csv:
-        output_file = os.path.join(csv_outdir, runfolder + '-lims-sheet.csv')
-        logger.info(f"Writing {len(lims_data_rows)} records to CSV file {output_file}")
-        write_csv_file(output_file=output_file, column_headers=sheet_column_headers, data_rows=lims_data_rows)
+        # Set attribute
+        setattr(args, "samplesheet_paths", samplesheet_paths_with_override_cycles_midfix)
+
+    # Checking bc2fastq-base-dir exists
+    bcl2fastq_base_dir_arg = getattr(args, "bcl2fastq_base_dir", None)
+    if bcl2fastq_base_dir_arg is None:
+        bcl2fastq_base_dir_arg = NOVASTOR_FASTQ_OUTPUT_DIR[getattr(args, "deploy_env")]
+        # Take from globals
+        logger.debug("--bcl2fastq-base-dir not specified. Using globals val {}".format(bcl2fastq_base_dir_arg))
+    bcl2fastq_base_dir_path = Path(bcl2fastq_base_dir_arg)
+    # Check parent exists
+    if not bcl2fastq_base_dir_path.is_dir():
+        logger.error("Directory for --bcl2fastq-base-dir arg - {} does not exist".format(bcl2fastq_base_dir_arg))
+        sys.exit(1)
+    # Write back as a path object
+    setattr(args, "bcl2fastq_base_dir", bcl2fastq_base_dir_path)
+
+    # Now create the bcl2fastq_run_dir attribute
+    bcl2fastq_run_dir_path = bcl2fastq_base_dir_path / run_folder_arg
+    if not bcl2fastq_run_dir_path.is_dir():
+        logger.error("Could not find {} inside --bcl2fastq-base-dir arg".format(run_folder_arg))
+    # Write as a path object
+    setattr(args, "bcl2fastq_run_dir", bcl2fastq_run_dir_path)
+
+    # Add fastq_hpc_run_dir arg
+    fastq_hpc_base_dir_arg = getattr(args, "fastq_hpc_base_dir", None)
+    if fastq_hpc_base_dir_arg is None:
+        fastq_hpc_base_dir_arg = FASTQ_S3_BUCKET[getattr(args, "deploy_env")]
+        # Take from globals
+        logger.debug("--fastq-hpc-base-dir not specified. Using globals val {}".format(fastq_hpc_base_dir_arg))
+    fastq_hpc_base_dir_path = Path(fastq_hpc_base_dir_arg)
+    fastq_hpc_run_dir_path = fastq_hpc_base_dir_path / run_folder_arg
+    setattr(args, "fastq_hpc_run_dir", fastq_hpc_run_dir_path)
+
+    # Checking csv-outdir exists
+    csv_outdir_arg = getattr(args, "csv_outdir", None)
+    csv_outdir_path = Path(csv_outdir_arg)
+    # Check csv_outdir exists
+    if not csv_outdir_path.is_dir():
+        logger.error("Error - csv output directory does not exist. Exiting")
+        sys.exit(1)
+    # Write back as path object
+    setattr(args, "csv_outdir", csv_outdir_path)
+
+    # Check creds_file is a file
+    creds_file_arg = getattr(args, "creds_file", None)
+    update_local_lims_arg = getattr(args, "update_local_lims", None)
+    skip_lims_update_arg = getattr(args, "skip_lims_update", False)
+
+    if update_local_lims_arg is not None:
+        if not Path(update_local_lims_arg).is_file():
+            logger.error("Could not find file from --update-local-lims: \"{}\"".format(update_local_lims_arg))
+    elif creds_file_arg is not None:
+        if not Path(creds_file_arg).is_file():
+            logger.error("Could not find file from --creds-file arg: \"{}\"".format(creds_file_arg))
+            sys.exit(1)
+
+    # Set lims and trackingsheet values based on deploy env
+    lab_spreadsheet_id = LAB_SPREAD_SHEET_ID[args.deploy_env]
+    lims_spreadsheet_id = LIMS_SPREAD_SHEET_ID[args.deploy_env]
+
+    setattr(args, "lab_spreadsheet_id", lab_spreadsheet_id)
+    setattr(args, "lims_spreadsheet_id", lims_spreadsheet_id)
+
+    # Return args
+    return args
+
+
+def get_run_attributes_from_run_name(run_name):
+    """
+    Use the run regex obj to get the required run attributes
+    :param run_name:
+    :return:
+    """
+    run_regex_obj = RUN_REGEX_OBJS["run"].fullmatch(run_name)
+
+    # Run date in YYMMDD format
+    run_date = datetime.strptime(run_regex_obj.group(1), '%y%m%d').strftime('%Y-%m-%d')
+
+    # Machine ID either A01052 or A00130
+    machine_id = run_regex_obj.group(2)
+
+    # Run Number - Zero-Filled Four Digit Number
+    # Convert to int for entry into excel
+    run_number = int(run_regex_obj.group(3))
+
+    # Slot/Cartridge ID - either A or B
+    slot_id = run_regex_obj.group(4)
+
+    # Flowcell ID - usually ends in DRXX, DRXY, DSXX or DMXX
+    flowcell_id = run_regex_obj.group(5)
+
+    return run_date, machine_id, run_number, slot_id, flowcell_id
+
+
+def get_lims_row(sample, args):
+    """
+    Get the lims row to create excel sheet
+    :param sample:
+    :param args:
+    :return:
+    """
+
+    fastq_pattern = Path(sample.project) / \
+                      sample.unique_id / \
+                      "{}.fastq.gz".format(sample.library_id)
+
+    num_fastq_files = len(list(args.bcl2fastq_run_dir.glob(str(fastq_pattern))))
+
+    s3_fastq_pattern = args.fastq_hpc_run_dir / \
+                       sample.project / \
+                       sample.unique_id / \
+                       "{}.fastq.gz".format(sample.library_id)
+
+    lims_data_row = [
+        args.runfolder,  # illumina_id
+        args.run_number,  # run
+        args.run_date,  # timestamp
+        sample.library_series[METADATA_COLUMN_NAMES["subject_id"]],  # subject_id
+        sample.library_series[METADATA_COLUMN_NAMES["sample_id"]],  # sample_id
+        sample.library_series[METADATA_COLUMN_NAMES["library_id"]],  # library_id
+        sample.library_series[METADATA_COLUMN_NAMES["external_subject_id"]],  # external_subject_id
+        sample.library_series[METADATA_COLUMN_NAMES["external_sample_id"]],  # external_sample_id
+        "-",  # FIXME "external_library_id"
+        sample.library_series[METADATA_COLUMN_NAMES["sample_name"]],  # sample_name
+        sample.library_series[METADATA_COLUMN_NAMES["project_owner"]],  # project_owner
+        sample.library_series[METADATA_COLUMN_NAMES["project_name"]],  # project_name
+        "-",  # FIXME "project_custodian"
+        sample.library_series[METADATA_COLUMN_NAMES["type"]],  # type
+        sample.library_series[METADATA_COLUMN_NAMES["assay"]],  # assay
+        sample.library_series[METADATA_COLUMN_NAMES["override_cycles"]],  # override_cycles
+        sample.library_series[METADATA_COLUMN_NAMES["phenotype"]],  # phenotype
+        sample.library_series[METADATA_COLUMN_NAMES["source"]],  # source
+        sample.library_series[METADATA_COLUMN_NAMES["quality"]],  # quality
+        "-",  # FIXME "topup"
+        "-",  # FIXME "SecondaryAnalysis"
+        sample.library_series[METADATA_COLUMN_NAMES["secondary_analysis"]],  # workflow
+        '-',  # tags
+        str(s3_fastq_pattern),  # fastq
+        num_fastq_files,  # number_fastqs
+        '-',  # FIXME results
+        '-',  # trello
+        '-',  # notes
+        '-'  # 'To-Do'
+    ]
+
+    return lims_data_row
+
+
+def main():
+    args = get_args()
+    # Check args
+    args = set_args(args)
+
+    # Initialise sample sheets
+    logger.debug("Loading the sample sheets")
+    samplesheets = [SampleSheet(samplesheet_path=samplesheet_path)
+                    for samplesheet_path in args.samplesheet_paths]
+
+    # Get the years from the sample sheet
+    logger.debug("Getting the years of samples used from the samplesheets")
+    years = set()
+    for samplesheet in samplesheets:
+        years_i = get_years_from_samplesheet(samplesheet)
+        for year in years_i:
+            years.add(year)
+
+    # Loading the appropriate library tracking sheet for the run year
+    logger.debug("Loading library tracking data.")
+    library_tracking_spreadsheet = collections.defaultdict()  # dict of sheets as dataframes
+    for year in years:
+        library_tracking_spreadsheet[year] = get_library_sheet_from_google(args.lab_spreadsheet_id, year)
+
+    # Initialise data rows
+    lims_data_rows = []
+
+    for samplesheet in samplesheets:
+        for sample in samplesheet:
+            # Get sample metadata
+            sample.set_metadata_row_for_sample(library_tracking_spreadsheet=library_tracking_spreadsheet)
+            lims_data_rows.append(get_lims_row(sample, args))
+
+    # Convert to pandas dataframe
+    lims_data_df = pd.DataFrame(lims_data_rows, columns=LIMS_COLUMNS.values())
+
+    # Drop duplicate rows - can occur with 10X data
+    lims_data_df = lims_data_df.drop_duplicates()
+
+    # Write lims data df to csv if requested
+    if getattr(args, "write_csv", False):
+        output_file = args.csv_outdir / "{}-{}".format(args.runfolder, "lims-sheet.csv")
+        lims_data_df.to_csv(output_file, index=False, header=True, sep=",", quoting=csv.QUOTE_MINIMAL)
+
+    if getattr(args, "skip_lims_update", False):
+        logger.info("Skipping Google LIMS update!")
+    elif getattr(args, "update_local_lims", False):
+        logger.info("Writing {} records to local excel file".format(lims_data_df.shape[0]))
+        write_to_local_lims(excel_file=args.update_local_lims,
+                            data_df=lims_data_df,
+                            failed_run=args.failed_run)
     else:
-        logger.info("Not writing CSV file.")
-
-    if skip_lims_update:
-        logger.warn("Skipping Google LIMS update!")
-    else:
-        logger.info(f"Writing {len(lims_data_rows)} records to Google LIMS {lims_spreadsheet_id}")
-        write_to_google_lims(keyfile=creds_file, lims_spreadsheet_id=lims_spreadsheet_id,
-                             data_rows=lims_data_rows, failed_run=failed_run)
+        logger.info(f"Writing {lims_data_df.shape[0]} records to Google LIMS {args.lims_spreadsheet_id}")
+        write_to_google_lims(keyfile=args.creds_file,
+                             lims_spreadsheet_id=args.lims_spreadsheet_id,
+                             data_rows=lims_data_df,
+                             failed_run=args.failed_run)
 
     logger.info("All done.")
+
+
+SCRIPT = Path(__file__)
+SCRIPT_DIR = SCRIPT.parent
+SCRIPT_NAME = SCRIPT.name
+logger = set_basic_logger()
+
+if __name__ == "__main__":
+    main()
+

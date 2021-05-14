@@ -1642,7 +1642,7 @@ resource "aws_ssm_parameter" "sqs_germline_queue_arn" {
 }
 
 resource "aws_ssm_parameter" "sqs_tn_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_tn_queue_arn"
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_tumor_normal_queue_arn"
   type  = "String"
   value = aws_sqs_queue.tn_queue.arn
   tags  = merge(local.default_tags)

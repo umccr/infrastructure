@@ -631,7 +631,50 @@ def check_sample_sheet_for_index_clashes(samplesheet):
         raise SimilarIndexError
 
 
-def check_override_cycles(samplesheet):
+def check_internal_override_cycles(samplesheet):
+    """
+    For each sample in the samplesheet, compare a given samples override cycles attributes with those
+    of the indexes of the samples.
+    i.e
+    If the sample has the override cycles Y151;I8;I8;Y151, we should expect the non-N lengths of i7 and i5 to both be 8.
+    :param samplesheet:
+    :return:
+    """
+    for sample in samplesheet:
+        # Check override cycles attribute exists
+        if sample.override_cycles == "":
+            logger.warning("Could not find override cycles for sample \"{}\"".format(sample.unique_id))
+            continue
+        index_count = 0
+        for cycle_set in sample.override_cycles.split(";"):
+            # Makes sure that the cycles completes a fullmatch
+            if OVERRIDE_CYCLES_OBJS["indexes"].match(cycle_set) is None:
+                logger.debug("Not an index cycle, skipping")
+                continue
+            # Get the length of index
+            index_length = int(OVERRIDE_CYCLES_OBJS["indexes"].match(cycle_set).group(1).replace("I", ""))
+            index_count += 1
+            # Get index value
+            if index_count == 1:
+                # Check against sample's i7 value
+                i7_length = len(sample.index.replace("N", ""))
+                if not i7_length == index_length:
+                    logger.warning(f"Sample '{sample.sample_id}' override cycle value '{sample.override_cycles}' "
+                                   f"does not match sample i7 '{sample.index}")
+            elif index_count == 2 and sample.index2 is not None and not sample.index2 == "":
+                # Check against samples' i5 value
+                i5_length = len(sample.index2.replace("N", ""))
+                if not i5_length == index_length:
+                    logger.warning(f"Sample '{sample.sample_id}' override cycle value '{sample.override_cycles}' "
+                                   f"does not match sample i5 '{sample.index2}")
+        # Make sure that if sample.index2 is not None but the override cycles count
+        # only made it to '1' then we throw a warning
+        if index_count == 1 and sample.index2 is not None and not sample.index2 == "":
+            logger.warning(f"Override cycles '{sample.override_cycles}' suggests only one index "
+                           f"but sample '{sample.sample_id}' has a second index '{sample.index2}'")
+
+
+def check_global_override_cycles(samplesheet):
     """
     Check that the override cycles exists,
     matches the reads entered in the samplesheet

@@ -18,7 +18,7 @@ from umccr_utils.samplesheet import get_years_from_samplesheet, get_grouped_samp
 # Checks
 from umccr_utils.samplesheet import check_sample_sheet_for_index_clashes,\
                                     check_metadata_correspondence, check_samplesheet_header_metadata, \
-                                    check_override_cycles
+                                    check_global_override_cycles, check_internal_override_cycles
 # Sets
 from umccr_utils.samplesheet import set_meta_data_by_library_id
 # Errors
@@ -194,7 +194,8 @@ def main(args=None):
         check_sample_sheet_for_index_clashes(sample_sheet)
         set_meta_data_by_library_id(sample_sheet, library_tracking_spreadsheet)
         check_metadata_correspondence(sample_sheet, library_tracking_spreadsheet, validation_df)
-        check_override_cycles(sample_sheet)
+        check_global_override_cycles(sample_sheet)
+        check_internal_override_cycles(sample_sheet)
     except SampleSheetHeaderError:
         logger.error("Samplesheet header did not have the appropriate attributes")
         sys.exit(1)

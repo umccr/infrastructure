@@ -135,15 +135,16 @@ SAMPLESHEET_REGEX_OBJS = {
 
 OVERRIDE_CYCLES_STR = {
     "cycles": r"(?:([INYU])(\d*))",
-    "cycles_full_match": r"(?:[INYU]+(\d*))+"
+    "cycles_full_match": r"(?:[INYU]+(\d*))+",
+    "indexes": r"((?:[I])(\d*))"
 }
 
 OVERRIDE_CYCLES_OBJS = {
     # https://regex101.com/r/U7bJUI/1
     "cycles": re.compile(OVERRIDE_CYCLES_STR["cycles"]),
     # https://regex101.com/r/U7bJUI/2
-    "cycles_full_match": re.compile(OVERRIDE_CYCLES_STR["cycles_full_match"])
-
+    "cycles_full_match": re.compile(OVERRIDE_CYCLES_STR["cycles_full_match"]),
+    "indexes": re.compile(OVERRIDE_CYCLES_STR["indexes"])
 }
 
 """

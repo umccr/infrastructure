@@ -144,6 +144,49 @@ locals {
     }
     EOT
   }
+
+  tumor_normal_wfl_id = {
+    dev  = "wfl.6e92b9d898a64e7482dc2dfd74e2745d"
+    prod = "wfl.xxx"
+  }
+
+  tumor_normal_wfl_version = {
+    dev  = "3.7.5"
+    prod = "3.7.5--xxx"
+  }
+
+  tumor_normal_input = {
+    dev = <<-EOT
+    {
+        "output_file_prefix": null,
+        "output_directory": null,
+        "fastq_list_rows": [],
+        "tumor_fastq_list_rows": [],
+        "enable_map_align_output": true,
+        "enable_duplicate_marking": true,
+        "enable_sv": true,
+        "reference_tar": {
+            "class": "File",
+            "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+        }
+    }
+    EOT
+    prod = <<-EOT
+    {
+        "output_file_prefix": null,
+        "output_directory": null,
+        "fastq_list_rows": [],
+        "tumor_fastq_list_rows": [],
+        "enable_map_align_output": true,
+        "enable_duplicate_marking": true,
+        "enable_sv": true,
+        "reference_tar": {
+            "class": "File",
+            "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+        }
+    }
+    EOT
+  }
 }
 
 #--- BCL Convert
@@ -190,4 +233,27 @@ resource "aws_ssm_parameter" "germline_input" {
   type = "String"
   description = "Germline Input JSON"
   value = local.germline_input[terraform.workspace]
+}
+
+# --- Tumor / Normal
+
+resource "aws_ssm_parameter" "tumor_normal_id" {
+  name = "/iap/workflow/tumor_normal/id"
+  type = "String"
+  description = "Tumor / Normal Workflow ID"
+  value = local.tumor_normal_wfl_id[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "tumor_normal_version" {
+  name = "/iap/workflow/tumor_normal/version"
+  type = "String"
+  description = "Tumor / Normal Workflow Version Name"
+  value = local.tumor_normal_wfl_version[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "tumor_normal_input" {
+  name = "/iap/workflow/tumor_normal/input"
+  type = "String"
+  description = "Tumor / Normal Input JSON"
+  value = local.tumor_normal_input[terraform.workspace]
 }

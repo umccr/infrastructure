@@ -14,11 +14,11 @@ brew reinstall aws-sam-cli-beta-cdk
 
 # PoC TODO
 
-[x] Scope of the PoC (design): retroactively process reports via EventBridge to ingest them on data portal
-[x] Working `cdk synth` v1
-[x] Migrate to `CDKv2` 
-[ ] Integrate with [SAM-CDK-BETA][sam-cdk]
-[ ] Connect and consume Illumina GDS events (**under develop workgroup**) to EventBridge.
+ [x] Scope of the PoC (design): retroactively process reports via EventBridge to ingest them on data portal
+ [x] Working `cdk synth` v1
+ [x] Migrate to `CDKv2` 
+ [ ] Integrate with [SAM-CDK-BETA][sam-cdk]
+ [ ] Connect and consume Illumina GDS events (**under develop workgroup**) to EventBridge.
 
 [cdkv2-beta]: https://aws.amazon.com/blogs/developer/announcing-aws-cloud-development-kit-v2-developer-preview/
 [sam-cdk]: https://aws.amazon.com/blogs/compute/better-together-aws-sam-and-aws-cdk/

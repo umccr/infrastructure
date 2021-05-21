@@ -7,7 +7,7 @@ This is an attempt to overhaul a multiple-queues system with a unified event Bus
 # PoC TODO
 
 [x] Scope of the PoC (design): retroactively process reports via EventBridge to ingest them on data portal
-[ ] Working `cdk synth` v1
+[x] Working `cdk synth` v1
 [ ] Migrate to `CDKv2` 
 [ ] Integrate with [SAM][sam-cdk]
 [ ] Write reports ingestion lambda.

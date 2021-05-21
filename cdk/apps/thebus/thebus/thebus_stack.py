@@ -25,14 +25,16 @@ class TheBusStack(core.Stack):
         TheBusStack.createRule(self, [lambdaTarget1, stateMachineTarget], eventBus, eventPattern)
 
     # -----------------------------------------------------------------------------------
+
     @staticmethod
     def lambdaDeploy(this) -> None:
         pipeline = _lambda.Function(this, 'reports_ingestor',
                                        function_name='reports_ingestor',
-                                       handler='lambda_handler',
-                                       runtime=_lambda.Runtime.PYTHON_3_7,
-                                       code=_lambda.Code.asset('../lambdas/reports_ingestor.py'),
-                                       )
+                                       handler='reports.handler',
+                                       runtime=_lambda.Runtime.PYTHON_3_8,
+                                       code=_lambda.Code.from_asset('lambdas'),
+                                       timeout=core.Duration.seconds(20),
+                                    )
         return pipeline
     # -----------------------------------------------------------------------------------
     @staticmethod
@@ -46,10 +48,10 @@ class TheBusStack(core.Stack):
     @staticmethod
     def createRule(this, targetsList : typing.Optional[typing.List["IRuleTarget"]] = None, eventBus: typing.Optional["IEventBus"]=None, eventPattern: typing.Optional["EventPattern"]=None):
         events.Rule(scope=this,
-                    id="x123",
-                    rule_name="routeToLambda",
+                    id="reports_trigger",
+                    rule_name="reports_ingestion",
                     targets=targetsList,
-                    description="cdk Test Rule navigates to Lambda",
+                    description="Rule",
                     event_bus=eventBus,
                     event_pattern=eventPattern,
                     )

@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-
-import sys
-import os
-from aws_cdk import core
+from constructs import Construct
+import aws_cdk as cdk
 
 from thebus.thebus_stack import TheBusStack 
 
-app = core.App()
+app = cdk.App()
 
 # Bring up the organization event bus 
-thebus_stack = TheBusStack(app, "TheBus")
+thebus_stack = TheBusStack(app, "TheBusStack")
 
 app.synth()

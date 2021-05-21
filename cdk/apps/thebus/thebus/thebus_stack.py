@@ -1,16 +1,18 @@
+from constructs import Construct
+from aws_cdk import Stack
 from aws_cdk import aws_events as events
 from aws_cdk import aws_events_targets as targets
 from aws_cdk import (
+    Duration,
     aws_lambda as _lambda,
     aws_stepfunctions as sfn,
     aws_stepfunctions_tasks as sfn_tasks
 )
-from aws_cdk import core
 import typing
 
-class TheBusStack(core.Stack):
-    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
+class TheBusStack(Stack):
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
 
         # 1) deploy lambda function
         pipeline = TheBusStack.lambdaDeploy(self)
@@ -33,7 +35,7 @@ class TheBusStack(core.Stack):
                                        handler='reports.handler',
                                        runtime=_lambda.Runtime.PYTHON_3_8,
                                        code=_lambda.Code.from_asset('lambdas'),
-                                       timeout=core.Duration.seconds(20),
+                                       timeout=Duration.seconds(20),
                                     )
         return pipeline
     # -----------------------------------------------------------------------------------
@@ -62,26 +64,21 @@ class TheBusStack(core.Stack):
             this, "IngestReport"
         )
 
-        submit_job = sfn.Task(
-            this, "Submit Job",
-            # task=sfn_tasks.InvokeActivity(submit_job_activity),
-            task=sfn_tasks.InvokeFunction(lambda_function),
-            result_path="$.guid",
-        )
-
-        finalStatus =  sfn.Succeed(
-            this, 'Final Job Status'
+        submit_job = sfn_tasks.LambdaInvoke(
+            this,
+            "Submit report",
+            lambda_function=lambda_function,
+            input_path="$.input",
         )
 
         # definition = submit_job.next(get_status).end_states(sfn.Succeed())
-        definition = submit_job\
-                     .next(finalStatus)
+        definition = submit_job
 
         machineHandler = sfn.StateMachine(
             this, "ReportsIngestor",
             definition=definition,
             state_machine_name="ReportsIngestor",
-            timeout=core.Duration.seconds(30),
+            timeout=Duration.seconds(30),
         )
         #  machine: aws_cdk.aws_stepfunctions.IStateMachine
         stateMachineTarget = targets.SfnStateMachine(machine=machineHandler)

@@ -17,10 +17,8 @@ setuptools.setup(
     packages=setuptools.find_packages(where="thebus"),
 
     install_requires=[
-        "docker",
-        "aws-cdk.core",
-        "aws_cdk.aws_events",
-        "aws-cdk.aws_lambda",
+        "aws-cdk-lib",
+        "constructs",
     ],
 
     python_requires=">=3.7",

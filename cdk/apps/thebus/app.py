@@ -2,7 +2,7 @@
 from constructs import Construct
 import aws_cdk as cdk
 
-from thebus.thebus_stack import TheBusStack 
+from stacks.thebus_stack import TheBusStack 
 
 app = cdk.App()
 

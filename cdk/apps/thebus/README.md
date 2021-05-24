@@ -12,6 +12,8 @@ pip install -r requirements.txt       # pulls in CDKv2 `aws-cdk-lib` and `constr
 npm install -g aws-cdk@2
 brew reinstall aws-sam-cli-beta-cdk
 
-# Running:
-sam-beta-cdk local invoke TheBusStack/reports_ingestor
+# Running and deploying:
+sam-beta-cdk build
+sam-beta-cdk local invoke
+cdk deploy -a .aws-sam/build --profile dev
 ```

@@ -7,7 +7,8 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_stepfunctions as sfn,
     aws_stepfunctions_tasks as sfn_tasks,
-    aws_sqs as sqs
+    aws_sqs as sqs,
+    aws_iam as iam
 )
 import typing
 
@@ -16,16 +17,15 @@ class TheBusStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # 0) Create GDS SQS queue for Illumina file events
-
-        gds_file_events = sqs.Queue(self, id="umccr-bus-dev-iap-ens-event-queue")
-            # This queue will receive events from Illumina's ICA/GDS object store system and shall be subscribed accordingly:
-            #
-            # ica subscriptions create \ 
-            #   --name "UMCCREventBridgeBus" 
-            #   --type "gds.files" --actions "uploaded,deleted,archived,unarchived" 
-            #   --description "UMCCR Event Bus (DEV) subscribed to gds.files events using the development project" 
-            #   --aws-sqs-queue "https://sqs.ap-southeast-2.amazonaws.com/<ACCOUNT_ID>/umccr-bus-dev-iap-ens-event-queue" 
-            #   --filter-expression "{\"or\":[{\"equal\":[{\"path\":\"$.volumeName\"},\"umccr-example-GDS-volume\"]}]}"
+        _ = sqs.Queue(self, id="umccr-bus-dev-iap-ens-event-queue").grant_send_messages(iam.AccountPrincipal('079623148045'))
+        # This queue will receive events from Illumina's ICA/GDS object store system and shall be subscribed accordingly:
+        #
+        # ica subscriptions create \
+        #   --name "UMCCREventBridgeBus" \
+        #   --type "gds.files" --actions "uploaded,deleted,archived,unarchived" \
+        #   --description "UMCCR Event Bus (DEV) subscribed to gds.files events using the development project" \
+        #   --aws-sqs-queue "https://sqs.ap-southeast-2.amazonaws.com/<ACCOUNT_ID>/umccr-bus-dev-iap-ens-event-queue" \
+        #   --filter-expression "{\"or\":[{\"equal\":[{\"path\":\"$.volumeName\"},\"umccr-example-GDS-volume\"]}]}"
 
         # 1) deploy lambda function
         pipeline = TheBusStack.lambdaDeploy(self)

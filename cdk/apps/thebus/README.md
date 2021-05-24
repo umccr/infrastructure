@@ -7,15 +7,11 @@ This is an attempt to overhaul a multiple-queues system with a unified event Bus
 ## Quickstart
 
 ```
+# Pre-requisites:
 pip install -r requirements.txt       # pulls in CDKv2 `aws-cdk-lib` and `construct` libs
 npm install -g aws-cdk@2
 brew reinstall aws-sam-cli-beta-cdk
+
+# Running:
+sam-beta-cdk local invoke TheBusStack/reports_ingestor
 ```
-
-# PoC TODO
-
-* [x] Scope of the PoC (design): retroactively process reports via EventBridge to ingest them on data portal
-* [x] Working `cdk synth` v1
-* [x] Migrate to `CDKv2` 
-* [x] Integrate with [SAM-CDK-BETA][sam-cdk]
-* [ ] Connect and consume Illumina GDS events (**under develop workgroup**) to EventBridge.

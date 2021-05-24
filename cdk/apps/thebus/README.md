@@ -9,7 +9,7 @@ This is an attempt to overhaul a multiple-queues system with a unified event Bus
 ```
 # Pre-requisites:
 pip install -r requirements.txt       # pulls in CDKv2 `aws-cdk-lib` and `construct` libs
-npm install -g aws-cdk@2
+npm install -g aws-cdk@2.0.0-rc.4
 brew reinstall aws-sam-cli-beta-cdk
 
 # Running and deploying:

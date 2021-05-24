@@ -13,9 +13,6 @@ setuptools.setup(
 
     author="UMCCR",
 
-    package_dir={"": "thebus"},
-    packages=setuptools.find_packages(where="thebus"),
-
     install_requires=[
         "aws-cdk-lib",
         "constructs",

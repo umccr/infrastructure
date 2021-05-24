@@ -6,13 +6,26 @@ from aws_cdk import (
     Duration,
     aws_lambda as _lambda,
     aws_stepfunctions as sfn,
-    aws_stepfunctions_tasks as sfn_tasks
+    aws_stepfunctions_tasks as sfn_tasks,
+    aws_sqs as sqs
 )
 import typing
 
 class TheBusStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # 0) Create GDS SQS queue for Illumina file events
+
+        gds_file_events = sqs.Queue(self, id="umccr-bus-dev-iap-ens-event-queue")
+            # This queue will receive events from Illumina's ICA/GDS object store system and shall be subscribed accordingly:
+            #
+            # ica subscriptions create \ 
+            #   --name "UMCCREventBridgeBus" 
+            #   --type "gds.files" --actions "uploaded,deleted,archived,unarchived" 
+            #   --description "UMCCR Event Bus (DEV) subscribed to gds.files events using the development project" 
+            #   --aws-sqs-queue "https://sqs.ap-southeast-2.amazonaws.com/<ACCOUNT_ID>/umccr-bus-dev-iap-ens-event-queue" 
+            #   --filter-expression "{\"or\":[{\"equal\":[{\"path\":\"$.volumeName\"},\"umccr-example-GDS-volume\"]}]}"
 
         # 1) deploy lambda function
         pipeline = TheBusStack.lambdaDeploy(self)
@@ -41,14 +54,16 @@ class TheBusStack(Stack):
     # -----------------------------------------------------------------------------------
     @staticmethod
     def createEventBusAndEventPatternAndLambdaTarget(this, pipeline: _lambda.IFunction):
-        eventBus      = events.EventBus(scope=this, id="umccr", event_bus_name="umccr")
+        eventBus      = events.EventBus(scope=this, id="umccr_bus", event_bus_name="umccr_bus")
         eventPattern  = events.EventPattern(source=['reports'])
         lambdaTarget1 = targets.LambdaFunction(handler=pipeline)
 
         return eventBus, eventPattern, lambdaTarget1
     # -----------------------------------------------------------------------------------
     @staticmethod
-    def createRule(this, targetsList : typing.Optional[typing.List["IRuleTarget"]] = None, eventBus: typing.Optional["IEventBus"]=None, eventPattern: typing.Optional["EventPattern"]=None):
+    def createRule(this, targetsList : typing.Optional[typing.List["IRuleTarget"]] = None, 
+                         eventBus: typing.Optional["IEventBus"]=None, 
+                         eventPattern: typing.Optional["EventPattern"]=None):
         events.Rule(scope=this,
                     id="reports_trigger",
                     rule_name="reports_ingestion",

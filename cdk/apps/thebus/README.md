@@ -13,7 +13,7 @@ npm install -g aws-cdk@2.0.0-rc.4
 brew reinstall aws-sam-cli-beta-cdk
 
 # Running and deploying:
-sam-beta-cdk build
-sam-beta-cdk local invoke
-cdk deploy -a .aws-sam/build --profile dev
+make build
+make run	# As in running lambdas locally
+make deploy
 ```

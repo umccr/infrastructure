@@ -17,3 +17,8 @@ make build
 make run	# As in running lambdas locally
 make deploy
 ```
+
+## Possible next steps
+
+    1. Ask illumina to have a partner event source integration for ICA with AWS EventBridge. It would cleanup the microservices integration, for instance: instead of connecting SQS queues between accounts, providing an API abstraction that can be consumed/reused in multiple ways.
+    1. Add an extra target that dumps the GDS event in DynamoDB, perhaps a first step to get rid of the heavy Django ORM abstraction.

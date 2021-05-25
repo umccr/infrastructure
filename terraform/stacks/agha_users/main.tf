@@ -18,10 +18,10 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  common_tags = map(
-    "Environment", "agha",
-    "Stack", var.stack_name
-  )
+  common_tags = {
+    "Environment": "agha",
+    "Stack": var.stack_name
+  }
 }
 
 ################################################################################
@@ -93,6 +93,15 @@ module "seanlianu" {
   email     = "sean.li@anu.edu.au"
 }
 
+module "chiaraf" {
+  source    = "../../modules/iam_user/default_user"
+  username  = "chiaraf"
+  full_name = "Chiara Folland"
+  keybase   = "chiaraf"
+  pgp_key   = "keybase:freisinger"
+  email     = "22253832@student.uwa.edu.au"
+}
+
 # Data Manager/Controller
 module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
@@ -148,6 +157,7 @@ resource "aws_iam_group_membership" "default" {
     module.simon.username,
     module.yingzhu.username,
     module.seanlianu.username,
+    module.chiaraf.username,
   ]
 }
 
@@ -167,6 +177,7 @@ resource "aws_iam_group_membership" "submitter" {
     module.simon.username,
     module.yingzhu.username,
     module.seanlianu.username,
+    module.chiaraf.username,
   ]
 }
 

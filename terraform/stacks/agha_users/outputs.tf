@@ -92,3 +92,16 @@ output "seanlianu_access_key" {
 output "seanlianu_secret_access_key" {
   value = module.seanlianu.encrypted_secret_access_key
 }
+
+# chiaraf
+output "chiaraf_username" {
+  value = module.chiaraf.username
+}
+
+output "chiaraf_access_key" {
+  value = module.chiaraf.access_key
+}
+
+output "chiaraf_secret_access_key" {
+  value = module.chiaraf.encrypted_secret_access_key
+}

@@ -13,11 +13,6 @@ terraform {
       source = "hashicorp/aws"
       version = "3.37.0"
     }
-
-    github = {
-      source = "integrations/github"
-      version = "4.9.2"
-    }
   }
 }
 
@@ -32,11 +27,6 @@ provider "aws" {
 provider "aws" {
   region = "us-east-1"
   alias  = "use1"
-}
-
-provider "github" {
-  owner = "umccr"
-  token = data.external.get_gh_token_from_ssm.result.gh_token
 }
 
 data "aws_region" "current" {}
@@ -96,26 +86,9 @@ locals {
   github_repo_apis   = "data-portal-apis"
 }
 
-data "external" "get_gh_token_from_ssm" {
-  program = ["${path.module}/scripts/get_gh_token_from_ssm.sh"]
-  query = {
-    # reusing the PAT token, but could use dedicated token with narrow scope
-    ssm_param_name = "/${local.stack_name_us}/github/pat_oauth_token"
-  }
-}
-
 ################################################################################
 # Query for Pre-configured SSM Parameter Store
 # These are pre-populated outside of terraform i.e. manually using Console or CLI
-
-data "aws_ssm_parameter" "github_pat_oauth_token" {
-  # Note that OAuthToken = PAT, generated using https://github.com/settings/tokens
-  name = "/${local.stack_name_us}/github/pat_oauth_token"
-}
-
-data "aws_ssm_parameter" "github_codepipeline_share_token" {
-  name = "/${local.stack_name_us}/github/codepipeline_share_token"
-}
 
 data "aws_ssm_parameter" "google_oauth_client_id" {
   name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
@@ -338,6 +311,11 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 ################################################################################
 # Back end configurations
 
+data "aws_acm_certificate" "backend_cert" {
+  domain   = local.app_domain
+  statuses = ["ISSUED"]
+}
+
 data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = var.s3_primary_data_bucket[terraform.workspace]
 }
@@ -537,7 +515,6 @@ resource "aws_iam_role_policy" "role_policy_authenticated" {
   role = aws_iam_role.role_authenticated.id
 
   # IAM role policy for authenticated identities
-  # Todo: we should have a explicit reference to our api
   policy = templatefile("policies/iam_role_authenticated_policy.json", {})
 }
 
@@ -598,6 +575,12 @@ resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
 ################################################################################
 # Deployment pipeline configurations
 
+resource "aws_codestarconnections_connection" "umccr_github" {
+  name          = "umccr-github-data-portal-repos"
+  provider_type = "GitHub"
+  tags          = merge(local.default_tags)
+}
+
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
@@ -631,6 +614,7 @@ resource "aws_iam_role_policy" "codepipeline_base_role_policy" {
   # Base IAM policy for codepiepline service role
   policy = templatefile("policies/codepipeline_base_role_policy.json", {
     codepipeline_bucket_arn = aws_s3_bucket.codepipeline_bucket.arn
+    codepipeline_codestar_connection_arn = aws_codestarconnections_connection.umccr_github.arn
   })
 }
 
@@ -650,16 +634,15 @@ resource "aws_codepipeline" "codepipeline_client" {
     action {
       name             = "Source"
       category         = "Source"
-      owner            = "ThirdParty"
-      provider         = "GitHub"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
       output_artifacts = ["SourceArtifact"]
       version          = "1"
 
       configuration = {
-        Owner      = local.org_name
-        Repo       = local.github_repo_client
-        OAuthToken = data.aws_ssm_parameter.github_pat_oauth_token.value
-        Branch     = var.github_branch[terraform.workspace]
+        ConnectionArn    = aws_codestarconnections_connection.umccr_github.arn
+        FullRepositoryId = "${local.org_name}/${local.github_repo_client}"
+        BranchName       = var.github_branch[terraform.workspace]
       }
     }
   }
@@ -700,16 +683,15 @@ resource "aws_codepipeline" "codepipeline_apis" {
     action {
       name             = "Source"
       category         = "Source"
-      owner            = "ThirdParty"
-      provider         = "GitHub"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
       output_artifacts = ["SourceArtifact"]
       version          = "1"
 
       configuration = {
-        Owner      = local.org_name
-        Repo       = local.github_repo_apis
-        OAuthToken = data.aws_ssm_parameter.github_pat_oauth_token.value
-        Branch     = var.github_branch[terraform.workspace]
+        ConnectionArn    = aws_codestarconnections_connection.umccr_github.arn
+        FullRepositoryId = "${local.org_name}/${local.github_repo_apis}"
+        BranchName       = var.github_branch[terraform.workspace]
       }
     }
   }
@@ -924,81 +906,8 @@ resource "aws_codebuild_project" "codebuild_apis" {
   tags = merge(local.default_tags)
 }
 
-# Codepipeline webhook for client code repository
-resource "aws_codepipeline_webhook" "codepipeline_client_webhook" {
-  name            = "webhook-github-client"
-  authentication  = "GITHUB_HMAC"
-  target_action   = "Source"
-  target_pipeline = aws_codepipeline.codepipeline_client.name
-
-  authentication_configuration {
-    secret_token = data.aws_ssm_parameter.github_codepipeline_share_token.value
-  }
-
-  filter {
-    json_path    = "$.ref"
-    match_equals = "refs/heads/{Branch}"
-  }
-
-  tags = merge(local.default_tags)
-}
-
-# Codepipeline webhook for apis code repository
-resource "aws_codepipeline_webhook" "codepipeline_apis_webhook" {
-  name            = "webhook-github-apis"
-  authentication  = "GITHUB_HMAC"
-  target_action   = "Source"
-  target_pipeline = aws_codepipeline.codepipeline_apis.name
-
-  authentication_configuration {
-    secret_token = data.aws_ssm_parameter.github_codepipeline_share_token.value
-  }
-
-  filter {
-    json_path    = "$.ref"
-    match_equals = "refs/heads/{Branch}"
-  }
-
-  tags = merge(local.default_tags)
-}
-
-# Github repository of client
-data "github_repository" "client_github_repo" {
-  full_name = "${local.org_name}/${local.github_repo_client}"
-}
-
-# Github repository of apis
-data "github_repository" "apis_github_repo" {
-  full_name = "${local.org_name}/${local.github_repo_apis}"
-}
-
-# Github repository webhook for client
-resource "github_repository_webhook" "client_github_webhook" {
-  repository = data.github_repository.client_github_repo.name
-
-  configuration {
-    url          = aws_codepipeline_webhook.codepipeline_client_webhook.url
-    content_type = "json"
-    insecure_ssl = false
-    secret       = data.aws_ssm_parameter.github_codepipeline_share_token.value
-  }
-
-  events = ["push"]
-}
-
-# Github repository webhook for apis
-resource "github_repository_webhook" "apis_github_webhook" {
-  repository = data.github_repository.apis_github_repo.name
-
-  configuration {
-    url          = aws_codepipeline_webhook.codepipeline_apis_webhook.url
-    content_type = "json"
-    insecure_ssl = false
-    secret       = data.aws_ssm_parameter.github_codepipeline_share_token.value
-  }
-
-  events = ["push"]
-}
+################################################################################
+# Lambda execution role for API backend
 
 resource "aws_iam_role" "lambda_apis_role" {
   name = "${local.stack_name_us}_lambda_apis_role"
@@ -1246,70 +1155,75 @@ resource "aws_backup_selection" "db_backup" {
 ################################################################################
 # Web Security configurations
 
+# APIGateway v2 HttpApi does not support AWS WAF. See
+# https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-vs-rest.html
+# Our Portal API endpoints are all secured endpoints and enforced CORS/CSRF origins protection anyway.
+# Disabled WAF resources for now, until AWS support this.
+
 # Web Application Firewall for APIs
-resource "aws_wafregional_web_acl" "api_web_acl" {
-  depends_on = [
-    aws_wafregional_sql_injection_match_set.sql_injection_match_set,
-    aws_wafregional_rule.api_waf_sql_rule,
-  ]
-
-  name        = "dataPortalAPIWebAcl"
-  metric_name = "dataPortalAPIWebAcl"
-
-  default_action {
-    type = "ALLOW"
-  }
-
-  rule {
-    action {
-      type = "BLOCK"
-    }
-
-    priority = 1
-    rule_id  = aws_wafregional_rule.api_waf_sql_rule.id
-    type     = "REGULAR"
-  }
-
-  tags = merge(local.default_tags)
-}
+//resource "aws_wafregional_web_acl" "api_web_acl" {
+//  depends_on = [
+//    aws_wafregional_sql_injection_match_set.sql_injection_match_set,
+//    aws_wafregional_rule.api_waf_sql_rule,
+//  ]
+//
+//  name        = "dataPortalAPIWebAcl"
+//  metric_name = "dataPortalAPIWebAcl"
+//
+//  default_action {
+//    type = "ALLOW"
+//  }
+//
+//  rule {
+//    action {
+//      type = "BLOCK"
+//    }
+//
+//    priority = 1
+//    rule_id  = aws_wafregional_rule.api_waf_sql_rule.id
+//    type     = "REGULAR"
+//  }
+//
+//  tags = merge(local.default_tags)
+//}
 
 # SQL Injection protection
-resource "aws_wafregional_rule" "api_waf_sql_rule" {
-  depends_on  = [aws_wafregional_sql_injection_match_set.sql_injection_match_set]
-  name        = "${local.stack_name_dash}-sql-rule"
-  metric_name = "dataPortalSqlRule"
-
-  predicate {
-    data_id = aws_wafregional_sql_injection_match_set.sql_injection_match_set.id
-    negated = false
-    type    = "SqlInjectionMatch"
-  }
-
-  tags = merge(local.default_tags)
-}
+//resource "aws_wafregional_rule" "api_waf_sql_rule" {
+//  depends_on  = [aws_wafregional_sql_injection_match_set.sql_injection_match_set]
+//  name        = "${local.stack_name_dash}-sql-rule"
+//  metric_name = "dataPortalSqlRule"
+//
+//  predicate {
+//    data_id = aws_wafregional_sql_injection_match_set.sql_injection_match_set.id
+//    negated = false
+//    type    = "SqlInjectionMatch"
+//  }
+//
+//  tags = merge(local.default_tags)
+//}
 
 # SQL injection match set
-resource "aws_wafregional_sql_injection_match_set" "sql_injection_match_set" {
-  name = "${local.stack_name_dash}-api-injection-match-set"
-
-  # Based on the suggestion from 
-  # https://d0.awsstatic.com/whitepapers/Security/aws-waf-owasp.pdf
-  sql_injection_match_tuple {
-    text_transformation = "HTML_ENTITY_DECODE"
-
-    field_to_match {
-      type = "QUERY_STRING"
-    }
-  }
-
-  sql_injection_match_tuple {
-    text_transformation = "URL_DECODE"
-
-    field_to_match {
-      type = "QUERY_STRING"
-    }
-  }
-}
+//resource "aws_wafregional_sql_injection_match_set" "sql_injection_match_set" {
+//  name = "${local.stack_name_dash}-api-injection-match-set"
+//
+//  # Based on the suggestion from
+//  # https://d0.awsstatic.com/whitepapers/Security/aws-waf-owasp.pdf
+//  sql_injection_match_tuple {
+//    text_transformation = "HTML_ENTITY_DECODE"
+//
+//    field_to_match {
+//      type = "QUERY_STRING"
+//    }
+//  }
+//
+//  sql_injection_match_tuple {
+//    text_transformation = "URL_DECODE"
+//
+//    field_to_match {
+//      type = "QUERY_STRING"
+//    }
+//  }
+//}
 
 ####################################################################################
 # Notification: CloudWatch alarms send through SNS topic to ChatBot to Slack #data-portal channel
@@ -1595,16 +1509,16 @@ resource "aws_ssm_parameter" "iap_ens_event_sqs_arn" {
 resource "aws_ssm_parameter" "certificate_arn" {
   name  = "${local.ssm_param_key_backend_prefix}/certificate_arn"
   type  = "String"
-  value = aws_acm_certificate.client_cert.arn
+  value = data.aws_acm_certificate.backend_cert.arn
   tags  = merge(local.default_tags)
 }
 
-resource "aws_ssm_parameter" "waf_name" {
-  name  = "${local.ssm_param_key_backend_prefix}/waf_name"
-  type  = "String"
-  value = aws_wafregional_web_acl.api_web_acl.name
-  tags  = merge(local.default_tags)
-}
+//resource "aws_ssm_parameter" "waf_name" {
+//  name  = "${local.ssm_param_key_backend_prefix}/waf_name"
+//  type  = "String"
+//  value = aws_wafregional_web_acl.api_web_acl.name
+//  tags  = merge(local.default_tags)
+//}
 
 resource "aws_ssm_parameter" "serverless_deployment_bucket" {
   name  = "${local.ssm_param_key_backend_prefix}/serverless_deployment_bucket"

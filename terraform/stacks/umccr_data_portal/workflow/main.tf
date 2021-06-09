@@ -146,13 +146,13 @@ locals {
   }
 
   tumor_normal_wfl_id = {
-    dev  = "wfl.6e92b9d898a64e7482dc2dfd74e2745d"
-    prod = "wfl.xxx"
+    dev  = "wfl.32e346cdbb854f6487e7594ec17a81f9"
+    prod = "wfl.32e346cdbb854f6487e7594ec17a81f9"
   }
 
   tumor_normal_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--xxx"
+    prod = "3.7.5--5a56dd"
   }
 
   tumor_normal_input = {

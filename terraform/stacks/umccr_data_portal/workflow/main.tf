@@ -152,7 +152,7 @@ locals {
 
   tumor_normal_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--5a56dd"
+    prod = "3.7.5--a921b06"
   }
 
   tumor_normal_input = {

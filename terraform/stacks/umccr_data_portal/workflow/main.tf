@@ -35,12 +35,12 @@ locals {
 
   bcl_convert_wfl_id = {
     dev  = "wfl.84abc203cabd4dc196a6cf9bb49d5f74"
-    prod = "wfl.1f705d91294440d4bc6d36386d12a372"
+    prod = "wfl.59e481580c6243b6b237ca2b08fa1270"
   }
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5-9118962"
+    prod = "3.7.5--96026ab"
   }
 
   bcl_convert_input = {

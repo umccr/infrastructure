@@ -20,6 +20,7 @@ aws_env = {
 agha_props = {
     'namespace': 'agha',
     'staging_bucket': 'agha-gdr-staging',
+    'store_bucket': 'agha-gdr-store',
     'slack_host': slack_host,
     'slack_channel': slack_channel,
     'manager_email': 'sarah.casauria@mcri.edu.au',

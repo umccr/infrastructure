@@ -170,7 +170,7 @@ def extract_filenames(listing: list):
     return filenames
 
 
-def lambda_handler(event, context):
+def handler(event, context):
     print(f"Received event: {json.dumps(event)}")
     validation_messages = list()
 

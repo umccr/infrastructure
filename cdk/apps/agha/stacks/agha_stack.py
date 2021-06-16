@@ -7,6 +7,7 @@ from aws_cdk import (
     core
 )
 
+
 class AghaStack(core.Stack):
 
     def __init__(self, scope: core.Construct, id: str, props: dict, **kwargs) -> None:
@@ -22,6 +23,11 @@ class AghaStack(core.Stack):
             self,
             id="GdrStagingBucket",
             bucket_name=props['staging_bucket']
+        )
+        store_bucket = s3.Bucket.from_bucket_name(
+            self,
+            id="GdrStoreBucket",
+            bucket_name=props['store_bucket']
         )
 
         ################################################################################
@@ -109,7 +115,8 @@ class AghaStack(core.Stack):
             timeout=core.Duration.seconds(10),
             code=lmbda.Code.from_asset('lambdas/s3_event_recorder'),
             environment={
-                'STAGING_BUCKET': staging_bucket.bucket_name
+                'STAGING_BUCKET': staging_bucket.bucket_name,
+                'STORE_BUCKET': store_bucket.bucket_name
             },
             role=s3_event_recorder_lambda_role
         )
@@ -132,7 +139,7 @@ class AghaStack(core.Stack):
                     "s3:PutBucketPolicy",
                     "s3:DeleteBucketPolicy"
                 ],
-                resources=[f"arn:aws:s3:::${staging_bucket.bucket_name}"]
+                resources=[f"arn:aws:s3:::{staging_bucket.bucket_name}"]
             )
         )
 
@@ -144,6 +151,9 @@ class AghaStack(core.Stack):
             runtime=lmbda.Runtime.PYTHON_3_7,
             timeout=core.Duration.seconds(10),
             code=lmbda.Code.from_asset('lambdas/folder_lock'),
+            environment={
+                'STAGING_BUCKET': staging_bucket.bucket_name
+            },
             role=folder_lock_lambda_role
         )
 

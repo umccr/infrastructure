@@ -156,21 +156,45 @@ def handler(event, context):
     {
         "Records": [
             {
-                "eventSource": "aws:s3",
-                "eventTime": "2021-06-07T00:33:42.818Z",
-                "eventName": "ObjectCreated:Put",
-                ...
-                "s3": {
-                    "bucket": {
-                        "name": "bucket-name",
-                        ...
+                 "eventVersion":"2.2",
+                 "eventSource":"aws:s3",
+                 "awsRegion":"us-west-2",
+                 "eventTime":"1970-01-01T00:00:00.000Z",
+                 "eventName":"event-type",
+                 "userIdentity":{
+                    "principalId":"Amazon-customer-ID-of-the-user-who-caused-the-event"
+                 },
+                 "requestParameters":{
+                    "sourceIPAddress":"ip-address-where-request-came-from"
+                 },
+                 "responseElements":{
+                    "x-amz-request-id":"Amazon S3 generated request ID",
+                    "x-amz-id-2":"Amazon S3 host that processed the request"
+                 },
+                 "s3":{
+                    "s3SchemaVersion":"1.0",
+                    "configurationId":"ID found in the bucket notification configuration",
+                    "bucket":{
+                       "name":"bucket-name",
+                       "ownerIdentity":{
+                          "principalId":"Amazon-customer-ID-of-the-bucket-owner"
+                       },
+                       "arn":"bucket-ARN"
                     },
-                    "object": {
-                        "key": "UMCCR-COUMN/SBJ00805/WGS/2021-06-03/umccrised/work/SBJ00805__SBJ00805_MDX210095_L2100459/oncoviruses/work/detect_viral_reference/host_unmapped_or_mate_unmapped_to_gdc.bam.bai",
-                        "eTag": "d41d8cd98f00b204e9800998ecf8427e",
-                        ...
+                    "object":{
+                       "key":"object-key",
+                       "size":"object-size",
+                       "eTag":"object eTag",
+                       "versionId":"object version if bucket is versioning-enabled, otherwise null",
+                       "sequencer": "a string representation of a hexadecimal value used to determine event sequence"
                     }
-                }
+                 },
+                 "glacierEventData": {
+                    "restoreEventData": {
+                       "lifecycleRestorationExpiryTime": "1970-01-01T00:00:00.000Z",
+                       "lifecycleRestoreStorageClass": "Source storage class for restore"
+                    }
+                 }
             },
             ...
         ]
@@ -194,8 +218,8 @@ def handler(event, context):
     non_manifest_records = list()
     for s3_record in s3_records:
         # routing logic goes here
-        s3key: str = s3_record['S3']['object']['key']
-        bucket: str = s3_record['S3']['bucket']['name']
+        s3key: str = s3_record['s3']['object']['key']
+        bucket: str = s3_record['s3']['bucket']['name']
         if s3key.endswith('manifest.txt'):
             # we are only interested in new manifests of the staging bucket
             if bucket == 'agha-gdr-staging':
@@ -215,4 +239,3 @@ def handler(event, context):
     if len(non_manifest_records) > 0:
         ser_res = call_lambda(S3_RECORDER_LAMBDA_ARN, {"Records": non_manifest_records})
         logger.info(f"S3 Event Recorder Lambda call response: {ser_res}")
-

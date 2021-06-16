@@ -2,11 +2,13 @@ from typing import List
 
 import logging
 import json
+import os
 from util.s3 import S3EventType, S3EventRecord, parse_s3_event
-from util.agha import STAGING_BUCKET, STORE_BUCKET
 from util.dynamodb import DynamoDbRecord
 import util.dynamodb as dyndb
 
+STAGING_BUCKET = os.environ.get('STAGING_BUCKET')
+STORE_BUCKET = os.environ.get('STORE_BUCKET')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

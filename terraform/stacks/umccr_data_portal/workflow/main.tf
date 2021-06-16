@@ -34,7 +34,7 @@ locals {
   }
 
   bcl_convert_wfl_id = {
-    dev  = "wfl.84abc203cabd4dc196a6cf9bb49d5f74"
+    dev  = "wfl.59e481580c6243b6b237ca2b08fa1270"
     prod = "wfl.1f705d91294440d4bc6d36386d12a372"
   }
 

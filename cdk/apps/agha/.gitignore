@@ -1,11 +1,37 @@
 *.swp
 package-lock.json
-__pycache__
-.pytest_cache
-.env
-*.egg-info
+yarn.*
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
 lambdas/layers/**/*.zip
+
+# Distribution / packaging
+.Python
+env/
+venv/
+.venv/
+.env/
+build/
+node_modules/
+develop-eggs/
+dist/
+downloads/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info
+*.egg*
+.installed.cfg
+.pytest_cache
+*__pycache__*
+*.log
+
+# IDE
+.idea
+.DS_Store
+.vscode
+

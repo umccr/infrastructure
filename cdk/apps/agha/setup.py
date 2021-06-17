@@ -21,6 +21,11 @@ setuptools.setup(
     install_requires=[
         "aws_cdk.aws_iam",
         "aws_cdk.aws_lambda",
+        "aws_cdk.aws_s3",
+        "aws_cdk.aws_s3_notifications",
+        "aws_cdk.aws_sns",
+        "aws_cdk.aws_sns_subscriptions",
+        "aws_cdk.aws_sqs",
         "aws-cdk.core",
         "boto3"
     ],

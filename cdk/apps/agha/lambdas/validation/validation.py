@@ -3,8 +3,14 @@ import io
 import re
 import json
 import boto3
+import logging
 import http.client
 import pandas as pd
+from botocore.exceptions import ClientError
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 MANIFEST_REQUIRED_COLUMNS = ('filename', 'checksum', 'agha_study_id')
 AWS_REGION = boto3.session.Session().region_name
@@ -73,7 +79,7 @@ def make_email_body_html(submission, submitter, messages):
 
 def send_email(recipients, sender, subject_text, body_html):
     try:
-        #Provide the contents of the email.
+        # Provide the contents of the email.
         response = ses_client.send_email(
             Destination={
                 'ToAddresses': recipients,
@@ -94,9 +100,9 @@ def send_email(recipients, sender, subject_text, body_html):
         )
     # Display an error if something goes wrong
     except ClientError as e:
-        return(e.response['Error']['Message'])
+        return e.response['Error']['Message']
     else:
-        return("Email sent! Message ID:" + response['MessageId'] )
+        return "Email sent! Message ID:" + response['MessageId']
 
 
 def call_slack_webhook(topic, title, message):
@@ -170,30 +176,71 @@ def extract_filenames(listing: list):
     return filenames
 
 
-def lambda_handler(event, context):
-    print(f"Received event: {json.dumps(event)}")
+def extract_s3_records_from_sns_event(sns_event):
+    # extract the S3 records from the SNS records
+    s3_recs = list()
+    sns_records = sns_event.get('Records')
+    if not sns_records:
+        logger.warning("No Records in SNS event! Aborting.")
+        logger.warning(json.dumps(sns_event))
+        return
+
+    for sns_record in sns_records:
+        payload = sns_record['Sns']['Message']
+        s3_event = json.loads(payload)
+        if not s3_event:
+            logger.warning("No S3 event body in SNS Record! Aborting.")
+            logger.debug(f"SNS event: {sns_record}")
+            continue
+        s3_records = s3_event.get('Records')
+        if not s3_records:
+            logger.warning("No Records in S3 event! Aborting.")
+            logger.debug(f"S3 event: {s3_event}")
+            continue
+        for s3_record in s3_records:
+            s3_recs.append(s3_record)
+
+    return s3_recs
+
+
+def sns_handler(event, context):
+    logger.info(f"Start processing S3 (via SNS) event:")
+    logger.info(json.dumps(event))
+
+    # we manually build a S3 event, which consists of a list of S3 Records
+    s3_event_records = {
+        "Records": extract_s3_records_from_sns_event(event)
+    }
+
+    handler(s3_event_records, context)
+
+
+def handler(event, context):
+    logger.info(f"Start processing S3 event:")
+    logger.info(json.dumps(event))
     validation_messages = list()
 
-    message = event['Records'][0]['Sns']['Message']
-    print(f"Extracted message: {message}")
-    message = json.loads(message)
+    # we expect only one record
+    mf_record = event["Records"][0]
 
-    bucket_name = message["Records"][0]["s3"]["bucket"]["name"]
+    bucket_name = mf_record["s3"]["bucket"]["name"]
     if bucket_name != STAGING_BUCKET:
         raise ValueError(f"Buckets don't match received {bucket_name}, expected {STAGING_BUCKET}")
 
-    obj_key = message["Records"][0]["s3"]["object"]["key"]
+    obj_key = mf_record["s3"]["object"]["key"]
     submission_prefix = os.path.dirname(obj_key)
     print(f"Submission with prefix: {submission_prefix}")
     validation_messages.append(f"Validation messages:")
 
-    msg_record = msg_record = message['Records'][0]
-    if msg_record.get('eventSource') == 'aws:s3' and msg_record.get('userIdentity'):
-        principal_id = msg_record['userIdentity']['principalId']
+    name = "unknown"
+    email = None
+    if mf_record.get('eventSource') == 'aws:s3' and mf_record.get('userIdentity'):
+        principal_id = mf_record['userIdentity']['principalId']
         name, email = get_name_email_from_principalid(principal_id)
         print(f"Extracted name/email: {name}/{email}")
 
     # Build validation messages
+    manifest_df = None
     try:
         manifest_df = get_manifest_df(submission_prefix)
     except Exception as e:

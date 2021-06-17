@@ -18,10 +18,10 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  common_tags = "${map(
-    "Environment", "agha",
-    "Stack", "${var.stack_name}"
-  )}"
+  common_tags = {
+    Environment="agha",
+    Stack="${var.stack_name}"
+  }
 }
 
 ################################################################################
@@ -71,9 +71,9 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", var.agha_gdr_staging_bucket_name
-    )
+    {
+      "Name"=var.agha_gdr_staging_bucket_name
+    }
   )
 }
 resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
@@ -118,9 +118,9 @@ resource "aws_s3_bucket" "agha_gdr_store" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", var.agha_gdr_store_bucket_name
-    )
+    {
+      Name=var.agha_gdr_store_bucket_name
+    }
   )
 
   lifecycle_rule {
@@ -183,9 +183,9 @@ resource "aws_s3_bucket" "agha_gdr_archive" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", var.agha_gdr_archive_bucket_name
-    )
+    {
+      "Name"=var.agha_gdr_archive_bucket_name
+    }
   )
 
   lifecycle_rule {
@@ -259,72 +259,72 @@ resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
 ################################################################################
 # Publish S3 events to SNS topic
 
-resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
-  bucket = aws_s3_bucket.agha_gdr_staging.id
+# resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
+#   bucket = aws_s3_bucket.agha_gdr_staging.id
 
-  topic {
-    topic_arn     = aws_sns_topic.s3_events.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_suffix = "manifest.txt"
-  }
+#   topic {
+#     topic_arn     = aws_sns_topic.s3_events.arn
+#     events        = ["s3:ObjectCreated:*"]
+#     filter_suffix = "manifest.txt"
+#   }
 
-  topic {
-    topic_arn     = aws_sns_topic.s3_events.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_suffix = ".manifest"
-  }
-}
+#   topic {
+#     topic_arn     = aws_sns_topic.s3_events.arn
+#     events        = ["s3:ObjectCreated:*"]
+#     filter_suffix = ".manifest"
+#   }
+# }
 
 
-data "aws_iam_policy_document" "sns_publish" {
-  statement {
-    effect = "Allow"
+# data "aws_iam_policy_document" "sns_publish" {
+#   statement {
+#     effect = "Allow"
 
-    actions = [
-      "SNS:Publish"
-    ]
+#     actions = [
+#       "SNS:Publish"
+#     ]
 
-    resources = [
-      "arn:aws:sns:*:*:s3_manifest_event",
-    ]
+#     resources = [
+#       "arn:aws:sns:*:*:s3_manifest_event",
+#     ]
 
-    principals {
-      type = "AWS"
-      identifiers = [
-        "*"
-      ]
-    }
+#     principals {
+#       type = "AWS"
+#       identifiers = [
+#         "*"
+#       ]
+#     }
 
-    condition {
-      test     = "ArnLike"
-      variable = "aws:SourceArn"
+#     condition {
+#       test     = "ArnLike"
+#       variable = "aws:SourceArn"
 
-      values = [
-        aws_s3_bucket.agha_gdr_staging.arn
-      ]
-    }
-  }
-}
+#       values = [
+#         aws_s3_bucket.agha_gdr_staging.arn
+#       ]
+#     }
+#   }
+# }
 
-resource "aws_sns_topic" "s3_events" {
-  name = "s3_manifest_event"
-  policy = data.aws_iam_policy_document.sns_publish.json
-}
+# resource "aws_sns_topic" "s3_events" {
+#   name = "s3_manifest_event"
+#   policy = data.aws_iam_policy_document.sns_publish.json
+# }
 
 # Create Lambda subscriptions for the SNS topic:
 # to send notifications to Slack
-resource "aws_sns_topic_subscription" "s3_manifest_event" {
-  topic_arn = aws_sns_topic.s3_events.arn
-  protocol  = "lambda"
-  endpoint  = module.notify_slack_lambda.this_lambda_function_arn
-}
+# resource "aws_sns_topic_subscription" "s3_manifest_event" {
+#   topic_arn = aws_sns_topic.s3_events.arn
+#   protocol  = "lambda"
+#   endpoint  = module.notify_slack_lambda.this_lambda_function_arn
+# }
 
 # to lock the submission folder to prevent further manipulation
-resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
-  topic_arn = aws_sns_topic.s3_events.arn
-  protocol  = "lambda"
-  endpoint  = module.folder_lock_lambda.this_lambda_function_arn
-}
+# resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
+#   topic_arn = aws_sns_topic.s3_events.arn
+#   protocol  = "lambda"
+#   endpoint  = module.folder_lock_lambda.this_lambda_function_arn
+# }
 
 ################################################################################
 # Lambdas
@@ -361,63 +361,63 @@ module "notify_slack_lambda" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", "${var.stack_name}_slack_lambda",
-      "Description", "Lambda to send notifications to UMCCR Slack"
-    )
+    {
+      Name="${var.stack_name}_slack_lambda",
+      Description="Lambda to send notifications to UMCCR Slack"
+    }
   )
 }
 
 # allow events from SNS topic for manifest notifications
-resource "aws_lambda_permission" "slack_lambda_from_sns" {
-  statement_id  = "AllowExecutionFromSNS"
-  action        = "lambda:InvokeFunction"
-  function_name = module.notify_slack_lambda.this_lambda_function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.s3_events.arn
-}
+# resource "aws_lambda_permission" "slack_lambda_from_sns" {
+#   statement_id  = "AllowExecutionFromSNS"
+#   action        = "lambda:InvokeFunction"
+#   function_name = module.notify_slack_lambda.this_lambda_function_name
+#   principal     = "sns.amazonaws.com"
+#   source_arn    = aws_sns_topic.s3_events.arn
+# }
 
 ########################################
 # Lambda to lock a submission folder
 
-module "folder_lock_lambda" {
-  source = "terraform-aws-modules/lambda/aws"
+# module "folder_lock_lambda" {
+#   source = "terraform-aws-modules/lambda/aws"
 
-  function_name = "${var.stack_name}_folder_lock_lambda"
-  description   = "Lambda to lock a submission folder"
-  handler       = "index.lambda_handler"
-  runtime       = "python3.8"
+#   function_name = "${var.stack_name}_folder_lock_lambda"
+#   description   = "Lambda to lock a submission folder"
+#   handler       = "index.lambda_handler"
+#   runtime       = "python3.8"
 
-  source_path = "./lambdas/folder_lock"
+#   source_path = "./lambdas/folder_lock"
 
-  attach_policy = true
-  policy        = aws_iam_policy.folder_lock_lambda.arn
+#   attach_policy = true
+#   policy        = aws_iam_policy.folder_lock_lambda.arn
 
-  tags = local.common_tags
-}
+#   tags = local.common_tags
+# }
 
-data "template_file" "folder_lock_lambda" {
-  template = file("${path.module}/policies/folder_lock_lambda.json")
+# data "template_file" "folder_lock_lambda" {
+#   template = file("${path.module}/policies/folder_lock_lambda.json")
 
-  vars = {
-    bucket_name = aws_s3_bucket.agha_gdr_staging.id
-  }
-}
+#   vars = {
+#     bucket_name = aws_s3_bucket.agha_gdr_staging.id
+#   }
+# }
 
-resource "aws_iam_policy" "folder_lock_lambda" {
-  name   = "${var.stack_name}_folder_lock_lambda"
-  path   = "/${var.stack_name}/"
-  policy = data.template_file.folder_lock_lambda.rendered
-}
+# resource "aws_iam_policy" "folder_lock_lambda" {
+#   name   = "${var.stack_name}_folder_lock_lambda"
+#   path   = "/${var.stack_name}/"
+#   policy = data.template_file.folder_lock_lambda.rendered
+# }
 
-# allow events from SNS topic for manifest notifications
-resource "aws_lambda_permission" "folder_lock_from_sns" {
-  statement_id  = "AllowExecutionFromSNS"
-  action        = "lambda:InvokeFunction"
-  function_name = module.folder_lock_lambda.this_lambda_function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.s3_events.arn
-}
+# # allow events from SNS topic for manifest notifications
+# resource "aws_lambda_permission" "folder_lock_from_sns" {
+#   statement_id  = "AllowExecutionFromSNS"
+#   action        = "lambda:InvokeFunction"
+#   function_name = module.folder_lock_lambda.this_lambda_function_name
+#   principal     = "sns.amazonaws.com"
+#   source_arn    = aws_sns_topic.s3_events.arn
+# }
 
 
 ################################################################################
@@ -447,7 +447,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "batch_failure" {
   rule      = aws_cloudwatch_event_rule.batch_failure.name
   target_id = "${var.stack_name}_send_batch_failure_to_slack_lambda"
-  arn       = module.notify_slack_lambda.this_lambda_function_arn
+  arn       = module.notify_slack_lambda.lambda_function_arn
 
   input_transformer {
     input_paths = {
@@ -464,7 +464,7 @@ resource "aws_cloudwatch_event_target" "batch_failure" {
 resource "aws_lambda_permission" "batch_failure" {
   statement_id  = "${var.stack_name}_allow_batch_failure_to_invoke_slack_lambda"
   action        = "lambda:InvokeFunction"
-  function_name = module.notify_slack_lambda.this_lambda_function_name
+  function_name = module.notify_slack_lambda.lambda_function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.batch_failure.arn
 }

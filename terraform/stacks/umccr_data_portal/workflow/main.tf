@@ -40,7 +40,7 @@ locals {
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--96026ab"
+    prod = "3.7.5--4a21eef"
   }
 
   bcl_convert_input = {

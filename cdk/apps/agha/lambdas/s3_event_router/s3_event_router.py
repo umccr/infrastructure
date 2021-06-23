@@ -218,10 +218,11 @@ def handler(event, context):
     non_manifest_records = list()
     for s3_record in s3_records:
         # routing logic goes here
+        event_name = s3_record['eventName']
         s3key: str = s3_record['s3']['object']['key']
         bucket: str = s3_record['s3']['bucket']['name']
-        if s3key.endswith('manifest.txt'):
-            # we are only interested in new manifests of the staging bucket
+        if s3key.endswith('manifest.txt') and 'ObjectCreated' in event_name:
+            # we are only interested in new/created manifests of the staging bucket
             if bucket == 'agha-gdr-staging':
                 manifest_records.append(s3_record)
         else:

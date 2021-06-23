@@ -2,8 +2,6 @@ from aws_cdk import (
     aws_lambda as lmbda,
     aws_iam as iam,
     aws_s3 as s3,
-    aws_sns as sns,
-    aws_sns_subscriptions as sns_subs,
     core
 )
 

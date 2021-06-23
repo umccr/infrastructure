@@ -88,19 +88,13 @@ Alternatively, use AWS SSM Console UI.
 
 (client to htsget api gateway endpoint)
 
-> NOTE: Only public dataset `giab.NA12878.NIST7086.2` alignment reads and `giab.NA12878` variants [resources route](https://github.com/umccr/infrastructure/blob/master/cdk/apps/htsget/htsget/goserver.py#L449) is available through this experimental Passport AuthZ.
+> See [HTSGET_PASSPORT.md](HTSGET_PASSPORT.md) for User Guide
 
 - [GA4GH Passport Clearinghouse](https://github.com/ga4gh-duri/ga4gh-duri.github.io/blob/master/researcher_ids/ga4gh_passport_v1.md) is implemented as AWS API Gateway v2's [Lambda Authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html). 
 
 - See [PR #101](https://github.com/umccr/infrastructure/pull/101) for initial commit comment summary.
 
-- For current trusted Passport Brokers, see `TRUSTED_BROKERS` module variable in [ppauthz.py](lambdas/ppauthz/ppauthz.py).
-   
-  > 🙋‍♂️ You will need to have compliant Passport Visa Token from this list of trusted brokers; in order to call UMCCR *secured* htsget endpoints.
-  
-  > 🙋‍♂️ You may try by getting Passport Visa Token from [Labtec/Asha](https://data.labtec.genovic.org.au) Passport Broker service which is run by [Andrew](https://github.com/andrewpatto) at https://www.melbournegenomics.org.au
-
-- **TL;DR** for passport clearing lambda dev workflow:
+- **TL;DR** for passport clearing house development workflow:
     ```
     make test
     make deploy
@@ -268,7 +262,9 @@ samtools view -h giab.NA12878.NIST7035.1__kras__sliced.bam | less
 
 ### How about data from a private S3 bucket?
 
-> 🙋‍♂️ In [PR #24](https://github.com/ga4gh/htsget-refserver/pull/24) contains [commits](https://github.com/ga4gh/htsget-refserver/pull/24/commits/58b923a1709fdfd2e203229845b96bab468c491b) that add support for CORS, S3 protocol, Private Bucket and allow [embedding "/" character for htsget ID](http://samtools.github.io/hts-specs/htsget.html#url-parameters) -- which effectively allow [serving data from a private bucket](https://github.com/victorskl/htsget-refserver/tree/cors-support#private-bucket). See our [dev.json](config/dev.json) or [prod.json](config/prod.json) config for reference. Docker build from this branch avail in [hub](https://hub.docker.com/r/victorskl/htsget-refserver) and [quay](https://quay.io/repository/victorskl/htsget-refserver).
+> 🙋‍♂️ In [PR #24](https://github.com/ga4gh/htsget-refserver/pull/24) contains [commits](https://github.com/ga4gh/htsget-refserver/pull/24/commits/58b923a1709fdfd2e203229845b96bab468c491b) that add support for CORS, S3 protocol, Private Bucket and allow [embedding "/" character for htsget ID](http://samtools.github.io/hts-specs/htsget.html#url-parameters) -- which effectively allow [serving data from a private bucket](https://github.com/victorskl/htsget-refserver/tree/cors-support#private-bucket). See our [dev.json](config/dev.json) or [prod.json](config/prod.json) config for reference. Docker build from this branch avail in [hub](https://hub.docker.com/r/victorskl/htsget-refserver) and [quay](https://quay.io/repository/victorskl/htsget-refserver). 
+
+> **UPDATE**: PR #24 is now merged. You may also use [GA4GH image](https://hub.docker.com/r/ga4gh/htsget-refserver) at `docker pull ga4gh/htsget-refserver:1.5.0`
 
 - Hence, in our Portal client, we use [igv.js](https://github.com/igvteam/igv.js/) through htsget protocol to view BAM slices from a private S3 bucket.
 

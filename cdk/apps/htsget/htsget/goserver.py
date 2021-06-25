@@ -278,18 +278,12 @@ class GoServerStack(core.Stack):
         self.http_api = apigwv2.HttpApi(
             self,
             f"{namespace}-apigw",
-            default_domain_mapping=apigwv2.DefaultDomainMappingOptions(domain_name=custom_domain),
+            default_domain_mapping=apigwv2.DomainMappingOptions(domain_name=custom_domain),
             cors_preflight=apigwv2.CorsPreflightOptions(
                 allow_origins=cors_allowed_origins,
                 allow_headers=["*"],
                 allow_methods=[
-                    apigwv2.HttpMethod.GET,
-                    apigwv2.HttpMethod.OPTIONS,
-                    apigwv2.HttpMethod.HEAD,
-                    apigwv2.HttpMethod.DELETE,
-                    apigwv2.HttpMethod.POST,
-                    apigwv2.HttpMethod.PUT,
-                    apigwv2.HttpMethod.PATCH,
+                    apigwv2.CorsHttpMethod.ANY,
                 ],
                 allow_credentials=True,
             )
@@ -314,7 +308,10 @@ class GoServerStack(core.Stack):
             zone=hosted_zone,
             record_name="htsget",
             target=route53.RecordTarget.from_alias(
-                route53t.ApiGatewayv2Domain(domain_name=custom_domain)
+                route53t.ApiGatewayv2DomainProperties(
+                    regional_domain_name=custom_domain.regional_domain_name,
+                    regional_hosted_zone_id=custom_domain.regional_hosted_zone_id
+                )
             ),
         )
         core.CfnOutput(

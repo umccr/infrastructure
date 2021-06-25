@@ -16,9 +16,10 @@ cdk destroy
 
 ## Architecture
 ```
-        GA4GH Passport                       GA4GH htsget
+          Cognito
+        GA4GH Passport                        GA4GH htsget
   ACM        |                                     |
-   |   (Lambda Authz)         |           (private subnets)
+   |   (Lambda/JWT Authz)     |           (private subnets)
 Route53 > APIGWv2 > VpcLink > | ALB > (autoscaling) ECS Fargate Cluster
                               |
 ```

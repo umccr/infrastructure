@@ -1,1 +1,1 @@
-aws-cdk-lib
+-e .

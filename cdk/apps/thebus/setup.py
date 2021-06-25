@@ -14,11 +14,14 @@ setuptools.setup(
     author="UMCCR",
 
     install_requires=[
+        "boto3",
         "aws-cdk-lib",
         "constructs",
+        # "aws_solutions_constructs.aws_sqs_lambda"
+        # "aws_cdk.aws_lambda_python"
     ],
 
-    python_requires=">=3.7",
+    python_requires=">=3.8",
 
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -27,9 +30,7 @@ setuptools.setup(
 
         "License :: OSI Approved :: Apache Software License",
 
-        "Programming Language :: JavaScript",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
 
         "Topic :: Software Development :: Code Generators",

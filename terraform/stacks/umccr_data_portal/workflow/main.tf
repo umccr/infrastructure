@@ -189,6 +189,83 @@ locals {
   }
 }
 
+  transcriptome_wfl_id = {
+    dev  = "wfl.286d4a2e82f048609d5b288a9d2868f6"
+    prod = "wfl.286d4a2e82f048609d5b288a9d2868f6"
+  }
+
+  transcriptome_wfl_version = {
+    dev  = "3.7.5"
+    prod = "3.7.5--99abc32"
+  }
+
+  transcriptome_input = {
+    dev = <<-EOT
+    {
+      "sample-name": null,
+      "fastq_list_rows": null,
+      "output_file_prefix": null,
+      "output_directory": null,
+      "annotation_file": {
+            "class": "File",
+            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/ref-transcripts.non-zero-length.gtf"
+        },
+      "cytobands": {
+            "class": "File",
+            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/fusion/arriba-cytobands.tsv"
+        },
+      "blacklist": {
+            "class": "File",
+            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/fusion/arriba-blacklist.tsv.gz"
+        },
+      "protein_domains": {
+            "class": "File",
+            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/fusion/arriba-protein-domains.gff3"
+        },
+      "reference_fasta": {
+        "class": "File",
+        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"
+      },
+      "reference_tar": {
+        "class": "File",
+        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+      }
+    }
+    EOT
+    prod = <<-EOT
+    {
+      "sample-name": null,
+      "fastq_list_rows": null,
+      "output_file_prefix": null,
+      "output_directory": null,
+      "annotation_file": {
+            "class": "File",
+            "location": "gds://umccr-refdata-prod/dragen/transcript/ref-transcripts.non-zero-length.gtf"
+        },
+      "cytobands": {
+            "class": "File",
+            "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/rnaseq/fusion/arriba-cytobands.tsv"
+        },
+      "blacklist": {
+            "class": "File",
+            "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/rnaseq/fusion/arriba-blacklist.tsv.gz"
+        },
+      "protein_domains": {
+            "class": "File",
+            "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/rnaseq/fusion/arriba-protein-domains.gff3"
+        },
+      "reference_fasta": {
+        "class": "File",
+        "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/hg38.fa"
+      },
+      "reference_tar": {
+        "class": "File",
+        "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+      }
+    }
+    EOT
+  }
+
 #--- BCL Convert
 
 resource "aws_ssm_parameter" "bcl_convert_id" {

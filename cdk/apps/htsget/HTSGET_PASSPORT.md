@@ -43,12 +43,27 @@
 
 ## Use Case: with API
 
-- First, get your Passport's Visa token from Labtec; the one with `Data: https://umccr.org/datasets/710` (tip: typically the first visa)
+#### VISA token
+
+- First, get your Passport's Visa token from Labtec Portal. The one with stamp on `Data: https://umccr.org/datasets/710` visa. Typically, it is the _first_ VISA token at `/userinfo` section in Labtec Portal.
 
 - Export this Visa token as follows:
 ```
 export VISA_TOKEN=eyJ0eXAiOiJKV1QiLC[...shorten...it...for...brevity]tvE07D6g8sQ
 ```
+
+#### PASSPORT token
+
+> **UPDATE:** You may also use the PASSPORT token that contains one valid VISA embedded in the PASSPORT token. See [discussion in PR#43](https://github.com/ga4gh/data-security/pull/43) for context.
+
+- In this case, you would not need to worry about which VISA token but just pass-in the PASSPORT token (assuming it already has a valid VISA stamped-on). Typically, token denotes with `/aai/token` section in Labtec Portal.
+
+- Then, similarly export this Passport token as follows:
+```
+export PASSPORT_TOKEN=eyJ0eXAiOiJKV1QiLC[...shorten...it...for...brevity]tvE07D6g8sQ
+```
+
+- And, change from `$VISA_TOKEN` to `$PASSPORT_TOKEN` in the followings `curl` commands.
 
 ### Alignment BAM Slice
 

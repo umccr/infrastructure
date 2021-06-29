@@ -191,12 +191,12 @@ locals {
 
   transcriptome_wfl_id = {
     dev  = "wfl.286d4a2e82f048609d5b288a9d2868f6"
-    prod = "wfl.286d4a2e82f048609d5b288a9d2868f6"
+    prod = "wfl.7e5ba7470b5549a6b4bf6d95daaa1214"
   }
 
   transcriptome_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--99abc32"
+    prod = "3.7.5--ef43134"
   }
 
   transcriptome_input = {

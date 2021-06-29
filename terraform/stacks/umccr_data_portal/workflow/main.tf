@@ -202,7 +202,6 @@ locals {
   transcriptome_input = {
     dev = <<-EOT
     {
-      "sample-name": null,
       "fastq_list_rows": null,
       "output_file_prefix": null,
       "output_directory": null,
@@ -234,7 +233,6 @@ locals {
     EOT
     prod = <<-EOT
     {
-      "sample-name": null,
       "fastq_list_rows": null,
       "output_file_prefix": null,
       "output_directory": null,

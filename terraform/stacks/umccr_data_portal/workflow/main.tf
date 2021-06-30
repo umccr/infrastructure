@@ -187,19 +187,18 @@ locals {
     }
     EOT
   }
-}
 
-  transcriptome_wfl_id = {
+  dragen_wts_wfl_id = {
     dev  = "wfl.286d4a2e82f048609d5b288a9d2868f6"
     prod = "wfl.7e5ba7470b5549a6b4bf6d95daaa1214"
   }
 
-  transcriptome_wfl_version = {
+  dragen_wts_wfl_version = {
     dev  = "3.7.5"
     prod = "3.7.5--ef43134"
   }
 
-  transcriptome_input = {
+  dragen_wts_input = {
     dev = <<-EOT
     {
       "fastq_list_rows": null,
@@ -263,6 +262,7 @@ locals {
     }
     EOT
   }
+}
 
 #--- BCL Convert
 
@@ -331,4 +331,27 @@ resource "aws_ssm_parameter" "tumor_normal_input" {
   type = "String"
   description = "Tumor / Normal Input JSON"
   value = local.tumor_normal_input[terraform.workspace]
+}
+
+# --- DRAGEN WTS Workflow for Transcriptome samples
+
+resource "aws_ssm_parameter" "dragen_wts_id" {
+  name = "/iap/workflow/dragen_wts/id"
+  type = "String"
+  description = "DRAGEN WTS Workflow ID"
+  value = local.dragen_wts_wfl_id[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "dragen_wts_version" {
+  name = "/iap/workflow/dragen_wts/version"
+  type = "String"
+  description = "DRAGEN WTS Workflow Version Name"
+  value = local.dragen_wts_wfl_version[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "dragen_wts_input" {
+  name = "/iap/workflow/dragen_wts/input"
+  type = "String"
+  description = "DRAGEN WTS Input JSON"
+  value = local.dragen_wts_input[terraform.workspace]
 }

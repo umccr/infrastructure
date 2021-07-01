@@ -48,7 +48,7 @@ class TheBusStack(Stack):
         # Lambda layers for shared libs
         util_lambda_layer = self.create_lambda_layer(scope=self, name="eb_util")
         # TODO: needs more investigation as integration is not straight forward
-        # schema_lambda_layer = self.create_lambda_layer(scope=self, name="schemas")
+        schema_lambda_layer = self.create_lambda_layer(scope=self, name="schemas")
 
         # lambda environment variables
         lambda_env = {
@@ -56,23 +56,23 @@ class TheBusStack(Stack):
         }
 
         # Lambda to manage workflow events
-        orchestrator_lambda = self.create_standard_lambda(scope=self, name="orchestrator", layers=[util_lambda_layer], env=lambda_env)
+        orchestrator_lambda = self.create_standard_lambda(scope=self, name="orchestrator", layers=[util_lambda_layer, schema_lambda_layer], env=lambda_env)
         event_bus.grant_put_events_to(orchestrator_lambda)
 
         # Lambda to prepare BCL Convert workflows
-        bcl_convert_lambda = self.create_standard_lambda(scope=self, name="bcl_convert", layers=[util_lambda_layer], env=lambda_env)
+        bcl_convert_lambda = self.create_standard_lambda(scope=self, name="bcl_convert", layers=[util_lambda_layer, schema_lambda_layer], env=lambda_env)
         event_bus.grant_put_events_to(bcl_convert_lambda)
 
         # Lambda to prepare WGS QC workflows
-        dragen_wgs_qc_lambda = self.create_standard_lambda(scope=self, name="dragen_wgs_qc", layers=[util_lambda_layer], env=lambda_env)
+        dragen_wgs_qc_lambda = self.create_standard_lambda(scope=self, name="dragen_wgs_qc", layers=[util_lambda_layer, schema_lambda_layer], env=lambda_env)
         event_bus.grant_put_events_to(dragen_wgs_qc_lambda)
 
         # Lambda to prepare WGS somatic analysis workflows
-        dragen_wgs_somatic_lambda = self.create_standard_lambda(scope=self, name="dragen_wgs_somatic", layers=[util_lambda_layer], env=lambda_env)
+        dragen_wgs_somatic_lambda = self.create_standard_lambda(scope=self, name="dragen_wgs_somatic", layers=[util_lambda_layer, schema_lambda_layer], env=lambda_env)
         event_bus.grant_put_events_to(dragen_wgs_somatic_lambda)
 
         # Lambda to submit WES workflows to ICA
-        wes_launcher_lambda = self.create_standard_lambda(scope=self, name="wes_launcher", layers=[util_lambda_layer])
+        wes_launcher_lambda = self.create_standard_lambda(scope=self, name="wes_launcher", layers=[util_lambda_layer, schema_lambda_layer])
         event_bus.grant_put_events_to(wes_launcher_lambda)
 
         # Lambda to handle GDS events (translating outside events into application events + dedup/persisting)
@@ -80,7 +80,7 @@ class TheBusStack(Stack):
         event_bus.grant_put_events_to(gds_manager_lambda)
 
         # Lamda to handle ENS events (translating outside events into application events + dedup/persisting)
-        ens_manager_lambda = self.create_standard_lambda(scope=self, name="ens_event_manager", layers=[util_lambda_layer], env=lambda_env)
+        ens_manager_lambda = self.create_standard_lambda(scope=self, name="ens_event_manager", layers=[util_lambda_layer, schema_lambda_layer], env=lambda_env)
         event_bus.grant_put_events_to(ens_manager_lambda)
         ens_manager_lambda.grant_invoke(wes_launcher_lambda)
 
@@ -106,8 +106,8 @@ class TheBusStack(Stack):
             description="Rule to send BSSH events to the orchestrator Lambda",
             event_bus=event_bus)
         bssh_rule.add_target(target=targets.LambdaFunction(handler=orchestrator_lambda))
-        bssh_rule.add_event_pattern(detail_type=[EventType.BSSH.value],
-                                    source=[EventSource.BSSH.value])
+        bssh_rule.add_event_pattern(detail_type=[EventType.SRSC.value],
+                                    source=[EventSource.ENS_HANDLER.value])
 
         orch_to_bcl_convert_rule = events.Rule(
             scope=self,
@@ -116,7 +116,7 @@ class TheBusStack(Stack):
             description="Rule to send BCL_CONVERT events from the orchestrator to the bcl_convert Lambda",
             event_bus=event_bus)
         orch_to_bcl_convert_rule.add_target(target=targets.LambdaFunction(handler=bcl_convert_lambda))
-        orch_to_bcl_convert_rule.add_event_pattern(detail_type=[EventType.BCL_CONVERT.value],
+        orch_to_bcl_convert_rule.add_event_pattern(detail_type=[EventType.SRSC.value],
                                                    source=[EventSource.ORCHESTRATOR.value])
 
         orch_to_wgs_qc_rule = events.Rule(

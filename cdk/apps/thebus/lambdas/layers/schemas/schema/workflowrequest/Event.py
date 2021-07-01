@@ -9,77 +9,77 @@ class Event(object):
 
 
     _types = {
-        'sequence_run_id': 'str',
-        'sequence_run_name': 'str',
-        'status': 'str',
-        'timestamp': 'str'
+        'workflow_type': 'str',
+        'subject_id': 'str',
+        'library_id': 'str',
+        'seq_run_name': 'str'
     }
 
     _attribute_map = {
-        'sequence_run_id': 'sequence_run_id',
-        'sequence_run_name': 'sequence_run_name',
-        'status': 'status',
-        'timestamp': 'timestamp'
+        'workflow_type': 'workflow_type',
+        'subject_id': 'subject_id',
+        'library_id': 'library_id',
+        'seq_run_name': 'seq_run_name'
     }
 
-    def __init__(self, sequence_run_id=None, sequence_run_name=None, status=None, timestamp=None):  # noqa: E501
-        self._sequence_run_id = None
-        self._sequence_run_name = None
-        self._status = None
-        self._timestamp = None
+    def __init__(self, workflow_type=None, subject_id=None, library_id=None, seq_run_name=None):  # noqa: E501
+        self._workflow_type = None
+        self._subject_id = None
+        self._library_id = None
+        self._seq_run_name = None
         self.discriminator = None
-        self.sequence_run_id = sequence_run_id
-        self.sequence_run_name = sequence_run_name
-        self.status = status
-        self.timestamp = timestamp
+        self.workflow_type = workflow_type
+        self.subject_id = subject_id
+        self.library_id = library_id
+        self.seq_run_name = seq_run_name
 
 
     @property
-    def sequence_run_id(self):
+    def workflow_type(self):
 
-        return self._sequence_run_id
+        return self._workflow_type
 
-    @sequence_run_id.setter
-    def sequence_run_id(self, sequence_run_id):
-
-
-        self._sequence_run_id = sequence_run_id
+    @workflow_type.setter
+    def workflow_type(self, workflow_type):
 
 
-    @property
-    def sequence_run_name(self):
-
-        return self._sequence_run_name
-
-    @sequence_run_name.setter
-    def sequence_run_name(self, sequence_run_name):
-
-
-        self._sequence_run_name = sequence_run_name
+        self._workflow_type = workflow_type
 
 
     @property
-    def status(self):
+    def subject_id(self):
 
-        return self._status
+        return self._subject_id
 
-    @status.setter
-    def status(self, status):
+    @subject_id.setter
+    def subject_id(self, subject_id):
 
 
-        self._status = status
+        self._subject_id = subject_id
 
 
     @property
-    def timestamp(self):
+    def library_id(self):
 
-        return self._timestamp
+        return self._library_id
 
-    @timestamp.setter
-    def timestamp(self, timestamp):
+    @library_id.setter
+    def library_id(self, library_id):
 
 
-        self._timestamp = timestamp
+        self._library_id = library_id
+
+
+    @property
+    def seq_run_name(self):
+
+        return self._seq_run_name
+
+    @seq_run_name.setter
+    def seq_run_name(self, seq_run_name):
+
+
+        self._seq_run_name = seq_run_name
 
     def to_dict(self):
         result = {}

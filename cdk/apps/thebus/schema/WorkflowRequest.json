@@ -2,27 +2,26 @@
   "openapi": "3.0.0",
   "info": {
     "version": "1.0.0",
-    "title": "Event"
+    "title": "WorkflowRequest"
   },
   "paths": {},
   "components": {
     "schemas": {
       "Event": {
         "type": "object",
-        "required": ["sequence_run_id", "sequence_run_name", "status", "timestamp"],
+        "required": ["workflow_type"],
         "properties": {
-          "sequence_run_id": {
+          "workflow_type": {
             "type": "string"
           },
-          "sequence_run_name": {
+          "subject_id": {
             "type": "string"
           },
-          "status": {
+          "library_id": {
             "type": "string"
           },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time"
+          "seq_run_name": {
+            "type": "string"
           }
         }
       }

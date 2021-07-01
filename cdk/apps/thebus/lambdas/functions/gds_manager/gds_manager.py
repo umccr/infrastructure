@@ -1,5 +1,5 @@
 import json
-from eb_util import send_event_to_bus, EventType, EventSource
+import eb_util as util
 
 
 def is_report(event):
@@ -19,6 +19,7 @@ def handler(event, context):
         "name": object_key
     }
 
-    send_event_to_bus(event_type=EventType.GDS,
-                      event_source=EventSource.GDS,
-                      event_payload=payload)
+    util.send_event_to_bus(
+        event_type=util.EventType.GDS,
+        event_source=util.EventSource.GDS,
+        event_payload=payload)

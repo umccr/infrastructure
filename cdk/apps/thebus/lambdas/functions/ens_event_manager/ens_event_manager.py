@@ -1,113 +1,118 @@
 import json
-import time
-from eb_util import send_event_to_bus, EventType, EventSource
-# from sequencerunstatuschange import Event as SRSCEvent
-# from sequencerunstatuschange import Marshaller as SRSCMarshaller
+from datetime import datetime
+import logging
+from enum import Enum
+import eb_util as util
+import schema.sequencerunstatechange as srsc
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 # TODO: split into separate lambdas? each responsible for s specific ENS event type, each with it's own ENS subscription
 
 
-def is_wes_event(event):
-    return event.get('type', "unknown") == EventType.WES.value
+class ENSEventType(Enum):
+    """
+    REF:
+    https://iap-docs.readme.io/docs/ens_available-events
+    https://github.com/umccr-illumina/stratus/issues/22#issuecomment-628028147
+    https://github.com/umccr-illumina/stratus/issues/58
+    https://iap-docs.readme.io/docs/upload-instrument-runs#run-upload-event
+    """
+    GDS_FILES = "gds.files"
+    BSSH_RUNS = "bssh.runs"
+    WES_RUNS = "wes.runs"
+
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return f"{type(self).__name__}.{self}"
 
 
-def is_bssh_event(event):
-    return event.get('type', "unknown") == EventType.BSSH.value
+SUPPORTED_ENS_TYPES = [
+    ENSEventType.BSSH_RUNS.value,
+    ENSEventType.GDS_FILES.value,
+    ENSEventType.WES_RUNS.value,
+]
 
 
-def is_gds_event(event):
-    return event.get('type', "unknown") == EventType.GDS.value
+def handle_wes_runs_event(event):
+    event_action = event['messageAttributes']['action']['stringValue']
+    message_body = json.loads(event['body'])
 
+    # TODO: convert SQS/ENS event into corresponding Portal event
 
-def handle_bssh_event(event):
     payload = {
-        "seq_run_name": event.get("seq_run_name", "210630_A01052_0900_AH4KMDSSXY"),
-        "seq_run_id": event.get("seq_run_id", "r.MK8wf6UUn02VQba98Yw2eG"),
-        "status": "UPLOAD_COMPLETE"
-    }
-    send_event_to_bus(event_type=EventType.BDDH,
-                      event_source=EventSource.BSSH,
-                      event_payload=payload)
-
-
-def handle_wes_event(event):
-    payload = {
-        "workflow_name": event.get("workflow_name", "bcl_convert_workflow_fake_name"),
+        "workflow_name": event.get("workflow_name"),
         "workflow_data": event.get("workflow_data", "fake_workflow_data"),
         "workflow_state": event.get("workflow_state", "SUCCEEDED")
     }
-    send_event_to_bus(event_type=EventType.WES,
-                      event_source=EventSource.WES,
-                      event_payload=payload)
+    util.send_event_to_bus(
+        event_type=util.EventType.WES,
+        event_source=util.EventSource.WES,
+        event_payload=payload)
 
 
-def handle_gds_event(event):
-    payload = {
-        "volume": event.get("volume", "fake_volume"),
-        "object_key": event.get("object_key", "fake/object/key.txt")
-    }
-    send_event_to_bus(event_type=EventType.GDS,
-                      event_source=EventSource.GDS,
-                      event_payload=payload)
+def handle_gds_file_event(event):
+    event_action = event['messageAttributes']['action']['stringValue']
+
+    # message_body = json.loads(event['body'])
+    # TODO: also check if report and create a report event
+
+    if event_action == 'deleted':
+        logger.info(f"A file was removed.")
+        # delete DB file record
+    else:
+        logger.info(f"A file was added/updated.")
+        # create/update DB file record
 
 
-# def handle_bssh_event(event):
-#     payload = SRSCEvent(
-#         sequence_run_name=event.get("seq_run_name", "fake-seq-run-name"),
-#         sequence_run_id=event.get("seq_run_id", "fake-seq-run-id"),
-#         status=event.get("status", "UPLOAD_COMPLETE"),
-#         timestamp=time.time())
-#     print(f"Emitting event with payload {payload}")
-#     send_event_to_bus(event_type=EventType.BSSH,
-#                       event_source=EventSource.BSSH,
-#                       event_payload=payload)
+def handle_bssh_runs_event(event):
+    event_action = event['messageAttributes']['action']['stringValue']
+    if event_action != 'statuschanged':
+        raise ValueError(f"Unexpected event action: {event_action}")
+    message_body = json.loads(event['body'])
 
+    # TODO: check difference between run name and instrument run ID
+    srn = message_body['name']
+    iri = message_body['instrumentRunId']
+    if srn != iri:
+        raise ValueError(f"Sequence run name and instrumentRunId are not the same! {srn} != {iri}")
 
-def handle_bssh_event(event):
-    payload = {
-        "seq_run_name": event.get("seq_run_name", "fake-seq-run-name"),
-        "seq_run_id": event.get("seq_run_id", "fake-seq-run-id"),
-        "status": event.get("status", "UPLOAD_COMPLETE")
-    }
-    print(f"Emitting event with payload {payload}")
-    send_event_to_bus(event_type=EventType.BSSH,
-                      event_source=EventSource.BSSH,
-                      event_payload=payload)
+    ev = srsc.Event(
+        sequence_run_name=srn,
+        sequence_run_id=message_body['id'],
+        gds_folder_path=message_body['gdsFolderPath'],
+        gds_volume_name=message_body['gdsVolumeName'],
+        status=message_body['status'],
+        timestamp=datetime.utcnow())
+
+    print(f"Emitting event {ev}")
+    util.send_event_to_bus_schema(
+        event_type=util.EventType.SRSC,
+        event_source=util.EventSource.ENS_HANDLER,
+        event_payload=ev)
 
 
 def handler(event, context):
     # Log the received event in CloudWatch
-    print("Starting ens_event_manager")
-    print(f"Received event: {json.dumps(event)}")
+    logger.info("Starting ens_event_manager")
+    logger.info(json.dumps(event))
 
-    print("Emitting event to event bus")
+    # An SQS event can carry multiple Records, each one may be a different ENS event
+    for message in event['Records']:
+        event_type = message['messageAttributes']['type']['stringValue']
+        if event_type not in SUPPORTED_ENS_TYPES:
+            logger.warning(f"Skipping unsupported IAP ENS type: {event_type}")
+            continue
 
-    if is_wes_event(event):
-        handle_wes_event(event)
-    elif is_bssh_event(event):
-        handle_bssh_event(event)
-    elif is_gds_event(event):
-        handle_gds_event(event)
-    else:
-        # TODO error out
-        raise ValueError(f"Unsupported event! Expected WES/BSSH/GDS event, got: {event}")
+        if event_type == ENSEventType.WES_RUNS.value:
+            handle_wes_runs_event(message)
 
-    print("All done.")
-#
-#
-# payload = SRSCEvent(
-#     sequence_run_name="fake-seq-run-name",
-#     sequence_run_id="fake-seq-run-id",
-#     status="UPLOAD_COMPLETE",
-#     timestamp=1624933814.26719)
-#
-# print(SRSCMarshaller.marshall(payload))
-#
-# foo = '{"sequence_run_id": "fake-seq-run-id", "sequence_run_name": "fake-seq-run-name", "status": "UPLOAD_COMPLETE", "timestamp": 1624933814.26719}'
-#
-# payload2: SRSCEvent = SRSCMarshaller.unmarshall(json.loads(foo), typeName=SRSCEvent)
-# print(isinstance(payload2, SRSCEvent))
-# print(payload2)
-# print(SRSCMarshaller.marshall(payload2))
-# print(payload2.sequence_run_id)
-#
+        if event_type == ENSEventType.BSSH_RUNS.value:
+            handle_bssh_runs_event(message)
+
+        if event_type == ENSEventType.GDS_FILES.value:
+            handle_gds_file_event(message)
+
+    logger.info("All done.")

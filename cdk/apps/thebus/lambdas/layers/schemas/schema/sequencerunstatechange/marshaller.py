@@ -1,14 +1,14 @@
 import datetime
 import re
 import six
-import sequencerunstatuschange
+import schema.sequencerunstatechange
 
 class Marshaller:
     PRIMITIVE_TYPES = (float, bool, bytes, six.text_type) + six.integer_types
 
     NATIVE_TYPES_MAPPING = {
         'int': int,
-        'long': int,
+        'long': int if six.PY3 else long,
         'float': float,
         'str': str,
         'bool': bool,
@@ -62,7 +62,7 @@ class Marshaller:
             if typeName in cls.NATIVE_TYPES_MAPPING:
                 typeName = cls.NATIVE_TYPES_MAPPING[typeName]
             else:
-                typeName = getattr(sequencerunstatuschange, typeName)
+                typeName = getattr(schema.sequencerunstatechange, typeName)
 
         if typeName in cls.PRIMITIVE_TYPES:
             return cls.__unmarshall_primitive(data, typeName)

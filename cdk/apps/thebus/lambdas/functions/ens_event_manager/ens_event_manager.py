@@ -4,6 +4,7 @@ import logging
 from enum import Enum
 import eb_util as util
 import schema.sequencerunstatechange as srsc
+import schema.workflowrunstatechange as wrsc
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -37,23 +38,40 @@ SUPPORTED_ENS_TYPES = [
 
 
 def handle_wes_runs_event(event):
-    event_action = event['messageAttributes']['action']['stringValue']
+    logger.info("Handling wes.runs event")
+    event_action = event['messageAttributes']['action']['stringValue']  # TODO: check! should probably be 'updated'
     message_body = json.loads(event['body'])
 
     # TODO: convert SQS/ENS event into corresponding Portal event
+    event_status = message_body['EventType']  # RunSucceeded
+    event_time = message_body['Timestamp']
+    workflow_name = message_body['Name']
+    workflow_id = message_body['WorkflowRun']['Id']  # wfr.23487yq4508
+    workflow_status = message_body['WorkflowRun']['Status']  # Succeeded
 
-    payload = {
-        "workflow_name": event.get("workflow_name"),
-        "workflow_data": event.get("workflow_data", "fake_workflow_data"),
-        "workflow_state": event.get("workflow_state", "SUCCEEDED")
-    }
-    util.send_event_to_bus(
-        event_type=util.EventType.WES,
-        event_source=util.EventSource.WES,
-        event_payload=payload)
+    # Convert Pending status of WES launcher to Succeeded (simulating a successful WES run)
+    if workflow_status == "Pending":
+        workflow_status = "Succeeded"
+    else:
+        # We are receiving mock events from the WES launcher directly, those have all Pending status
+        raise ValueError("Received non Pending WES run status! Only expect Pending at this point.")
+
+    wrsc_event = wrsc.Event(
+        workflow_run_name=workflow_name,
+        workflow_run_id=workflow_id,
+        status=workflow_status,
+        timestamp=event_time
+    )
+
+    logger.info(f"Emitting {util.EventType.SRSC} event {wrsc_event}")
+    util.send_event_to_bus_schema(
+        event_type=util.EventType.WRSC,
+        event_source=util.EventSource.ENS_HANDLER,
+        event_payload=wrsc_event)
 
 
 def handle_gds_file_event(event):
+    logger.info("Handling gds.files event")
     event_action = event['messageAttributes']['action']['stringValue']
 
     # message_body = json.loads(event['body'])
@@ -68,6 +86,7 @@ def handle_gds_file_event(event):
 
 
 def handle_bssh_runs_event(event):
+    logger.info("Handling bssh.runs event")
     event_action = event['messageAttributes']['action']['stringValue']
     if event_action != 'statuschanged':
         raise ValueError(f"Unexpected event action: {event_action}")
@@ -87,7 +106,7 @@ def handle_bssh_runs_event(event):
         status=message_body['status'],
         timestamp=datetime.utcnow())
 
-    print(f"Emitting event {ev}")
+    logger.info(f"Emitting {util.EventType.SRSC} event {ev}")
     util.send_event_to_bus_schema(
         event_type=util.EventType.SRSC,
         event_source=util.EventSource.ENS_HANDLER,

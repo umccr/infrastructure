@@ -87,87 +87,32 @@ class TheBusStack(Stack):
         ################################################################################
         # Event Rules setup
 
-        # set up event rules
-        # TODO: change id/name, use namespace as basis
-        wes_rule = events.Rule(
-            scope=self,
-            id="WesRule",
-            rule_name="WesRule",
-            description="Rule to send WES events to the orchestrator Lambda",
-            event_bus=event_bus)
-        wes_rule.add_target(target=targets.LambdaFunction(handler=orchestrator_lambda))
-        wes_rule.add_event_pattern(detail_type=[EventType.WES.value],
-                                   source=[EventSource.WES.value])
+        # route ENS events to the orchestrator
+        self.create_event_rule(name="WorkflowRun", bus=event_bus, handler=orchestrator_lambda,
+                               event_type=EventType.WRSC, event_source=EventSource.ENS_HANDLER)
 
-        bssh_rule = events.Rule(
-            scope=self,
-            id="BsshRule",
-            rule_name="BsshRule",
-            description="Rule to send BSSH events to the orchestrator Lambda",
-            event_bus=event_bus)
-        bssh_rule.add_target(target=targets.LambdaFunction(handler=orchestrator_lambda))
-        bssh_rule.add_event_pattern(detail_type=[EventType.SRSC.value],
-                                    source=[EventSource.ENS_HANDLER.value])
+        self.create_event_rule(name="SequenceRun", bus=event_bus, handler=orchestrator_lambda,
+                               event_type=EventType.SRSC, event_source=EventSource.ENS_HANDLER)
 
-        orch_to_bcl_convert_rule = events.Rule(
-            scope=self,
-            id="BclConvertRule",
-            rule_name="BclConvertRule",
-            description="Rule to send BCL_CONVERT events from the orchestrator to the bcl_convert Lambda",
-            event_bus=event_bus)
-        orch_to_bcl_convert_rule.add_target(target=targets.LambdaFunction(handler=bcl_convert_lambda))
-        orch_to_bcl_convert_rule.add_event_pattern(detail_type=[EventType.SRSC.value],
-                                                   source=[EventSource.ORCHESTRATOR.value])
+        # route orchestrator events on to their next steps
+        self.create_event_rule(name="BclConvert", bus=event_bus, handler=bcl_convert_lambda,
+                               event_type=EventType.SRSC, event_source=EventSource.ORCHESTRATOR)
 
-        orch_to_wgs_qc_rule = events.Rule(
-            scope=self,
-            id="DragenWgsQcRule",
-            rule_name="DragenWgsQcRule",
-            description="Rule to send DRAGEN_WGS_QC events from the orchestrator to the dragen_wgs_qc Lambda",
-            event_bus=event_bus)
-        orch_to_wgs_qc_rule.add_target(target=targets.LambdaFunction(handler=dragen_wgs_qc_lambda))
-        orch_to_wgs_qc_rule.add_event_pattern(detail_type=[EventType.DRAGEN_WGS_QC.value],
-                                              source=[EventSource.ORCHESTRATOR.value])
+        self.create_event_rule(name="DragenWgsQc", bus=event_bus, handler=dragen_wgs_qc_lambda,
+                               event_type=EventType.DRAGEN_WGS_QC, event_source=EventSource.ORCHESTRATOR)
 
-        orch_to_wgs_somatic_rule = events.Rule(
-            scope=self,
-            id="DragenWgsSomaticRule",
-            rule_name="DragenWgsSomaticRule",
-            description="Rule to send DRAGEN_WGS_SOMATIC events from the orchestrator to the dragen_wgs_somatic Lambda",
-            event_bus=event_bus)
-        orch_to_wgs_somatic_rule.add_target(target=targets.LambdaFunction(handler=dragen_wgs_somatic_lambda))
-        orch_to_wgs_somatic_rule.add_event_pattern(detail_type=[EventType.DRAGEN_WGS_SOMATIC.value],
-                                                   source=[EventSource.ORCHESTRATOR.value])
+        self.create_event_rule(name="DragenWgsSomatic", bus=event_bus, handler=dragen_wgs_somatic_lambda,
+                               event_type=EventType.DRAGEN_WGS_SOMATIC, event_source=EventSource.ORCHESTRATOR)
 
-        bcl_convert_to_wes_launcher_rule = events.Rule(
-            scope=self,
-            id="BclConvertLaunchRule",
-            rule_name="BclConvertLaunchRule",
-            description="Rule to send BCL_CONVERT launch events to the wes_launcher Lambda",
-            event_bus=event_bus)
-        bcl_convert_to_wes_launcher_rule.add_target(target=targets.LambdaFunction(handler=wes_launcher_lambda))
-        bcl_convert_to_wes_launcher_rule.add_event_pattern(detail_type=[EventType.WES_LAUNCH.value],
-                                                           source=[EventSource.BCL_CONVERT.value])
+        # route WES launch events to the WES launcher
+        self.create_event_rule(name="BclConvertLaunch", bus=event_bus, handler=wes_launcher_lambda,
+                               event_type=EventType.WES_LAUNCH, event_source=EventSource.BCL_CONVERT)
 
-        wgs_qc_to_wes_launcher_rule = events.Rule(
-            scope=self,
-            id="DragenWgsQcLaunchRequestRule",
-            rule_name="DragenWgsQcLaunchRequestRule",
-            description="Rule to send DRAGEN_WGS_QC launch events to the wes_launcher Lambda",
-            event_bus=event_bus)
-        wgs_qc_to_wes_launcher_rule.add_target(target=targets.LambdaFunction(handler=wes_launcher_lambda))
-        wgs_qc_to_wes_launcher_rule.add_event_pattern(detail_type=[EventType.WES_LAUNCH.value],
-                                                      source=[EventSource.DRAGEN_WGS_QC.value])
+        self.create_event_rule(name="DragenWgsQcLaunchRequest", bus=event_bus, handler=wes_launcher_lambda,
+                               event_type=EventType.WES_LAUNCH, event_source=EventSource.DRAGEN_WGS_QC)
 
-        wgs_somatic_to_wes_launcher_rule = events.Rule(
-            scope=self,
-            id="DragenWgsSomaticLaunchRule",
-            rule_name="DragenWgsSomaticLaunchRule",
-            description="Rule to send DRAGEN_WGS_SOMATIC launch events to the wes_launcher Lambda",
-            event_bus=event_bus)
-        wgs_somatic_to_wes_launcher_rule.add_target(target=targets.LambdaFunction(handler=wes_launcher_lambda))
-        wgs_somatic_to_wes_launcher_rule.add_event_pattern(detail_type=[EventType.WES_LAUNCH.value],
-                                                           source=[EventSource.DRAGEN_WGS_SOMATIC.value])
+        self.create_event_rule(name="DragenWgsSomaticLaunch", bus=event_bus, handler=wes_launcher_lambda,
+                               event_type=EventType.WES_LAUNCH, event_source=EventSource.DRAGEN_WGS_SOMATIC)
 
     # TODO: refactor to allow separate function path/name (allow better code organisation)
     def create_standard_lambda(self, scope, name: str, layers: list = [], env: dict = {}, duration_seconds: int = 20):
@@ -195,3 +140,14 @@ class TheBusStack(Stack):
             compatible_runtimes=[lmbda.Runtime.PYTHON_3_8],
             description=f"Lambda layer {name} for python 3.8"
         )
+
+    def create_event_rule(self, name, bus: events.EventBus, handler: lmbda.Function, event_type: EventType, event_source: EventSource):
+        wgs_somatic_to_wes_launcher_rule = events.Rule(
+            scope=self,
+            id=f"{name}Rule",
+            rule_name=f"{name}Rule",
+            description=f"Rule to send {event_type.value} events to the {handler.function_name} Lambda",
+            event_bus=bus)
+        wgs_somatic_to_wes_launcher_rule.add_target(target=targets.LambdaFunction(handler=handler))
+        wgs_somatic_to_wes_launcher_rule.add_event_pattern(detail_type=[event_type.value],
+                                                           source=[event_source.value])

@@ -59,11 +59,9 @@ class EventSource(Enum):
 
 
 class EventType(Enum):
-    BSSH = "BSSH"
     SRSC = "SequenceRunStateChange"
-    GDS = "GDS"
-    S3 = "S3"
-    WES = "WES"
+    WRSC = "WorkflowRunStateChange"
+    FSC = "FileStateChange"
     BCL_CONVERT = "BCL_CONVERT"
     DRAGEN_WGS_QC = "DRAGEN_WGS_QC"
     DRAGEN_WGS_SOMATIC = "DRAGEN_WGS_SOMATIC"

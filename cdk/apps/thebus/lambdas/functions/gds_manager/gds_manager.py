@@ -20,6 +20,6 @@ def handler(event, context):
     }
 
     util.send_event_to_bus(
-        event_type=util.EventType.GDS,
+        event_type=util.EventType.FSC,
         event_source=util.EventSource.GDS,
         event_payload=payload)

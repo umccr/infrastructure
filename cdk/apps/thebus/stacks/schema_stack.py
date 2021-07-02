@@ -41,6 +41,7 @@ class SchemaStack(Stack):
         #       - objects are not JSON serializable and the use of Marshallers presents extra hurdles
 
         self.create_schema(name="SequenceRunStateChange")
+        self.create_schema(name="WorkflowRunStateChange")
         self.create_schema(name="WesLaunchRequest")
         self.create_schema(name="WorkflowRequest")
 

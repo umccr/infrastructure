@@ -195,7 +195,7 @@ locals {
 
   dragen_wts_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--ef43134"
+    prod = "3.7.5--1d8fe7b"
   }
 
   dragen_wts_input = {

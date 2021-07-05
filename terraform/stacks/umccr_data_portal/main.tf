@@ -324,8 +324,8 @@ data "aws_s3_bucket" "s3_run_data_bucket" {
   bucket = var.s3_run_data_bucket[terraform.workspace]
 }
 
-resource "aws_sqs_queue" "germline_queue" {
-  name = "${local.stack_name_dash}-germline-queue.fifo"
+resource "aws_sqs_queue" "dragen_wgs_qc_queue" {
+  name = "${local.stack_name_dash}-dragen-wgs-qc-queue.fifo"
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
@@ -1548,10 +1548,10 @@ resource "aws_ssm_parameter" "sqs_notification_queue_arn" {
   tags  = merge(local.default_tags)
 }
 
-resource "aws_ssm_parameter" "sqs_germline_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_germline_queue_arn"
+resource "aws_ssm_parameter" "sqs_dragen_wgs_qc_queue_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_dragen_wgs_qc_queue_arn"
   type  = "String"
-  value = aws_sqs_queue.germline_queue.arn
+  value = aws_sqs_queue.dragen_wgs_qc_queue.arn
   tags  = merge(local.default_tags)
 }
 

@@ -87,34 +87,30 @@ locals {
   }
 
   dragen_wgs_qc_wfl_id = {
-    dev  = "wfl.5cc28c147e4e4dfa9e418523188aacec"
-    prod = "wfl.d6f51b67de5b4d309dddf4e411362be7"
+    dev  = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
+    prod = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
   }
 
   dragen_wgs_qc_wfl_version = {
-    dev  = "3.7.5--1.3.5"
-    prod = "3.7.5--1.3.5-65a0f81"
+    dev  = "3.7.5"
+    prod = "3.7.5--67a9d2b"
   }
 
   dragen_wgs_qc_input = {
     dev = <<-EOT
     {
-      "sample_name": null,
+      "output_file_prefix": null,
+      "output_directory": null,
       "fastq_list_rows": null,
       "sites_somalier": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/somalier/sites.hg38.vcf.gz"
       },
-      "genome_version": "hg38",
-      "hla_reference_fasta": {
-        "class": "File",
-        "location": "gds://umccr-refdata-dev/optitype/hla_reference_dna.fasta"
-      },
       "reference_fasta": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"
       },
-      "reference_tar_dragen": {
+      "reference_tar": {
         "class": "File",
         "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
       }
@@ -122,22 +118,18 @@ locals {
     EOT
     prod = <<-EOT
     {
-      "sample_name": null,
+      "output_file_prefix": null,
+      "output_directory": null,
       "fastq_list_rows": null,
       "sites_somalier": {
         "class": "File",
         "location": "gds://umccr-refdata-prod/somalier/sites.hg38.vcf.gz"
       },
-      "genome_version": "hg38",
-      "hla_reference_fasta": {
-        "class": "File",
-        "location": "gds://umccr-refdata-prod/optitype/hla_reference_dna.fasta"
-      },
       "reference_fasta": {
         "class": "File",
         "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/hg38.fa"
       },
-      "reference_tar_dragen": {
+      "reference_tar": {
         "class": "File",
         "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
       }

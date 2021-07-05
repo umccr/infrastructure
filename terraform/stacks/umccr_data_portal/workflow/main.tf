@@ -40,7 +40,7 @@ locals {
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--ef43134"
+    prod = "3.7.5--1d8fe7b"
   }
 
   bcl_convert_input = {
@@ -152,7 +152,7 @@ locals {
 
   tumor_normal_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--ef43134"
+    prod = "3.7.5--1d8fe7b"
   }
 
   tumor_normal_input = {

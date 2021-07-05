@@ -22,8 +22,8 @@ provider "aws" {
 
 locals {
   token_desc = {
-    dev  = "IAP Token using development workgroup"
-    prod = "IAP Token using production workgroup"
+    dev  = "ICA Token using development workgroup"
+    prod = "ICA Token using production workgroup"
   }
 
   token_tier = {
@@ -86,17 +86,17 @@ locals {
     EOT
   }
 
-  germline_wfl_id = {
+  dragen_wgs_qc_wfl_id = {
     dev  = "wfl.5cc28c147e4e4dfa9e418523188aacec"
     prod = "wfl.d6f51b67de5b4d309dddf4e411362be7"
   }
 
-  germline_wfl_version = {
+  dragen_wgs_qc_wfl_version = {
     dev  = "3.7.5--1.3.5"
     prod = "3.7.5--1.3.5-65a0f81"
   }
 
-  germline_input = {
+  dragen_wgs_qc_input = {
     dev = <<-EOT
     {
       "sample_name": null,
@@ -287,27 +287,27 @@ resource "aws_ssm_parameter" "bcl_convert_input" {
   value = local.bcl_convert_input[terraform.workspace]
 }
 
-# --- Germline
+# --- DRAGEN WGS QC Workflow for WGS samples (used to call Germline initially)
 
-resource "aws_ssm_parameter" "germline_id" {
-  name = "/iap/workflow/germline/id"
+resource "aws_ssm_parameter" "dragen_wgs_qc_id" {
+  name = "/iap/workflow/dragen_wgs_qc/id"
   type = "String"
-  description = "Germline Workflow ID"
-  value = local.germline_wfl_id[terraform.workspace]
+  description = "DRAGEN_WGS_QC Workflow ID"
+  value = local.dragen_wgs_qc_wfl_id[terraform.workspace]
 }
 
-resource "aws_ssm_parameter" "germline_version" {
-  name = "/iap/workflow/germline/version"
+resource "aws_ssm_parameter" "dragen_wgs_qc_version" {
+  name = "/iap/workflow/dragen_wgs_qc/version"
   type = "String"
-  description = "Germline Workflow Version Name"
-  value = local.germline_wfl_version[terraform.workspace]
+  description = "DRAGEN_WGS_QC Workflow Version Name"
+  value = local.dragen_wgs_qc_wfl_version[terraform.workspace]
 }
 
-resource "aws_ssm_parameter" "germline_input" {
-  name = "/iap/workflow/germline/input"
+resource "aws_ssm_parameter" "dragen_wgs_qc_input" {
+  name = "/iap/workflow/dragen_wgs_qc/input"
   type = "String"
-  description = "Germline Input JSON"
-  value = local.germline_input[terraform.workspace]
+  description = "DRAGEN_WGS_QC Input JSON"
+  value = local.dragen_wgs_qc_input[terraform.workspace]
 }
 
 # --- Tumor / Normal

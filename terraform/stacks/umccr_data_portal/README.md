@@ -36,8 +36,6 @@ aws ssm put-parameter --name '/data_portal/dev/rds_db_username' --type "SecureSt
 aws ssm put-parameter --name '/data_portal/dev/rds_db_password' --type "SecureString" --value '<Secure Password>'
 aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_id' --type "SecureString" --value '<Client ID>'
 aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_secret' --type "SecureString" --value '<Client secret>'
-aws ssm put-parameter --name '/data_portal/dev/google/lims_service_account_json' --type "SecureString" --value file://umccr-portal-123456789abc.json
-aws ssm put-parameter --name '/data_portal/dev/google/lims_spreadsheet_id' --type "SecureString" --value '<Spreadsheet ID>'
 ```
 
 You can check existing parameter, example as follows.

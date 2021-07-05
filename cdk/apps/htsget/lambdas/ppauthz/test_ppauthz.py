@@ -1,5 +1,5 @@
 import os
-from unittest.case import TestCase
+from unittest.case import TestCase, skip
 
 import ppauthz
 
@@ -83,20 +83,16 @@ class PassportAuthzUnitTest(TestCase):
 
 
 class PassportAuthzIntegrationTest(TestCase):
+    # Integration tests will hit actual endpoints
 
     def setUp(self) -> None:
         self.mock_token = os.getenv('PASSPORT_VISA_TOKEN')
         self.mock_event = make_mock_event(self.mock_token)
 
+    @skip
     def test_handler_it(self):
-        """Login to Labtec to grab fresh visa token and export as PASSPORT_VISA_TOKEN env var. Ignore IT test otherwise!
-        Login Labtec > Userinfo -> ga4gh_passport_v1 -> Copy first visa token (i.e meant for umccr, check with Andrew)
-        Then, export the passport visa token
-
-            export PASSPORT_VISA_TOKEN=eyJ0...
-
+        """Login to Labtec to get passport or visa token and export as PASSPORT_VISA_TOKEN env var.
         Then, run the test
-
             cd lambdas/ppauthz
             python -m unittest test_ppauthz.PassportAuthzIntegrationTest.test_handler_it
         """

@@ -35,12 +35,12 @@ locals {
 
   bcl_convert_wfl_id = {
     dev  = "wfl.59e481580c6243b6b237ca2b08fa1270"
-    prod = "wfl.59e481580c6243b6b237ca2b08fa1270"
+    prod = "wfl.f257ca35ced94e648fdda1173144c476"
   }
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--96026ab"
+    prod = "3.7.5--1d8fe7b"
   }
 
   bcl_convert_input = {
@@ -147,12 +147,12 @@ locals {
 
   tumor_normal_wfl_id = {
     dev  = "wfl.32e346cdbb854f6487e7594ec17a81f9"
-    prod = "wfl.32e346cdbb854f6487e7594ec17a81f9"
+    prod = "wfl.aa0ccece4e004839aa7374d1d6530633"
   }
 
   tumor_normal_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--2490453"
+    prod = "3.7.5--1d8fe7b"
   }
 
   tumor_normal_input = {

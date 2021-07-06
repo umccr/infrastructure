@@ -262,6 +262,52 @@ locals {
     }
     EOT
   }
+
+
+  dragen_tso_ctdna_wfl_id = {
+    dev = "wfl.3cfe22e0ca1f43a8b68c1ec820a0a5dc"
+    prod = "wfl.576020a89adb49c3b2081a620d19104d"
+  }
+
+  dragen_tso_ctdna_wfl_version = {
+    dev = "1.1.0--120"
+    prod = "1.1.0--120--1d8fe7b"
+  }
+
+  dragen_tso_ctdna_wfl_input = {
+    dev = <<-EOT
+    {
+      "tso500_samples": null,
+      "fastq_list_rows": null,
+      "samplesheet_prefix": "BCLConvert",
+      "samplesheet": null
+      "resources_dir": {
+          "class": "Directory",
+          "location": "gds://resources/ruo-1.1.0.3?tenantId=YXdzLXVzLXBsYXRmb3JtOjEwMDAwNjg1OjZlMzg3NGU0LTZmYzYtNGYxOS05ZWVmLTZmNWNlN2Y3MGU4Zg"
+      },
+      "dragen_license_key": {
+          "class": "File",
+          "location": "gds://development/dragen-license/cttso/license_umccr.txt"
+      }
+    }
+    EOT
+    prod = <<-EOT
+    {
+      "tso500_samples": null,
+      "fastq_list_rows": null,
+      "samplesheet_prefix": "BCLConvert",
+      "samplesheet": null
+      "resources_dir": {
+          "class": "Directory",
+          "location": "gds://resources/ruo-1.1.0.3?tenantId=YXdzLXVzLXBsYXRmb3JtOjEwMDAwNjg1OjZlMzg3NGU0LTZmYzYtNGYxOS05ZWVmLTZmNWNlN2Y3MGU4Zg"
+      },
+      "dragen_license_key": {
+          "class": "File",
+          "location": "gds://production/dragen-license/cttso/license_umccr.txt"
+      }
+    }
+    EOT
+  }
 }
 
 #--- BCL Convert
@@ -355,3 +401,29 @@ resource "aws_ssm_parameter" "dragen_wts_input" {
   description = "DRAGEN WTS Input JSON"
   value = local.dragen_wts_input[terraform.workspace]
 }
+
+# --- ctTSO
+
+resource "aws_ssm_parameter" "dragen_tso_ctdna_id" {
+  name = "/iap/workflow/dragen_tso_ctdna/id"
+  type = "String"
+  description = "Dragen ctTSO Workflow ID"
+  value = local.dragen_tso_ctdna_wfl_id[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "dragen_tso_ctdna_version" {
+  name = "/iap/workflow/dragen_tso_ctdna/version"
+  type = "String"
+  description = "Dragen ctTSO Workflow Version Name"
+  value = local.dragen_tso_ctdna_wfl_version[terraform.workspace]
+}
+
+resource "aws_ssm_parameter" "dragen_tso_ctdna_input" {
+  name = "/iap/workflow/dragen_tso_ctdna/input"
+  type = "String"
+  description = "Dragen ctTSO Input JSON"
+  value = local.dragen_tso_ctdna_wfl_input[terraform.workspace]
+}
+
+
+

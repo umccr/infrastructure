@@ -87,7 +87,7 @@ locals {
   }
 
   dragen_wgs_qc_wfl_id = {
-    dev  = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
+    dev  = "wfl.ff6ca1789f4e4eb0982ea3e01407aca8"
     prod = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
   }
 

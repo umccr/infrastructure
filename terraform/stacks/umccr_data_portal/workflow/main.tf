@@ -21,9 +21,21 @@ provider "aws" {
 }
 
 locals {
+  # Stack name in under socre
+  stack_name_us = "data_portal"
+
+  # Stack name in dash
+  stack_name_dash = "data-portal"
+
+  default_tags = {
+    "Stack"       = local.stack_name_us
+    "Creator"     = "terraform"
+    "Environment" = terraform.workspace
+  }
+
   token_desc = {
-    dev  = "ICA Token using development workgroup"
-    prod = "ICA Token using production workgroup"
+    dev  = "ICA token using development project"
+    prod = "ICA token using production project"
   }
 
   token_tier = {
@@ -82,6 +94,19 @@ locals {
       "strict_mode_bcl_conversion": true,
       "delete_undetermined_indices_bcl_conversion": true,
       "runfolder_name": "PLACEHOLDER"
+    }
+    EOT
+  }
+
+  bcl_convert_engine_parameters = {
+    dev = <<-EOT
+    {
+        "outputDirectory": "PLACEHOLDER"
+    }
+    EOT
+    prod = <<-EOT
+    {
+        "outputDirectory": "PLACEHOLDER"
     }
     EOT
   }
@@ -255,7 +280,6 @@ locals {
     EOT
   }
 
-
   dragen_tso_ctdna_wfl_id = {
     dev = "wfl.3cfe22e0ca1f43a8b68c1ec820a0a5dc"
     prod = "wfl.576020a89adb49c3b2081a620d19104d"
@@ -309,6 +333,7 @@ resource "aws_ssm_parameter" "bcl_convert_id" {
   type = "String"
   description = "BCL Convert Workflow ID"
   value = local.bcl_convert_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "bcl_convert_version" {
@@ -316,6 +341,7 @@ resource "aws_ssm_parameter" "bcl_convert_version" {
   type = "String"
   description = "BCL Convert Workflow Version Name"
   value = local.bcl_convert_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "bcl_convert_input" {
@@ -323,6 +349,15 @@ resource "aws_ssm_parameter" "bcl_convert_input" {
   type = "String"
   description = "BCL Convert Workflow Input JSON"
   value = local.bcl_convert_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "bcl_convert_engine_parameters" {
+  name = "/iap/workflow/bcl_convert/engine_parameters"
+  type = "String"
+  description = "BCL Convert Workflow engine_parameters JSON"
+  value = local.bcl_convert_input[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 # --- DRAGEN WGS QC Workflow for WGS samples (used to call Germline initially)
@@ -332,6 +367,7 @@ resource "aws_ssm_parameter" "dragen_wgs_qc_id" {
   type = "String"
   description = "DRAGEN_WGS_QC Workflow ID"
   value = local.dragen_wgs_qc_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "dragen_wgs_qc_version" {
@@ -339,6 +375,7 @@ resource "aws_ssm_parameter" "dragen_wgs_qc_version" {
   type = "String"
   description = "DRAGEN_WGS_QC Workflow Version Name"
   value = local.dragen_wgs_qc_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "dragen_wgs_qc_input" {
@@ -346,6 +383,7 @@ resource "aws_ssm_parameter" "dragen_wgs_qc_input" {
   type = "String"
   description = "DRAGEN_WGS_QC Input JSON"
   value = local.dragen_wgs_qc_input[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 # --- Tumor / Normal
@@ -355,6 +393,7 @@ resource "aws_ssm_parameter" "tumor_normal_id" {
   type = "String"
   description = "Tumor / Normal Workflow ID"
   value = local.tumor_normal_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "tumor_normal_version" {
@@ -362,6 +401,7 @@ resource "aws_ssm_parameter" "tumor_normal_version" {
   type = "String"
   description = "Tumor / Normal Workflow Version Name"
   value = local.tumor_normal_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "tumor_normal_input" {
@@ -369,6 +409,7 @@ resource "aws_ssm_parameter" "tumor_normal_input" {
   type = "String"
   description = "Tumor / Normal Input JSON"
   value = local.tumor_normal_input[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 # --- DRAGEN WTS Workflow for Transcriptome samples
@@ -378,6 +419,7 @@ resource "aws_ssm_parameter" "dragen_wts_id" {
   type = "String"
   description = "DRAGEN WTS Workflow ID"
   value = local.dragen_wts_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "dragen_wts_version" {
@@ -385,6 +427,7 @@ resource "aws_ssm_parameter" "dragen_wts_version" {
   type = "String"
   description = "DRAGEN WTS Workflow Version Name"
   value = local.dragen_wts_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "dragen_wts_input" {
@@ -392,15 +435,17 @@ resource "aws_ssm_parameter" "dragen_wts_input" {
   type = "String"
   description = "DRAGEN WTS Input JSON"
   value = local.dragen_wts_input[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
-# --- ctTSO
+# --- DRAGEN_TSO_CTDNA
 
 resource "aws_ssm_parameter" "dragen_tso_ctdna_id" {
   name = "/iap/workflow/dragen_tso_ctdna/id"
   type = "String"
   description = "Dragen ctTSO Workflow ID"
   value = local.dragen_tso_ctdna_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "dragen_tso_ctdna_version" {
@@ -408,6 +453,7 @@ resource "aws_ssm_parameter" "dragen_tso_ctdna_version" {
   type = "String"
   description = "Dragen ctTSO Workflow Version Name"
   value = local.dragen_tso_ctdna_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "dragen_tso_ctdna_input" {
@@ -415,7 +461,5 @@ resource "aws_ssm_parameter" "dragen_tso_ctdna_input" {
   type = "String"
   description = "Dragen ctTSO Input JSON"
   value = local.dragen_tso_ctdna_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
 }
-
-
-

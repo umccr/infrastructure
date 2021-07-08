@@ -296,7 +296,7 @@ locals {
       "tso500_samples": null,
       "fastq_list_rows": null,
       "samplesheet_prefix": "BCLConvert",
-      "samplesheet": null
+      "samplesheet": null,
       "resources_dir": {
           "class": "Directory",
           "location": "gds://resources/ruo-1.1.0.3?tenantId=YXdzLXVzLXBsYXRmb3JtOjEwMDAwNjg1OjZlMzg3NGU0LTZmYzYtNGYxOS05ZWVmLTZmNWNlN2Y3MGU4Zg"
@@ -312,7 +312,7 @@ locals {
       "tso500_samples": null,
       "fastq_list_rows": null,
       "samplesheet_prefix": "BCLConvert",
-      "samplesheet": null
+      "samplesheet": null,
       "resources_dir": {
           "class": "Directory",
           "location": "gds://resources/ruo-1.1.0.3?tenantId=YXdzLXVzLXBsYXRmb3JtOjEwMDAwNjg1OjZlMzg3NGU0LTZmYzYtNGYxOS05ZWVmLTZmNWNlN2Y3MGU4Zg"

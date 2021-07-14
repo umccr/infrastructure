@@ -13,6 +13,26 @@ logger.setLevel(logging.INFO)
 #       (https://theburningmonk.com/2019/06/aws-lambda-how-to-detect-and-stop-accidental-infinite-recursions/)
 
 
+def handler(event, context):
+    # Log the received event in CloudWatch
+    logger.info("Starting orchestratr handler")
+    logger.info(json.dumps(event))
+
+    if is_wrsc_event(event):
+        if is_bcl_convert_event(event):
+            handle_bcl_convert_event(event)
+        elif is_dragen_wgs_qc_event(event):
+            handle_dragen_wgs_qc_event(event)
+        elif is_dragen_wgs_somatic_event(event):
+            handle_dragen_wgs_somatic_event(event)
+        else:
+            raise ValueError(f"Unsupported workflow/event type: {event}")
+    elif is_srsc_event(event):
+        handle_srsc_event(event)
+    else:
+        raise ValueError(f"Unsupported event type: {event.get('detail-type')}")
+
+
 def is_wrsc_event(event):
     return event.get(util.BusEventKey.DETAIL_TYPE.value) == util.EventType.WRSC.value
 
@@ -32,26 +52,61 @@ def is_bcl_convert_event(event):
     # return payload.get("workflow_run_name").startswith(util.WorkflowType.BCL_CONVERT.value)
 
 
-def handle_bcl_convert_event(event):
-    logger.info("Handling BCL Convert event")
-    # TODO: this should be already established (remove at some point)
-    event_type = event.get(util.BusEventKey.DETAIL_TYPE.value)
-    if event_type != util.EventType.WRSC.value:
-        raise ValueError(f"Unsupported event type: {event_type}")
-    payload = event.get(util.BusEventKey.DETAIL.value)
-    wrsc_event: wrsc.Event = wrsc.Marshaller.unmarshall(payload, typeName=wrsc.Event)
+def get_sequence_run_from_workflow(workflow_run_id):
+    pass
 
-    if wrsc_event.status == "Succeeded":
-        # trigger WGS QC events (mock 4 events)
-        for i in (1, 2, 3, 4):
+
+def get_libs_for_sequence_run(sequence_run) -> list:
+    pass
+
+
+def submit_dragen_wgs_qc_requests(libraries: list):
+    # TODO: make sure that's not blocking other runs (i.e. a single WF failure should not prevent others)
+    for lib in libraries:
+        if lib.type == "WGS":  # TODO:
             wfr_event = wfr.Event(
-                library_id=f"L21000{i}"
+                library_id=lib.library_id
             )
             logger.info(f"Emitting DRAGEN_WGS_QC event with payload {wfr_event}")
             util.send_event_to_bus_schema(
                 event_source=util.EventSource.ORCHESTRATOR,
                 event_type=util.EventType.DRAGEN_WGS_QC,
                 event_payload=wfr_event)
+
+
+def submit_dragen_tso_ctdna_requests(libraries: list):
+    # TODO: make sure that's not blocking other runs (i.e. a single WF failure should not prevent others)
+    for lib in libraries:
+        if lib.type == "TSO":  # TODO:
+            wfr_event = wfr.Event(
+                library_id=lib.library_id
+            )
+            logger.info(f"Emitting DRAGEN_TSO_CTDNA event with payload {wfr_event}")
+            util.send_event_to_bus_schema(
+                event_source=util.EventSource.ORCHESTRATOR,
+                event_type=util.EventType.DRAGEN_TSO_CTDNA,
+                event_payload=wfr_event)
+
+
+def handle_bcl_convert_event(event):
+    logger.info("Handling BCL Convert event")
+    # TODO: this should be already established (remove at some point?)
+    event_type = event.get(util.BusEventKey.DETAIL_TYPE.value)
+    if event_type != util.EventType.WRSC.value:
+        raise ValueError(f"Unsupported event type: {event_type}")
+
+    payload = event.get(util.BusEventKey.DETAIL.value)
+    wrsc_event: wrsc.Event = wrsc.Marshaller.unmarshall(payload, typeName=wrsc.Event)
+
+    if wrsc_event.status == "Succeeded":
+        # retrieve SequenceRun from WES workflow run
+        sequence_run = get_sequence_run_from_workflow(wrsc_event.workflow_run_id)
+        # retrieve Library records from SequenceRun
+        libraries: list = get_libs_for_sequence_run(sequence_run)
+        # perform adequate operation(s) for libraries
+        submit_dragen_wgs_qc_requests(libraries)
+        submit_dragen_tso_ctdna_requests(libraries)
+
     else:
         # ignore other status for now
         logger.info(f"Received unsupported workflow status: {wrsc_event.status}")
@@ -134,23 +189,3 @@ def handle_srsc_event(event):
             event_type=util.EventType.SRSC,
             event_payload=payload)
     # ignore other SequenceRunStateChange events
-
-
-def handler(event, context):
-    # Log the received event in CloudWatch
-    logger.info("Starting orchestratr handler")
-    logger.info(json.dumps(event))
-
-    if is_wrsc_event(event):
-        if is_bcl_convert_event(event):
-            handle_bcl_convert_event(event)
-        elif is_dragen_wgs_qc_event(event):
-            handle_dragen_wgs_qc_event(event)
-        elif is_dragen_wgs_somatic_event(event):
-            handle_dragen_wgs_somatic_event(event)
-        else:
-            raise ValueError(f"Unsupported workflow/event type: {event}")
-    elif is_srsc_event(event):
-        handle_srsc_event(event)
-    else:
-        raise ValueError(f"Unsupported event type: {event.get('detail-type')}")

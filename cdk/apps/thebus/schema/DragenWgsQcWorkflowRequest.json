@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "DragenWgsQcWorkflowRequest"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "required": ["library_id", "seq_run_id", "gds_volume_name", "gds_folder_path"],
+        "properties": {
+          "library_id": {
+            "type": "string"
+          },
+          "seq_run_id": {
+            "type": "string"
+          },
+          "gds_volume_name": {
+            "type": "string"
+          },
+          "gds_folder_path": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

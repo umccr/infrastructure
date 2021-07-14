@@ -65,6 +65,7 @@ class EventType(Enum):
     BCL_CONVERT = "BCL_CONVERT"
     DRAGEN_WGS_QC = "DRAGEN_WGS_QC"
     DRAGEN_WGS_SOMATIC = "DRAGEN_WGS_SOMATIC"
+    DRAGEN_TSO_CTDNA = "DRAGEN_TSO_CTDNA"
     WES_LAUNCH = "WES_LAUNCH"
 
     def __str__(self):

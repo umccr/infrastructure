@@ -77,17 +77,30 @@ class BatchLambdaStack(core.Stack):
             role=lambda_role
         )
 
-        rule = _events.Rule(
-            self,
-            'BatchEventToSlackLambda'
-        )
-        rule.add_event_pattern(
-            source=['aws.batch'],
-            detail_type=['Batch Job State Change'],
-            detail={'status': [
-                'FAILED',
-                'SUCCEEDED',
-                'RUNNABLE'
-            ]}
-        )
-        rule.add_target(_events_targets.LambdaFunction(handler=function))
+        batch_job_queues = {
+            'AGHA':           {'name': 'agha-job-queue',                         'enabled': True},
+            'Umccrise':       {'name': 'cdk-umccrise_job_queue',                 'enabled': True},
+            'UmccriseDragen': {'name': 'cdk-umccrise_job_queue-dragen-testing',  'enabled': False},
+            'Nextflow':       {'name': 'nextflow-job-queue',                     'enabled': False},
+            'WtsReport':      {'name': 'wts_report_batch_queue_dev',             'enabled': True},
+        }
+        for job_queue_id, job_queue_config in batch_job_queues.items():
+            rule = _events.Rule(
+                self,
+                f'BatchEventToSlackLambda{job_queue_id}',
+                enabled=job_queue_config['enabled'],
+                event_pattern=_events.EventPattern(
+                    detail={
+                        'status': [
+                            'FAILED',
+                            'SUCCEEDED',
+                            'RUNNABLE',
+                        ],
+                        'jobQueue': job_queue_config['name'],
+                    },
+                    detail_type=['Batch Job State Change'],
+                    source=['aws.batch'],
+                ),
+                rule_name=f'batch-slack-notifications-{job_queue_id.lower()}',
+                targets=[_events_targets.LambdaFunction(handler=function)]
+            )

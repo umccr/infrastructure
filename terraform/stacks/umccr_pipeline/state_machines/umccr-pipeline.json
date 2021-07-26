@@ -564,7 +564,7 @@
       "Parameters": {
         "topic": "UMCCR pipeline",
         "title.$": "$.runfolder",
-        "message": "Fastq sync to S3 complete. Starting Google LIMS update..."
+        "message": "Fastq sync to S3 complete. Creating MultiQC reports..."
       },
       "ResultPath": "$.lambda_result"
     },

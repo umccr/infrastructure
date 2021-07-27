@@ -85,7 +85,11 @@ class BatchLambdaStack(core.Stack):
             'WtsReport':      {'name': 'wts_report_batch_queue_dev',             'enabled': True},
         }
         for job_queue_id, job_queue_config in batch_job_queues.items():
-            rule = _events.Rule(
+            aws_account_id = kwargs['env']['account']
+            aws_region = kwargs['env']['region']
+            job_queue_name = job_queue_config['name']
+            job_queue_arn = f'arn:aws:batch:{aws_region}:{aws_account_id}:job-queue/{job_queue_name}'
+            _events.Rule(
                 self,
                 f'BatchEventToSlackLambda{job_queue_id}',
                 enabled=job_queue_config['enabled'],
@@ -96,7 +100,7 @@ class BatchLambdaStack(core.Stack):
                             'SUCCEEDED',
                             'RUNNABLE',
                         ],
-                        'jobQueue': job_queue_config['name'],
+                        'jobQueue': [job_queue_arn],
                     },
                     detail_type=['Batch Job State Change'],
                     source=['aws.batch'],

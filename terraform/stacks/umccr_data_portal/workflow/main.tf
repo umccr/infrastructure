@@ -45,6 +45,16 @@ locals {
     prod = "Advanced"
   }
 
+  engine_parameters_default_workdir_root = {
+    dev = "gds://development/temp"
+    prod = "gds://production/temp"
+  }
+
+  engine_parameters_default_output_root = {
+    dev = "gds://development"
+    prod = "gds://production"
+  }
+
   bcl_convert_wfl_id = {
     dev  = "wfl.59e481580c6243b6b237ca2b08fa1270"
     prod = "wfl.f257ca35ced94e648fdda1173144c476"
@@ -324,6 +334,24 @@ locals {
     }
     EOT
   }
+}
+
+#--- Engine Parameter defaults
+
+resource "aws_ssm_parameter" "bcl_convert_id" {
+  name = "/iap/workflow/workdir_root"
+  type = "String"
+  description = "Root directory for intermediate files for ica workflow"
+  value = local.engine_parameters_default_workdir_root[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "bcl_convert_id" {
+  name = "/iap/workflow/output_root"
+  type = "String"
+  description = "Root directory for output files for ica workflow"
+  value = local.engine_parameters_default_output_root[terraform.workspace]
+  tags = merge(local.default_tags)
 }
 
 #--- BCL Convert

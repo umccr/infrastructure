@@ -54,19 +54,6 @@ output "shyrav_secret_access_key" {
   value = module.shyrav.encrypted_secret_access_key
 }
 
-# rk_chw
-output "rk_chw_username" {
-  value = module.rk_chw.username
-}
-
-output "rk_chw_access_key" {
-  value = module.rk_chw.access_key
-}
-
-output "rk_chw_secret_access_key" {
-  value = module.rk_chw.encrypted_secret_access_key
-}
-
 # yingzhu
 output "yingzhu_username" {
   value = module.yingzhu.username
@@ -104,4 +91,17 @@ output "chiaraf_access_key" {
 
 output "chiaraf_secret_access_key" {
   value = module.chiaraf.encrypted_secret_access_key
+}
+
+# qimrbscott
+output "qimrbscott_username" {
+  value = module.qimrbscott.username
+}
+
+output "qimrbscott_access_key" {
+  value = module.qimrbscott.access_key
+}
+
+output "qimrbscott_secret_access_key" {
+  value = module.qimrbscott.encrypted_secret_access_key
 }

@@ -49,11 +49,10 @@ module "agha_presign" {
 
 # AGHA Users
 module "simon" {
-  source    = "../../modules/iam_user/default_user"
+  source    = "../../modules/iam_user/only_user"
   username  = "simon"
   full_name = "Simon Sadedin"
   keybase   = "simonsadedin"
-  pgp_key   = "keybase:freisinger"
   email     = "simon.sadedin@vcgs.org.au"
 }
 
@@ -100,6 +99,16 @@ module "qimrbscott" {
   keybase   = "qimrbscott"
   pgp_key   = "keybase:freisinger"
   email     = "Scott.Wood@qimrberghofer.edu.au"
+}
+
+resource "aws_iam_user" "fzhanghealth" {
+  name = "fzhanghealth"
+  path = "/agha/"
+  tags = {
+    email   = "futao.zhang@health.nsw.gov.au",
+    name    = "Futao Zhang",
+    keybase = "fzhanghealth"
+  }
 }
 
 # Data Manager/Controller
@@ -158,6 +167,7 @@ resource "aws_iam_group_membership" "default" {
     module.seanlianu.username,
     module.chiaraf.username,
     module.qimrbscott.username,
+    aws_iam_user.fzhanghealth.name,
   ]
 }
 
@@ -178,6 +188,7 @@ resource "aws_iam_group_membership" "submitter" {
     module.seanlianu.username,
     module.chiaraf.username,
     module.qimrbscott.username,
+    aws_iam_user.fzhanghealth.name,
   ]
 }
 

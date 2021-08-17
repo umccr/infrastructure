@@ -33,14 +33,6 @@ output "simon_username" {
   value = module.simon.username
 }
 
-output "simon_access_key" {
-  value = module.simon.access_key
-}
-
-output "simon_secret_access_key" {
-  value = module.simon.encrypted_secret_access_key
-}
-
 # shyrav
 output "shyrav_username" {
   value = module.shyrav.username
@@ -104,4 +96,9 @@ output "qimrbscott_access_key" {
 
 output "qimrbscott_secret_access_key" {
   value = module.qimrbscott.encrypted_secret_access_key
+}
+
+# fzhanghealth
+output "fzhanghealth_username" {
+  value = aws_iam_user.fzhanghealth.name
 }

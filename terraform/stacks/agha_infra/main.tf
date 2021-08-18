@@ -150,7 +150,7 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
 #       as it interferes with the policy update by the folder lock lambda
 
 data "template_file" "store_bucket_policy" {
-  template = file("policies/agha_bucket_policy.json")
+  template = file("policies/agha_store_bucket_policy.json")
 
   vars = {
     bucket_name = aws_s3_bucket.agha_gdr_store.id
@@ -426,6 +426,7 @@ module "notify_slack_lambda" {
 resource "aws_cloudwatch_event_rule" "batch_failure" {
   name        = "${var.stack_name}_capture_batch_job_failure"
   description = "Capture Batch Job Failures"
+  is_enabled = false
 
   event_pattern = <<PATTERN
 {

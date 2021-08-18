@@ -1,0 +1,53 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ProtectObjectVersions",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:DeleteObjectVersion",
+            "Resource": [
+                "arn:aws:s3:::${bucket_name}",
+                "arn:aws:s3:::${bucket_name}/*"
+            ],
+            "Condition": {
+                "StringNotLike": {
+                    "aws:userId": [
+                        "${role_id}:*",
+                        "${account_id}"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "FlagshipWhiteList",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": [
+                "s3:PutObject*",
+                "s3:GetObject*",
+                "s3:DeleteObject*"
+            ],
+            "NotResource": [
+                "arn:aws:s3:::${bucket_name}/ACG/*",
+                "arn:aws:s3:::${bucket_name}/acute_care_genomics/*",
+                "arn:aws:s3:::${bucket_name}/BM/*",
+                "arn:aws:s3:::${bucket_name}/brain_malformations/*",
+                "arn:aws:s3:::${bucket_name}/CARDIAC/*",
+                "arn:aws:s3:::${bucket_name}/CHW/*",
+                "arn:aws:s3:::${bucket_name}/EE/*",
+                "arn:aws:s3:::${bucket_name}/GI/*",
+                "arn:aws:s3:::${bucket_name}/HIDDEN/*",
+                "arn:aws:s3:::${bucket_name}/ICCON/*",
+                "arn:aws:s3:::${bucket_name}/ID/*",
+                "arn:aws:s3:::${bucket_name}/KidGen/*",
+                "arn:aws:s3:::${bucket_name}/LD/*",
+                "arn:aws:s3:::${bucket_name}/leukodystrophies/*",
+                "arn:aws:s3:::${bucket_name}/MCD/*",
+                "arn:aws:s3:::${bucket_name}/MITO/*",
+                "arn:aws:s3:::${bucket_name}/mitochondrial_disease/*",
+                "arn:aws:s3:::${bucket_name}/NMD/*"
+            ]
+        }
+    ]
+}

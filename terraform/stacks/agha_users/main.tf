@@ -188,7 +188,6 @@ resource "aws_iam_group_membership" "submitter" {
     module.seanlianu.username,
     module.chiaraf.username,
     module.qimrbscott.username,
-    aws_iam_user.fzhanghealth.name,
   ]
 }
 
@@ -299,3 +298,47 @@ resource "aws_iam_policy" "agha_store_ro_policy" {
 }
 
 ################################################################################
+
+## Mackenzie's Mission
+
+# bucket
+data "aws_s3_bucket" "agha_gdr_mm" {
+  bucket = var.agha_gdr_mm_bucket_name
+}
+
+# group
+resource "aws_iam_group" "mm" {
+  name = "agha_gdr_mm"
+  path = "/agha/"
+}
+
+# group membership
+resource "aws_iam_group_membership" "mm" {
+  name  = "${aws_iam_group.mm.name}_membership"
+  group = aws_iam_group.mm.name
+  users = [
+    module.sarah_dm.username,
+    aws_iam_user.fzhanghealth.name
+  ]
+}
+
+# group policies
+resource "aws_iam_group_policy_attachment" "mm_mm_rw_policy_attachment" {
+  group      = aws_iam_group.mm.name
+  policy_arn = aws_iam_policy.agha_mm_rw_policy.arn
+}
+
+# policy
+data "template_file" "agha_mm_rw_policy" {
+  template = file("policies/bucket-rw-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_mm.id
+  }
+}
+
+resource "aws_iam_policy" "agha_mm_rw_policy" {
+  name_prefix = "agha_mm_rw_policy"
+  path        = "/agha/"
+  policy      = data.template_file.agha_mm_rw_policy.rendered
+}

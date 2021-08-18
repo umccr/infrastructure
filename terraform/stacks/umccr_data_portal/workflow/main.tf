@@ -384,7 +384,7 @@ resource "aws_ssm_parameter" "bcl_convert_engine_parameters" {
   name = "/iap/workflow/bcl_convert/engine_parameters"
   type = "String"
   description = "BCL Convert Workflow engine_parameters JSON"
-  value = local.bcl_convert_input[terraform.workspace]
+  value = local.bcl_convert_engine_parameters[terraform.workspace]
   tags = merge(local.default_tags)
 }
 

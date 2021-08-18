@@ -338,7 +338,7 @@ locals {
 
 #--- Engine Parameter defaults
 
-resource "aws_ssm_parameter" "bcl_convert_id" {
+resource "aws_ssm_parameter" "workdir_root" {
   name = "/iap/workflow/workdir_root"
   type = "String"
   description = "Root directory for intermediate files for ica workflow"
@@ -346,7 +346,7 @@ resource "aws_ssm_parameter" "bcl_convert_id" {
   tags = merge(local.default_tags)
 }
 
-resource "aws_ssm_parameter" "bcl_convert_id" {
+resource "aws_ssm_parameter" "output_root" {
   name = "/iap/workflow/output_root"
   type = "String"
   description = "Root directory for output files for ica workflow"

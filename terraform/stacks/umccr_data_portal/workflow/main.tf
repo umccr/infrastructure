@@ -108,19 +108,6 @@ locals {
     EOT
   }
 
-  bcl_convert_engine_parameters = {
-    dev = <<-EOT
-    {
-        "outputDirectory": "PLACEHOLDER"
-    }
-    EOT
-    prod = <<-EOT
-    {
-        "outputDirectory": "PLACEHOLDER"
-    }
-    EOT
-  }
-
   dragen_wgs_qc_wfl_id = {
     dev  = "wfl.ff6ca1789f4e4eb0982ea3e01407aca8"
     prod = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
@@ -377,14 +364,6 @@ resource "aws_ssm_parameter" "bcl_convert_input" {
   type = "String"
   description = "BCL Convert Workflow Input JSON"
   value = local.bcl_convert_input[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "bcl_convert_engine_parameters" {
-  name = "/iap/workflow/bcl_convert/engine_parameters"
-  type = "String"
-  description = "BCL Convert Workflow engine_parameters JSON"
-  value = local.bcl_convert_engine_parameters[terraform.workspace]
   tags = merge(local.default_tags)
 }
 

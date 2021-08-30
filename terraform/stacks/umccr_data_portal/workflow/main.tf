@@ -279,12 +279,12 @@ locals {
 
   dragen_tso_ctdna_wfl_id = {
     dev = "wfl.b0be3d1bbd8140bbaa64038f0eb8f7c2"
-    prod = "wfl.576020a89adb49c3b2081a620d19104d"
+    prod = "wfl.230846758ccf42e3831283ab0e45af0a"
   }
 
   dragen_tso_ctdna_wfl_version = {
     dev = "1.1.0--1.0.0"
-    prod = "1.1.0--120--1d8fe7b"
+    prod = "1.1.0--1.0.0--87cab58"
   }
 
   dragen_tso_ctdna_wfl_input = {
@@ -312,7 +312,7 @@ locals {
       "samplesheet": null,
       "resources_dir": {
           "class": "Directory",
-          "location": "gds://resources/ruo-1.1.0.3?tenantId=YXdzLXVzLXBsYXRmb3JtOjEwMDAwNjg1OjZlMzg3NGU0LTZmYzYtNGYxOS05ZWVmLTZmNWNlN2Y3MGU4Zg"
+          "location": "gds://production/reference-data/dragen_tso_ctdna/ruo-1.1.0.3/"
       },
       "dragen_license_key": {
           "class": "File",

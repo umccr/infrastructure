@@ -31,17 +31,12 @@ class Secrets(cdk.Construct):
         Returns:
             the master secret
         """
+
+        # we start the secret with a random value created by secrets manager..
+        # first step will be to set this to an API key from Illumina ICA
         master_secret = secretsmanager.Secret(
             self,
             "MasterApiKeySecret",
-            generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template=json.dumps(
-                    {
-                        "// NOTES: NOT to be generally accessible - use corresponding token secrets": "",
-                    }
-                ),
-                generate_string_key="password",
-            ),
         )
 
         return master_secret
@@ -79,6 +74,7 @@ class Secrets(cdk.Construct):
             )
 
         # we have two ends of the permissions to set
+        
         # this end makes the lambda role for JWT producer able to attempt to read the master secret
         master_secret.grant_read(jwt_producer)
 

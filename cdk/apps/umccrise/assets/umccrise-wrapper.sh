@@ -76,7 +76,7 @@ mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,va
 # Install the AWS CLI
 curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip -qq awscliv2.zip
-./aws/install
+./aws/install --install-dir "${HOME}/.local/" --bin-dir "${HOME}/.local/bin"
 
 echo "PULL referenece data"
 # clone the refData repo making sure we are not clashing with another process

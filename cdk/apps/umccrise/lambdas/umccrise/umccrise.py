@@ -55,8 +55,6 @@ batch_job_container_props = {
             'sourceVolume': 'container'
         }
     ],
-    'readonlyRootFilesystem': False,
-    'privileged': True,
     'ulimits': []
 }
 

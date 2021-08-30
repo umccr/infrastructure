@@ -100,7 +100,7 @@ locals {
       "samplesheet_outdir": "samplesheets-by-assay-type",
       "ignore_missing_samples": true,
       "samplesheet_output_format": "v2",
-      "bcl_sampleproject_subdirectories_bcl_conversion": true,
+      "bcl_sampleproject_subdirectories_bcl_conversion": false,
       "strict_mode_bcl_conversion": true,
       "delete_undetermined_indices_bcl_conversion": true,
       "runfolder_name": "PLACEHOLDER"

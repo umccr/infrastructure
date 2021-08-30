@@ -1,4 +1,24 @@
-# Recommended AWS CDK project structure for Python applications
+# ICA Credentials
+
+A stack for managing ICA credentials.
+
+## Setup
+
+After installing with CDK, the master API secret must be set to a value.
+
+e.g.
+
+```
+aws secretsmanager put-secret-value \
+  --secret-id "<insert master secret name>" \
+  --secret-string "<insert API key>"
+```
+
+This cannot be done in the AWS Console UI as the administrator user is not allowed to read the
+value - hence they can't set the value.
+
+
+## Instructions from boilerplate project
 
 ## Create development environment
 
@@ -36,94 +56,3 @@ pip-compile --upgrade requirements-dev.in
 pip-sync api/runtime/requirements.txt requirements.txt requirements-dev.txt
 ./scripts/run-tests.sh
 ```
-
-## Deploy the component to development environment
-The `UserManagementBackend-Dev` stage uses your default AWS account and region.
-It consists of two stacks - stateful (database) and stateless (API and monitoring) 
-
-```bash
-npx cdk deploy "UserManagementBackend-Dev/*"
-```
-
-Example outputs for `npx cdk deploy "UserManagementBackend-Dev/*"`:
-```text
- ✅  UserManagementBackendDevStateful7B33C11B (UserManagementBackend-Dev-Stateful)
-
-Outputs:
-UserManagementBackendDevStateful7B33C11B.ExportsOutputFnGetAttDatabaseTableF104A135ArnDAC15A6A = arn:aws:dynamodb:eu-west-1:111111111111:table/UserManagementBackend-Dev-Stateful-DatabaseTableF104A135-1LVXRPCPOKVZQ
-UserManagementBackendDevStateful7B33C11B.ExportsOutputRefDatabaseTableF104A1356B7D7D8A = UserManagementBackend-Dev-Stateful-DatabaseTableF104A135-1LVXRPCPOKVZQ
-```
-```text
- ✅  UserManagementBackendDevStateless0E5B7E4B (UserManagementBackend-Dev-Stateless)
-
-Outputs:
-UserManagementBackendDevStateless0E5B7E4B.APIHandlerArn = arn:aws:lambda:eu-west-1:111111111111:function:UserManagementBackend-Dev-Stateless-APIHandler-PJjw0Jn7Waq0
-UserManagementBackendDevStateless0E5B7E4B.APIHandlerName = UserManagementBackend-Dev-Stateless-APIHandler-PJjw0Jn7Waq0
-UserManagementBackendDevStateless0E5B7E4B.EndpointURL = https://zx5s6bum21.execute-api.eu-west-1.amazonaws.com/v1/
-UserManagementBackendDevStateless0E5B7E4B.RestAPIId = zx5s6bum21
-```
-
-## Deploy the pipeline
-**Prerequisites**
-- Create a new repository from aws-cdk-project-structure-python, if you haven't done 
-  this already. See [Create a new repository from aws-cdk-project-structure-python](README.md#create-a-new-repository-from-aws-cdk-project-structure-python)
-  for instructions
-- Create AWS CodeStar Connections [connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/welcome-connections.html)
-  for the pipeline
-- Update the values in [constants.py](constants.py)
-- Commit and push the changes: `git commit -a -m 'Update constants' && git push`
-
-```bash
-npx cdk deploy UserManagementBackend-Pipeline
-```
-
-## Delete all stacks
-**Do not forget to delete the stacks to avoid unexpected charges**
-```bash
-npx cdk destroy "UserManagementBackend-Dev/*"
-npx cdk destroy UserManagementBackend-Pipeline
-npx cdk destroy "UserManagementBackend-Pipeline/UserManagementBackend-Prod/*"
-```
-
-Delete the AWS CodeStar Connections connection if it is no longer needed. Follow the instructions
-in [Delete a connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-delete.html).
-
-## Testing the web API
-Below are examples that show the available resources and how to use them:
-
-```bash
-endpoint_url=$(aws cloudformation describe-stacks \
-  --stack-name UserManagementBackend-Dev-Stateless \
-  --query 'Stacks[*].Outputs[?OutputKey==`EndpointURL`].OutputValue' \
-  --output text)
-
-curl \
-    -H "Content-Type: application/json" \
-    -X POST \
-    -d '{"username":"john", "email":"john@example.com"}' \
-    "${endpoint_url}/users"
-
-curl \
-    -H "Content-Type: application/json" \
-    -X GET \
-    "${endpoint_url}/users/john"
-
-curl \
-    -H "Content-Type: application/json" \
-    -X PUT \
-    -d '{"country":"US", "state":"WA"}' \
-    "${endpoint_url}/users/john"
-
-curl \
-    -H "Content-Type: application/json" \
-    -X DELETE \
-    "${endpoint_url}/users/john"
-```
-
-# Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-# License
-
-This code is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file.

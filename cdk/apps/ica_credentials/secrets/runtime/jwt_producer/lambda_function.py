@@ -3,9 +3,10 @@ import json
 import os
 import urllib3
 import traceback
+from typing import Any
 
 
-def main(ev, _):
+def main(ev: Any, _: Any) -> Any:
     """
     Uses a master API key secret to generate new JWTs.
     """
@@ -74,8 +75,8 @@ def main(ev, _):
 
 
 def create_secret(
-    client, master_val, ica_base_url, arn, tok
-):
+    client: Any, master_val: str, ica_base_url: str, arn: str, tok: str
+) -> None:
     """
     Create a new JWT via the ICA APIs
     """
@@ -111,7 +112,7 @@ def create_secret(
             raise Exception(f"ICA token exchange response {r.status}")
 
 
-def finish_secret(client, arn, tok):
+def finish_secret(client: Any, arn: str, tok: str) -> None:
     """
     Safely promote the just created version of the secret to be the final version.
     """

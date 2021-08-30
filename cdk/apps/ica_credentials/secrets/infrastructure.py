@@ -81,6 +81,9 @@ class Secrets(cdk.Construct):
         # (it is only when we set the DENY policy here that in general other roles in the same account
         #  cannot access the secret value - so it is only after doing that that we need to explicitly enable
         #  the role we do want to access it)
+        if not jwt_producer.role:
+            raise Exception("jwt_producer has somehow not created a Lambda role correctly")
+
         master_secret.add_to_resource_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.DENY,

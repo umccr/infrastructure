@@ -1,4 +1,5 @@
 import os
+from typing import List, Tuple, Union
 
 from aws_cdk import (
     core as cdk,
@@ -8,19 +9,35 @@ from aws_cdk import (
 )
 from aws_cdk.core import Duration
 
-from constants import ICA_BASE_URL
-
 
 class Secrets(cdk.Construct):
-    def __init__(self, scope: cdk.Construct, id_: str):
+    def __init__(
+        self,
+        scope: cdk.Construct,
+        id_: str,
+        data_project: str,
+        workflow_projects: List[str],
+        ica_base_url: str,
+    ):
         super().__init__(scope, id_)
 
         master = self.create_master_secret()
 
-        jwt_producer = self.create_jwt_secret(master)
+        jwt_portal_producer, jwt_portal_func = self.create_jwt_secret(
+            master, ica_base_url, id_ + "Portal", data_project
+        )
+        jwt_workflow_producer, jwt_workflow_func = self.create_jwt_secret(
+            master, ica_base_url, id_ + "Workflow", workflow_projects
+        )
 
-        cdk.CfnOutput(self, "MasterSecretOutput", export_name="MasterSecretName", value=master.secret_name)
-        cdk.CfnOutput(self, "JwtSecretOutput", export_name="JwtSecretName", value=jwt_producer.secret_name)
+        # set the policy for the master secret to deny everyone except the rotators access
+        self.add_deny_for_everyone_except(master, [jwt_portal_func, jwt_workflow_func])
+
+        # create an AWS user specifically for allowing github to come over to AWS
+        # and get an up to date JWT set
+        workflow_user = iam.User(self, "WorkflowUser")
+
+        jwt_workflow_producer.grant_read(workflow_user)
 
     def create_master_secret(self) -> secretsmanager.Secret:
         """
@@ -36,53 +53,37 @@ class Secrets(cdk.Construct):
         master_secret = secretsmanager.Secret(
             self,
             "MasterApiKeySecret",
+            description="Master ICA API key - not for direct use - use corresponding JWT secrets",
         )
 
         return master_secret
 
-    def create_jwt_secret(
-        self, master_secret: secretsmanager.Secret
-    ) -> secretsmanager.Secret:
+    def add_deny_for_everyone_except(
+        self,
+        master_secret: secretsmanager.Secret,
+        producer_functions: List[lambda_.Function],
+    ) -> None:
         """
-        Create a JWT holding secret - that will use the master secret for JWT making - and which will have
-        broad permissions to be read by all roles.
+        Sets up the master secret resource policy so that everything *except* the given functions
+        is denied access to GetSecretValue.
 
         Args:
-            master_secret: the master secret to read for the API key for JWT making
-
-        Returns:
-            the JWT secret
+            master_secret: the master secret construct
+            producer_functions: a list of functions we are going to set as the only allowed accessors
         """
-        dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, "runtime/jwt_producer/lambda_function.py")
-
-        with open(filename, encoding="utf8") as fp:
-            handler_code = fp.read()
-
-            jwt_producer = lambda_.Function(
-                self,
-                "JwtProducer",
-                runtime=lambda_.Runtime.PYTHON_3_8,
-                code=lambda_.InlineCode(handler_code),
-                handler="index.main",
-                environment={
-                    "MASTER_ARN": master_secret.secret_arn,
-                    "ICA_BASE_URL": ICA_BASE_URL,
-                },
-                timeout=Duration.seconds(30),
-            )
-
-        # we have two ends of the permissions to set
-        
-        # this end makes the lambda role for JWT producer able to attempt to read the master secret
-        master_secret.grant_read(jwt_producer)
-
         # this end locks down the master secret so that *only* the JWT producer can read values
         # (it is only when we set the DENY policy here that in general other roles in the same account
         #  cannot access the secret value - so it is only after doing that that we need to explicitly enable
         #  the role we do want to access it)
-        if not jwt_producer.role:
-            raise Exception("jwt_producer has somehow not created a Lambda role correctly")
+        role_arns: List[str] = []
+
+        for f in producer_functions:
+            if not f.role:
+                raise Exception(
+                    f"Rotation function {f.function_name} has somehow not created a Lambda role correctly"
+                )
+
+            role_arns.append(f.role.role_arn)
 
         master_secret.add_to_resource_policy(
             iam.PolicyStatement(
@@ -92,25 +93,67 @@ class Secrets(cdk.Construct):
                 principals=[iam.AccountRootPrincipal()],
                 # https://stackoverflow.com/questions/63915906/aws-secrets-manager-resource-policy-to-deny-all-roles-except-one-role
                 conditions={
-                    "StringNotEquals": {
-                        "aws:PrincipalArn": jwt_producer.role.role_arn
-                    }
-                }
+                    "ForAllValues:StringNotEquals": {"aws:PrincipalArn": role_arns}
+                },
             )
         )
-        master_secret.add_to_resource_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=["secretsmanager:GetSecretValue"],
-                resources=["*"],
-                principals=[jwt_producer.grant_principal],
-            )
+
+    def create_jwt_secret(
+        self,
+        master_secret: secretsmanager.Secret,
+        ica_base_url: str,
+        key_name: str,
+        project_ids: Union[str, List[str]],
+    ) -> Tuple[secretsmanager.Secret, lambda_.Function]:
+        """
+        Create a JWT holding secret - that will use the master secret for JWT making - and which will have
+        broad permissions to be read by all roles.
+
+        Args:
+            master_secret: the master secret to read for the API key for JWT making
+            ica_base_url: the base url of ICA to be passed on to the rotators
+            key_name: a unique string that we use to name this JWT secret
+            project_ids: *either* a single string or a list of string - the choice of type *will* affect
+                         the resulting secret output i.e a string input will end up different to a list with one string!
+
+        Returns:
+            the JWT secret
+        """
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, "runtime/jwt_producer")
+
+        env = {
+            "MASTER_ARN": master_secret.secret_arn,
+            "ICA_BASE_URL": ica_base_url,
+        }
+
+        # flip the instructions to our single lambda - the handle either a single JWT generator or
+        # dictionary of JWTS
+        if isinstance(project_ids, List):
+            env["PROJECT_IDS"] = " ".join(project_ids)
+        else:
+            env["PROJECT_ID"] = project_ids
+
+        jwt_producer = lambda_.Function(
+            self,
+            "JwtProduce" + key_name,
+            runtime=lambda_.Runtime.PYTHON_3_8,
+            code=lambda_.AssetCode(filename),
+            handler="lambda_entrypoint.main",
+            timeout=Duration.minutes(1),
+            environment=env,
         )
+
+        # this end makes the lambda role for JWT producer able to attempt to read the master secret
+        # (this is only one part of the permission decision though - also need to set the Secrets policy too)
+        master_secret.grant_read(jwt_producer)
 
         # secret itself - no default value as it will eventually get replaced by the JWT
         jwt_secret = secretsmanager.Secret(
             self,
-            "JwtSecret",
+            "Jwt" + key_name,
+            secret_name=key_name,
+            description="JWT(s) providing access to ICA projects",
         )
 
         # the rotation function that creates JWTs
@@ -120,4 +163,4 @@ class Secrets(cdk.Construct):
             rotation_lambda=jwt_producer,
         )
 
-        return jwt_secret
+        return jwt_secret, jwt_producer

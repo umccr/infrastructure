@@ -61,10 +61,7 @@ sig_handler() {
 }
 trap sig_handler INT HUP TERM QUIT EXIT
 
-
-
 timestamp="$(date +%s)"
-instance_type="$(curl http://169.254.169.254/latest/meta-data/instance-type/)"
 
 echo "Processing $S3_INPUT_DIR in bucket $S3_DATA_BUCKET with refdata from ${S3_REFDATA_BUCKET}"
 

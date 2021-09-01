@@ -34,6 +34,23 @@ aws secretsmanager get-secret-value --secret-id IcaSecretsWorkflow --query 'Secr
 will show a JSON object, keyed by ICA project id - and with an up to date JWT for
 that project.
 
+## Ops
+
+*If* you are making a change to any setting of the secret rotations (duration, lambda etc) - doing a
+CDK deploy mid-rotation can be catastrophic (in can leave it not just rolled back - but Failed Rolled Back).
+*In particular*, if the rotations are not completing due to any errors in the lambda then they
+are by definition always mid-rotation and hence can't be updated.
+
+The trick is:
+- manually change each secret to Disabled
+- then apply the CDK changes
+
+If your CDK stack gets stuck in "Failed Rollback":
+- manually change each secret to Disabled
+- go to the Cloud Formation and 'continue rollback'
+- manually change each secret again to Disabled (the rollback will have re-enabled them)
+- then apply the CDK changes
+
 
 ## Dev
 

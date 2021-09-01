@@ -7,10 +7,18 @@ from aws_cdk import (
     aws_iam as iam,
     aws_secretsmanager as secretsmanager,
 )
+from aws_cdk.aws_events import Rule
+from aws_cdk.aws_events_targets import LambdaFunction
+from aws_cdk.aws_iam import PolicyStatement
 from aws_cdk.core import Duration
+
+ROTATION_DAYS = 7
 
 
 class Secrets(cdk.Construct):
+    """
+    A construct that maintains secrets for ICA and periodically generates fresh JWT secrets.
+    """
     def __init__(
         self,
         scope: cdk.Construct,
@@ -18,26 +26,35 @@ class Secrets(cdk.Construct):
         data_project: str,
         workflow_projects: List[str],
         ica_base_url: str,
+        slack_webhook_ssm_name: str,
+        slack_channel: str,
     ):
         super().__init__(scope, id_)
 
         master = self.create_master_secret()
 
-        jwt_portal_producer, jwt_portal_func = self.create_jwt_secret(
+        jwt_portal_secret, jwt_portal_func = self.create_jwt_secret(
             master, ica_base_url, id_ + "Portal", data_project
         )
-        jwt_workflow_producer, jwt_workflow_func = self.create_jwt_secret(
+        jwt_workflow_secret, jwt_workflow_func = self.create_jwt_secret(
             master, ica_base_url, id_ + "Workflow", workflow_projects
         )
 
         # set the policy for the master secret to deny everyone except the rotators access
         self.add_deny_for_everyone_except(master, [jwt_portal_func, jwt_workflow_func])
 
+        # log rotation events to slack
+        self.create_event_handling(
+            [jwt_portal_secret, jwt_workflow_secret],
+            slack_webhook_ssm_name,
+            slack_channel,
+        )
+
         # create an AWS user specifically for allowing github to come over to AWS
-        # and get an up to date JWT set
+        # and get an up to date JWT set (only of the workflows JWTs)
         workflow_user = iam.User(self, "WorkflowUser")
 
-        jwt_workflow_producer.grant_read(workflow_user)
+        jwt_workflow_secret.grant_read(workflow_user)
 
     def create_master_secret(self) -> secretsmanager.Secret:
         """
@@ -159,8 +176,80 @@ class Secrets(cdk.Construct):
         # the rotation function that creates JWTs
         jwt_secret.add_rotation_schedule(
             "JwtSecretRotation",
-            automatically_after=Duration.days(1),
+            automatically_after=Duration.days(ROTATION_DAYS),
             rotation_lambda=jwt_producer,
         )
 
         return jwt_secret, jwt_producer
+
+    def create_event_handling(
+        self,
+        secrets: List[secretsmanager.Secret],
+        slack_webhook_ssm_name: str,
+        slack_channel: str,
+    ) -> lambda_.Function:
+        """
+
+        Args:
+            secrets: a list of secrets that we will track for events
+            slack_webhook_ssm_name: the SSM parameter name for the slack webhook id
+            slack_channel: the channel to send event messages to
+
+        Returns:
+            a lambda event handler
+        """
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, "runtime/notify_slack")
+
+        env = {
+            # for the moment we don't parametrise at the CDK level.. only needed if this is liable to change
+            "SLACK_HOST": "hooks.slack.com",
+            "SLACK_CHANNEL": slack_channel,
+            "SLACK_WEBHOOK_SSM_NAME": slack_webhook_ssm_name,
+        }
+
+        notifier = lambda_.Function(
+            self,
+            "NotifySlack",
+            runtime=lambda_.Runtime.PYTHON_3_8,
+            code=lambda_.AssetCode(filename),
+            handler="lambda_entrypoint.main",
+            timeout=Duration.minutes(1),
+            environment=env,
+        )
+
+        get_ssm_policy = PolicyStatement()
+
+        # there is some weirdness around SSM parameter ARN formation and leading slashes.. can't be bothered
+        # looking into right now - as the ones we want to use do a have a leading slash
+        # but put in this exception in case
+        if not slack_webhook_ssm_name.startswith("/"):
+            raise Exception("SSM parameter needs to start with a leading slash")
+
+        # see here - the *required* slash between parameter and the actual name uses the leading slash from the actual
+        # name itself.. which is wrong..
+        get_ssm_policy.add_resources(f"arn:aws:ssm:*:*:parameter{slack_webhook_ssm_name}")
+        get_ssm_policy.add_actions("ssm:GetParameter")
+
+        notifier.add_to_role_policy(get_ssm_policy)
+
+        # we want a rule that traps all the rotation failures for our JWT secrets
+        rule = Rule(
+            self,
+            "NotifySlackRule",
+        )
+
+        rule.add_event_pattern(
+            source=["aws.secretsmanager"],
+            detail={
+                # at the moment only interested in these - add extra events into this array if wanting more
+                "eventName": ["RotationFailed", "RotationSucceeded"],
+                "additionalEventData": {
+                    "SecretId": list(map(lambda s: s.secret_arn, secrets))
+                },
+            },
+        )
+
+        rule.add_target(LambdaFunction(notifier))
+
+        return notifier

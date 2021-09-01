@@ -11,6 +11,7 @@ CDK_APP_PYTHON_VERSION = "3.8"
 
 
 ICA_BASE_URL = "https://aps2.platform.illumina.com"
+SLACK_WEBHOOK_SSM_NAME = "/slack/webhook/id"
 
 
 # Development
@@ -23,6 +24,8 @@ IcaCredentialsDeployment(
         "dddd6c29-24d3-49f4-91c0-7e818b3c0a21",
     ],
     ICA_BASE_URL,
+    SLACK_WEBHOOK_SSM_NAME,
+    "#arteria-dev",
     env=cdk.Environment(
         account=os.environ["CDK_DEFAULT_ACCOUNT"],
         region=os.environ["CDK_DEFAULT_REGION"],
@@ -36,6 +39,8 @@ IcaCredentialsDeployment(
     "20b42a71-1ebc-4e7b-b659-313f2f4524c3",
     ["fdd48e11-cdcc-46a9-b5ac-dee3a4c5f19d"],
     ICA_BASE_URL,
+    SLACK_WEBHOOK_SSM_NAME,
+    "#devops-alerts",
     env=cdk.Environment(account="472057503814", region="ap-southeast-2"),
 )
 

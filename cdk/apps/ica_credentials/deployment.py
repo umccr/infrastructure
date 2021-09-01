@@ -13,12 +13,35 @@ class IcaCredentialsDeployment(cdk.Stage):
         data_project: str,
         workflow_projects: List[str],
         ica_base_url: str,
+        slack_webhook_ssm_name: str,
+        slack_channel: str,
         **kwargs: Any,
     ):
+        """
+        Represents the deployment of our stack(s) to a particular environment with a particular set of settings.
+
+        Args:
+            scope:
+            id_:
+            data_project:
+            workflow_projects:
+            ica_base_url:
+            slack_webhook_ssm_name:
+            slack_channel:
+            **kwargs:
+        """
         super().__init__(scope, id_, **kwargs)
 
         stateful = cdk.Stack(self, "stack")
 
-        # this name becomes the prefix of our secrets so we slip in the ICA to make it
+        # this name becomes the prefix of our secrets so we slip in the word ICA to make it
         # obvious when someone sees them that they are associated with ICA
-        Secrets(stateful, "IcaSecrets", data_project, workflow_projects, ica_base_url)
+        Secrets(
+            stateful,
+            "IcaSecrets",
+            data_project,
+            workflow_projects,
+            ica_base_url,
+            slack_webhook_ssm_name,
+            slack_channel,
+        )

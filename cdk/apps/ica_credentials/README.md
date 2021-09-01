@@ -16,7 +16,7 @@ aws secretsmanager put-secret-value \
 ```
 
 This cannot be done in the AWS Console UI as the administrator user is not allowed to read the
-value - hence they can't set the value.
+value - hence they can only set the value via CLI.
 
 ## Use
 

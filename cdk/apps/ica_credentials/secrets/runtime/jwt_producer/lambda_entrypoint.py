@@ -1,6 +1,5 @@
 import json
 import os
-import traceback
 from time import sleep
 from typing import Any
 
@@ -71,46 +70,40 @@ def main(ev: Any, _: Any) -> Any:
 
     master_val = get_master_api_key(sm_client, master_arn)
 
-    try:
-        # the rotation state checker will also let us know if we should skip processing entirely
-        if check_rotation_state(sm_client, arn, tok):
-            print(
-                f"Successfully skipped step '{step}' of secret '{arn}' and version '{tok}' because of state information"
-            )
-            return
+    # the rotation state checker will also let us know if we should skip processing entirely
+    if check_rotation_state(sm_client, arn, tok):
+        print(
+            f"Successfully skipped step '{step}' of secret '{arn}' and version '{tok}' because of state information"
+        )
+        return
 
-        if step == "createSecret":
+    if step == "createSecret":
 
-            def exchange_multi() -> str:
-                result = {}
-                for p in project_ids:
-                    result[p] = api_key_to_jwt_for_project(ica_base_url, master_val, p)
-                return json.dumps(result)
+        def exchange_multi() -> str:
+            result = {}
+            for p in project_ids:
+                result[p] = api_key_to_jwt_for_project(ica_base_url, master_val, p)
+            return json.dumps(result)
 
-            def exchange_single() -> str:
-                return api_key_to_jwt_for_project(ica_base_url, master_val, project_id)
+        def exchange_single() -> str:
+            return api_key_to_jwt_for_project(ica_base_url, master_val, project_id)
 
-            do_create_secret(
-                sm_client, arn, tok, exchange_single if project_id else exchange_multi
-            )
+        do_create_secret(
+            sm_client, arn, tok, exchange_single if project_id else exchange_multi
+        )
 
-            # JWTs are not immediately useful due to ICA clock skew and nbf claims
-            # https://github.com/umccr-illumina/stratus/issues/151
-            # So we delay here which delays the availability of this new JWT to the outside world
-            sleep(30)
+        # JWTs are not immediately useful due to ICA clock skew and nbf claims
+        # https://github.com/umccr-illumina/stratus/issues/151
+        # So we delay here which delays the availability of this new JWT to the outside world
+        sleep(30)
 
-        elif step == "setSecret":
-            pass
-        elif step == "testSecret":
-            pass
-        elif step == "finishSecret":
-            do_finish_secret(sm_client, arn, tok)
-        else:
-            raise ValueError("Invalid step parameter")
-
-    except Exception as e:
-        print(f"Error during step '{step}'")
-        print(traceback.format_exc())
-        raise e
+    elif step == "setSecret":
+        pass
+    elif step == "testSecret":
+        pass
+    elif step == "finishSecret":
+        do_finish_secret(sm_client, arn, tok)
+    else:
+        raise ValueError("Invalid step parameter")
 
     print(f"Successfully finished step '{step}' of secret '{arn}' and version '{tok}'")

@@ -134,7 +134,7 @@ locals {
       },
       "reference_tar": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+        "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
       }
     }
     EOT
@@ -181,7 +181,7 @@ locals {
         "enable_sv": true,
         "reference_tar": {
             "class": "File",
-            "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+            "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
         }
     }
     EOT
@@ -240,7 +240,7 @@ locals {
       },
       "reference_tar": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/3.7.5/hg38_alt_ht_3_7_5.tar.gz"
+        "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
       }
     }
     EOT

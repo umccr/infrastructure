@@ -118,13 +118,13 @@ def event_as_slack_message(event: Any, slack_channel: str) -> Any:
     #         "awsRegion": "ap-southeast-2",
     #         "sourceIPAddress": "secretsmanager.amazonaws.com",
     #         "userAgent": "secretsmanager.amazonaws.com",
-    #         "errorMessage": "Error when executing lambda arn:aws:lambda:ap-southeast-2:843407916570:function:ica-credentials-dev-stack-IcaSecretsJwtProduceIcaS-8l6lJG9DQfx6 during createSecret step",
+    #         "errorMessage": "Error when executing lambda arn:aws:lambda:ap-southeast-2:84...G9DQfx6 during createSecret step",
     #         "requestParameters": null,
     #         "responseElements": null,
     #         "additionalEventData": {
-    #             "SecretId": "arn:aws:secretsmanager:ap-southeast-2:843407916570:secret:IcaSecretsWorkflow-yUaicA"
+    #             "SecretId": "arn:aws:secretsmanager:ap-southeast-2:843407916570:secret:IcaS...icA"
     #         },
-    #         "requestID": "Rotation-arn:aws:secretsmanager:ap-southeast-2:843407916570:secret:IcaSecretsWorkflow-yUaicA-aa1b272e-da11-43a9-859a-170175980c9c",
+    #         "requestID": "Rotation-arn:aws:secretsmanager:ap-southeast-2:84340791...980c9c",
     #         "eventID": "e3b69cfe-b70e-4c94-baa9-9decc3c150b9",
     #         "readOnly": false,
     #         "eventType": "AwsServiceEvent",

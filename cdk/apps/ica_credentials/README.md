@@ -6,13 +6,15 @@ A stack for managing ICA credentials and the production of up to date JWTs.
 
 After installing with CDK, the master API secret must be set to a value by the account
 administrator, using a API key produced in ICA by the service user.
+(note the use of single quotes to switch off shell substitution - the passwords can
+contain bash special characters).
 
 e.g.
 
 ```bash
 aws secretsmanager put-secret-value \
-  --secret-id "<insert master secret name>" \
-  --secret-string "<insert API key>"
+  --secret-id '<insert master secret name>' \
+  --secret-string '<insert API key>'
 ```
 
 This cannot be done in the AWS Console UI as the administrator user is not allowed to read the

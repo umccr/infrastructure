@@ -26,8 +26,8 @@ class Secrets(cdk.Construct):
         data_project: str,
         workflow_projects: List[str],
         ica_base_url: str,
+        slack_host_ssm_name: str,
         slack_webhook_ssm_name: str,
-        slack_channel: str,
     ):
         super().__init__(scope, id_)
 
@@ -46,8 +46,8 @@ class Secrets(cdk.Construct):
         # log rotation events to slack
         self.create_event_handling(
             [jwt_portal_secret, jwt_workflow_secret],
+            slack_host_ssm_name,
             slack_webhook_ssm_name,
-            slack_channel,
         )
 
         # create an AWS user specifically for allowing github to come over to AWS
@@ -185,15 +185,15 @@ class Secrets(cdk.Construct):
     def create_event_handling(
         self,
         secrets: List[secretsmanager.Secret],
+        slack_host_ssm_name: str,
         slack_webhook_ssm_name: str,
-        slack_channel: str,
     ) -> lambda_.Function:
         """
 
         Args:
             secrets: a list of secrets that we will track for events
+            slack_host_ssm_name: the SSM parameter name for the slack host
             slack_webhook_ssm_name: the SSM parameter name for the slack webhook id
-            slack_channel: the channel to send event messages to
 
         Returns:
             a lambda event handler
@@ -203,8 +203,7 @@ class Secrets(cdk.Construct):
 
         env = {
             # for the moment we don't parametrise at the CDK level.. only needed if this is liable to change
-            "SLACK_HOST": "hooks.slack.com",
-            "SLACK_CHANNEL": slack_channel,
+            "SLACK_HOST_SSM_NAME": slack_host_ssm_name,
             "SLACK_WEBHOOK_SSM_NAME": slack_webhook_ssm_name,
         }
 
@@ -223,11 +222,12 @@ class Secrets(cdk.Construct):
         # there is some weirdness around SSM parameter ARN formation and leading slashes.. can't be bothered
         # looking into right now - as the ones we want to use do a have a leading slash
         # but put in this exception in case
-        if not slack_webhook_ssm_name.startswith("/"):
-            raise Exception("SSM parameter needs to start with a leading slash")
+        if not slack_webhook_ssm_name.startswith("/") or not slack_host_ssm_name.startswith("/"):
+            raise Exception("SSM parameters need to start with a leading slash")
 
         # see here - the *required* slash between parameter and the actual name uses the leading slash from the actual
         # name itself.. which is wrong..
+        get_ssm_policy.add_resources(f"arn:aws:ssm:*:*:parameter{slack_host_ssm_name}")
         get_ssm_policy.add_resources(f"arn:aws:ssm:*:*:parameter{slack_webhook_ssm_name}")
         get_ssm_policy.add_actions("ssm:GetParameter")
 

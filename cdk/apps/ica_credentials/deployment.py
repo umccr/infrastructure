@@ -13,8 +13,8 @@ class IcaCredentialsDeployment(cdk.Stage):
         data_project: str,
         workflow_projects: List[str],
         ica_base_url: str,
+        slack_host_ssm_name: str,
         slack_webhook_ssm_name: str,
-        slack_channel: str,
         **kwargs: Any,
     ):
         """
@@ -26,8 +26,8 @@ class IcaCredentialsDeployment(cdk.Stage):
             data_project:
             workflow_projects:
             ica_base_url:
+            slack_host_ssm_name:
             slack_webhook_ssm_name:
-            slack_channel:
             **kwargs:
         """
         super().__init__(scope, id_, **kwargs)
@@ -42,6 +42,6 @@ class IcaCredentialsDeployment(cdk.Stage):
             data_project,
             workflow_projects,
             ica_base_url,
+            slack_host_ssm_name,
             slack_webhook_ssm_name,
-            slack_channel,
         )

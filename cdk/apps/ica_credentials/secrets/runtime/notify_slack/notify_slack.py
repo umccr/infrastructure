@@ -6,7 +6,7 @@ import boto3
 import http.client
 
 
-def get_aws_account_name(id):
+def get_aws_account_name(id: str) -> str:
     if id == "472057503814":
         return "prod"
     elif id == "843407916570":
@@ -30,18 +30,26 @@ def get_ssm_param_value(name: str) -> str:
     ]
 
 
-def call_slack_webhook(slack_host: str, slack_webhook_ssm_name: str, message: any):
+def call_slack_webhook(
+    slack_host_ssm_name: str, slack_webhook_ssm_name: str, message: any
+):
+    slack_host = get_ssm_param_value(slack_host_ssm_name)
     slack_webhook_endpoint = "/services/" + get_ssm_param_value(slack_webhook_ssm_name)
 
     connection = http.client.HTTPSConnection(slack_host)
 
+    content = json.dumps(message)
+
+    print(
+        f"Making HTTPS POST to '{slack_host}' and endpoint '{slack_webhook_endpoint}'"
+    )
+    print(f"JSON content {content}")
+
     connection.request(
         "POST",
         slack_webhook_endpoint,
-        json.dumps(message),
-        {
-            "Content-Type": "application/json",
-        },
+        content,
+        {"Content-Type": "application/json"},
     )
     response = connection.getresponse()
     connection.close()
@@ -50,16 +58,15 @@ def call_slack_webhook(slack_host: str, slack_webhook_ssm_name: str, message: an
 
 
 def send_secrets_event_to_slack(
-    event: Any, slack_host: str, slack_webhook_ssm_name: str, slack_channel: str
+    event: Any, slack_host_ssm_name: str, slack_webhook_ssm_name: str
 ) -> None:
     """
     Print the details of a SecretsManager event to Slack.
 
     Args:
         event: the event we are logging to Slack
-        slack_host: the hostname of the Slack hook
+        slack_host_ssm_name: the SSM parameter name that holds the hostname of the Slack hook
         slack_webhook_ssm_name: the SSM parameter name that holds the secret id for our webhook
-        slack_channel: the channel name we want to message to go to
     """
     # Log the received event in CloudWatch
     print(f"Received event: {json.dumps(event)}")
@@ -73,28 +80,30 @@ def send_secrets_event_to_slack(
     try:
         if event.get("detail-type") == "AWS Service Event via CloudTrail":
             response = call_slack_webhook(
-                slack_host,
+                slack_host_ssm_name,
                 slack_webhook_ssm_name,
-                event_as_slack_message(event, slack_channel),
+                event_as_slack_message(event),
             )
 
             print(f"Response status: {response}")
-            return event
+
+            return
+
+        print("Ended up not printing any Slack message")
 
     except Exception as e:
         print(e)
 
 
-def event_as_slack_message(event: Any, slack_channel: str) -> Any:
+def event_as_slack_message(event: Any) -> Any:
     """
     Convert the given AWS event for Secrets Manager into a message packet we can send to Slack.
 
     Args:
         event:
-        slack_channel:
 
     Returns:
-
+        a dictionary representing a message that can be posted to Slack
     """
 
     # {
@@ -118,7 +127,7 @@ def event_as_slack_message(event: Any, slack_channel: str) -> Any:
     #         "awsRegion": "ap-southeast-2",
     #         "sourceIPAddress": "secretsmanager.amazonaws.com",
     #         "userAgent": "secretsmanager.amazonaws.com",
-    #         "errorMessage": "Error when executing lambda arn:aws:lambda:ap-southeast-2:84...G9DQfx6 during createSecret step",
+    #         "errorMessage": "... arn:aws:lambda:ap-southeast-2:84...G9DQfx6 during createSecret step",
     #         "requestParameters": null,
     #         "responseElements": null,
     #         "additionalEventData": {
@@ -135,10 +144,10 @@ def event_as_slack_message(event: Any, slack_channel: str) -> Any:
     # }
 
     event_detail = event.get("detail")
-    event_region = event.get("region")
-    event_name = event.get("eventName")
     aws_account = event.get("account")
     aws_account_name = get_aws_account_name(aws_account)
+
+    event_name = event_detail.get("eventName")
     additional_event_data = event_detail.get("additionalEventData")
 
     if additional_event_data:
@@ -147,61 +156,23 @@ def event_as_slack_message(event: Any, slack_channel: str) -> Any:
         secret_id = "unknown:secret:arn"
 
     msg = {
-        "channel": slack_channel,
         "icon_emoji": ":aws_logo:",
         "username": "AWS SecretsManager",
     }
 
     if event_name == "RotationFailed":
-        msg["text"] = (
-            f"❌ Periodic JWT key generation *failed* in `{aws_account_name}` for secret `{secret_id}`",
-        )
+        msg[
+            "text"
+        ] = f"❌ Periodic JWT key generation *failed* in `{aws_account_name}` for secret `{secret_id}`"
+
     elif event_name == "RotationSucceeded":
-        msg["text"] = (
-            f"✅ Periodic JWT key generation *succeeded* in `{aws_account_name}` for secret `{secret_id}`",
-        )
+        msg[
+            "text"
+        ] = f"✅ Periodic JWT key generation *succeeded* in `{aws_account_name}` for secret `{secret_id}`"
+
     else:
-        msg["text"] = (
-            f"? Unknown event in `{aws_account_name}` for secret `{secret_id}`",
-        )
+        msg[
+            "text"
+        ] = f"? Unknown event named `{event_name}` in `{aws_account_name}` for secret `{secret_id}`"
 
     return msg
-
-    #         "blocks": [
-    #             {
-    #                 "type": "header",
-    #                 "text": {
-    #                     "type": "plain_text",
-    #                     "text": "New request"
-    #                 }
-    #             },
-    #             {
-    #                 "type": "section",
-    #                 "fields": [
-    #                     {
-    #                         "type": "mrkdwn",
-    #                         "text": "*Type:*\nPaid Time Off"
-    #                     },
-    #                     {
-    #                         "type": "mrkdwn",
-    #                         "text": "*Created by:*\n<example.com|Fred Enriquez>"
-    #                     }
-    #                 ]
-    #             },
-    #             {
-    #                 "type": "section",
-    #                 "fields": [
-    #                     {
-    #                         "type": "mrkdwn",
-    #                         "text": "*When:*\nAug 10 - Aug 13"
-    #                     }
-    #                 ]
-    #             },
-    #             {
-    #                 "type": "section",
-    #                 "text": {
-    #                     "type": "mrkdwn",
-    #                     "text": "<https://example.com|View request>"
-    #                 }
-    #             }
-    #         ]

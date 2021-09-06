@@ -1,3 +1,4 @@
 PyJWT==2.1.0
 cryptography==3.4.7
-requests==2.25.1
+requests==2.26.0
+responses==0.13.4

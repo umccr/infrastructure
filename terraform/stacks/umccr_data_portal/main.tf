@@ -503,6 +503,12 @@ resource "aws_cognito_identity_pool" "identity_pool" {
     server_side_token_check = false
   }
 
+  cognito_identity_providers {
+    client_id               = aws_cognito_user_pool_client.sscheck_app_client.id
+    provider_name           = aws_cognito_user_pool.user_pool.endpoint
+    server_side_token_check = false
+  }
+
   tags = merge(local.default_tags)
 }
 

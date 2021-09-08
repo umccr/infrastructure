@@ -2,50 +2,30 @@ import json
 import logging
 import re
 from datetime import datetime, timedelta
+from typing import List
 
 import jwt
 import requests
 from jwt import algorithms as jwt_algo
 from jwt import PyJWKClient
 
-from jwt_helper import verify_jwt_structure, get_verified_jwt_claims
+from constants import GA4GH_PASSPORT_V1, GA4GH_PASSPORT_V2, GA4GH_PASSPORT_V2_ISSUERS, GA4GH_VISA_V1
+from jwt_helper import verify_jwt_structure, get_verified_jwt_claims, get_verified_visa_claims
 
 logger = logging.getLogger(__name__)
 
-GA4GH_PASSPORT_V1 = "ga4gh_passport_v1"
-GA4GH_VISA_V1 = "ga4gh_visa_v1"
 
 ALLOWED_AUDIENCE = [
     "htsget.dev.umccr.org",
     "htsget.umccr.org",
 ]
 
-TRUSTED_BROKERS = {
-    'https://asha.sandbox.genovic.org.au': {
-        'well_known': "/.well-known/openid-configuration",
-        'alg': "RS256",
-        'token_age_seconds': 3600,
-    },
-    'https://issuer1.sandbox.genovic.org.au': {
-        'well_known': "/.well-known/openid-configuration",
-        'alg': "RS256",
-        'token_age_seconds': 3600,
-    },
-    'https://issuer2.sandbox.genovic.org.au': {
-        'well_known': "/.well-known/openid-configuration",
-        'alg': "RS256",
-        'token_age_seconds': 3600,
-    },
-}
 
-
-def test_passport_jwt(encoded_jwt: str) -> bool:
+def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, trusted_brokers: List[str], trusted_visa_issuers: List[str]) -> bool:
     # simple test right at the start to ensure that the token is at least basically structured like a JWT
     verify_jwt_structure(encoded_jwt)
 
-    claims = get_verified_jwt_claims(encoded_jwt, ["https://umccr.ninja"], "foo")
-
-    print(claims)
+    claims = get_verified_jwt_claims(encoded_jwt, trusted_brokers, "foo")
 
     is_authorized = False
 
@@ -59,15 +39,38 @@ def test_passport_jwt(encoded_jwt: str) -> bool:
                 is_authorized = True
                 break
 
-    elif GA4GH_VISA_V1 in claims.keys():
-        # client provided VISA token
-        is_authorized = perform_visa_check(claims)
+    if GA4GH_PASSPORT_V2 in claims.keys():
+        # new 4k passport format
+        passport = claims[GA4GH_PASSPORT_V2]
+
+        issuers = passport.get(GA4GH_PASSPORT_V2_ISSUERS, {})
+
+        for iss in issuers.keys():
+            # it is not illegal for the passport to have an issuer we do not trust, its just we don't
+            # want to do anything with them
+            if iss not in trusted_visa_issuers:
+                logger.debug(f"Skipped visa issuer {iss} in passport from broker {claims['iss']}")
+                continue
+
+            visa_raw = issuers[iss]
+
+            # check base validity of visa TBD
+
+            # verify the signature of the content of the visa
+            visa_claims = get_verified_visa_claims(iss, visa_raw["v"], visa_raw["k"], visa_raw["s"])
+
+            # use our logic to see if we can authorise this request
+
+            # we have been given a content visa - and it is from an issuer that we know the protocol of
+            # so we do a back channel request for manifest
+            # TBD cache
+            if "c" in visa_claims:
+                # regex check on format of c
+                manifest = requests.get(f"{iss}/api/manifest?id={visa_claims['c']}").json()
+
+                print(manifest)
 
     return is_authorized
-
-def raise_error(message: dict):
-    logger.error(json.dumps(message))
-    raise ValueError(message.get('message', "Unexpected error occurred"))
 
 
 def perform_visa_check(claims) -> bool:

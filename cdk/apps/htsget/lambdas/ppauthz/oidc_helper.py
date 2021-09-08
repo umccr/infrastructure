@@ -19,8 +19,12 @@ class OidcConfiguration:
         signing_key = None
 
         for jwk_set_key in self.jwks.keys:
-            # not sure the "sig" field is set once we get into elliptic curve crypto
-            if jwk_set_key.public_key_use == "sig" and jwk_set_key.key_id:
+            if jwk_set_key.key_type == "RSA":
+                if jwk_set_key.public_key_use == "sig" and jwk_set_key.key_id:
+                    if jwk_set_key.key_id == kid:
+                        signing_key = jwk_set_key
+                        break
+            else:
                 if jwk_set_key.key_id == kid:
                     signing_key = jwk_set_key
                     break

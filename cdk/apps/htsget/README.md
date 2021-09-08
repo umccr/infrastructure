@@ -5,7 +5,8 @@ UMCCR Deployment of [`htsget-refserver`](https://github.com/ga4gh/htsget-refserv
 ## TL;DR
 
 ```
-pip install -r requirements.txt
+make  (to read some instructions)
+make install
 
 cdk list
 cdk diff
@@ -119,7 +120,7 @@ Alternatively, use AWS SSM Console UI.
     ```
     > 🙋‍♂️Read more in the PyDoc string!
 
-- If you update this [lambdas/requirements.txt](lambdas/requirements.txt) file:
+- If you update this [lambdas/requirements.txt](lambdas/ppauthz/requirements.txt) file:
   
     **TL;DR:**
     ```

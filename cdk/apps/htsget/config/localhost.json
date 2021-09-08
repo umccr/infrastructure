@@ -1,0 +1,54 @@
+{
+  "htsgetConfig": {
+    "props": {
+      "port": "3000",
+      "host": "http://localhost/",
+      "docsDir": "./deployments/ga4gh/prod/docs/",
+      "tempDir": "/tmp/",
+      "logFile": "/usr/src/app/htsget-refserver.log",
+      "corsAllowedOrigins": "https://data.umccr.org, https://data.dev.umccr.org",
+      "awsAssumeRole": false
+    },
+    "reads": {
+      "enabled": false
+    },
+    "variants": {
+      "enabled": true,
+      "dataSourceRegistry": {
+        "sources": [
+          {
+            "pattern": "^au/umccr-primary-data-dev(?P<accession>.*)$",
+            "path": "s3://umccr-primary-data-dev{accession}"
+          },
+          {
+            "pattern": "^usa/umccr-primary-data-dev(?P<accession>.*)$",
+            "path": "s3://umccr-primary-data-devusa{accession}"
+          },
+          {
+            "pattern": "^10g/s3/(?P<accession>.*)$",
+            "path": "s3://umccr-10g-data-dev/{accession}/{accession}.sv.vcf.gz"
+          },
+          {
+            "pattern": "^10g/https/(?P<accession>.*)$",
+            "path": "https://1000genomes-dragen.s3.us-west-2.amazonaws.com/data/dragen-3.6.3/hg38_altaware_nohla-cnv-anchored/{accession}/{accession}.sv.vcf.gz"
+          }
+        ]
+      },
+      "serviceInfo": {
+        "id": "org.ga4gh.htsgetreference.variants",
+        "name": "GA4GH htsget reference server variants API",
+        "description": "Reference web service of the GA4GH htsget protocol. Streams variant data from public datasets, such as Tabula Muris and 1000 Genomes.",
+        "organization": {
+          "name": "Global Alliance for Genomics and Health",
+          "url": "https://ga4gh.org"
+        },
+        "contactUrl": "mailto:jeremy.adams@ga4gh.org",
+        "documentationUrl": "https://ga4gh.github.io/htsget-refserver/docs/index.html",
+        "createdAt": "2020-08-31T08:00:00Z",
+        "updatedAt": "2020-09-04T14:40:00Z",
+        "environment": "production",
+        "version": "1.4.1_2"
+      }
+    }
+  }
+}

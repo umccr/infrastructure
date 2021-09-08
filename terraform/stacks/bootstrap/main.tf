@@ -458,46 +458,49 @@ module "notify_slack_lambda" {
 # Set up a main VPC for resources to use
 # It'll have with private and public subnets, internet and NAT gateways, etc
 
-module "app_vpc" {
-  source = "git::git@github.com:umccr/gruntworks-io-module-vpc.git//modules/vpc-app?ref=v0.5.2"
+# THIS IS REPLACED WITH Networking STACK
+# See https://github.com/umccr/infrastructure/tree/master/terraform/stacks/networking
 
-  vpc_name   = "vpc-${var.stack_name}-main"
-  aws_region = "ap-southeast-2"
+#module "app_vpc" {
+#  source = "git::git@github.com:umccr/gruntworks-io-module-vpc.git//modules/vpc-app?ref=v0.5.2"
+#
+#  vpc_name   = "vpc-${var.stack_name}-main"
+#  aws_region = "ap-southeast-2"
+#
+#  cidr_block = "10.2.0.0/18"
+#
+#  num_nat_gateways = 1
+#
+#  use_custom_nat_eips = true
+#  custom_nat_eips     = ["${aws_eip.main_vpc_nat_gateway.id}"]
+#
+#  custom_tags = {
+#    Environment = "${terraform.workspace}"
+#    Stack       = "${var.stack_name}"
+#  }
+#
+#  public_subnet_custom_tags = {
+#    SubnetType = "public"
+#  }
+#
+#  private_app_subnet_custom_tags = {
+#    SubnetType = "private_app"
+#  }
+#
+#  private_persistence_subnet_custom_tags = {
+#    SubnetType = "private_persistence"
+#  }
+#}
 
-  cidr_block = "10.2.0.0/18"
-
-  num_nat_gateways = 1
-
-  use_custom_nat_eips = true
-  custom_nat_eips     = ["${aws_eip.main_vpc_nat_gateway.id}"]
-
-  custom_tags = {
-    Environment = "${terraform.workspace}"
-    Stack       = "${var.stack_name}"
-  }
-
-  public_subnet_custom_tags = {
-    SubnetType = "public"
-  }
-
-  private_app_subnet_custom_tags = {
-    SubnetType = "private_app"
-  }
-
-  private_persistence_subnet_custom_tags = {
-    SubnetType = "private_persistence"
-  }
-}
-
-resource "aws_eip" "main_vpc_nat_gateway" {
-  vpc = true
-
-  tags {
-    Environment = "${terraform.workspace}"
-    Stack       = "${var.stack_name}"
-    Name        = "main_vpc_nat_gateway_1_${terraform.workspace}"
-  }
-}
+#resource "aws_eip" "main_vpc_nat_gateway" {
+#  vpc = true
+#
+#  tags {
+#    Environment = "${terraform.workspace}"
+#    Stack       = "${var.stack_name}"
+#    Name        = "main_vpc_nat_gateway_1_${terraform.workspace}"
+#  }
+#}
 
 ################################################################################
 # Dedicated user to generate long lived presigned URLs

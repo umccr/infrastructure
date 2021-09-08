@@ -1,2 +1,0 @@
--r lambdas/requirements.txt
-.

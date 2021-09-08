@@ -1,30 +1,33 @@
 import base64
 import json
 import struct
+from typing import Tuple
 
-import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, ed25519
-from cryptography.hazmat.backends import default_backend
 import responses
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
+MOCK_ISSUER_RSA_KID = "rsatestkey"
+MOCK_ISSUER_ED_KID = "edtestkey"
 
-def setup_mock_issuer(issuer: str) -> RSAPrivateKey:
+
+def setup_mock_issuer(issuer: str) -> Tuple[RSAPrivateKey, Ed25519PrivateKey]:
     """
     Using the responses library - sets up fake endpoints and tokens that can be used for a variety of
-    test purposes.
+    test purposes. Returns the private RSA etc keys created during the mocking.
 
     Args:
         issuer: the fake https://blah... issuer
 
     Returns:
-
+        a Tuple of private keys
     """
     openid_url = f"{issuer}/.well-known/openid-configuration"
     jwks_url = f"{issuer}/.well-known/jwks"
 
-    rsa_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    rsa_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     ed_private_key = ed25519.Ed25519PrivateKey.generate()
 
     def openid_config_callback(request):
@@ -35,9 +38,7 @@ def setup_mock_issuer(issuer: str) -> RSAPrivateKey:
             "scopes_supported": ["openid", "email", "profile"],
         }
 
-        headers = {"request-id": "728d329e-0e86-11e4-a748-0c84dc037c13"}
-
-        return 200, headers, json.dumps(resp_body)
+        return 200, { }, json.dumps(resp_body)
 
     responses.add_callback(
         responses.GET,
@@ -51,16 +52,16 @@ def setup_mock_issuer(issuer: str) -> RSAPrivateKey:
             "keys": [
                 {
                     "kty": "RSA",
-                    "e": long_to_base64(rsa_private.public_key().public_numbers().e),
+                    "e": long_to_base64(rsa_private_key.public_key().public_numbers().e),
                     "alg": "RS256",
-                    "n": long_to_base64(rsa_private.public_key().public_numbers().n),
-                    "kid": "rsatestkey",
+                    "n": long_to_base64(rsa_private_key.public_key().public_numbers().n),
+                    "kid": MOCK_ISSUER_RSA_KID,
                     "use": "sig",
                 },
                 {
                     "kty": "OKP",
                     "crv": "Ed25519",
-                    "kid": "edtestkey",
+                    "kid": MOCK_ISSUER_ED_KID,
                     "alg": "EdDSA",
                     "x": base64.urlsafe_b64encode(
                         ed_private_key.public_key().public_bytes(
@@ -73,8 +74,6 @@ def setup_mock_issuer(issuer: str) -> RSAPrivateKey:
             ]
         }
 
-        print(resp_body)
-
         return 200, {}, json.dumps(resp_body)
 
     responses.add_callback(
@@ -84,12 +83,12 @@ def setup_mock_issuer(issuer: str) -> RSAPrivateKey:
         content_type="application/json",
     )
 
-    return rsa_private
+    return rsa_private_key, ed_private_key
 
 
 # https://github.com/rohe/pyjwkest/blob/master/src/jwkest/__init__.py
 # would prefer to use a library but this library seems unmaintained and large to access just these
-# two funcs..
+# two funcs.. so good old copy paste
 def long2intarr(long_int):
     _bytes = []
     while long_int:

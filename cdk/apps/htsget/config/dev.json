@@ -36,6 +36,10 @@
           {
             "pattern": "^umccr-primary-data(?P<accession>.*)$",
             "path": "s3://umccr-primary-data{accession}"
+          },
+          {
+            "pattern": "^umccr-primary-data-dev(?P<accession>.*)$",
+            "path": "s3://umccr-primary-data-dev{accession}"
           }
         ]
       },
@@ -78,6 +82,18 @@
           {
             "pattern": "^umccr-primary-data(?P<accession>.*)$",
             "path": "s3://umccr-primary-data{accession}"
+          },
+          {
+            "pattern": "^umccr-primary-data-dev(?P<accession>.*)$",
+            "path": "s3://umccr-primary-data-dev{accession}"
+          },
+          {
+            "pattern": "^10g/s3/(?P<accession>.*)$",
+            "path": "s3://umccr-10g-data-dev/{accession}/{accession}.sv.vcf.gz"
+          },
+          {
+            "pattern": "^10g/https/(?P<accession>.*)$",
+            "path": "https://1000genomes-dragen.s3.us-west-2.amazonaws.com/data/dragen-3.6.3/hg38_altaware_nohla-cnv-anchored/{accession}/{accession}.sv.vcf.gz"
           }
         ]
       },

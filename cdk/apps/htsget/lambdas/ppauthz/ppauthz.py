@@ -25,9 +25,19 @@ def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, 
     # simple test right at the start to ensure that the token is at least basically structured like a JWT
     verify_jwt_structure(encoded_jwt)
 
-    claims = get_verified_jwt_claims(encoded_jwt, trusted_brokers, "foo")
+    claims = get_verified_jwt_claims(encoded_jwt, trusted_brokers)
 
     is_authorized = False
+
+    if "sub" in claims and claims["sub"].starts_with("https://nagim.dev"):
+        iss = "https://didact-patto.dev.umccr.org"
+        visa_claims = {
+            "c": "8XZF4195109CIIERC35P577HAM"
+        }
+        if "c" in visa_claims:
+            manifest = requests.get(f"{iss}/api/manifest/{visa_claims['c']}").json()
+
+            print(manifest)
 
     if GA4GH_PASSPORT_V1 in claims.keys():
         # client provided PASSPORT token
@@ -66,7 +76,7 @@ def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, 
             # TBD cache
             if "c" in visa_claims:
                 # regex check on format of c
-                manifest = requests.get(f"{iss}/api/manifest?id={visa_claims['c']}").json()
+                manifest = requests.get(f"{iss}/api/manifest/{visa_claims['c']}").json()
 
                 print(manifest)
 

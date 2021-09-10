@@ -25,7 +25,7 @@ def verify_jwt_structure(encoded_jwt: str) -> None:
 
 
 def get_verified_jwt_claims(
-    encoded_jwt: str, trusted_issuers: List[str], audience: str
+    encoded_jwt: str, trusted_issuers: List[str]
 ) -> Any:
     """
     Parse a base 64 encoded JWT and verify its content - then return the content decoded.
@@ -61,8 +61,8 @@ def get_verified_jwt_claims(
     data = jwt.decode(
         encoded_jwt,
         signing_key.key,
-        algorithms=oidc_config.algorithms,
-        audience=audience
+        algorithms=oidc_config.algorithms
+        # audience=audience
     )
 
     return data

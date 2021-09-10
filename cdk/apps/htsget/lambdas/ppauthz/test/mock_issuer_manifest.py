@@ -19,23 +19,15 @@ def setup_mock_issuer_manifest(issuer: str) -> None:
     manifest_url = f"{issuer}/api/manifest"
 
     # the real locations of these - though this relies on config in the htsget endpoint.. revisit
-    # "s3://1000genomes-dragen/data/dragen-3.6.3/hg38_altaware_nohla-cnv-anchored/HG00371/HG00371.bam"
     # "s3://1000genomes-dragen/data/dragen-3.6.3/hg38_altaware_nohla-cnv-anchored/HG00371/HG00371.sv.vcf.gz",
     def manifest_callback(r: PreparedRequest):
         i = cast(Request, r).params["id"]
         resp_body = {
             "id": i,
-            "reads": {
-                "1000g/HG00096": {},
-                "1000g/HG00115": {},
-                "1000g/HG00190": {},
-            },
-            "variants": {
-                "1000g/HG00096": {},
-                "1000g/HG00115": {},
-                "1000g/HG00190": {},
-                "1000g/HG00358": {"chromosomes_only": [1, 2, 3]},
-                "1000g/HG00371": {"chromosomes_only": [1, 2, 3]},
+            "artifacts": {
+                "variants/10g/https/HG00096": {},
+                "variants/10g/https/HG00097": {"chromosomes_only": ["chr1", "chr2", "chr3"]},
+                "variants/10g/https/HG00099": {"chromosomes_only": ["chr11", "chr12", "chr13"]},
             },
         }
 

@@ -70,12 +70,21 @@ def handler(event: Any, _) -> Any:
         id = path_params.get("id")
 
         if not id:
-            raise Exception("No id in the API gateway path parameter setup for this authoriser")
+            raise Exception(
+                "No id in the API gateway path parameter setup for this authoriser"
+            )
 
         # these may not be here in which case we want to continue but just with an empty dict
         query_params = event.get("queryStringParameters", {})
 
-        is_authorized = test_passport_jwt(id, query_params, encoded_jwt, [], [])
+        is_authorized = test_passport_jwt(
+            id,
+            query_params,
+            encoded_jwt,
+            # need these to be set from outer config
+            ["https://test.cilogon.org"],
+            ["https://didact-patto.dev.umccr.org"],
+        )
 
         return {
             "isAuthorized": True,
@@ -85,4 +94,3 @@ def handler(event: Any, _) -> Any:
         logger.exception("During htsget authorisation")
 
         return {"isAuthorized": False, "context": {"message": str(e)}}
-

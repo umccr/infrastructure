@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from lambda_helper import extract_bearer_token
-from ppauthz import test_passport_jwt
+from ppauthz import is_request_allowed_with_passport_jwt
 
 
 logger = logging.getLogger(__name__)
@@ -63,31 +63,32 @@ def handler(event: Any, _) -> Any:
     logger.setLevel(logging.INFO)
 
     try:
-        encoded_jwt = extract_bearer_token(event)
-
+        # have configured API gateway to break up the path we are authorising
         path_params = event.get("pathParameters", {})
 
-        id = path_params.get("id")
+        i = path_params.get("id")
 
-        if not id:
+        if not i:
             raise Exception(
                 "No id in the API gateway path parameter setup for this authoriser"
             )
 
-        # these may not be here in which case we want to continue but just with an empty dict
+        encoded_jwt = extract_bearer_token(event)
+
+        # there may not always be query parameters in which case we want to continue but just with an empty dict
         query_params = event.get("queryStringParameters", {})
 
-        is_authorized = test_passport_jwt(
-            id,
+        is_authorized = is_request_allowed_with_passport_jwt(
+            i,
             query_params,
             encoded_jwt,
             # need these to be set from outer config
-            ["https://test.cilogon.org"],
+            ["https://didact-patto.dev.umccr.org"],
             ["https://didact-patto.dev.umccr.org"],
         )
 
         return {
-            "isAuthorized": True,
+            "isAuthorized": is_authorized,
         }
 
     except Exception as e:

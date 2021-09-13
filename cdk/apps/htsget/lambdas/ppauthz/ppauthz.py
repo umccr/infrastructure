@@ -1,16 +1,19 @@
-import json
 import logging
-import re
-from datetime import datetime, timedelta
-from typing import List
+from typing import List, Any, Dict
 
-import jwt
 import requests
-from jwt import algorithms as jwt_algo
-from jwt import PyJWKClient
 
-from constants import GA4GH_PASSPORT_V1, GA4GH_PASSPORT_V2, GA4GH_PASSPORT_V2_ISSUERS, GA4GH_VISA_V1
-from jwt_helper import verify_jwt_structure, get_verified_jwt_claims, get_verified_visa_claims
+from constants import (
+    GA4GH_PASSPORT_V1,
+    GA4GH_PASSPORT_V2,
+    GA4GH_PASSPORT_V2_ISSUERS,
+    GA4GH_VISA_V1,
+)
+from jwt_helper import (
+    verify_jwt_structure,
+    get_verified_jwt_claims,
+    get_verified_visa_claims,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,33 +24,44 @@ ALLOWED_AUDIENCE = [
 ]
 
 
-def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, trusted_brokers: List[str], trusted_visa_issuers: List[str]) -> bool:
+def is_request_allowed_with_passport_jwt(
+    htsget_id: str,
+    htsget_parameters: Dict[str, Any],
+    encoded_jwt: str,
+    trusted_brokers: List[str],
+    trusted_visa_issuers: List[str],
+) -> bool:
+    """
+    Test whether this htsget request should be allowed based on the visas/passport.
+
+    Args:
+        htsget_id:
+        htsget_parameters:
+        encoded_jwt: the base64 encoded JWT
+        trusted_brokers:
+        trusted_visa_issuers:
+
+    Returns:
+
+    """
     # simple test right at the start to ensure that the token is at least basically structured like a JWT
     verify_jwt_structure(encoded_jwt)
 
+    # decode into proper claims object but only if correctly signed by a broker we trust
     claims = get_verified_jwt_claims(encoded_jwt, trusted_brokers)
-
-    is_authorized = False
-
-    if "sub" in claims and claims["sub"].starts_with("https://nagim.dev"):
-        iss = "https://didact-patto.dev.umccr.org"
-        visa_claims = {
-            "c": "8XZF4195109CIIERC35P577HAM"
-        }
-        if "c" in visa_claims:
-            manifest = requests.get(f"{iss}/api/manifest/{visa_claims['c']}").json()
-
-            print(manifest)
 
     if GA4GH_PASSPORT_V1 in claims.keys():
         # client provided PASSPORT token
         encoded_visas = claims[GA4GH_PASSPORT_V1]
-        for encoded_visa in encoded_visas:  # search appropriate visa in a passport, use the first found
+        for (
+            encoded_visa
+        ) in (
+            encoded_visas
+        ):  # search appropriate visa in a passport, use the first found
             verify_jwt_structure(encoded_visa)
-            visa_claims = get_verified_jwt_claims(encoded_visa)
+            visa_claims = get_verified_jwt_claims(encoded_visa, trusted_brokers)
             if perform_visa_check(visa_claims):
-                is_authorized = True
-                break
+                return True
 
     if GA4GH_PASSPORT_V2 in claims.keys():
         # new 4k passport format
@@ -55,11 +69,15 @@ def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, 
 
         issuers = passport.get(GA4GH_PASSPORT_V2_ISSUERS, {})
 
+        print(f"Received visas {issuers}")
+
         for iss in issuers.keys():
             # it is not illegal for the passport to have an issuer we do not trust, its just we don't
             # want to do anything with them
             if iss not in trusted_visa_issuers:
-                logger.debug(f"Skipped visa issuer {iss} in passport from broker {claims['iss']}")
+                logger.debug(
+                    f"Skipped visa issuer {iss} in passport from broker {claims['iss']}"
+                )
                 continue
 
             visa_raw = issuers[iss]
@@ -67,7 +85,9 @@ def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, 
             # check base validity of visa TBD
 
             # verify the signature of the content of the visa
-            visa_claims = get_verified_visa_claims(iss, visa_raw["v"], visa_raw["k"], visa_raw["s"])
+            visa_claims = get_verified_visa_claims(
+                iss, visa_raw["v"], visa_raw["k"], visa_raw["s"]
+            )
 
             # use our logic to see if we can authorise this request
 
@@ -75,12 +95,67 @@ def test_passport_jwt(htsget_id: str, htsget_parameters: str, encoded_jwt: str, 
             # so we do a back channel request for manifest
             # TBD cache
             if "c" in visa_claims:
-                # regex check on format of c
-                manifest = requests.get(f"{iss}/api/manifest/{visa_claims['c']}").json()
+                manifest_id = visa_claims["c"]
 
-                print(manifest)
+                # TODO: regex check on format of manifest id
+                if not manifest_id:
+                    raise Exception(
+                        f"Controlled data set id from issuer {iss} was not understood"
+                    )
 
-    return is_authorized
+                manifest = requests.get(f"{iss}/api/manifest/{manifest_id}").json()
+
+                print(
+                    f"Received manifest for controlled data set {manifest_id} {manifest}"
+                )
+
+                # e.g. manifest
+                # {'id': '8XZF4195109CIIERC35P577HAM',
+                # 'htsgetUrl': 'https://htsget.dev.umccr.org',
+                # 'artifacts': {'reads/10g/https/HG00096': {'chromosomes_only': []},
+                # 'variants/10g/https/HG00096': {'chromosomes_only': []},
+                # 'variants/10g/https/HG00097': {'chromosomes_only': ['chr1', 'chr2', 'chr3']},
+                # 'variants/10g/https/HG00099': {'chromosomes_only': ['chr11', 'chr12']}}}
+
+                # this is some very custom terrible logic
+                # TODO: fix this logic to be less specific to this exact manifest
+
+                if manifest["id"] != manifest_id:
+                    raise Exception(
+                        "Returned manifest from issuer did not have a correctly matching controlled data set id"
+                    )
+
+                manifest_artifacts = manifest.get("artifacts", {})
+
+                for a in manifest_artifacts.keys():
+                    rules = manifest_artifacts.get(a, None)
+
+                    if not rules:
+                        continue
+
+                    if a.startswith("variants") and a.endswith(htsget_id):
+                        chrs = rules.get("chromosomes_only", [])
+
+                        # if there are no restrictions on chromosome regions in the manifest then all requests succeed
+                        # because we have at least matched up the htsget id to one in the manifest
+                        if len(chrs) == 0:
+                            print(f"Authorised full access to {a} because there was no accompanying rule in manifest")
+                            return True
+
+                        # otherwise, if there is a chromosome region rules.. we need to enforce
+                        # (note our rule then becomes that they _cannot_ do a fetch of the whole VCF, the MUST
+                        # use referenceName as a param.. this is probably not per spec TODO: revisit)
+                        if (
+                            "referenceName" in htsget_parameters
+                            and htsget_parameters["referenceName"] in chrs
+                        ):
+                            print(f"Authorised access to {a}/{chrs} because that was allowed by rules")
+                            return True
+                        else:
+                            print(f"Refused access to {a}/{chrs} because the chromosome {htsget_parameters['referenceName']} was not listed")
+                            return False
+
+    return False
 
 
 def perform_visa_check(claims) -> bool:
@@ -96,12 +171,13 @@ def perform_visa_check(claims) -> bool:
     """
     visa = claims[GA4GH_VISA_V1]
 
-    visa_type = visa['type']
-    visa_asserted = visa['asserted']
-    visa_value = visa['value']
-    visa_source = visa['source']
-    visa_by: str = visa.get('by', "null")
+    visa_type = visa["type"]
+    visa_asserted = visa["asserted"]
+    visa_value = visa["value"]
+    visa_source = visa["source"]
+    visa_by: str = visa.get("by", "null")
 
-    return visa_type == "ControlledAccessGrants" and "https://umccr.org/datasets/710" in visa_value
-
-
+    return (
+        visa_type == "ControlledAccessGrants"
+        and "https://umccr.org/datasets/710" in visa_value
+    )

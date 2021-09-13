@@ -93,7 +93,7 @@
           },
           {
             "pattern": "^10g/https/(?P<accession>.*)$",
-            "path": "https://1000genomes-dragen.s3.us-west-2.amazonaws.com/data/dragen-3.6.3/hg38_altaware_nohla-cnv-anchored/{accession}/{accession}.sv.vcf.gz"
+            "path": "https://1000genomes-dragen.s3.us-west-2.amazonaws.com/data/dragen-3.5.7b/hg38_altaware_nohla-cnv-anchored/{accession}/{accession}.sv.vcf.gz"
           }
         ]
       },

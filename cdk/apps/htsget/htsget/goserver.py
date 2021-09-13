@@ -451,10 +451,22 @@ class GoServerStack(core.Stack):
                 f"PassportProtectedRoute{idx}",
                 http_api=self.http_api,
                 route_key=apigwv2.HttpRouteKey.with_(
-                    path=f"{res}", method=apigwv2.HttpMethod.ANY
+                    path=f"{res}", method=apigwv2.HttpMethod.GET
                 ),
                 integration=self.apigwv2_alb_integration,
             )
             rt_protected_pp_cfn: apigwv2.CfnRoute = rt_protected_pp.node.default_child
             rt_protected_pp_cfn.authorizer_id = authzr.ref
             rt_protected_pp_cfn.authorization_type = "CUSTOM"
+
+            options_rt_protected_pp = apigwv2.HttpRoute(
+                self,
+                f"PassportProtectedRoute{idx}CORS",
+                http_api=self.http_api,
+                route_key=apigwv2.HttpRouteKey.with_(
+                    path=f"{res}", method=apigwv2.HttpMethod.OPTIONS
+                ),
+                integration=self.apigwv2_alb_integration,
+            )
+
+

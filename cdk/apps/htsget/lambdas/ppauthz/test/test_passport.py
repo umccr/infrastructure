@@ -6,7 +6,7 @@ import responses
 
 from constants import GA4GH_PASSPORT_V2, GA4GH_PASSPORT_V2_ISSUERS
 from oidc_helper import get_oidc_configuration
-from ppauthz import test_passport_jwt
+from ppauthz import is_request_allowed_with_passport_jwt
 from test.fake_visas import create_fake_4k_visa
 from test.mock_issuer import setup_mock_issuer, MOCK_ISSUER_RSA_KID, MOCK_ISSUER_ED_KID
 from test.mock_issuer_manifest import setup_mock_issuer_manifest
@@ -50,5 +50,5 @@ class PassportUnitTest(TestCase):
             headers={"kid": MOCK_ISSUER_RSA_KID},
         )
 
-        test_passport_jwt(passport_jwt, [FAKE_BROKER_ISSUER], [FAKE_DAC_ISSUER])
+        is_request_allowed_with_passport_jwt(passport_jwt, [FAKE_BROKER_ISSUER], [FAKE_DAC_ISSUER])
 

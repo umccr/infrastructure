@@ -20,11 +20,13 @@ class OidcConfiguration:
 
         for jwk_set_key in self.jwks.keys:
             if jwk_set_key.key_type == "RSA":
-                if jwk_set_key.public_key_use == "sig" and jwk_set_key.key_id:
-                    if jwk_set_key.key_id == kid:
-                        signing_key = jwk_set_key
-                        break
-            else:
+                if jwk_set_key.key_id == kid:
+                    signing_key = jwk_set_key
+                    break
+                # we can also consider putting in the correct logic for handling duplicated sig/enc keys??
+                #   jwk_set_key.public_key_use == "sig"
+
+            elif jwk_set_key.key_type == "OKP":
                 if jwk_set_key.key_id == kid:
                     signing_key = jwk_set_key
                     break

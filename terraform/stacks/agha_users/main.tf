@@ -299,6 +299,55 @@ resource "aws_iam_policy" "agha_store_ro_policy" {
 
 ################################################################################
 
+## Consented data access test
+
+data "template_file" "test_s3_tag_abac" {
+  template = file("policies/bucket-ro-abac-s3-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id,
+    consent_group = "True"
+  }
+}
+
+resource "aws_iam_policy" "test_s3_tag_abac" {
+  name_prefix = "agha_store_abac_policy"
+  path        = "/agha/"
+  policy      = data.template_file.test_s3_tag_abac.rendered
+}
+
+resource "aws_iam_user" "abac" {
+  name = "abac"
+  path = "/agha/"
+  tags = {
+    name    = "ABAC Test",
+    keybase = "abac"
+  }
+}
+
+# group
+resource "aws_iam_group" "abac" {
+  name = "agha_gdr_abac"
+  path = "/agha/"
+}
+
+# group membership
+resource "aws_iam_group_membership" "abac" {
+  name  = "${aws_iam_group.abac.name}_membership"
+  group = aws_iam_group.abac.name
+  users = [
+    aws_iam_user.abac.name
+  ]
+}
+
+# group policies
+resource "aws_iam_group_policy_attachment" "abac_ro_policy_attachment" {
+  group      = aws_iam_group.abac.name
+  policy_arn = aws_iam_policy.test_s3_tag_abac.arn
+}
+
+################################################################################
+
 ## Mackenzie's Mission
 
 # bucket

@@ -108,6 +108,12 @@ def is_request_allowed_with_passport_jwt(
                         f"Controlled data set id from issuer {iss} was not understood"
                     )
 
+                # if someone has a visa for the entire 10g dataset - then we can just straight up
+                # allow access
+                # TODO: htsget would need some db of the datasets it controls to better support this generally
+                if manifest_id == "urn:fdc:thetengenomeproject.org:2018:phase1":
+                    return True
+
                 manifest = requests.get(f"{iss}/api/manifest/{manifest_id}").json()
 
                 print(
@@ -117,15 +123,18 @@ def is_request_allowed_with_passport_jwt(
                 # e.g. manifest
                 # {'id': '8XZF4195109CIIERC35P577HAM',
                 # 'htsgetUrl': 'https://htsget.dev.umccr.org',
-                # 'artifacts': {'reads/10g/https/HG00096': {},
-                # 'variants/10g/https/HG00096': {},
+                # 'htsgetArtifacts': {'reads/10g/https/HG00096': { 'sampleId': 'HG00096' },
+                # 'variants/10g/https/HG00096': { 'sampleId': 'HG00096' },
                 # 'variants/10g/https/HG00097': {
-                #     'restrict_to_regions': [
+                #     'sampleId': 'HG00097',
+                #     'restrictToRegions': [
                 #         { chromosome: 'chr1'},
                 #         { chromosome: 'chr2'},
                 #         { chromosome: 'chr3' }
                 #         ]},
-                # 'variants/10g/https/HG00099': {'restrict_to_regions': [
+                # 'variants/10g/https/HG00099': {
+                #   'sampleId': 'HG00097',
+                #   'restrictToRegions': [
                 # { chromosome: 'chr11'},
                 # { chromosome: 'chr12'}]}}}
 
@@ -137,7 +146,7 @@ def is_request_allowed_with_passport_jwt(
                         "Returned manifest from issuer did not have a correctly matching controlled data set id"
                     )
 
-                manifest_artifacts: Dict[str, Any] = manifest.get("artifacts", {})
+                manifest_artifacts: Dict[str, Any] = manifest.get("htsgetArtifacts", {})
 
                 for a, rules in manifest_artifacts.items():
                     if a.startswith("variants") and a.endswith(htsget_id):
@@ -157,7 +166,7 @@ def is_request_allowed_with_passport_jwt(
                             )
                             return True
 
-                        restrict_rules = rules.get("restrict_to_regions", [])
+                        restrict_rules = rules.get("restrictToRegions", [])
 
                         # if there are no restrictions on regions in the manifest then all requests succeed
                         # because we have at least matched up the htsget id to one in the manifest

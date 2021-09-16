@@ -8,24 +8,44 @@ from jwt import PyJWKSet, PyJWK
 
 @dataclass
 class OidcConfiguration:
+    """
+    The OIDC configuration is a cacheable data structure holding data about a named
+    OIDC endpoint (i.e. config data and JWKS etc)
+    """
+    # the OIDC endpoint
     issuer: str
 
+    # the .well-known/openid-configuration
     configuration: Dict[str, Any]
 
+    # the list of algorithms supported from configuration
     algorithms: List[str]
+
+    # the JWKS set
     jwks: PyJWKSet
 
     def get_signing_key(self, kid: str) -> PyJWK:
+        """
+        Return the signing key for a particular key identifier.
+
+        Args:
+            kid:
+
+        Returns:
+
+        """
         signing_key = None
 
         for jwk_set_key in self.jwks.keys:
+            # standard RSA
             if jwk_set_key.key_type == "RSA":
+                # we can also consider putting in the correct logic for handling duplicated sig/enc keys??
+                #   jwk_set_key.public_key_use == "sig"
                 if jwk_set_key.key_id == kid:
                     signing_key = jwk_set_key
                     break
-                # we can also consider putting in the correct logic for handling duplicated sig/enc keys??
-                #   jwk_set_key.public_key_use == "sig"
 
+            # eliptic curve
             elif jwk_set_key.key_type == "OKP":
                 if jwk_set_key.key_id == kid:
                     signing_key = jwk_set_key

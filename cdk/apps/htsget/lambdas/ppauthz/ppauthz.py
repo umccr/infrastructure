@@ -27,6 +27,7 @@ ALLOWED_AUDIENCE = [
 def is_request_allowed_with_passport_jwt(
     htsget_id: str,
     htsget_parameters: Dict[str, Any],
+    htsget_headers: Dict[str, Any],
     encoded_jwt: str,
     trusted_brokers: List[str],
     trusted_visa_issuers: List[str],
@@ -37,12 +38,13 @@ def is_request_allowed_with_passport_jwt(
     Args:
         htsget_id:
         htsget_parameters:
+        htsget_headers:
         encoded_jwt: the base64 encoded JWT
         trusted_brokers:
         trusted_visa_issuers:
 
     Returns:
-
+        true if the person with this passport should be allowed through to access the data
     """
     # simple test right at the start to ensure that the token is at least basically structured like a JWT
     verify_jwt_structure(encoded_jwt)
@@ -69,6 +71,9 @@ def is_request_allowed_with_passport_jwt(
 
         issuers = passport.get(GA4GH_PASSPORT_V2_ISSUERS, {})
 
+        print(
+            f"htsget of {htsget_id} with params {htsget_parameters} and headers {htsget_headers}"
+        )
         print(f"Received visas {issuers}")
 
         for iss in issuers.keys():
@@ -112,10 +117,17 @@ def is_request_allowed_with_passport_jwt(
                 # e.g. manifest
                 # {'id': '8XZF4195109CIIERC35P577HAM',
                 # 'htsgetUrl': 'https://htsget.dev.umccr.org',
-                # 'artifacts': {'reads/10g/https/HG00096': {'chromosomes_only': []},
-                # 'variants/10g/https/HG00096': {'chromosomes_only': []},
-                # 'variants/10g/https/HG00097': {'chromosomes_only': ['chr1', 'chr2', 'chr3']},
-                # 'variants/10g/https/HG00099': {'chromosomes_only': ['chr11', 'chr12']}}}
+                # 'artifacts': {'reads/10g/https/HG00096': {},
+                # 'variants/10g/https/HG00096': {},
+                # 'variants/10g/https/HG00097': {
+                #     'restrict_to_regions': [
+                #         { chromosome: 'chr1'},
+                #         { chromosome: 'chr2'},
+                #         { chromosome: 'chr3' }
+                #         ]},
+                # 'variants/10g/https/HG00099': {'restrict_to_regions': [
+                # { chromosome: 'chr11'},
+                # { chromosome: 'chr12'}]}}}
 
                 # this is some very custom terrible logic
                 # TODO: fix this logic to be less specific to this exact manifest
@@ -125,35 +137,63 @@ def is_request_allowed_with_passport_jwt(
                         "Returned manifest from issuer did not have a correctly matching controlled data set id"
                     )
 
-                manifest_artifacts = manifest.get("artifacts", {})
+                manifest_artifacts: Dict[str, Any] = manifest.get("artifacts", {})
 
-                for a in manifest_artifacts.keys():
-                    rules = manifest_artifacts.get(a, None)
-
-                    if not rules:
-                        continue
-
+                for a, rules in manifest_artifacts.items():
                     if a.startswith("variants") and a.endswith(htsget_id):
-                        chrs = rules.get("chromosomes_only", [])
+                        # the reference htsget server - when serving up header data - uses a generic path
+                        # that does not include chromosome or start/end - which makes sense as it is the same
+                        # header for the entire file.. but that means we need to skip any rules processing once
+                        # we know they are basically allowed to see the file
+                        if "htsgetblockclass" in htsget_headers:
+                            if htsget_headers["htsgetblockclass"] == "header":
+                                return True
 
-                        # if there are no restrictions on chromosome regions in the manifest then all requests succeed
+                        # if the rules is empty then this is defacto permission to access this whole
+                        # sample
+                        if not rules:
+                            print(
+                                f"Authorised full access to {a} because there was no accompanying rule in manifest"
+                            )
+                            return True
+
+                        restrict_rules = rules.get("restrict_to_regions", [])
+
+                        # if there are no restrictions on regions in the manifest then all requests succeed
                         # because we have at least matched up the htsget id to one in the manifest
-                        if len(chrs) == 0:
-                            print(f"Authorised full access to {a} because there was no accompanying rule in manifest")
+                        if len(restrict_rules) == 0:
+                            print(
+                                f"Authorised full access to {a} because there was no region restriction rule in manifest"
+                            )
                             return True
 
-                        # otherwise, if there is a chromosome region rules.. we need to enforce
-                        # (note our rule then becomes that they _cannot_ do a fetch of the whole VCF, the MUST
-                        # use referenceName as a param.. this is probably not per spec TODO: revisit)
-                        if (
-                            "referenceName" in htsget_parameters
-                            and htsget_parameters["referenceName"] in chrs
-                        ):
-                            print(f"Authorised access to {a}/{chrs} because that was allowed by rules")
-                            return True
-                        else:
-                            print(f"Refused access to {a}/{chrs} because the chromosome {htsget_parameters['referenceName']} was not listed")
+                        # once we know we have some rules - we really need to insist that
+                        # they are fetching partial files i.e. they must specify a chromosome
+                        if "referenceName" not in htsget_parameters:
+                            print(
+                                f"Refused access to {a}/{restrict_rules} because no chromosome (i.e. referenceName) was listed in the htsget call but there are rules"
+                            )
                             return False
+
+                        requested_chromosome = htsget_parameters["referenceName"]
+
+                        for restrict_rule in restrict_rules:
+                            if "chromosome" in restrict_rule:
+                                allowed_chromosome = restrict_rule.get(
+                                    "chromosome", None
+                                )
+
+                                if requested_chromosome == allowed_chromosome:
+                                    print(
+                                        f"Authorised access to {a}/{allowed_chromosome} because that was allowed by rule {restrict_rule}"
+                                    )
+                                    return True
+                                else:
+                                    print(
+                                        f"Refused access to {a}/{allowed_chromosome} because {requested_chromosome} was not in the rule {restrict_rule}.. continuing rules processing"
+                                    )
+
+                        return False
 
     return False
 

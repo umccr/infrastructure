@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any
 
 from lambda_helper import extract_bearer_token
@@ -37,7 +38,7 @@ def handler(event: Any, _) -> Any:
             "x-forwarded-port": "443",
             "x-forwarded-proto": "https",
         },
-        "queryStringParameters": {"referenceName": "chr1", "x": "1,2"},
+        "queryStringParameters": {"referenceName": "chr1", "x": "1,2"},   <---- NOTE: this was what happened for x=1&x=2
         "requestContext": {
             "accountId": "843407916570",
             "apiId": "jyp1fujvkf",
@@ -63,6 +64,18 @@ def handler(event: Any, _) -> Any:
     logger.setLevel(logging.INFO)
 
     try:
+        print(event)
+
+        htsget_trusted_brokers_string = os.environ["HTSGET_TRUSTED_BROKERS"]
+
+        if not htsget_trusted_brokers_string:
+            raise Exception("HTSGET_TRUSTED_BROKERS must be specified in the lambda environment")
+
+        htsget_trusted_visas_string = os.environ["HTSGET_TRUSTED_VISAS"]
+
+        if not htsget_trusted_visas_string:
+            raise Exception("HTSGET_TRUSTED_VISAS must be specified in the lambda environment")
+
         # have configured API gateway to break up the path we are authorising
         path_params = event.get("pathParameters", {})
 
@@ -77,14 +90,15 @@ def handler(event: Any, _) -> Any:
 
         # there may not always be query parameters in which case we want to continue but just with an empty dict
         query_params = event.get("queryStringParameters", {})
+        query_headers = event.get("headers", {})
 
         is_authorized = is_request_allowed_with_passport_jwt(
             i,
             query_params,
+            query_headers,
             encoded_jwt,
-            # need these to be set from outer config
-            ["https://didact-patto.dev.umccr.org"],
-            ["https://didact-patto.dev.umccr.org"],
+            htsget_trusted_brokers_string.split(),
+            htsget_trusted_visas_string.split(),
         )
 
         return {

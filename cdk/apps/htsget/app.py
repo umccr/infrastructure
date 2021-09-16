@@ -2,6 +2,7 @@
 import os
 
 from aws_cdk import core
+import aws_cdk.aws_ssm as ssm
 from htsget.common import CommonStack
 from htsget.goserver import GoServerStack
 

@@ -72,6 +72,7 @@ class GoServerStack(core.Stack):
             string_parameter_name="/data_portal/client/cog_app_client_id_local",
         )
 
+
         # --- Query main VPC and setup Security Groups
 
         vpc = ec2.Vpc.from_lookup(
@@ -370,6 +371,13 @@ class GoServerStack(core.Stack):
         Lambda function implements GA4GH Passport Clearinghouse -- claims verification logic -- to decide
         whether to allow the said claim to pass access htsget endpoint or, deny otherwise.
         """
+        # --- passports issuer settings
+
+        trusted_broker_issuers = ssm.StringParameter.value_for_string_parameter(
+            self, "/htsget/trusted_broker_issuers")
+
+        trusted_visa_issuers = ssm.StringParameter.value_for_string_parameter(
+            self, "/htsget/trusted_visa_issuers")
 
         # --- Setup Authz lambda function that implement GA4GH Passport Clearinghouse component
 
@@ -397,6 +405,10 @@ class GoServerStack(core.Stack):
                 },
             ),
             timeout=core.Duration.seconds(20),
+            environment={
+                "HTSGET_TRUSTED_BROKERS": trusted_broker_issuers,
+                "HTSGET_TRUSTED_VISAS": trusted_visa_issuers,
+            }
         )
 
         # --- Setup GA4GH Passport ApiGatewayv2 Authorizer
@@ -459,6 +471,9 @@ class GoServerStack(core.Stack):
             rt_protected_pp_cfn.authorizer_id = authzr.ref
             rt_protected_pp_cfn.authorization_type = "CUSTOM"
 
+            # in order to make these CUSTOM authed endpoints works with CORS - we need to explicitly
+            # add an OPTIONS endpoint on each route, where that route DOES NOT use custom auth
+            # (TODO: security review to prove that enabling CORS on an endpoint without auth is fine)
             options_rt_protected_pp = apigwv2.HttpRoute(
                 self,
                 f"PassportProtectedRoute{idx}CORS",

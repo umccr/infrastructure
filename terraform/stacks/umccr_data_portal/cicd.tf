@@ -1,10 +1,8 @@
 ################################################################################
 # Deployment pipeline configurations
 
-resource "aws_codestarconnections_connection" "umccr_github" {
-  name          = "umccr-github-data-portal-repos"
-  provider_type = "GitHub"
-  tags          = merge(local.default_tags)
+data "aws_ssm_parameter" "codestar_github_arn" {
+  name  = "codestar_github_arn"
 }
 
 # Bucket storing codepipeline artifacts (both client and apis)
@@ -40,7 +38,7 @@ resource "aws_iam_role_policy" "codepipeline_base_role_policy" {
   # Base IAM policy for codepiepline service role
   policy = templatefile("policies/codepipeline_base_role_policy.json", {
     codepipeline_bucket_arn = aws_s3_bucket.codepipeline_bucket.arn
-    codepipeline_codestar_connection_arn = aws_codestarconnections_connection.umccr_github.arn
+    codepipeline_codestar_connection_arn = data.aws_ssm_parameter.codestar_github_arn.value
   })
 }
 
@@ -66,7 +64,7 @@ resource "aws_codepipeline" "codepipeline_client" {
       version          = "1"
 
       configuration = {
-        ConnectionArn    = aws_codestarconnections_connection.umccr_github.arn
+        ConnectionArn    = data.aws_ssm_parameter.codestar_github_arn.value
         FullRepositoryId = "${local.org_name}/${local.github_repo_client}"
         BranchName       = var.github_branch[terraform.workspace]
       }
@@ -115,7 +113,7 @@ resource "aws_codepipeline" "codepipeline_apis" {
       version          = "1"
 
       configuration = {
-        ConnectionArn    = aws_codestarconnections_connection.umccr_github.arn
+        ConnectionArn    = data.aws_ssm_parameter.codestar_github_arn.value
         FullRepositoryId = "${local.org_name}/${local.github_repo_apis}"
         BranchName       = var.github_branch[terraform.workspace]
       }

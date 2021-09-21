@@ -30,22 +30,6 @@ variable "certificate_validation" {
   description = "Whether automatic validate the cert (1) or, to manually validate (0)"
 }
 
-variable "s3_primary_data_bucket" {
-  default = {
-    prod = "umccr-primary-data-prod"
-    dev  = "umccr-primary-data-dev"
-  }
-  description = "Name of the S3 bucket storing s3 primary data to be used by crawler "
-}
-
-variable "s3_run_data_bucket" {
-  default = {
-    prod = "umccr-run-data-prod"
-    dev  = "umccr-run-data-dev"
-  }
-  description = "Name of the S3 bucket storing s3 run data to be used by crawler "
-}
-
 variable "github_branch" {
   default = {
     prod = "main"

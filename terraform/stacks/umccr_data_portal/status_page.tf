@@ -6,6 +6,7 @@
 locals {
 
   app_name   = "data-portal-status-page"
+
   sub_domain = "status.data"
 
   data_portal_status_page_app_domain = "${local.sub_domain}.${var.base_domain[terraform.workspace]}"
@@ -25,7 +26,7 @@ locals {
     dev  = "https://${local.data_portal_status_page_app_domain}"
   }
 
-  ssm_parameter_prefix = "/data_portal_status_page"
+  ssm_parameter_prefix = "/data_portal/status_page"
 }
 
 # data-portal-status-page app client

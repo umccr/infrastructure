@@ -101,6 +101,7 @@ module "qimrbscott" {
   email     = "Scott.Wood@qimrberghofer.edu.au"
 }
 
+# Mackenzie's Mission
 resource "aws_iam_user" "fzhanghealth" {
   name = "fzhanghealth"
   path = "/agha/"
@@ -108,6 +109,15 @@ resource "aws_iam_user" "fzhanghealth" {
     email   = "futao.zhang@health.nsw.gov.au",
     name    = "Futao Zhang",
     keybase = "fzhanghealth"
+  }
+}
+resource "aws_iam_user" "evachan" {
+  name = "evachan"
+  path = "/agha/"
+  tags = {
+    email   = "eva.chan@health.nsw.gov.au",
+    name    = "Eva Chan",
+    keybase = "evachan"
   }
 }
 
@@ -168,6 +178,7 @@ resource "aws_iam_group_membership" "default" {
     module.chiaraf.username,
     module.qimrbscott.username,
     aws_iam_user.fzhanghealth.name,
+    aws_iam_user.evachan.name
   ]
 }
 
@@ -367,7 +378,8 @@ resource "aws_iam_group_membership" "mm" {
   group = aws_iam_group.mm.name
   users = [
     module.sarah_dm.username,
-    aws_iam_user.fzhanghealth.name
+    aws_iam_user.fzhanghealth.name,
+    aws_iam_user.evachan.name
   ]
 }
 

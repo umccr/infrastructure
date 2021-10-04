@@ -102,3 +102,8 @@ output "qimrbscott_secret_access_key" {
 output "fzhanghealth_username" {
   value = aws_iam_user.fzhanghealth.name
 }
+
+# evachan
+output "evachan_username" {
+  value = aws_iam_user.evachan.name
+}

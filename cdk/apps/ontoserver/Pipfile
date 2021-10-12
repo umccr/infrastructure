@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+"aws_cdk.core" = "==1.126.0"
+"aws_cdk.aws_route53" = "==1.126.0"
+"aws_cdk.aws_ecr" = "==1.126.0"
+"aws_cdk.aws_ecs" = "==1.126.0"
+
+[requires]
+python_version = "3.8"

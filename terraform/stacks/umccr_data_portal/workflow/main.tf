@@ -208,8 +208,8 @@ locals {
   }
 
   dragen_wts_wfl_version = {
-    dev  = "3.7.5"
-    prod = "3.7.5--1d8fe7b"
+    dev  = "3.9.3"
+    prod = "3.9.3--9961e75"
   }
 
   dragen_wts_input = {
@@ -220,23 +220,23 @@ locals {
       "output_directory": null,
       "annotation_file": {
             "class": "File",
-            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/ref-transcripts.non-zero-length.gtf"
+            "location": "gds://development/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
         },
       "cytobands": {
             "class": "File",
-            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/fusion/arriba-cytobands.tsv"
+            "location": "gds://development/reference-data/dragen_wts/arriba/hg38/arriba-cytobands.tsv"
         },
       "blacklist": {
             "class": "File",
-            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/fusion/arriba-blacklist.tsv.gz"
+            "location": "gds://development/reference-data/dragen_wts/arriba/hg38/arriba-blacklist.tsv.gz"
         },
       "protein_domains": {
             "class": "File",
-            "location": "gds://umccr-refdata-dev/dragen/hsapiens/hg38/rnaseq/fusion/arriba-protein-domains.gff3"
+            "location": "gds://development/reference-data/dragen_wts/arriba/hg38/arriba-protein-domains.gff3"
         },
       "reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"
+        "location": "gds://development/reference-data/genomes/hg38/hg38.fa"
       },
       "reference_tar": {
         "class": "File",
@@ -251,23 +251,23 @@ locals {
       "output_directory": null,
       "annotation_file": {
             "class": "File",
-            "location": "gds://umccr-refdata-prod/dragen/transcript/ref-transcripts.non-zero-length.gtf"
+            "location": "gds://production/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
         },
       "cytobands": {
             "class": "File",
-            "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/rnaseq/fusion/arriba-cytobands.tsv"
+            "location": "gds://production/reference-data/dragen_wts/arriba/hg38/arriba-cytobands.tsv"
         },
       "blacklist": {
             "class": "File",
-            "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/rnaseq/fusion/arriba-blacklist.tsv.gz"
+            "location": "gds://production/reference-data/dragen_wts/arriba/hg38/arriba-blacklist.tsv.gz"
         },
       "protein_domains": {
             "class": "File",
-            "location": "gds://umccr-refdata-prod/dragen/hsapiens/hg38/rnaseq/fusion/arriba-protein-domains.gff3"
+            "location": "gds://productionreference-data/dragen_wts/arriba/hg38/arriba-protein-domains.gff3"
         },
       "reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/hg38.fa"
+        "location": "gds://production/reference-data/genomes/hg38/hg38.fa"
       },
       "reference_tar": {
         "class": "File",

@@ -263,7 +263,7 @@ locals {
         },
       "protein_domains": {
             "class": "File",
-            "location": "gds://productionreference-data/dragen_wts/arriba/hg38/arriba-protein-domains.gff3"
+            "location": "gds://production/reference-data/dragen_wts/arriba/hg38/arriba-protein-domains.gff3"
         },
       "reference_fasta": {
         "class": "File",

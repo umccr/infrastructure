@@ -114,8 +114,8 @@ locals {
   }
 
   dragen_wgs_qc_wfl_version = {
-    dev  = "3.7.5"
-    prod = "3.7.5--67a9d2b"
+    dev  = "3.9.3"
+    prod = "3.9.3--0d6bc70"
   }
 
   dragen_wgs_qc_input = {
@@ -165,8 +165,8 @@ locals {
   }
 
   tumor_normal_wfl_version = {
-    dev  = "3.7.5"
-    prod = "3.7.5--1d8fe7b"
+    dev  = "3.9.3"
+    prod = "3.9.3--0d6bc70"
   }
 
   tumor_normal_input = {

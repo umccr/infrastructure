@@ -284,7 +284,7 @@ locals {
 
   dragen_tso_ctdna_wfl_version = {
     dev = "1.1.0--1.0.0"
-    prod = "1.1.0--1.0.0--87cab58"
+    prod = "1.1.0--1.0.0--570feb0"
   }
 
   dragen_tso_ctdna_wfl_input = {

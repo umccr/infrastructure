@@ -1,0 +1,11 @@
+{
+  "app": "python3 app.py",
+  "context": {
+    "EC2_TYPE": "t3.medium",
+    "MACHINE_IMAGE": "ami-02e45c427cc633602",
+    "ROOT_VOLUME_SIZE": "15",
+    "EXTENDED_VOLUME_SIZE": "10",
+    "INSTANCE_NAME": "gen3-admin-vm",
+    "USE_SPOT_INSTANCE": "true"
+  }
+}

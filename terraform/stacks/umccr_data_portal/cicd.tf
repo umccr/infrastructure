@@ -339,7 +339,7 @@ data "aws_sns_topic" "chatbot_topic" {
 }
 
 locals {
-  codebuild_notification_target = {
+  notification_sns_topic_arn = {
     prod = aws_sns_topic.portal_ops_sns_topic.arn
     dev  = data.aws_sns_topic.chatbot_topic.arn
   }
@@ -351,7 +351,7 @@ resource "aws_codestarnotifications_notification_rule" "apis_build_status" {
   detail_type = "BASIC"
 
   target {
-    address = local.codebuild_notification_target[terraform.workspace]
+    address = local.notification_sns_topic_arn[terraform.workspace]
   }
 
   event_type_ids = [
@@ -368,7 +368,7 @@ resource "aws_codestarnotifications_notification_rule" "client_build_status" {
   detail_type = "BASIC"
 
   target {
-    address = local.codebuild_notification_target[terraform.workspace]
+    address = local.notification_sns_topic_arn[terraform.workspace]
   }
 
   event_type_ids = [
@@ -377,4 +377,11 @@ resource "aws_codestarnotifications_notification_rule" "client_build_status" {
   ]
 
   tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "notification_sns_topic_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/notification_sns_topic_arn"
+  type  = "String"
+  value = local.notification_sns_topic_arn[terraform.workspace]
+  tags  = merge(local.default_tags)
 }

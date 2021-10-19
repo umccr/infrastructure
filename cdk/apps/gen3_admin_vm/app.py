@@ -11,7 +11,6 @@ TAGS = {
     "UseCase": "Gen3"
 }
 
-
 aws_env = {
     'account': os.environ.get('CDK_DEFAULT_ACCOUNT'),
     'region': os.environ.get('CDK_DEFAULT_REGION')

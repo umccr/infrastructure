@@ -47,6 +47,17 @@ module "agha_presign" {
   pgp_key   = "keybase:freisinger"
 }
 
+#####
+# Dedicated user for Gen3 (fence_bot)
+resource "aws_iam_user" "fence_bot" {
+  name = "fence_bot"
+  path = "/gen3/"
+  tags = {
+    name    = "fence_bot"
+  }
+}
+
+
 # AGHA Users
 module "simon" {
   source    = "../../modules/iam_user/only_user"
@@ -162,6 +173,12 @@ resource "aws_iam_group" "data_controller" {
   path = "/agha/"
 }
 
+# Gen3
+resource "aws_iam_group" "gen3" {
+  name = "agha_gdr_gen3"
+  path = "/gen3/"
+}
+
 ####################
 # Group memberships
 
@@ -250,6 +267,19 @@ resource "aws_iam_group_policy_attachment" "controller_store_ro_policy_attachmen
   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
 }
 
+# Gen3 services
+resource "aws_iam_group_membership" "gen3_services" {
+  name  = "${aws_iam_group.gen3.name}_membership"
+  group = aws_iam_group.gen3.name
+  users = [
+    aws_iam_user.fence_bot.name
+  ]
+}
+
+resource "aws_iam_group_policy_attachment" "gen3_services_store_ro_policy_attachment" {
+  group      = aws_iam_group.gen3.name
+  policy_arn = aws_iam_policy.agha_store_ro_policy.arn
+}
 
 ################################################################################
 # Create access policies

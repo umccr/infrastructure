@@ -65,7 +65,7 @@ locals {
     prod = "3.7.5--f1e67a3"
   }
 
-  bcl_convert_input = {
+  bcl_convert_wfl_input = {
     dev = <<-EOT
     {
       "bcl_input_directory": {
@@ -108,17 +108,17 @@ locals {
     EOT
   }
 
-  dragen_wgs_qc_wfl_id = {
+  wgs_alignment_qc_wfl_id = {
     dev  = "wfl.ff6ca1789f4e4eb0982ea3e01407aca8"
     prod = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
   }
 
-  dragen_wgs_qc_wfl_version = {
+  wgs_alignment_qc_wfl_version = {
     dev  = "3.9.3"
     prod = "3.9.3--0d6bc70"
   }
 
-  dragen_wgs_qc_input = {
+  wgs_alignment_qc_wfl_input = {
     dev = <<-EOT
     {
       "output_file_prefix": null,
@@ -159,17 +159,17 @@ locals {
     EOT
   }
 
-  tumor_normal_wfl_id = {
+  wgs_tumor_normal_wfl_id = {
     dev  = "wfl.32e346cdbb854f6487e7594ec17a81f9"
     prod = "wfl.aa0ccece4e004839aa7374d1d6530633"
   }
 
-  tumor_normal_wfl_version = {
+  wgs_tumor_normal_wfl_version = {
     dev  = "3.9.3"
     prod = "3.9.3--0d6bc70"
   }
 
-  tumor_normal_input = {
+  wgs_tumor_normal_wfl_input = {
     dev = <<-EOT
     {
         "output_file_prefix": null,
@@ -202,17 +202,17 @@ locals {
     EOT
   }
 
-  dragen_wts_wfl_id = {
+  wts_tumor_only_wfl_id = {
     dev  = "wfl.286d4a2e82f048609d5b288a9d2868f6"
     prod = "wfl.7e5ba7470b5549a6b4bf6d95daaa1214"
   }
 
-  dragen_wts_wfl_version = {
+  wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
     prod = "3.9.3--9961e75"
   }
 
-  dragen_wts_input = {
+  wts_tumor_only_wfl_input = {
     dev = <<-EOT
     {
       "fastq_list_rows": null,
@@ -277,17 +277,17 @@ locals {
     EOT
   }
 
-  dragen_tso_ctdna_wfl_id = {
+  tso_ctdna_tumor_only_wfl_id = {
     dev = "wfl.b0be3d1bbd8140bbaa64038f0eb8f7c2"
     prod = "wfl.230846758ccf42e3831283ab0e45af0a"
   }
 
-  dragen_tso_ctdna_wfl_version = {
+  tso_ctdna_tumor_only_wfl_version = {
     dev = "1.1.0--1.0.0"
     prod = "1.1.0--1.0.0--a303dbc"
   }
 
-  dragen_tso_ctdna_wfl_input = {
+  tso_ctdna_tumor_only_wfl_input = {
     dev = <<-EOT
     {
       "tso500_samples": null,
@@ -363,110 +363,218 @@ resource "aws_ssm_parameter" "bcl_convert_input" {
   name = "/iap/workflow/bcl_convert/input"
   type = "String"
   description = "BCL Convert Workflow Input JSON"
-  value = local.bcl_convert_input[terraform.workspace]
+  value = local.bcl_convert_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
 # --- DRAGEN WGS QC Workflow for WGS samples (used to call Germline initially)
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_wgs_qc_id" {
   name = "/iap/workflow/dragen_wgs_qc/id"
   type = "String"
   description = "DRAGEN_WGS_QC Workflow ID"
-  value = local.dragen_wgs_qc_wfl_id[terraform.workspace]
+  value = local.wgs_alignment_qc_wfl_id[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_wgs_qc_version" {
   name = "/iap/workflow/dragen_wgs_qc/version"
   type = "String"
   description = "DRAGEN_WGS_QC Workflow Version Name"
-  value = local.dragen_wgs_qc_wfl_version[terraform.workspace]
+  value = local.wgs_alignment_qc_wfl_version[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_wgs_qc_input" {
   name = "/iap/workflow/dragen_wgs_qc/input"
   type = "String"
   description = "DRAGEN_WGS_QC Input JSON"
-  value = local.dragen_wgs_qc_input[terraform.workspace]
+  value = local.wgs_alignment_qc_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wgs_alignment_qc_wfl_id" {
+  name = "/iap/workflow/wgs_alignment_qc/id"
+  type = "String"
+  description = "DRAGEN_WGS_QC Workflow ID"
+  value = local.wgs_alignment_qc_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wgs_alignment_qc_wfl_version" {
+  name = "/iap/workflow/wgs_alignment_qc/version"
+  type = "String"
+  description = "DRAGEN_WGS_QC Workflow Version Name"
+  value = local.wgs_alignment_qc_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wgs_alignment_qc_wfl_input" {
+  name = "/iap/workflow/wgs_alignment_qc/input"
+  type = "String"
+  description = "DRAGEN_WGS_QC Input JSON"
+  value = local.wgs_alignment_qc_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
 # --- Tumor / Normal
 
+# deprecated
 resource "aws_ssm_parameter" "tumor_normal_id" {
   name = "/iap/workflow/tumor_normal/id"
   type = "String"
   description = "Tumor / Normal Workflow ID"
-  value = local.tumor_normal_wfl_id[terraform.workspace]
+  value = local.wgs_tumor_normal_wfl_id[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "tumor_normal_version" {
   name = "/iap/workflow/tumor_normal/version"
   type = "String"
   description = "Tumor / Normal Workflow Version Name"
-  value = local.tumor_normal_wfl_version[terraform.workspace]
+  value = local.wgs_tumor_normal_wfl_version[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "tumor_normal_input" {
   name = "/iap/workflow/tumor_normal/input"
   type = "String"
   description = "Tumor / Normal Input JSON"
-  value = local.tumor_normal_input[terraform.workspace]
+  value = local.wgs_tumor_normal_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wgs_tumor_normal_wfl_id" {
+  name = "/iap/workflow/wgs_tumor_normal/id"
+  type = "String"
+  description = "Tumor / Normal Workflow ID"
+  value = local.wgs_tumor_normal_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wgs_tumor_normal_wfl_version" {
+  name = "/iap/workflow/wgs_tumor_normal/version"
+  type = "String"
+  description = "Tumor / Normal Workflow Version Name"
+  value = local.wgs_tumor_normal_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wgs_tumor_normal_wfl_input" {
+  name = "/iap/workflow/wgs_tumor_normal/input"
+  type = "String"
+  description = "Tumor / Normal Input JSON"
+  value = local.wgs_tumor_normal_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
 # --- DRAGEN WTS Workflow for Transcriptome samples
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_wts_id" {
   name = "/iap/workflow/dragen_wts/id"
   type = "String"
   description = "DRAGEN WTS Workflow ID"
-  value = local.dragen_wts_wfl_id[terraform.workspace]
+  value = local.wts_tumor_only_wfl_id[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_wts_version" {
   name = "/iap/workflow/dragen_wts/version"
   type = "String"
   description = "DRAGEN WTS Workflow Version Name"
-  value = local.dragen_wts_wfl_version[terraform.workspace]
+  value = local.wts_tumor_only_wfl_version[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_wts_input" {
   name = "/iap/workflow/dragen_wts/input"
   type = "String"
   description = "DRAGEN WTS Input JSON"
-  value = local.dragen_wts_input[terraform.workspace]
+  value = local.wts_tumor_only_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wts_tumor_only_wfl_id" {
+  name = "/iap/workflow/wts_tumor_only/id"
+  type = "String"
+  description = "DRAGEN WTS Workflow ID"
+  value = local.wts_tumor_only_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wts_tumor_only_wfl_version" {
+  name = "/iap/workflow/wts_tumor_only/version"
+  type = "String"
+  description = "DRAGEN WTS Workflow Version Name"
+  value = local.wts_tumor_only_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "wts_tumor_only_wfl_input" {
+  name = "/iap/workflow/wts_tumor_only/input"
+  type = "String"
+  description = "DRAGEN WTS Input JSON"
+  value = local.wts_tumor_only_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
 # --- DRAGEN_TSO_CTDNA
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_tso_ctdna_id" {
   name = "/iap/workflow/dragen_tso_ctdna/id"
   type = "String"
   description = "Dragen ctTSO Workflow ID"
-  value = local.dragen_tso_ctdna_wfl_id[terraform.workspace]
+  value = local.tso_ctdna_tumor_only_wfl_id[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_tso_ctdna_version" {
   name = "/iap/workflow/dragen_tso_ctdna/version"
   type = "String"
   description = "Dragen ctTSO Workflow Version Name"
-  value = local.dragen_tso_ctdna_wfl_version[terraform.workspace]
+  value = local.tso_ctdna_tumor_only_wfl_version[terraform.workspace]
   tags = merge(local.default_tags)
 }
 
+# deprecated
 resource "aws_ssm_parameter" "dragen_tso_ctdna_input" {
   name = "/iap/workflow/dragen_tso_ctdna/input"
   type = "String"
   description = "Dragen ctTSO Input JSON"
-  value = local.dragen_tso_ctdna_wfl_input[terraform.workspace]
+  value = local.tso_ctdna_tumor_only_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "tso_ctdna_tumor_only_wfl_id" {
+  name = "/iap/workflow/tso_ctdna_tumor_only/id"
+  type = "String"
+  description = "Dragen ctTSO Workflow ID"
+  value = local.tso_ctdna_tumor_only_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "tso_ctdna_tumor_only_wfl_version" {
+  name = "/iap/workflow/tso_ctdna_tumor_only/version"
+  type = "String"
+  description = "Dragen ctTSO Workflow Version Name"
+  value = local.tso_ctdna_tumor_only_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "tso_ctdna_tumor_only_wfl_input" {
+  name = "/iap/workflow/tso_ctdna_tumor_only/input"
+  type = "String"
+  description = "Dragen ctTSO Input JSON"
+  value = local.tso_ctdna_tumor_only_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }

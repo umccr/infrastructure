@@ -6,7 +6,7 @@ with open("README.md") as fp:
 
 
 setuptools.setup(
-    name="cttso_ica_to_pieriandx",
+    name="stacks",
     version="0.0.1",
 
     description="An empty CDK Python app",
@@ -15,8 +15,8 @@ setuptools.setup(
 
     author="author",
 
-    package_dir={"": "cttso_ica_to_pieriandx"},
-    packages=setuptools.find_packages(where="cttso_ica_to_pieriandx"),
+    package_dir={"": "stacks"},
+    packages=setuptools.find_packages(where="stacks"),
 
     install_requires=[
         "aws-cdk-lib==2.0.0-rc.27",

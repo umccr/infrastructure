@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_ecs as ecs,
     aws_iam as iam,
     aws_lambda,
+    aws_ssm as ssm,
     aws_s3_assets as assets,
     Fn,
     Duration
@@ -102,7 +103,7 @@ class CttsoIcaToPieriandxStack(Stack):
         # Set up resources
 
         # Get batch user data asset
-        with open("assets/batch-user-data.sh", 'r') as user_data_h:
+        with open("../assets/batch-user-data.sh", 'r') as user_data_h:
             # Read in user data
             user_data = ec2.UserData.custom(user_data_h.read())
 
@@ -137,7 +138,7 @@ class CttsoIcaToPieriandxStack(Stack):
         )
         user_data.add_execute_file_command(
             file_path=local_path,
-            arguments=f"s3://{cttso_ica_to_pieriandx_wrapper_asset.bucket.bucket_name}/{cttso_ica_to_pieriandx_wrapper_asset.s3_object_key} "
+            arguments=f"s3://{cttso_ica_to_pieriandx_wrapper_asset.bucket.bucket_name}/{cttso_ica_to_pieriandx_wrapper_asset.s3_object_key}"
                       f"s3://{cw_agent_config_asset.bucket.bucket_name}/{cw_agent_config_asset.s3_object_key}"
         )
 
@@ -211,7 +212,8 @@ class CttsoIcaToPieriandxStack(Stack):
 
 
         job_container = batch.JobDefinitionContainer(
-            image=ecs.ContainerImage.from_registry(name=props['container_image']),
+            image=ecs.ContainerImage.from_ecr_repository(repository=props['image_name'].split(":", 1)[0],
+                                                         tag=props['image_name'].split(":", 1)[-1]),
             vcpus=32,
             memory_limit_mib=100000,
             command=[
@@ -275,9 +277,9 @@ class CttsoIcaToPieriandxStack(Stack):
             self,
             'cttsoicatopieriandxLambda',
             function_name='cttso_ica_to_pieriandx_batch_lambda',
-            handler='cttso_ica_to_pieriandx.lambda_handler',
-            runtime=aws_lambda.Runtime.PYTHON_3_7,
-            code=aws_lambda.Code.from_asset('lambdas/cttso_ica_to_pieriandx'),
+            handler='stacks.lambda_handler',
+            runtime=aws_lambda.Runtime.PYTHON_3_9,
+            code=aws_lambda.Code.from_asset('../lambdas/cttso_ica_to_pieriandx'),
             environment={
                 'JOBDEF': job_definition.job_definition_name,
                 'JOBQUEUE': job_queue.job_queue_name,

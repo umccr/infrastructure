@@ -22,7 +22,7 @@ ssm_client = boto3.client('ssm')
 
 # job container properties for dynamic JobDefinition
 batch_job_container_props = {
-    'image': IMAGE_NAME,  # this will be set on-demand
+    'image': None,
     'vcpus': 1,
     'memory': 1000,
     'volumes': [
@@ -98,7 +98,6 @@ def lambda_handler(event, context):
         "ICA_BASE_URL",
         "PIERIANDX_BASE_URL",
         "PIERIANDX_INSTITUTION",
-        # TODO - go into secrets?
         "ICA_ACCESS_TOKEN",
         "PIERIANDX_AWS_REGION",
         "PIERIANDX_AWS_S3_PREFIX",

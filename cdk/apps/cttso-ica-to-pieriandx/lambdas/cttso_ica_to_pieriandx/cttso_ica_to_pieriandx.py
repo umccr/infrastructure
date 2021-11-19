@@ -98,13 +98,13 @@ def lambda_handler(event, context):
         "ICA_BASE_URL",
         "PIERIANDX_BASE_URL",
         "PIERIANDX_INSTITUTION",
-        "ICA_ACCESS_TOKEN",
+        #"ICA_ACCESS_TOKEN",
         "PIERIANDX_AWS_REGION",
         "PIERIANDX_AWS_S3_PREFIX",
-        "PIERIANDX_AWS_ACCESS_KEY_ID",
-        "PIERIANDX_AWS_SECRET_ACCESS_KEY",
+        #"PIERIANDX_AWS_ACCESS_KEY_ID",
+        #"PIERIANDX_AWS_SECRET_ACCESS_KEY",
         "PIERIANDX_USER_EMAIL",
-        "PIERIANDX_USER_PASSWORD"
+        #"PIERIANDX_USER_PASSWORD"
     ]
 
     for env_var in default_environment_var_list:
@@ -117,7 +117,7 @@ def lambda_handler(event, context):
                                                      WithDecrption=True)
 
         # Check we got the parameter
-        if ssm_parameter_obj is None or ssm_parameter_obj.get("Parameter" is None):
+        if ssm_parameter_obj is None or ssm_parameter_obj.get("Parameter") is None:
             print(f"Could not get parameter {str(SSM_ENV_VAR_PATH / env_var)}")
             exit()
 

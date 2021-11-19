@@ -104,6 +104,26 @@ job_temp_space="$(mktemp \
   --directory \
   -t "${sample_name}.tmpspace.XXX")"
 
+# Set env vars
+ICA_ACCESS_TOKEN="$(aws secretsmanager get-secret-value --secret-id 'IcaSecretsPortal' | \
+                    jq --raw-output '.SecretString' \
+                  )"
+PIERIANDX_AWS_ACCESS_KEY_ID="$(aws secretsmanager get-secret-value --secret-id 'PierianDx/AWSAccessKeyID' | \
+                               jq --raw-output '.SecretString' \
+                              )"
+PIERIANDX_AWS_SECRET_ACCESS_KEY="$(aws secretsmanager get-secret-value --secret-id 'PierianDx/AWSSecretAccessKey' | \
+                                   jq --raw-output '.SecretString' \
+                                 )"
+PIERIANDX_USER_PASSWORD="$(aws secretsmanager get-secret-value --secret-id 'PierianDx/UserPassword' | \
+                           jq --raw-output '.SecretString' \
+                          )"
+
+# Export env vars
+export ICA_ACCESS_TOKEN
+export PIERIANDX_AWS_ACCESS_KEY_ID
+export PIERIANDX_AWS_SECRET_ACCESS_KEY
+export PIERIANDX_USER_PASSWORD
+
 # Run the workflow
 (
   # Change to working directory for this job

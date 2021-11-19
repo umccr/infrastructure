@@ -2,8 +2,6 @@ from aws_cdk import (
     Stack,
     Duration,
     aws_codebuild as codebuild,
-    aws_codepipeline as codepipeline,
-    aws_codepipeline_actions as codepipeline_actions,
     aws_iam as iam
 )
 
@@ -26,17 +24,15 @@ class CttsoIcaToPieriandxDockerBuildStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # Defining app stage
-        props = self.node.try_get_context("props")
 
         # Get the build environment
         build_env = codebuild.BuildEnvironment(
             build_image=codebuild.LinuxBuildImage.STANDARD_4_0,
-            privileged=True,
+            privileged=True, # pass the ecr repo uri into the codebuild project so codebuild knows where to push
             environment_variables={
-                "CONTAINER_REPO": props.get("container_repo"),
-                "CONTAINER_NAME": props.get("container_name"),
-                "REGION": props.get("region"),
-                "SSM_TAG_PARAMETER_PATH": props.get("ssm_tag_parameter_path")
+                'CONTAINER_REPO': codebuild.BuildEnvironmentVariable(value=props.get("container_repo")),
+                'CONTAINER_NAME': codebuild.BuildEnvironmentVariable(value=props.get("container_name")),
+                'REGION': codebuild.BuildEnvironmentVariable(value=props.get("region")),
             }
         )
 

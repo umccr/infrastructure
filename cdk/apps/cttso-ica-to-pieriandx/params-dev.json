@@ -1,0 +1,4 @@
+{
+  "/cdk/cttso-ica-to-pieriandx/batch/ami": "ami-043e0add5c8665836",
+  "/cdk/cttso-ica-to-pieriandx/batch/docker-image-tag": "cttso-ica-to-pieriandx:1.1.0"
+}

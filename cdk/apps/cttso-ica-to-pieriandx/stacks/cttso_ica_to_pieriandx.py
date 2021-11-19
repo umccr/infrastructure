@@ -1,6 +1,7 @@
 from aws_cdk import (
     Stack,
-    aws_batch as batch,
+    aws_batch_alpha as batch,
+    aws_ecr as ecr,
     aws_ec2 as ec2,
     aws_ecs as ecs,
     aws_iam as iam,
@@ -22,6 +23,7 @@ class CttsoIcaToPieriandxStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # The code that defines your stack goes here
+        env = kwargs.get("env")
 
         # Add batch service role
         batch_service_role = iam.Role(
@@ -88,24 +90,25 @@ class CttsoIcaToPieriandxStack(Stack):
         # Setup Batch compute resources
 
         # Configure BlockDevice to expand instance disk space (if needed?)
-        block_device_mappings = [
-            {
-                'deviceName': '/dev/xvdf',
-                'ebs': {
-                    'deleteOnTermination': True,
-                    'encrypted': True,
-                    'volumeSize': 2048,
-                    'volumeType': 'gp2'
-                }
-            }
-        ]
+        # block_device_mappings = [
+        #     {
+        #         'deviceName': '/dev/xvdf',
+        #         'ebs': {
+        #             'deleteOnTermination': True,
+        #             'encrypted': True,
+        #             'volumeSize': 2048,
+        #             'volumeType': 'gp2'
+        #         }
+        #     }
+        # ]
 
         # Set up resources
+        user_data = ec2.UserData.for_linux()
 
         # Get batch user data asset
-        with open("../assets/batch-user-data.sh", 'r') as user_data_h:
+        with open(str(Path(__file__).parent.joinpath(Path("../") / "assets" / "batch-user-data.sh").resolve()), 'rb') as user_data_h:
             # Read in user data
-            user_data = ec2.UserData.custom(user_data_h.read())
+            user_data.add_commands(str(user_data_h.read(), 'utf-8'))
 
         # Now create the actual UserData
         # I.e. download the batch-user-data asset and run it with required parameters
@@ -147,19 +150,22 @@ class CttsoIcaToPieriandxStack(Stack):
             self,
             'cttsoicatopieriandxBatchComputeLaunchTemplate',
             launch_template_name='cttsoicatopieriandxBatchComputeLaunchTemplate',
-            launch_template_data={
-                'userData': Fn.base64(user_data.render()),
-                'blockDeviceMappings': block_device_mappings,
-                'metadataOptions': {
-                    'httpTokens': 'required'
-                }
-            }
+            user_data=user_data,
+            block_devices=[
+                ec2.BlockDevice(device_name='/dev/xvdf',
+                                volume=ec2.BlockDeviceVolume.ebs(
+                                    volume_size=2048,
+                                    volume_type=ec2.EbsDeviceVolumeType.GP2,
+                                    encrypted=True,
+                                    delete_on_termination=True)
+                                )
+            ]
         )
 
         # Launch template specs
         launch_template_spec = batch.LaunchTemplateSpecification(
-            launch_template_name=launch_template.launch_template_name,
-            version='$Latest'
+            launch_template_name=launch_template.launch_template_id,
+            version=launch_template.version_number
         )
 
         # Compute resources
@@ -210,10 +216,16 @@ class CttsoIcaToPieriandxStack(Stack):
             priority=10
         )
 
-
         job_container = batch.JobDefinitionContainer(
-            image=ecs.ContainerImage.from_ecr_repository(repository=props['image_name'].split(":", 1)[0],
-                                                         tag=props['image_name'].split(":", 1)[-1]),
+            image=ecs.ContainerImage.from_ecr_repository(
+                repository=ecr.Repository.from_repository_attributes(
+                    self,
+                    id="ECR",
+                    repository_arn='arn:aws:ecr:{0}:{1}:{2}'.format(
+                        env['region'], env['account'], props['image_name'].split(":")[0]),
+                    repository_name=props['image_name'].split(":")[0]
+                ),
+                tag=props["image_name"].split(":", 1)[-1]),
             vcpus=32,
             memory_limit_mib=100000,
             command=[
@@ -273,13 +285,17 @@ class CttsoIcaToPieriandxStack(Stack):
             ]
         )
 
+        runtime = aws_lambda.Runtime(
+            name="Python3.9"
+        )
+
         aws_lambda.Function(
             self,
             'cttsoicatopieriandxLambda',
             function_name='cttso_ica_to_pieriandx_batch_lambda',
             handler='stacks.lambda_handler',
-            runtime=aws_lambda.Runtime.PYTHON_3_9,
-            code=aws_lambda.Code.from_asset('../lambdas/cttso_ica_to_pieriandx'),
+            runtime=runtime,
+            code=aws_lambda.Code.from_asset(str(Path(__file__).parent.joinpath(Path("../") / "lambdas" / "cttso_ica_to_pieriandx").resolve())),
             environment={
                 'JOBDEF': job_definition.job_definition_name,
                 'JOBQUEUE': job_queue.job_queue_name,

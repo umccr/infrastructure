@@ -132,6 +132,26 @@ resource "aws_iam_user" "evachan" {
   }
 }
 
+resource "aws_iam_user" "joecop" {
+  name = "joecop"
+  path = "/agha/"
+  tags = {
+    email   = "j.copty@garvan.org.au",
+    name    = "Joe Copty",
+    keybase = "joecop"
+  }
+}
+
+resource "aws_iam_user" "ohofmann" {
+  name = "ohofmann"
+  path = "/agha/"
+  tags = {
+    email   = "ohofmann72@gmail.com",
+    name    = "Oliver Hofmann",
+    keybase = "ohofmann"
+  }
+}
+
 # Data Manager/Controller
 module "sarah_dm" {
   source    = "../../modules/iam_user/default_user"
@@ -342,7 +362,22 @@ resource "aws_iam_policy" "agha_store_ro_policy" {
 
 ## Consented data access test
 
-data "template_file" "test_s3_tag_abac" {
+data "template_file" "abac_store_policy" {
+  template = file("policies/bucket-ro-abac-s3-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_store.id,
+    consent_group = "True"
+  }
+}
+
+resource "aws_iam_policy" "abac_store_policy" {
+  name_prefix = "agha_store_abac_policy"
+  path        = "/agha/"
+  policy      = data.template_file.abac_store_policy.rendered
+}
+
+data "template_file" "abac_staging_policy" {
   template = file("policies/bucket-ro-abac-s3-policy.json")
 
   vars = {
@@ -351,10 +386,10 @@ data "template_file" "test_s3_tag_abac" {
   }
 }
 
-resource "aws_iam_policy" "test_s3_tag_abac" {
+resource "aws_iam_policy" "abac_staging_policy" {
   name_prefix = "agha_store_abac_policy"
   path        = "/agha/"
-  policy      = data.template_file.test_s3_tag_abac.rendered
+  policy      = data.template_file.abac_staging_policy.rendered
 }
 
 resource "aws_iam_user" "abac" {
@@ -377,14 +412,20 @@ resource "aws_iam_group_membership" "abac" {
   name  = "${aws_iam_group.abac.name}_membership"
   group = aws_iam_group.abac.name
   users = [
-    aws_iam_user.abac.name
+    aws_iam_user.abac.name,
+    aws_iam_user.joecop.name,
+    aws_iam_user.ohofmann.name
   ]
 }
 
 # group policies
-resource "aws_iam_group_policy_attachment" "abac_ro_policy_attachment" {
+resource "aws_iam_group_policy_attachment" "abac_store_policy_attachment" {
   group      = aws_iam_group.abac.name
-  policy_arn = aws_iam_policy.test_s3_tag_abac.arn
+  policy_arn = aws_iam_policy.abac_store_policy.arn
+}
+resource "aws_iam_group_policy_attachment" "abac_staging_policy_attachment" {
+  group      = aws_iam_group.abac.name
+  policy_arn = aws_iam_policy.abac_staging_policy.arn
 }
 
 ################################################################################

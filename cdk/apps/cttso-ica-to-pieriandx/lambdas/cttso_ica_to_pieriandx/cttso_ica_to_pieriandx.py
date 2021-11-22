@@ -6,7 +6,6 @@ import base64
 import json
 from pathlib import Path
 
-IMAGE_NAME = "quay.io/umccr/cttso-ica-to-pieriandx:1.0.0"
 SSM_ENV_VAR_PATH = Path("/cdk/cttso-ica-to-pieriandx/env_vars/")
 
 # Get job parameters
@@ -109,12 +108,11 @@ def lambda_handler(event, context):
 
     for env_var in default_environment_var_list:
         # Check if its in the overrides first, if so we skip it
-        if env_var in container_overrides['environment'].keys():
+        if env_var.lower() in container_overrides['environment'].keys():
             continue
 
         # Otherwise get the value from SSM
-        ssm_parameter_obj = ssm_client.get_parameter(Name=str(SSM_ENV_VAR_PATH / env_var),
-                                                     WithDecrption=True)
+        ssm_parameter_obj = ssm_client.get_parameter(Name=str(SSM_ENV_VAR_PATH / env_var.lower()))
 
         # Check we got the parameter
         if ssm_parameter_obj is None or ssm_parameter_obj.get("Parameter") is None:
@@ -141,14 +139,18 @@ def lambda_handler(event, context):
         print(f"dependsOn: {depends_on}")
         print(f"containerOverrides: {container_overrides}")
 
+        # Update container overrides to be a list of name, value pairs
+        container_overrides['environment'] = [{"name": key, "value": value}
+                                              for key, value in container_overrides['environment'].items()]
+
         # Submit job
         response = batch_client.submit_job(
             dependsOn=depends_on,
             containerOverrides=container_overrides,
             jobDefinition=JOB_DEF,
-            jobName=job_name,
+            jobName=job_name.replace(".", "_"),
             jobQueue=job_queue,
-            parameters=parameters,  # probably not needed, as we're not overwriting anything
+            parameters=parameters
         )
 
         # Log response from AWS Batch

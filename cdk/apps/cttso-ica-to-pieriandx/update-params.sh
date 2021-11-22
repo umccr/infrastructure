@@ -8,6 +8,8 @@ for key in ${param_keys}; do
   # Get value
   value="$(jq --raw-output --arg key_name "${key}" '.[$key_name]' < params-dev.json)"
 
+  # TODO check parameter exists first
+
   # Put parameter on ssm
   aws ssm put-parameter \
     --overwrite \

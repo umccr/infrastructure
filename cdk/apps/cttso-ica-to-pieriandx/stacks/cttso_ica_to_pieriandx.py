@@ -31,7 +31,9 @@ class CttsoIcaToPieriandxStack(Stack):
             'BatchServiceRole',
             assumed_by=iam.ServicePrincipal('batch.amazonaws.com'),
             managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSBatchServiceRole')
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSBatchServiceRole'),
+                # Needed for collecting aws secrets not in environment variables
+                iam.ManagedPolicy.from_aws_managed_policy_name('SecretsManagerReadWrite')
             ]
         )
 
@@ -103,12 +105,20 @@ class CttsoIcaToPieriandxStack(Stack):
         # ]
 
         # Set up resources
-        user_data = ec2.UserData.for_linux()
+        # Add start of mime wrapper
+        mime_wrapper = ec2.UserData.custom('MIME-Version: 1.0')
+
+        mime_wrapper.add_commands('Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="')
+        mime_wrapper.add_commands('')
+        mime_wrapper.add_commands('--==MYBOUNDARY==')
+        mime_wrapper.add_commands('Content-Type: text/x-shellscript; charset="us-ascii"')
 
         # Get batch user data asset
         with open(str(Path(__file__).parent.joinpath(Path("../") / "assets" / "batch-user-data.sh").resolve()), 'rb') as user_data_h:
+            # Skip the first line (Shebang)
+            _ = user_data_h.readline()
             # Read in user data
-            user_data.add_commands(str(user_data_h.read(), 'utf-8'))
+            mime_wrapper.add_commands(str(user_data_h.read(), 'utf-8'))
 
         # Now create the actual UserData
         # I.e. download the batch-user-data asset and run it with required parameters
@@ -134,6 +144,8 @@ class CttsoIcaToPieriandxStack(Stack):
         )
         cw_agent_config_asset.grant_read(batch_instance_role)
 
+        user_data = ec2.UserData.for_linux()
+
         # Get local path and add to user data
         local_path = user_data.add_s3_download_command(
             bucket=user_data_asset.bucket,
@@ -145,12 +157,18 @@ class CttsoIcaToPieriandxStack(Stack):
                       f"s3://{cw_agent_config_asset.bucket.bucket_name}/{cw_agent_config_asset.s3_object_key}"
         )
 
+        # Add user data to mime wrapper
+        mime_wrapper.add_commands('\n'.join(user_data.render().split("\n")[1:]))
+
+        # Add ending to mime wrapper
+        mime_wrapper.add_commands('--==MYBOUNDARY==--')
+
         # Launch template
         launch_template = ec2.LaunchTemplate(
             self,
             'cttsoicatopieriandxBatchComputeLaunchTemplate',
             launch_template_name='cttsoicatopieriandxBatchComputeLaunchTemplate',
-            user_data=user_data,
+            user_data=mime_wrapper,
             block_devices=[
                 ec2.BlockDevice(device_name='/dev/xvdf',
                                 volume=ec2.BlockDeviceVolume.ebs(
@@ -164,7 +182,7 @@ class CttsoIcaToPieriandxStack(Stack):
 
         # Launch template specs
         launch_template_spec = batch.LaunchTemplateSpecification(
-            launch_template_name=launch_template.launch_template_id,
+            launch_template_name='cttsoicatopieriandxBatchComputeLaunchTemplate',
             version=launch_template.version_number
         )
 
@@ -273,27 +291,28 @@ class CttsoIcaToPieriandxStack(Stack):
 
         ################################################################################
         # Set up job submission Lambda
-
         lambda_role = iam.Role(
             self,
             'cttsoicatopieriandxLambdaRole',
             assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole'),
-                # TODO: restrict!
-                iam.ManagedPolicy.from_aws_managed_policy_name('AWSBatchFullAccess')
+                # TODO - too much!
+                iam.ManagedPolicy.from_aws_managed_policy_name('AWSBatchFullAccess'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('AmazonSSMReadOnlyAccess'),
+                iam.ManagedPolicy.from_aws_managed_policy_name('SecretsManagerReadWrite')
             ]
         )
 
         runtime = aws_lambda.Runtime(
-            name="Python3.9"
+            name="python3.9"
         )
 
         aws_lambda.Function(
             self,
             'cttsoicatopieriandxLambda',
             function_name='cttso_ica_to_pieriandx_batch_lambda',
-            handler='stacks.lambda_handler',
+            handler='cttso_ica_to_pieriandx.lambda_handler',
             runtime=runtime,
             code=aws_lambda.Code.from_asset(str(Path(__file__).parent.joinpath(Path("../") / "lambdas" / "cttso_ica_to_pieriandx").resolve())),
             environment={

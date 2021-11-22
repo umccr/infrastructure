@@ -2,7 +2,9 @@ from aws_cdk import (
     Stack,
     Duration,
     aws_codebuild as codebuild,
-    aws_iam as iam
+    aws_iam as iam,
+    aws_ecr as ecr,
+    RemovalPolicy
 )
 
 from constructs import Construct
@@ -25,13 +27,20 @@ class CttsoIcaToPieriandxDockerBuildStack(Stack):
 
         # Defining app stage
 
+        # ECR repo to push docker container into
+        ecr_repo = ecr.Repository(
+            self, "ECR",
+            repository_name=props.get("container_name"),
+            removal_policy=RemovalPolicy.DESTROY
+        )
+
         # Get the build environment
         build_env = codebuild.BuildEnvironment(
             build_image=codebuild.LinuxBuildImage.STANDARD_4_0,
             privileged=True, # pass the ecr repo uri into the codebuild project so codebuild knows where to push
             environment_variables={
                 'CONTAINER_REPO': codebuild.BuildEnvironmentVariable(value=props.get("container_repo")),
-                'CONTAINER_NAME': codebuild.BuildEnvironmentVariable(value=props.get("container_name")),
+                'CONTAINER_NAME': codebuild.BuildEnvironmentVariable(value=ecr_repo.repository_name),
                 'REGION': codebuild.BuildEnvironmentVariable(value=props.get("region")),
             }
         )
@@ -52,7 +61,8 @@ class CttsoIcaToPieriandxDockerBuildStack(Stack):
                 webhook_filters=[
                     codebuild.FilterGroup.in_event_of(codebuild.EventAction.PUSH).and_tag_is(semver_tag_regex)
                 ]
-            )
+            ),
+
         )
 
         # Tackle IAM permissions

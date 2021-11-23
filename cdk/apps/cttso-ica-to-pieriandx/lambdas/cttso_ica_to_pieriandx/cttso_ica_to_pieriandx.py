@@ -72,17 +72,26 @@ def lambda_handler(event, context):
 
     # Get optional parameters
     container_overrides = event['containerOverrides'] if event.get('containerOverrides') else {}
+    resource_requirements = {}
     depends_on = event['dependsOn'] if event.get('dependsOn') else []
     job_queue = event['jobQueue'] if event.get('jobQueue') else JOB_QUEUE
 
     # Override memory and vcpus if necessary
+    # New syntax: https://docs.aws.amazon.com/batch/latest/userguide/troubleshooting.html#override-resource-requirements
     container_mem = event['memory'] if event.get('memory') else MEM
     container_vcpus = event['vcpus'] if event.get('vcpus') else VCPUS
     if container_mem:
-        container_overrides['memory'] = int(container_mem)
+        resource_requirements['MEMORY'] = int(container_mem)
     if container_vcpus:
-        container_overrides['vcpus'] = int(container_vcpus)
-        parameters['vcpus'] = container_vcpus
+        resource_requirements['VCPU'] = int(container_vcpus)
+
+    if resource_requirements:
+        # Dict is not empty
+        # Add resource requirements to container overrides
+        container_overrides['resourceRequirements'] = [
+            {"type": key, "value": value}
+            for key, value in resource_requirements.items()
+        ]
 
     # Get accession name to get job id
     accession_json = json.loads(base64.b64decode(parameters.get("accession_json_base64_str")).decode("ascii"))
@@ -97,13 +106,9 @@ def lambda_handler(event, context):
         "ICA_BASE_URL",
         "PIERIANDX_BASE_URL",
         "PIERIANDX_INSTITUTION",
-        #"ICA_ACCESS_TOKEN",
         "PIERIANDX_AWS_REGION",
         "PIERIANDX_AWS_S3_PREFIX",
-        #"PIERIANDX_AWS_ACCESS_KEY_ID",
-        #"PIERIANDX_AWS_SECRET_ACCESS_KEY",
         "PIERIANDX_USER_EMAIL",
-        #"PIERIANDX_USER_PASSWORD"
     ]
 
     for env_var in default_environment_var_list:

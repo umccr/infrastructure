@@ -37,7 +37,7 @@ class CttsoIcaToPieriandxDockerBuildStack(Stack):
         # Get the build environment
         build_env = codebuild.BuildEnvironment(
             build_image=codebuild.LinuxBuildImage.STANDARD_4_0,
-            privileged=True, # pass the ecr repo uri into the codebuild project so codebuild knows where to push
+            privileged=True,  # pass the ecr repo uri into the codebuild project so codebuild knows where to push
             environment_variables={
                 'CONTAINER_REPO': codebuild.BuildEnvironmentVariable(value=props.get("container_repo")),
                 'CONTAINER_NAME': codebuild.BuildEnvironmentVariable(value=ecr_repo.repository_name),

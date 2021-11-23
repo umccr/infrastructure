@@ -1,8 +1,8 @@
 {
-  "/cdk/cttso-ica-to-pieriandx/batch/ami": "ami-043e0add5c8665836",
+  "/cdk/cttso-ica-to-pieriandx/batch/ami": "ami-09fb62624e1ab3e2c",
   "/cdk/cttso-ica-to-pieriandx/batch/docker-image-tag": "cttso-ica-to-pieriandx:1.1.1",
   "/cdk/cttso-ica-to-pieriandx/env_vars/ica_base_url": "https://aps2.platform.illumina.com",
-  "/cdk/cttso-ica-to-pieriandx/env_vars/pieriandx_base_url": "https://app.pieriandx.com/cgw-api/v2.0.0",
+  "/cdk/cttso-ica-to-pieriandx/env_vars/pieriandx_base_url": "https://app.uat.pieriandx.com/cgw-api/v2.0.0",
   "/cdk/cttso-ica-to-pieriandx/env_vars/pieriandx_institution": "melbournetest",
   "/cdk/cttso-ica-to-pieriandx/env_vars/pieriandx_aws_region": "us-east-1",
   "/cdk/cttso-ica-to-pieriandx/env_vars/pieriandx_aws_s3_prefix": "s3://pdx-cgwxfer-test/melbournetest",

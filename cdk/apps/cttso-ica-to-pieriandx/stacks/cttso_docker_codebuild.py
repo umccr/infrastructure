@@ -27,6 +27,9 @@ class CttsoIcaToPieriandxDockerBuildStack(Stack):
 
         # Defining app stage
 
+        # Set a prefix - rather than writing cttso-ica-to-pieriandx many times
+        cdk_attribute_prefix = "ctTSOICAToPierianDx"
+
         # ECR repo to push docker container into
         ecr_repo = ecr.Repository(
             self, "ECR",
@@ -48,7 +51,7 @@ class CttsoIcaToPieriandxDockerBuildStack(Stack):
         # Deploy
         code_build_project = codebuild.Project(
             self,
-            id="cttsoicatopieriandxCodeBuildProject",
+            id=f"{cdk_attribute_prefix}CodeBuildProject",
             project_name=props['codebuild_project_name'],
             environment=build_env,
             timeout=Duration.hours(3),

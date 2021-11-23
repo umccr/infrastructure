@@ -19,7 +19,7 @@ METADATA_TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws
 INSTANCE_TYPE=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/instance-type/)
 AMI_ID=$(curl -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" -v http://169.254.169.254/latest/meta-data/ami-id/)
 
-function echo_stderr() {
+echo_stderr() {
   : '
   Write output to stderr
   '
@@ -46,23 +46,21 @@ print_help(){
 
         Environment:
           * ICA_BASE_URL
-          * ICA_ACCESS_TOKEN
           * PIERIANDX_BASE_URL
           * PIERIANDX_INSTITUTION
           * PIERIANDX_AWS_REGION
           * PIERIANDX_AWS_S3_PREFIX
-          * PIERIANDX_AWS_ACCESS_KEY_ID
-          * PIERIANDX_AWS_SECRET_ACCESS_KEY
           * PIERIANDX_USER_EMAIL
-          * PIERIANDX_USER_PASSWORD
-        "
-}
 
-# Check docker is present
-if ! type docker 1>/dev/null 2>&1; then
-  echo_stderr "Could not find the docker binary in PATH: ${PATH}. Please ensure docker is installed on this instance first"
-  exit 1
-fi
+        Extras:
+        The following values are taken from secrets manager:
+        * ICA_ACCESS_TOKEN
+        * PIERIANDX_AWS_S3_PREFIX
+        * PIERIANDX_AWS_ACCESS_KEY_ID
+        * PIERIANDX_USER_PASSWORD
+        "
+
+}
 
 # Set inputs as defaults
 ica_workflow_run_id=""
@@ -92,30 +90,55 @@ while [ $# -gt 0 ]; do
   shift 1
 done
 
+# Check env vars
+if [[ -z "${ICA_BASE_URL-}" ]]; then
+  echo_stderr "Could not find env var 'ICA_BASE_URL'"
+  exit 1
+fi
+if [[ -z "${PIERIANDX_BASE_URL-}" ]]; then
+  echo_stderr "Could not find env var 'PIERIANDX_BASE_URL'"
+  exit 1
+fi
+if [[ -z "${PIERIANDX_INSTITUTION-}" ]]; then
+  echo_stderr "Could not find env var 'PIERIANDX_INSTITUTION'"
+  exit 1
+fi
+if [[ -z "${PIERIANDX_AWS_REGION-}" ]]; then
+  echo_stderr "Could not find env var 'PIERIANDX_AWS_REGION'"
+  exit 1
+fi
+if [[ -z "${PIERIANDX_AWS_S3_PREFIX-}" ]]; then
+  echo_stderr "Could not find env var 'PIERIANDX_AWS_S3_PREFIX'"
+  exit 1
+fi
+if [[ -z "${PIERIANDX_USER_EMAIL-}" ]]; then
+  echo_stderr "Could not find env var 'PIERIANDX_USER_EMAIL'"
+  exit 1
+fi
+
 # Create working directory and temp space
 job_output_dir="$(mktemp \
-  --tmpdir /work \
   --directory \
-  -t "${sample_name}.workdir.XXX")"
+  "${CONTAINER_MOUNT_POINT}/${sample_name}.workdir.XXX")"
 
 # Create a job temp space
 job_temp_space="$(mktemp \
-  --tmpdir /work \
   --directory \
-  -t "${sample_name}.tmpspace.XXX")"
+  "${CONTAINER_MOUNT_POINT}/${sample_name}.tmpspace.XXX")"
 
 # Set env vars
 ICA_ACCESS_TOKEN="$(aws secretsmanager get-secret-value --secret-id 'IcaSecretsPortal' | \
                     jq --raw-output '.SecretString' \
                   )"
+# FIXME - use nameless keys in future
 PIERIANDX_AWS_ACCESS_KEY_ID="$(aws secretsmanager get-secret-value --secret-id 'PierianDx/AWSAccessKeyID' | \
-                               jq --raw-output '.SecretString' \
+                               jq --raw-output '.SecretString | fromjson | .PierianDxAWSAccessKeyID' \
                               )"
 PIERIANDX_AWS_SECRET_ACCESS_KEY="$(aws secretsmanager get-secret-value --secret-id 'PierianDx/AWSSecretAccessKey' | \
-                                   jq --raw-output '.SecretString' \
+                                   jq --raw-output '.SecretString | fromjson | .PierianDxAWSSecretAccessKey' \
                                  )"
 PIERIANDX_USER_PASSWORD="$(aws secretsmanager get-secret-value --secret-id 'PierianDx/UserPassword' | \
-                           jq --raw-output '.SecretString' \
+                           jq --raw-output '.SecretString | fromjson | .PierianDxUserPassword' \
                           )"
 
 # Export env vars

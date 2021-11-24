@@ -265,9 +265,9 @@ class CttsoIcaToPieriandxStack(Stack):
                     repository_name=props['image_name'].split(":")[0]
                 ),
                 tag=props["image_name"].split(":", 1)[-1]),
-            vcpus=32,
+            vcpus=1,
             user="cttso_ica_to_pieriandx_user:cttso_ica_to_pieriandx_group",
-            memory_limit_mib=100000,
+            memory_limit_mib=1024,
             command=[
                 "/opt/container/cttso-ica-to-pieriandx-wrapper.sh",
                 "--ica-workflow-run-id", "Ref::ica_workflow_run_id",

@@ -284,7 +284,7 @@ locals {
 
   tso_ctdna_tumor_only_wfl_version = {
     dev = "1.1.0--1.0.0"
-    prod = "1.1.0--1.0.0--a303dbc"
+    prod = "1.1.0--1.0.0--9c97fe9"
   }
 
   tso_ctdna_tumor_only_wfl_input = {

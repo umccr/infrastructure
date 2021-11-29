@@ -369,33 +369,6 @@ resource "aws_ssm_parameter" "bcl_convert_input" {
 
 # --- DRAGEN WGS QC Workflow for WGS samples (used to call Germline initially)
 
-# deprecated
-resource "aws_ssm_parameter" "dragen_wgs_qc_id" {
-  name = "/iap/workflow/dragen_wgs_qc/id"
-  type = "String"
-  description = "DRAGEN_WGS_QC Workflow ID"
-  value = local.wgs_alignment_qc_wfl_id[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_wgs_qc_version" {
-  name = "/iap/workflow/dragen_wgs_qc/version"
-  type = "String"
-  description = "DRAGEN_WGS_QC Workflow Version Name"
-  value = local.wgs_alignment_qc_wfl_version[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_wgs_qc_input" {
-  name = "/iap/workflow/dragen_wgs_qc/input"
-  type = "String"
-  description = "DRAGEN_WGS_QC Input JSON"
-  value = local.wgs_alignment_qc_wfl_input[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
 resource "aws_ssm_parameter" "wgs_alignment_qc_wfl_id" {
   name = "/iap/workflow/wgs_alignment_qc/id"
   type = "String"
@@ -421,33 +394,6 @@ resource "aws_ssm_parameter" "wgs_alignment_qc_wfl_input" {
 }
 
 # --- Tumor / Normal
-
-# deprecated
-resource "aws_ssm_parameter" "tumor_normal_id" {
-  name = "/iap/workflow/tumor_normal/id"
-  type = "String"
-  description = "Tumor / Normal Workflow ID"
-  value = local.wgs_tumor_normal_wfl_id[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "tumor_normal_version" {
-  name = "/iap/workflow/tumor_normal/version"
-  type = "String"
-  description = "Tumor / Normal Workflow Version Name"
-  value = local.wgs_tumor_normal_wfl_version[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "tumor_normal_input" {
-  name = "/iap/workflow/tumor_normal/input"
-  type = "String"
-  description = "Tumor / Normal Input JSON"
-  value = local.wgs_tumor_normal_wfl_input[terraform.workspace]
-  tags = merge(local.default_tags)
-}
 
 resource "aws_ssm_parameter" "wgs_tumor_normal_wfl_id" {
   name = "/iap/workflow/wgs_tumor_normal/id"
@@ -475,33 +421,6 @@ resource "aws_ssm_parameter" "wgs_tumor_normal_wfl_input" {
 
 # --- DRAGEN WTS Workflow for Transcriptome samples
 
-# deprecated
-resource "aws_ssm_parameter" "dragen_wts_id" {
-  name = "/iap/workflow/dragen_wts/id"
-  type = "String"
-  description = "DRAGEN WTS Workflow ID"
-  value = local.wts_tumor_only_wfl_id[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_wts_version" {
-  name = "/iap/workflow/dragen_wts/version"
-  type = "String"
-  description = "DRAGEN WTS Workflow Version Name"
-  value = local.wts_tumor_only_wfl_version[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_wts_input" {
-  name = "/iap/workflow/dragen_wts/input"
-  type = "String"
-  description = "DRAGEN WTS Input JSON"
-  value = local.wts_tumor_only_wfl_input[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
 resource "aws_ssm_parameter" "wts_tumor_only_wfl_id" {
   name = "/iap/workflow/wts_tumor_only/id"
   type = "String"
@@ -527,33 +446,6 @@ resource "aws_ssm_parameter" "wts_tumor_only_wfl_input" {
 }
 
 # --- DRAGEN_TSO_CTDNA
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_tso_ctdna_id" {
-  name = "/iap/workflow/dragen_tso_ctdna/id"
-  type = "String"
-  description = "Dragen ctTSO Workflow ID"
-  value = local.tso_ctdna_tumor_only_wfl_id[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_tso_ctdna_version" {
-  name = "/iap/workflow/dragen_tso_ctdna/version"
-  type = "String"
-  description = "Dragen ctTSO Workflow Version Name"
-  value = local.tso_ctdna_tumor_only_wfl_version[terraform.workspace]
-  tags = merge(local.default_tags)
-}
-
-# deprecated
-resource "aws_ssm_parameter" "dragen_tso_ctdna_input" {
-  name = "/iap/workflow/dragen_tso_ctdna/input"
-  type = "String"
-  description = "Dragen ctTSO Input JSON"
-  value = local.tso_ctdna_tumor_only_wfl_input[terraform.workspace]
-  tags = merge(local.default_tags)
-}
 
 resource "aws_ssm_parameter" "tso_ctdna_tumor_only_wfl_id" {
   name = "/iap/workflow/tso_ctdna_tumor_only/id"

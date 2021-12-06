@@ -1,3 +1,5 @@
+.venv
+venv
 *.swp
 package-lock.json
 __pycache__

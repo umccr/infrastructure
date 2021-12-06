@@ -1,7 +1,8 @@
 from aws_cdk import (
-    aws_lambda as _lambda,
-    core
+    aws_lambda as _lambda
 )
+    
+from aws_cdk import core
 
 class AwsLambdaContainerCdkRStack(core.Stack):
 

@@ -2,7 +2,7 @@ FROM public.ecr.aws/lambda/provided:al2
 
 ENV R_VERSION=4.1.2
 
-RUN yum -y install wget
+RUN yum -y install wget gtar xml2
 
 RUN yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
   && wget https://cdn.rstudio.com/r/centos-7/pkgs/R-${R_VERSION}-1-1.x86_64.rpm \

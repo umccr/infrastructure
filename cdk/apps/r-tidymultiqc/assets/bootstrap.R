@@ -1,4 +1,5 @@
 source('/var/task/runtime.R')
+# TODO: Why the multiple initializeRuntime()?
 tryCatch({
     function_name <- initializeRuntime()
     while (TRUE) {

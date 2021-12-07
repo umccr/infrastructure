@@ -1,4 +1,9 @@
-myRcode <- function(number) {
-  list(newvalue = number * 2)
+myRcode <- function(input, output) {
+  library("TidyMultiqc")
+  library("arrow")
+  #library("paws")
+
+  df = load_multiqc(input)
+  write_parquet(df, output)
 }
 

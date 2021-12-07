@@ -14,7 +14,7 @@ ENV PATH="${PATH}:/opt/R/${R_VERSION}/bin/"
 # System requirements for R packages
 RUN yum -y install openssl-devel
 
-RUN alias gtar="tar" && Rscript -e "install.packages(c('httr', 'jsonlite', 'logger', 'logging', 'tidymultiqc', 'arrow', 'paws'), repos = 'https://cloud.r-project.org/')"
+RUN alias gtar="tar" && Rscript -e "install.packages(c('httr', 'jsonlite', 'logger', 'logging', 'TidyMultiqc', 'arrow', 'paws'), repos = 'https://cloud.r-project.org/')"
 
 COPY runtime.R functions.R bootstrap.R ${LAMBDA_TASK_ROOT}/
 RUN chmod 755 -R ${LAMBDA_TASK_ROOT}/

@@ -67,80 +67,93 @@ module "simon" {
   email     = "simon.sadedin@vcgs.org.au"
 }
 
-module "shyrav" {
-  source    = "../../modules/iam_user/default_user"
-  username  = "shyrav"
-  full_name = "Shyamsundar Ravishankar"
-  keybase   = "shyrav"
-  pgp_key   = "keybase:freisinger"
-  email     = "s.ravishankar@garvan.org.au"
+# resource "aws_iam_user" "shyrav" {
+#   name = "shyrav"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "s.ravishankar@garvan.org.au",
+#     name    = "Shyamsundar Ravishankar",
+#     keybase = "shyrav"
+#   }
+# }
+resource "aws_iam_user" "shyrav_consent" {
+  name = "shyrav_consent"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "s.ravishankar@garvan.org.au",
+    name    = "Shyamsundar Ravishankar",
+    keybase = "shyrav"
+  }
 }
 
-module "yingzhu" {
-  source    = "../../modules/iam_user/default_user"
-  username  = "yingzhu"
-  full_name = "Ying Zhu"
-  keybase   = "yingzhu"
-  pgp_key   = "keybase:freisinger"
-  email     = "Ying.Zhu@health.nsw.gov.au"
-}
+# resource "aws_iam_user" "yingzhu" {
+#   name = "yingzhu"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "Ying.Zhu@health.nsw.gov.au",
+#     name    = "Ying Zhu",
+#     keybase = "yingzhu"
+#   }
+# }
 
-module "seanlianu" {
-  source    = "../../modules/iam_user/default_user"
-  username  = "seanlianu"
-  full_name = "Sean Li"
-  keybase   = "seanlianu"
-  pgp_key   = "keybase:freisinger"
-  email     = "sean.li@anu.edu.au"
-}
+# resource "aws_iam_user" "seanlianu" {
+#   name = "seanlianu"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "sean.li@anu.edu.au",
+#     name    = "Sean Li",
+#     keybase = "seanlianu"
+#   }
+# }
 
-module "chiaraf" {
-  source    = "../../modules/iam_user/default_user"
-  username  = "chiaraf"
-  full_name = "Chiara Folland"
-  keybase   = "chiaraf"
-  pgp_key   = "keybase:freisinger"
-  email     = "22253832@student.uwa.edu.au"
-}
+# resource "aws_iam_user" "chiaraf" {
+#   name = "chiaraf"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "22253832@student.uwa.edu.au",
+#     name    = "Chiara Folland",
+#     keybase = "chiaraf"
+#   }
+# }
 
-module "qimrbscott" {
-  source    = "../../modules/iam_user/default_user"
-  username  = "qimrbscott"
-  full_name = "Scott Wood"
-  keybase   = "qimrbscott"
-  pgp_key   = "keybase:freisinger"
-  email     = "Scott.Wood@qimrberghofer.edu.au"
-}
+# resource "aws_iam_user" "qimrbscott" {
+#   name = "qimrbscott"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "Scott.Wood@qimrberghofer.edu.au",
+#     name    = "Scott Wood",
+#     keybase = "qimrbscott"
+#   }
+# }
 
 # Mackenzie's Mission
-resource "aws_iam_user" "fzhanghealth" {
-  name = "fzhanghealth"
-  path = "/agha/"
-  tags = {
-    email   = "futao.zhang@health.nsw.gov.au",
-    name    = "Futao Zhang",
-    keybase = "fzhanghealth"
-  }
-}
-resource "aws_iam_user" "evachan" {
-  name = "evachan"
-  path = "/agha/"
-  tags = {
-    email   = "eva.chan@health.nsw.gov.au",
-    name    = "Eva Chan",
-    keybase = "evachan"
-  }
-}
+# resource "aws_iam_user" "fzhanghealth" {
+#   name = "fzhanghealth"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "futao.zhang@health.nsw.gov.au",
+#     name    = "Futao Zhang",
+#     keybase = "fzhanghealth"
+#   }
+# }
 
-resource "aws_iam_user" "joecop" {
-  name = "joecop"
-  path = "/agha/"
-  tags = {
-    email   = "j.copty@garvan.org.au",
-    name    = "Joe Copty",
-    keybase = "joecop"
-  }
-}
+# resource "aws_iam_user" "evachan" {
+#   name = "evachan"
+#   path = "/agha/"
+#   force_destroy = true
+#   tags = {
+#     email   = "eva.chan@health.nsw.gov.au",
+#     name    = "Eva Chan",
+#     keybase = "evachan"
+#   }
+# }
 
 resource "aws_iam_user" "ohofmann" {
   name = "ohofmann"
@@ -208,14 +221,14 @@ resource "aws_iam_group_membership" "default" {
   group = aws_iam_group.default.name
   users = [
     module.sarah_dm.username,
-    module.shyrav.username,
     module.simon.username,
-    module.yingzhu.username,
-    module.seanlianu.username,
-    module.chiaraf.username,
-    module.qimrbscott.username,
-    aws_iam_user.fzhanghealth.name,
-    aws_iam_user.evachan.name
+    # module.shyrav.username,
+    # module.yingzhu.username,
+    # module.seanlianu.username,
+    # module.chiaraf.username,
+    # module.qimrbscott.username,
+    # aws_iam_user.fzhanghealth.name,
+    # aws_iam_user.evachan.name
   ]
 }
 
@@ -232,10 +245,10 @@ resource "aws_iam_group_membership" "submitter" {
     module.agha_presign.username,
     module.sarah_dm.username,
     module.simon.username,
-    module.yingzhu.username,
-    module.seanlianu.username,
-    module.chiaraf.username,
-    module.qimrbscott.username,
+    # module.yingzhu.username,
+    # module.seanlianu.username,
+    # module.chiaraf.username,
+    # module.qimrbscott.username,
   ]
 }
 
@@ -254,7 +267,7 @@ resource "aws_iam_group_membership" "consumer" {
   name  = "${aws_iam_group.consumer.name}_membership"
   group = aws_iam_group.consumer.name
   users = [
-    module.shyrav.username
+    # module.shyrav.username
   ]
 }
 
@@ -413,8 +426,8 @@ resource "aws_iam_group_membership" "abac" {
   group = aws_iam_group.abac.name
   users = [
     aws_iam_user.abac.name,
-    aws_iam_user.joecop.name,
-    aws_iam_user.ohofmann.name
+    aws_iam_user.ohofmann.name,
+    aws_iam_user.shyrav_consent.name,
   ]
 }
 
@@ -449,8 +462,8 @@ resource "aws_iam_group_membership" "mm" {
   group = aws_iam_group.mm.name
   users = [
     module.sarah_dm.username,
-    aws_iam_user.fzhanghealth.name,
-    aws_iam_user.evachan.name
+    # aws_iam_user.fzhanghealth.name,
+    # aws_iam_user.evachan.name
   ]
 }
 

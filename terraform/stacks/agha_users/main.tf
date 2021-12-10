@@ -88,6 +88,16 @@ resource "aws_iam_user" "shyrav_consent" {
   }
 }
 
+resource "aws_iam_user" "thangu_consent" {
+  name = "thangu_consent"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "thanh.nguyen@garvan.org.au",
+    name    = "Thanh Nguyen",
+    keybase = "thangu"
+  }
+}
 # resource "aws_iam_user" "yingzhu" {
 #   name = "yingzhu"
 #   path = "/agha/"
@@ -428,6 +438,7 @@ resource "aws_iam_group_membership" "abac" {
     aws_iam_user.abac.name,
     aws_iam_user.ohofmann.name,
     aws_iam_user.shyrav_consent.name,
+    aws_iam_user.thangu_consent.name,
   ]
 }
 

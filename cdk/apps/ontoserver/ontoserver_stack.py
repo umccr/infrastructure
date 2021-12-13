@@ -80,9 +80,11 @@ class OntoserverStack(core.Stack):
                 "Stack": "networking",
             },
         )
+
+        # if we were to want high availability - we would want the instances spread over our zones
         private_subnets = ec2.SubnetSelection(
             subnet_type=ec2.SubnetType.PRIVATE,
-            availability_zones=["ap-southeast-2a"],
+            availability_zones=["ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c"],
         )
 
         sg_elb = ec2.SecurityGroup(
@@ -94,12 +96,14 @@ class OntoserverStack(core.Stack):
             allow_all_outbound=False,
         )
 
+        # the ontoserver backend is pre-loaded - so does not actually need any outgoing egress rules
         sg_ecs_service = ec2.SecurityGroup(
             self,
             "ECSServiceSecurityGroup",
             vpc=vpc,
             description=f"Security Group for ECS Service in {id_} stack",
             security_group_name=f"{id_} ECS Security Group",
+            allow_all_outbound=False
         )
         sg_ecs_service.add_ingress_rule(
             peer=sg_elb,
@@ -158,7 +162,8 @@ class OntoserverStack(core.Stack):
             environment={
                 "SPRING_APPLICATION_JSON": json.dumps(
                     ontoserver_settings, separators=(",", ":")
-                )
+                ),
+                "LOG4J_FORMAT_MSG_NO_LOOKUPS": "true"
             },
             logging=ecs.LogDriver.aws_logs(
                 stream_prefix=f"{id_}",

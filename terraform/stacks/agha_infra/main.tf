@@ -144,6 +144,62 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket" "agha_gdr_store_2" {
+  bucket = var.agha_gdr_store_2_bucket_name
+  acl    = "private"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    id      = "noncurrent_version_expiration"
+    enabled = true
+    noncurrent_version_expiration {
+      days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name=var.agha_gdr_store_bucket_name
+    }
+  )
+
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
+  bucket = aws_s3_bucket.agha_gdr_store_2.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 # Attach bucket policy to deny object deletion
 # https://aws.amazon.com/blogs/security/how-to-restrict-amazon-s3-bucket-access-to-a-specific-iam-role/
 # NOTE: no TF controlled bucket policy for the staging bucket,
@@ -230,7 +286,7 @@ resource "aws_s3_bucket_policy" "archive_bucket_policy" {
   policy = data.template_file.archive_bucket_policy.rendered
 }
 
-##### Archive bucket
+##### MM bucket
 resource "aws_s3_bucket" "agha_gdr_mm" {
   bucket = var.agha_gdr_mm_bucket_name
   acl    = "private"

@@ -154,16 +154,16 @@ resource "aws_iam_user" "thangu_consent" {
 #   }
 # }
 
-# resource "aws_iam_user" "evachan" {
-#   name = "evachan"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "eva.chan@health.nsw.gov.au",
-#     name    = "Eva Chan",
-#     keybase = "evachan"
-#   }
-# }
+resource "aws_iam_user" "evachan" {
+  name = "evachan"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "eva.chan@health.nsw.gov.au",
+    name    = "Eva Chan",
+    keybase = "evachan"
+  }
+}
 
 resource "aws_iam_user" "ohofmann" {
   name = "ohofmann"
@@ -238,7 +238,9 @@ resource "aws_iam_group_membership" "default" {
     # module.chiaraf.username,
     # module.qimrbscott.username,
     # aws_iam_user.fzhanghealth.name,
-    # aws_iam_user.evachan.name
+    aws_iam_user.evachan.name,
+    aws_iam_user.shyrav_consent.name,
+    aws_iam_user.thangu_consent.name,
   ]
 }
 
@@ -474,7 +476,7 @@ resource "aws_iam_group_membership" "mm" {
   users = [
     module.sarah_dm.username,
     # aws_iam_user.fzhanghealth.name,
-    # aws_iam_user.evachan.name
+    aws_iam_user.evachan.name,
   ]
 }
 

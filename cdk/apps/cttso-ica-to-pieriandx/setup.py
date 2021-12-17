@@ -19,8 +19,8 @@ setuptools.setup(
     packages=setuptools.find_packages(where="stacks"),
 
     install_requires=[
-        "aws-cdk-lib==2.0.0-rc.30",
-        "aws-cdk.aws-batch-alpha==2.0.0rc24",
+        "aws-cdk-lib==2.2.0",
+        "aws-cdk.aws-batch-alpha==2.2.0a0",
         "boto3",
         "constructs>=10.0.0,<11.0.0",
     ],

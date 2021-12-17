@@ -81,9 +81,9 @@ def lambda_handler(event, context):
     container_mem = event['memory'] if event.get('memory') else MEM
     container_vcpus = event['vcpus'] if event.get('vcpus') else VCPUS
     if container_mem:
-        resource_requirements['MEMORY'] = int(container_mem)
+        resource_requirements['MEMORY'] = str(container_mem)
     if container_vcpus:
-        resource_requirements['VCPU'] = int(container_vcpus)
+        resource_requirements['VCPU'] = str(container_vcpus)
 
     if resource_requirements:
         # Dict is not empty

@@ -220,7 +220,7 @@ class CttsoIcaToPieriandxStack(Stack):
             instance_role=batch_instance_profile.instance_profile_name,
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PRIVATE,
+                subnet_type=ec2.SubnetType.PRIVATE_WITH_NAT,
                 availability_zones=["ap-southeast-2a"]
             ),
             security_groups=[batch_security_group],

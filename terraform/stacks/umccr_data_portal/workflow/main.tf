@@ -321,6 +321,55 @@ locals {
     }
     EOT
   }
+
+  umccrise_wfl_id = {
+    dev = "wfl.e4cd73b0e6e941b3b48afe03a7b5dc43"
+    prod = "wfl.7ed9c6014ac9498fbcbd4c17c28bc0d4"
+  }
+
+  umccrise_wfl_version = {
+    dev = "2.0.0--3.9.3"
+    prod = "2.0.0--3.9.3--5d22f74"
+  }
+
+  umccrise_wfl_input = {
+    dev = <<-EOT
+    {
+      "dragen_somatic_directory": null,
+      "fastq_list_rows_germline": null,
+      "output_directory_germline": null,
+      "output_directory_umccrise": null,
+      "output_file_prefix_germline": null,
+      "reference_tar_germline": {
+        "class": "File",
+        "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+      },
+      "reference_tar_umccrise": {
+        "class": "File",
+        "location": "gds://development/reference-data/umccrise/1.0.10/genomes.tar.gz"
+      },
+      "subject_identifier_umccrise": null
+    }
+    EOT
+    prod = <<-EOT
+    {
+      "dragen_somatic_directory": null,
+      "fastq_list_rows_germline": null,
+      "output_directory_germline": null,
+      "output_directory_umccrise": null,
+      "output_file_prefix_germline": null,
+      "reference_tar_germline": {
+        "class": "File",
+        "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+      },
+      "reference_tar_umccrise": {
+        "class": "File",
+        "location": "gds://production/reference-data/umccrise/1.0.10/genomes.tar.gz"
+      },
+      "subject_identifier_umccrise": null
+    }
+    EOT
+  }
 }
 
 #--- Engine Parameter defaults
@@ -468,5 +517,31 @@ resource "aws_ssm_parameter" "tso_ctdna_tumor_only_wfl_input" {
   type = "String"
   description = "Dragen ctTSO Input JSON"
   value = local.tso_ctdna_tumor_only_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+# --- UMCCRISE
+
+resource "aws_ssm_parameter" "umccrise_wfl_id" {
+  name = "/iap/workflow/umccrise/id"
+  type = "String"
+  description = "UMCCRise Workflow ID"
+  value = local.umccrise_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "umccrise_wfl_version" {
+  name = "/iap/workflow/umccrise/version"
+  type = "String"
+  description = "UMCCRise Workflow Version Name"
+  value = local.umccrise_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "umccrise_wfl_input" {
+  name = "/iap/workflow/umccrise/input"
+  type = "String"
+  description = "UMCCRise Input JSON"
+  value = local.umccrise_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }

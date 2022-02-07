@@ -370,6 +370,45 @@ locals {
     }
     EOT
   }
+
+  rnasum_wfl_id = {
+    dev = "wfl.a94ae5ef8bc24b58b642cc8e42df70a4"
+    prod = "wfl.87e07ae6b46645a181e04813de535216"
+  }
+
+  rnasum_wfl_version = {
+    dev = "0.4.1"
+    prod = "0.4.1--170cae7"
+  }
+
+  rnasum_wfl_input = {
+    dev = <<-EOT
+    {
+      "dragen_transcriptome_directory": null,
+      "umccrise_directory": null,
+      "sample_name": null,
+      "dataset": null,
+      "report_directory": null,
+      "ref_data_directory": {
+        "class": "File",
+        "location": "gds://development/reference-data/rnasum/"
+      }
+    }
+    EOT
+    prod = <<-EOT
+    {
+      "dragen_transcriptome_directory": null,
+      "umccrise_directory": null,
+      "sample_name": null,
+      "dataset": null,
+      "report_directory": null,
+      "ref_data_directory": {
+        "class": "File",
+        "location": "gds://production/reference-data/rnasum/"
+      }
+    }
+    EOT
+  }
 }
 
 #--- Engine Parameter defaults
@@ -520,7 +559,7 @@ resource "aws_ssm_parameter" "tso_ctdna_tumor_only_wfl_input" {
   tags = merge(local.default_tags)
 }
 
-# --- UMCCRISE
+# --- UMCCRISE for post-processing WGS samples
 
 resource "aws_ssm_parameter" "umccrise_wfl_id" {
   name = "/iap/workflow/umccrise/id"
@@ -543,5 +582,31 @@ resource "aws_ssm_parameter" "umccrise_wfl_input" {
   type = "String"
   description = "UMCCRise Input JSON"
   value = local.umccrise_wfl_input[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+# --- RNAsum for postprocessing WTS samples
+
+resource "aws_ssm_parameter" "rnasum_wfl_id" {
+  name = "/iap/workflow/rnasum/id"
+  type = "String"
+  description = "RNAsum Workflow ID"
+  value = local.rnasum_wfl_id[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "rnasum_wfl_version" {
+  name = "/iap/workflow/rnasum/version"
+  type = "String"
+  description = "RNAsum Workflow Version Name"
+  value = local.rnasum_wfl_version[terraform.workspace]
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "rnasum_wfl_input" {
+  name = "/iap/workflow/rnasum/input"
+  type = "String"
+  description = "RNAsum Input JSON"
+  value = local.rnasum_wfl_input[terraform.workspace]
   tags = merge(local.default_tags)
 }

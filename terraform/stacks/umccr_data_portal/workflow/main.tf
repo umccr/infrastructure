@@ -62,7 +62,7 @@ locals {
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5"
-    prod = "3.7.5--f1e67a3"
+    prod = "3.7.5--fade666"
   }
 
   bcl_convert_wfl_input = {

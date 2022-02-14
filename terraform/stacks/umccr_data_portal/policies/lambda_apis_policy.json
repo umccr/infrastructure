@@ -43,7 +43,8 @@
                 "secretsmanager:DescribeSecret",
                 "secretsmanager:ListSecretVersionIds",
                 "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords"
+                "xray:PutTelemetryRecords",
+                "lambda:InvokeFunction"
             ],
             "Resource": "*"
         }

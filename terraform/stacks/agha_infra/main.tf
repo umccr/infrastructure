@@ -85,6 +85,67 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket" "agha_gdr_staging_2" {
+  bucket = var.agha_gdr_staging_2_bucket_name
+
+  # server_side_encryption_configuration {
+  #   rule {
+  #     apply_server_side_encryption_by_default {
+  #       sse_algorithm = "AES256"
+  #     }
+  #   }
+  # }
+
+  # lifecycle_rule {
+  #   enabled = "1"
+  #   noncurrent_version_expiration {
+  #     days = 30
+  #   }
+
+  #   expiration {
+  #     expired_object_delete_marker = true
+  #   }
+
+  #   abort_incomplete_multipart_upload_days = 7
+  # }
+
+  # lifecycle_rule {
+  #   id      = "intelligent_tiering"
+  #   enabled = "1"
+
+  #   transition {
+  #     storage_class = "INTELLIGENT_TIERING"
+  #   }
+
+  #   abort_incomplete_multipart_upload_days = 7
+  # }
+
+
+  versioning {
+    enabled = false
+  }
+
+  tags = {
+    creator="william",
+    stack="manual",
+    useCase="gdr update testing"
+  }
+  # tags = merge(
+  #   local.common_tags,
+  #   {
+  #     "Name"=var.agha_gdr_staging_bucket_name
+  #   }
+  # )
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
+  bucket = aws_s3_bucket.agha_gdr_staging_2.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 
 resource "aws_s3_bucket" "agha_gdr_store" {
   bucket = var.agha_gdr_store_bucket_name
@@ -375,76 +436,6 @@ resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
 
 
 ################################################################################
-# Publish S3 events to SNS topic
-
-# resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
-#   bucket = aws_s3_bucket.agha_gdr_staging.id
-
-#   topic {
-#     topic_arn     = aws_sns_topic.s3_events.arn
-#     events        = ["s3:ObjectCreated:*"]
-#     filter_suffix = "manifest.txt"
-#   }
-
-#   topic {
-#     topic_arn     = aws_sns_topic.s3_events.arn
-#     events        = ["s3:ObjectCreated:*"]
-#     filter_suffix = ".manifest"
-#   }
-# }
-
-
-# data "aws_iam_policy_document" "sns_publish" {
-#   statement {
-#     effect = "Allow"
-
-#     actions = [
-#       "SNS:Publish"
-#     ]
-
-#     resources = [
-#       "arn:aws:sns:*:*:s3_manifest_event",
-#     ]
-
-#     principals {
-#       type = "AWS"
-#       identifiers = [
-#         "*"
-#       ]
-#     }
-
-#     condition {
-#       test     = "ArnLike"
-#       variable = "aws:SourceArn"
-
-#       values = [
-#         aws_s3_bucket.agha_gdr_staging.arn
-#       ]
-#     }
-#   }
-# }
-
-# resource "aws_sns_topic" "s3_events" {
-#   name = "s3_manifest_event"
-#   policy = data.aws_iam_policy_document.sns_publish.json
-# }
-
-# Create Lambda subscriptions for the SNS topic:
-# to send notifications to Slack
-# resource "aws_sns_topic_subscription" "s3_manifest_event" {
-#   topic_arn = aws_sns_topic.s3_events.arn
-#   protocol  = "lambda"
-#   endpoint  = module.notify_slack_lambda.this_lambda_function_arn
-# }
-
-# to lock the submission folder to prevent further manipulation
-# resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
-#   topic_arn = aws_sns_topic.s3_events.arn
-#   protocol  = "lambda"
-#   endpoint  = module.folder_lock_lambda.this_lambda_function_arn
-# }
-
-################################################################################
 # Lambdas
 
 ########################################
@@ -485,58 +476,6 @@ module "notify_slack_lambda" {
     }
   )
 }
-
-# allow events from SNS topic for manifest notifications
-# resource "aws_lambda_permission" "slack_lambda_from_sns" {
-#   statement_id  = "AllowExecutionFromSNS"
-#   action        = "lambda:InvokeFunction"
-#   function_name = module.notify_slack_lambda.this_lambda_function_name
-#   principal     = "sns.amazonaws.com"
-#   source_arn    = aws_sns_topic.s3_events.arn
-# }
-
-########################################
-# Lambda to lock a submission folder
-
-# module "folder_lock_lambda" {
-#   source = "terraform-aws-modules/lambda/aws"
-
-#   function_name = "${var.stack_name}_folder_lock_lambda"
-#   description   = "Lambda to lock a submission folder"
-#   handler       = "index.lambda_handler"
-#   runtime       = "python3.8"
-
-#   source_path = "./lambdas/folder_lock"
-
-#   attach_policy = true
-#   policy        = aws_iam_policy.folder_lock_lambda.arn
-
-#   tags = local.common_tags
-# }
-
-# data "template_file" "folder_lock_lambda" {
-#   template = file("${path.module}/policies/folder_lock_lambda.json")
-
-#   vars = {
-#     bucket_name = aws_s3_bucket.agha_gdr_staging.id
-#   }
-# }
-
-# resource "aws_iam_policy" "folder_lock_lambda" {
-#   name   = "${var.stack_name}_folder_lock_lambda"
-#   path   = "/${var.stack_name}/"
-#   policy = data.template_file.folder_lock_lambda.rendered
-# }
-
-# # allow events from SNS topic for manifest notifications
-# resource "aws_lambda_permission" "folder_lock_from_sns" {
-#   statement_id  = "AllowExecutionFromSNS"
-#   action        = "lambda:InvokeFunction"
-#   function_name = module.folder_lock_lambda.this_lambda_function_name
-#   principal     = "sns.amazonaws.com"
-#   source_arn    = aws_sns_topic.s3_events.arn
-# }
-
 
 ################################################################################
 # CloudWatch Event Rule to match batch events and call Slack lambda

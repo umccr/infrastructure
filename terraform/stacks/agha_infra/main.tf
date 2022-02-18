@@ -88,54 +88,49 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
 resource "aws_s3_bucket" "agha_gdr_staging_2" {
   bucket = var.agha_gdr_staging_2_bucket_name
 
-  # server_side_encryption_configuration {
-  #   rule {
-  #     apply_server_side_encryption_by_default {
-  #       sse_algorithm = "AES256"
-  #     }
-  #   }
-  # }
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 
-  # lifecycle_rule {
-  #   enabled = "1"
-  #   noncurrent_version_expiration {
-  #     days = 30
-  #   }
+  lifecycle_rule {
+    enabled = "1"
+    noncurrent_version_expiration {
+      days = 30
+    }
 
-  #   expiration {
-  #     expired_object_delete_marker = true
-  #   }
+    expiration {
+      expired_object_delete_marker = true
+    }
 
-  #   abort_incomplete_multipart_upload_days = 7
-  # }
+    abort_incomplete_multipart_upload_days = 7
+  }
 
-  # lifecycle_rule {
-  #   id      = "intelligent_tiering"
-  #   enabled = "1"
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = "1"
 
-  #   transition {
-  #     storage_class = "INTELLIGENT_TIERING"
-  #   }
+    transition {
+      storage_class = "INTELLIGENT_TIERING"
+    }
 
-  #   abort_incomplete_multipart_upload_days = 7
-  # }
+    abort_incomplete_multipart_upload_days = 7
+  }
 
 
   versioning {
-    enabled = false
+    enabled = true
   }
 
-  tags = {
-    creator="william",
-    stack="manual",
-    useCase="gdr update testing"
-  }
-  # tags = merge(
-  #   local.common_tags,
-  #   {
-  #     "Name"=var.agha_gdr_staging_bucket_name
-  #   }
-  # )
+  tags = merge(
+    local.common_tags,
+    {
+      "Name"=var.agha_gdr_staging_2_bucket_name
+    }
+  )
 }
 resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
   bucket = aws_s3_bucket.agha_gdr_staging_2.id

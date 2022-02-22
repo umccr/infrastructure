@@ -329,7 +329,7 @@ locals {
 
   umccrise_wfl_version = {
     dev = "2.0.1--3.9.3"
-    prod = "2.0.0--3.9.3--5d22f74"
+    prod = "2.0.1--3.9.3--092ccf4"
   }
 
   umccrise_wfl_input = {

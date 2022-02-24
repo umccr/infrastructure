@@ -475,6 +475,7 @@ resource "aws_iam_group_membership" "mm" {
   group = aws_iam_group.mm.name
   users = [
     module.sarah_dm.username,
+    module.simon.username,
     # aws_iam_user.fzhanghealth.name,
     aws_iam_user.evachan.name,
   ]

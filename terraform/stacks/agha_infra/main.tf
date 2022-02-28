@@ -28,63 +28,6 @@ locals {
 # S3 buckets
 # Note: changes to public access block requires the temporary detachment of an SCP blocking it on org level
 
-resource "aws_s3_bucket" "agha_gdr_staging" {
-  bucket = var.agha_gdr_staging_bucket_name
-  acl    = "private"
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  lifecycle_rule {
-    enabled = "1"
-    noncurrent_version_expiration {
-      days = 30
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-  lifecycle_rule {
-    id      = "intelligent_tiering"
-    enabled = "1"
-
-    transition {
-      storage_class = "INTELLIGENT_TIERING"
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-
-  versioning {
-    enabled = true
-  }
-
-  tags = merge(
-    local.common_tags,
-    {
-      "Name"=var.agha_gdr_staging_bucket_name
-    }
-  )
-}
-resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
-  bucket = aws_s3_bucket.agha_gdr_staging.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 resource "aws_s3_bucket" "agha_gdr_staging_2" {
   bucket = var.agha_gdr_staging_2_bucket_name
 
@@ -142,64 +85,6 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
 }
 
 
-resource "aws_s3_bucket" "agha_gdr_store" {
-  bucket = var.agha_gdr_store_bucket_name
-  acl    = "private"
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle_rule {
-    id      = "noncurrent_version_expiration"
-    enabled = true
-    noncurrent_version_expiration {
-      days = 90
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name=var.agha_gdr_store_bucket_name
-    }
-  )
-
-  lifecycle_rule {
-    id      = "intelligent_tiering"
-    enabled = true
-
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-}
-resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
-  bucket = aws_s3_bucket.agha_gdr_store.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 resource "aws_s3_bucket" "agha_gdr_store_2" {
   bucket = var.agha_gdr_store_2_bucket_name
   acl    = "private"
@@ -233,7 +118,7 @@ resource "aws_s3_bucket" "agha_gdr_store_2" {
   tags = merge(
     local.common_tags,
     {
-      Name=var.agha_gdr_store_bucket_name
+      Name=var.agha_gdr_store_2_bucket_name
     }
   )
 
@@ -254,26 +139,6 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-# Attach bucket policy to deny object deletion
-# https://aws.amazon.com/blogs/security/how-to-restrict-amazon-s3-bucket-access-to-a-specific-iam-role/
-# NOTE: no TF controlled bucket policy for the staging bucket,
-#       as it interferes with the policy update by the folder lock lambda
-
-data "template_file" "store_bucket_policy" {
-  template = file("policies/agha_store_bucket_policy.json")
-
-  vars = {
-    bucket_name = aws_s3_bucket.agha_gdr_store.id
-    account_id  = data.aws_caller_identity.current.account_id
-    role_id     = aws_iam_role.s3_admin_delete.unique_id
-  }
-}
-
-resource "aws_s3_bucket_policy" "store_bucket_policy" {
-  bucket = aws_s3_bucket.agha_gdr_store.id
-  policy = data.template_file.store_bucket_policy.rendered
 }
 
 ##### Archive bucket
@@ -390,7 +255,7 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_mm" {
   restrict_public_buckets = true
 }
 data "template_file" "mm_bucket_policy" {
-  template = file("policies/agha_bucket_policy.json")
+  template = file("policies/agha_bucket_mm_policy.json")
 
   vars = {
     bucket_name = aws_s3_bucket.agha_gdr_mm.id

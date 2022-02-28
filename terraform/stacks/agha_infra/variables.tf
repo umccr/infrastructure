@@ -10,14 +10,6 @@ variable "agha_gdr_archive_bucket_name" {
   default = "agha-gdr-archive"
 }
 
-variable "agha_gdr_staging_bucket_name" {
-  default = "agha-gdr-staging"
-}
-
-variable "agha_gdr_store_bucket_name" {
-  default = "agha-gdr-store"
-}
-
 variable "agha_gdr_staging_2_bucket_name" {
   default = "agha-gdr-staging-2.0"
 }

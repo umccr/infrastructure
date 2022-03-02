@@ -141,6 +141,55 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket" "agha_gdr_results_2" {
+  bucket = var.agha_gdr_results_2_bucket_name
+  acl = "private"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    id      = "noncurrent_version_expiration"
+    enabled = true
+    noncurrent_version_expiration {
+      days = 30
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name=var.agha_gdr_results_2_bucket_name
+    }
+  )
+
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+}
+
+
 ##### Archive bucket
 resource "aws_s3_bucket" "agha_gdr_archive" {
   bucket = var.agha_gdr_archive_bucket_name

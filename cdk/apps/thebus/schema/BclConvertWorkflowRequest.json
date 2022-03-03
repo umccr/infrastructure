@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "BclConvertWorkflowRequest"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "required": ["seq_run_name", "seq_run_id", "gds_volume_name", "gds_folder_path"],
+        "properties": {
+          "seq_run_name": {
+            "type": "string"
+          },
+          "seq_run_id": {
+            "type": "string"
+          },
+          "gds_volume_name": {
+            "type": "string"
+          },
+          "gds_folder_path": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

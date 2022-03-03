@@ -5,7 +5,9 @@ terraform/stacks/stackstorm/keys
 **/*.tfstate.backup
 **/*.tfstate.backup
 **/*.tfstate.*.backup
+**/layers/*.zip
 .env
+venv
 cdk.out
 cdk.context.json
 *.egg-info

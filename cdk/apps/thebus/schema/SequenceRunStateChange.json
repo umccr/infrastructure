@@ -1,0 +1,37 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Event"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "required": ["sequence_run_id", "sequence_run_name", "gds_volume_name", "gds_folder_path", "status", "timestamp"],
+        "properties": {
+          "sequence_run_id": {
+            "type": "string"
+          },
+          "sequence_run_name": {
+            "type": "string"
+          },
+          "gds_volume_name": {
+            "type": "string"
+          },
+          "gds_folder_path": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

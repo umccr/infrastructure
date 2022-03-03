@@ -2,7 +2,7 @@
     "Account": "472057503814",
     "Parameters":{
         "/cdk/umccrise/batch/ami": {
-            "Value": "ami-00e4b147599c13588",
+            "Value": "ami-09fb62624e1ab3e2c",
             "Type": "String"
         },
         "/cdk/umccrise/batch/compute_env_type": {
@@ -10,7 +10,7 @@
             "Type": "String"
         },
         "/cdk/umccrise/batch/default_container_image": {
-            "Value": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise:1.2.1-a8869605e8",
+            "Value": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise:1.2.4-27c30d81b2",
             "Type": "String"
         },
         "/cdk/umccrise/batch/image_configurable": {

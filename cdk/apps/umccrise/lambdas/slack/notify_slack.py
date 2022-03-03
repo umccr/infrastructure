@@ -156,7 +156,7 @@ def slack_message_from_codebuild(message):
                     "short": True
                 }
             ],
-            "footer": "IAP TES Task",
+            "footer": "CodeBuild Run",
             "ts": int(message_time.timestamp())
         }
     ]

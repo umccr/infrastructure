@@ -299,7 +299,6 @@ class BatchStack(core.Stack):
                     )
                 )
             ],
-            privileged=True
         )
 
         job_definition = batch.JobDefinition(

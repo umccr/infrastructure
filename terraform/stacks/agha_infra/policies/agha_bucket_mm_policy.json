@@ -1,0 +1,59 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": [
+                "s3:DeleteObjectVersion"
+            ],
+            "Resource": [
+                "arn:aws:s3:::${bucket_name}",
+                "arn:aws:s3:::${bucket_name}/*"
+            ],
+            "Condition": {
+                "StringNotLike": {
+                    "aws:userId": [
+                        "${role_id}:*",
+                        "${account_id}"
+                    ]
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::657206756013:role/transloader-pd-lambdaexecute-s3transload-role"
+            },
+            "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:PutObjectVersionAcl",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging"
+            ],
+            "Resource": "arn:aws:s3:::agha-gdr-mm/nswhp*"
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::657206756013:role/transloader-pd-lambdaexecute-uploadconfirmation-role"
+            },
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::agha-gdr-mm",
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": "nswhp*"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::657206756013:role/transloader-pd-lambdaexecute-uploadconfirmation-role"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::agha-gdr-mm/nswhp*"
+        }
+    ]
+}

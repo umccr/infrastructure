@@ -11,10 +11,10 @@ Gen3 [compose-service](https://gen3.org/resources/operator/) setup for POC testi
 Route53 > ALB > (hibernating) EC2 Instance
 ```
 
-- Required **terraform 0.12**
+- Required **terraform 0.14**
 ```
 terraform --version
-Terraform v0.12.26
+Terraform v0.14.9
 ```
 
 ```

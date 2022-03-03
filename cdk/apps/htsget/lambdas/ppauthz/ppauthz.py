@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from datetime import datetime, timedelta
 
@@ -6,13 +7,19 @@ import jwt
 import requests
 from jwt import algorithms as jwt_algo
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+GA4GH_PASSPORT_V1 = "ga4gh_passport_v1"
+GA4GH_VISA_V1 = "ga4gh_visa_v1"
+
 ALLOWED_AUDIENCE = [
     "htsget.dev.umccr.org",
     "htsget.umccr.org",
 ]
 
 TRUSTED_BROKERS = {
-    'https://guppy.sandbox.genovic.org.au': {
+    'https://asha.sandbox.genovic.org.au': {
         'well_known': "/.well-known/openid-configuration",
         'alg': "RS256",
         'token_age_seconds': 3600,
@@ -31,7 +38,7 @@ TRUSTED_BROKERS = {
 
 
 def raise_error(message: dict):
-    print(json.dumps(message))
+    logger.error(json.dumps(message))
     raise ValueError(message.get('message', "Unexpected error occurred"))
 
 
@@ -115,6 +122,28 @@ def get_verified_jwt_claims(encoded_jwt):
     return payload
 
 
+def perform_visa_check(claims) -> bool:
+    """
+    TODO access decision making i.e.., what define ACL access rule on which dataset?
+      we are mocking at the mo; i.e., ControlledAccessGrants on https://umccr.org/datasets/710
+      we need DAC Portal and PASSPORT/VISA (data access) application process on this
+      typically
+       - data owner/holder shall able to publish/register their dataset in this DAC Portal
+       - researcher shall able to apply VISA there
+       - then, data owner/holder (such as us) who is running htsget data service can go DAC Portal and
+         register dataset (bunch of DRS IDs?) there and denote them required VISA TYPE (like ControlledAccessGrants)
+    """
+    visa = claims[GA4GH_VISA_V1]
+
+    visa_type = visa['type']
+    visa_asserted = visa['asserted']
+    visa_value = visa['value']
+    visa_source = visa['source']
+    visa_by: str = visa.get('by', "null")
+
+    return visa_type == "ControlledAccessGrants" and "https://umccr.org/datasets/710" in visa_value
+
+
 def handler(event, context):
     """Lambda handler entrypoint for GA4GH Passport Clearinghouse for htsget endpoint authz"""
 
@@ -126,16 +155,20 @@ def handler(event, context):
         verify_jwt_structure(encoded_token)
         claims = get_verified_jwt_claims(encoded_token)
 
-        ga4gh_visa_v1 = claims['ga4gh_visa_v1']
-        visa_type = ga4gh_visa_v1['type']
-        visa_asserted = ga4gh_visa_v1['asserted']
-        visa_value = ga4gh_visa_v1['value']
-        visa_source = ga4gh_visa_v1['source']
-        visa_by: str = ga4gh_visa_v1.get('by', "null")
+        if GA4GH_PASSPORT_V1 in claims.keys():
+            # client provided PASSPORT token
+            encoded_visas = claims[GA4GH_PASSPORT_V1]
+            for encoded_visa in encoded_visas:  # search appropriate visa in a passport, use the first found
+                verify_jwt_structure(encoded_visa)
+                visa_claims = get_verified_jwt_claims(encoded_visa)
+                if perform_visa_check(visa_claims):
+                    is_authorized = True
+                    break
 
-        # TODO ACL access rule?
-        if visa_type == "ControlledAccessGrants" and "umccr" in visa_value:
-            is_authorized = True
+        elif GA4GH_VISA_V1 in claims.keys():
+            # client provided VISA token
+            is_authorized = perform_visa_check(claims)
+
     except ValueError as e:
         message = str(e)
 

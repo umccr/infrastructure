@@ -35,7 +35,8 @@ def lambda_handler(event, context):
     bucket_policy = json.dumps(bucket_policy)
     print(f"New bucket policy: {bucket_policy}")
 
-    s3.put_bucket_policy(Bucket=bucket_name, Policy=bucket_policy)
+    response = s3.put_bucket_policy(Bucket=bucket_name, Policy=bucket_policy)
+    print(response)
 
     return {
         'statusCode': 200,

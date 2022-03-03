@@ -1,0 +1,34 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+                "s3:GetObjectTagging"
+            ],
+            "Resource": [
+                "arn:aws:s3:::${bucket_name}/*",
+                "arn:aws:s3:::${bucket_name}"
+            ]
+        },
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::${bucket_name}/*",
+                "arn:aws:s3:::${bucket_name}"
+            ],
+            "Condition": {
+                "ForAnyValue:StringLike": {
+                    "s3:ExistingObjectTag/Consent": "${consent_group}"
+                }
+            }
+        }
+    ]
+}

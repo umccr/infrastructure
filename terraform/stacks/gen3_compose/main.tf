@@ -1,15 +1,22 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.14"
 
   backend "s3" {
     bucket = "umccr-terraform-states"
     key    = "gen3_compose/terraform.tfstate"
     region = "ap-southeast-2"
+    dynamodb_table = "terraform-state-lock"
+  }
+
+  required_providers {
+    aws = {
+      version = "~> 3.33.0"
+      source = "hashicorp/aws"
+    }
   }
 }
 
 provider "aws" {
-  version = "~> 2.64"
   region  = "ap-southeast-2"
 }
 

@@ -1,23 +1,30 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-        "Effect":"Allow",
-        "Action": [
-            "s3:*"
-        ],
-        "Resource": [
-            "${codepipeline_bucket_arn}",
-            "${codepipeline_bucket_arn}/*"
-        ]
-        },
-        {
-        "Effect": "Allow",
-        "Action": [
-            "codebuild:BatchGetBuilds",
-            "codebuild:StartBuild"
-        ],
-        "Resource": "*"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:*"
+      ],
+      "Resource": [
+        "${codepipeline_bucket_arn}",
+        "${codepipeline_bucket_arn}/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codestar-connections:UseConnection"
+      ],
+      "Resource": "${codepipeline_codestar_connection_arn}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:BatchGetBuilds",
+        "codebuild:StartBuild"
+      ],
+      "Resource": "*"
+    }
+  ]
 }

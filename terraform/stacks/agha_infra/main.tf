@@ -18,19 +18,18 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  common_tags = "${map(
-    "Environment", "agha",
-    "Stack", "${var.stack_name}"
-  )}"
+  common_tags = {
+    Environment="agha",
+    Stack="${var.stack_name}"
+  }
 }
 
 ################################################################################
 # S3 buckets
 # Note: changes to public access block requires the temporary detachment of an SCP blocking it on org level
 
-resource "aws_s3_bucket" "agha_gdr_staging" {
-  bucket = var.agha_gdr_staging_bucket_name
-  acl    = "private"
+resource "aws_s3_bucket" "agha_gdr_staging_2" {
+  bucket = var.agha_gdr_staging_2_bucket_name
 
   server_side_encryption_configuration {
     rule {
@@ -71,13 +70,13 @@ resource "aws_s3_bucket" "agha_gdr_staging" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", var.agha_gdr_staging_bucket_name
-    )
+    {
+      "Name"=var.agha_gdr_staging_2_bucket_name
+    }
   )
 }
-resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
-  bucket = aws_s3_bucket.agha_gdr_staging.id
+resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
+  bucket = aws_s3_bucket.agha_gdr_staging_2.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -86,8 +85,8 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_staging" {
 }
 
 
-resource "aws_s3_bucket" "agha_gdr_store" {
-  bucket = var.agha_gdr_store_bucket_name
+resource "aws_s3_bucket" "agha_gdr_store_2" {
+  bucket = var.agha_gdr_store_2_bucket_name
   acl    = "private"
 
   server_side_encryption_configuration {
@@ -118,9 +117,9 @@ resource "aws_s3_bucket" "agha_gdr_store" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", var.agha_gdr_store_bucket_name
-    )
+    {
+      Name=var.agha_gdr_store_2_bucket_name
+    }
   )
 
   lifecycle_rule {
@@ -131,12 +130,10 @@ resource "aws_s3_bucket" "agha_gdr_store" {
       days          = 0
       storage_class = "INTELLIGENT_TIERING"
     }
-
-    abort_incomplete_multipart_upload_days = 7
   }
 }
-resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
-  bucket = aws_s3_bucket.agha_gdr_store.id
+resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
+  bucket = aws_s3_bucket.agha_gdr_store_2.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -144,25 +141,54 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store" {
   restrict_public_buckets = true
 }
 
-# Attach bucket policy to deny object deletion
-# https://aws.amazon.com/blogs/security/how-to-restrict-amazon-s3-bucket-access-to-a-specific-iam-role/
-# NOTE: no TF controlled bucket policy for the staging bucket,
-#       as it interferes with the policy update by the folder lock lambda
+resource "aws_s3_bucket" "agha_gdr_results_2" {
+  bucket = var.agha_gdr_results_2_bucket_name
+  acl = "private"
 
-data "template_file" "store_bucket_policy" {
-  template = file("policies/agha_bucket_policy.json")
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 
-  vars = {
-    bucket_name = aws_s3_bucket.agha_gdr_store.id
-    account_id  = data.aws_caller_identity.current.account_id
-    role_id     = aws_iam_role.s3_admin_delete.unique_id
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    id      = "noncurrent_version_expiration"
+    enabled = true
+    noncurrent_version_expiration {
+      days = 30
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name=var.agha_gdr_results_2_bucket_name
+    }
+  )
+
+  lifecycle_rule {
+    id      = "intelligent_tiering"
+    enabled = true
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
   }
 }
 
-resource "aws_s3_bucket_policy" "store_bucket_policy" {
-  bucket = aws_s3_bucket.agha_gdr_store.id
-  policy = data.template_file.store_bucket_policy.rendered
-}
 
 ##### Archive bucket
 resource "aws_s3_bucket" "agha_gdr_archive" {
@@ -183,9 +209,9 @@ resource "aws_s3_bucket" "agha_gdr_archive" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", var.agha_gdr_archive_bucket_name
-    )
+    {
+      "Name"=var.agha_gdr_archive_bucket_name
+    }
   )
 
   lifecycle_rule {
@@ -230,6 +256,68 @@ resource "aws_s3_bucket_policy" "archive_bucket_policy" {
   policy = data.template_file.archive_bucket_policy.rendered
 }
 
+##### MM bucket
+resource "aws_s3_bucket" "agha_gdr_mm" {
+  bucket = var.agha_gdr_mm_bucket_name
+  acl    = "private"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      "Name"=var.agha_gdr_mm_bucket_name
+    }
+  )
+
+  lifecycle_rule {
+    id      = "version_expiry"
+    enabled = true
+
+    noncurrent_version_expiration {
+      days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload_days = 7
+  }
+}
+resource "aws_s3_bucket_public_access_block" "agha_gdr_mm" {
+  bucket = aws_s3_bucket.agha_gdr_mm.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+data "template_file" "mm_bucket_policy" {
+  template = file("policies/agha_bucket_mm_policy.json")
+
+  vars = {
+    bucket_name = aws_s3_bucket.agha_gdr_mm.id
+    account_id  = data.aws_caller_identity.current.account_id
+    role_id     = aws_iam_role.s3_admin_delete.unique_id
+  }
+}
+resource "aws_s3_bucket_policy" "mm_bucket_policy" {
+  bucket = aws_s3_bucket.agha_gdr_mm.id
+  policy = data.template_file.mm_bucket_policy.rendered
+}
+
+
 
 ################################################################################
 # Dedicated IAM role to delete S3 objects (otherwise not allowed)
@@ -255,76 +343,6 @@ resource "aws_iam_role_policy_attachment" "s3_admin_delete" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
-
-################################################################################
-# Publish S3 events to SNS topic
-
-resource "aws_s3_bucket_notification" "bucket_notification_manifest" {
-  bucket = aws_s3_bucket.agha_gdr_staging.id
-
-  topic {
-    topic_arn     = aws_sns_topic.s3_events.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_suffix = "manifest.txt"
-  }
-
-  topic {
-    topic_arn     = aws_sns_topic.s3_events.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_suffix = ".manifest"
-  }
-}
-
-
-data "aws_iam_policy_document" "sns_publish" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "SNS:Publish"
-    ]
-
-    resources = [
-      "arn:aws:sns:*:*:s3_manifest_event",
-    ]
-
-    principals {
-      type = "AWS"
-      identifiers = [
-        "*"
-      ]
-    }
-
-    condition {
-      test     = "ArnLike"
-      variable = "aws:SourceArn"
-
-      values = [
-        aws_s3_bucket.agha_gdr_staging.arn
-      ]
-    }
-  }
-}
-
-resource "aws_sns_topic" "s3_events" {
-  name = "s3_manifest_event"
-  policy = data.aws_iam_policy_document.sns_publish.json
-}
-
-# Create Lambda subscriptions for the SNS topic:
-# to send notifications to Slack
-resource "aws_sns_topic_subscription" "s3_manifest_event" {
-  topic_arn = aws_sns_topic.s3_events.arn
-  protocol  = "lambda"
-  endpoint  = module.notify_slack_lambda.this_lambda_function_arn
-}
-
-# to lock the submission folder to prevent further manipulation
-resource "aws_sns_topic_subscription" "s3_manifest_event_folder_lock" {
-  topic_arn = aws_sns_topic.s3_events.arn
-  protocol  = "lambda"
-  endpoint  = module.folder_lock_lambda.this_lambda_function_arn
-}
 
 ################################################################################
 # Lambdas
@@ -361,64 +379,12 @@ module "notify_slack_lambda" {
 
   tags = merge(
     local.common_tags,
-    map(
-      "Name", "${var.stack_name}_slack_lambda",
-      "Description", "Lambda to send notifications to UMCCR Slack"
-    )
+    {
+      Name="${var.stack_name}_slack_lambda",
+      Description="Lambda to send notifications to UMCCR Slack"
+    }
   )
 }
-
-# allow events from SNS topic for manifest notifications
-resource "aws_lambda_permission" "slack_lambda_from_sns" {
-  statement_id  = "AllowExecutionFromSNS"
-  action        = "lambda:InvokeFunction"
-  function_name = module.notify_slack_lambda.this_lambda_function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.s3_events.arn
-}
-
-########################################
-# Lambda to lock a submission folder
-
-module "folder_lock_lambda" {
-  source = "terraform-aws-modules/lambda/aws"
-
-  function_name = "${var.stack_name}_folder_lock_lambda"
-  description   = "Lambda to lock a submission folder"
-  handler       = "index.lambda_handler"
-  runtime       = "python3.8"
-
-  source_path = "./lambdas/folder_lock"
-
-  attach_policy = true
-  policy        = aws_iam_policy.folder_lock_lambda.arn
-
-  tags = local.common_tags
-}
-
-data "template_file" "folder_lock_lambda" {
-  template = file("${path.module}/policies/folder_lock_lambda.json")
-
-  vars = {
-    bucket_name = aws_s3_bucket.agha_gdr_staging.id
-  }
-}
-
-resource "aws_iam_policy" "folder_lock_lambda" {
-  name   = "${var.stack_name}_folder_lock_lambda"
-  path   = "/${var.stack_name}/"
-  policy = data.template_file.folder_lock_lambda.rendered
-}
-
-# allow events from SNS topic for manifest notifications
-resource "aws_lambda_permission" "folder_lock_from_sns" {
-  statement_id  = "AllowExecutionFromSNS"
-  action        = "lambda:InvokeFunction"
-  function_name = module.folder_lock_lambda.this_lambda_function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.s3_events.arn
-}
-
 
 ################################################################################
 # CloudWatch Event Rule to match batch events and call Slack lambda
@@ -426,6 +392,7 @@ resource "aws_lambda_permission" "folder_lock_from_sns" {
 resource "aws_cloudwatch_event_rule" "batch_failure" {
   name        = "${var.stack_name}_capture_batch_job_failure"
   description = "Capture Batch Job Failures"
+  is_enabled = false
 
   event_pattern = <<PATTERN
 {
@@ -447,7 +414,7 @@ PATTERN
 resource "aws_cloudwatch_event_target" "batch_failure" {
   rule      = aws_cloudwatch_event_rule.batch_failure.name
   target_id = "${var.stack_name}_send_batch_failure_to_slack_lambda"
-  arn       = module.notify_slack_lambda.this_lambda_function_arn
+  arn       = module.notify_slack_lambda.lambda_function_arn
 
   input_transformer {
     input_paths = {
@@ -464,7 +431,7 @@ resource "aws_cloudwatch_event_target" "batch_failure" {
 resource "aws_lambda_permission" "batch_failure" {
   statement_id  = "${var.stack_name}_allow_batch_failure_to_invoke_slack_lambda"
   action        = "lambda:InvokeFunction"
-  function_name = module.notify_slack_lambda.this_lambda_function_name
+  function_name = module.notify_slack_lambda.lambda_function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.batch_failure.arn
 }

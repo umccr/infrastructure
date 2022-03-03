@@ -21,7 +21,14 @@
             "ec2:DeleteNetworkInterface",
             "ec2:DescribeSubnets",
             "ec2:DescribeSecurityGroups",
-            "ec2:DescribeVpcs"
+            "ec2:DescribeVpcs",
+            "ecr:GetAuthorizationToken",
+            "ecr:BatchCheckLayerAvailability",
+            "ecr:BatchGetImage",
+            "ecr:DescribeImages",
+            "ecr:GetDownloadUrlForLayer",
+            "ecr:GetRepositoryPolicy",
+            "ecr:ListImages"
         ],
         "Resource": "*"
         },

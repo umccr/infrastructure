@@ -58,6 +58,26 @@ class GoServerStack(core.Stack):
             string_parameter_name="/htsget/domain",
         )
 
+        # --- Cognito parameters are from data portal terraform stack
+
+        cog_user_pool_id = ssm.StringParameter.from_string_parameter_name(
+            self,
+            "CogUserPoolID",
+            string_parameter_name="/data_portal/client/cog_user_pool_id",
+        )
+
+        cog_app_client_id_stage = ssm.StringParameter.from_string_parameter_name(
+            self,
+            "CogAppClientIDStage",
+            string_parameter_name="/data_portal/client/cog_app_client_id_stage",
+        )
+
+        cog_app_client_id_local = ssm.StringParameter.from_string_parameter_name(
+            self,
+            "CogAppClientIDLocal",
+            string_parameter_name="/data_portal/client/cog_app_client_id_local",
+        )
+
         # --- Query main VPC and setup Security Groups
 
         vpc = ec2.Vpc.from_lookup(
@@ -115,6 +135,15 @@ class GoServerStack(core.Stack):
         task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 actions=[
+                    "s3:GetBucketLocation",
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:ListMultipartUploadParts",
+                    "s3:GetObjectTagging",
+                    "s3:GetObjectVersionTagging",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
                     "ssm:GetParameterHistory",
                     "ssm:GetParametersByPath",
                     "ssm:GetParameters",
@@ -204,9 +233,10 @@ class GoServerStack(core.Stack):
             vpc=vpc,
             internet_facing=False,
             security_group=sg_elb,
+            deletion_protection=True,
         )
-        listener = lb.add_listener(
-            "LBListener",
+        http_listener = lb.add_listener(
+            "HttpLBListener",
             port=80,
         )
         health_check = elbv2.HealthCheck(
@@ -214,7 +244,7 @@ class GoServerStack(core.Stack):
             path="/reads/service-info",
             timeout=core.Duration.seconds(5)
         )
-        listener.add_targets(
+        http_listener.add_targets(
             "LBtoECS",
             port=3000,
             protocol=elbv2.ApplicationProtocol.HTTP,
@@ -236,7 +266,7 @@ class GoServerStack(core.Stack):
             security_groups=[sg_ecs_service, sg_elb, ]
         )
         self.apigwv2_alb_integration = apigwv2i.HttpAlbIntegration(
-            listener=listener,
+            listener=http_listener,
             vpc_link=vpc_link,
         )
         custom_domain = apigwv2.DomainName(
@@ -248,18 +278,12 @@ class GoServerStack(core.Stack):
         self.http_api = apigwv2.HttpApi(
             self,
             f"{namespace}-apigw",
-            default_domain_mapping=apigwv2.DefaultDomainMappingOptions(domain_name=custom_domain),
+            default_domain_mapping=apigwv2.DomainMappingOptions(domain_name=custom_domain),
             cors_preflight=apigwv2.CorsPreflightOptions(
                 allow_origins=cors_allowed_origins,
                 allow_headers=["*"],
                 allow_methods=[
-                    apigwv2.HttpMethod.GET,
-                    apigwv2.HttpMethod.OPTIONS,
-                    apigwv2.HttpMethod.HEAD,
-                    apigwv2.HttpMethod.DELETE,
-                    apigwv2.HttpMethod.POST,
-                    apigwv2.HttpMethod.PUT,
-                    apigwv2.HttpMethod.PATCH,
+                    apigwv2.CorsHttpMethod.ANY,
                 ],
                 allow_credentials=True,
             )
@@ -284,13 +308,34 @@ class GoServerStack(core.Stack):
             zone=hosted_zone,
             record_name="htsget",
             target=route53.RecordTarget.from_alias(
-                route53t.ApiGatewayv2Domain(domain_name=custom_domain)
+                route53t.ApiGatewayv2DomainProperties(
+                    regional_domain_name=custom_domain.regional_domain_name,
+                    regional_hosted_zone_id=custom_domain.regional_hosted_zone_id
+                )
             ),
         )
         core.CfnOutput(
             self,
             "HtsgetEndpoint",
             value=custom_domain.name,
+        )
+
+        cognito_authzr = apigwv2.CfnAuthorizer(
+            self,
+            "CognitoAuthorizer",
+            api_id=self.http_api.http_api_id,
+            authorizer_type="JWT",
+            identity_source=[
+                "$request.header.Authorization",
+            ],
+            name="CognitoAuthorizer",
+            jwt_configuration=apigwv2.CfnAuthorizer.JWTConfigurationProperty(
+                audience=[
+                    cog_app_client_id_stage.string_value,
+                    cog_app_client_id_local.string_value,
+                ],
+                issuer=f"https://cognito-idp.{self.region}.amazonaws.com/{cog_user_pool_id.string_value}"
+            )
         )
 
         # Add catch all routes
@@ -300,12 +345,13 @@ class GoServerStack(core.Stack):
             http_api=self.http_api,
             route_key=apigwv2.HttpRouteKey.with_(
                 path="/{proxy+}",
-                method=apigwv2.HttpMethod.ANY
+                method=apigwv2.HttpMethod.GET
             ),
             integration=self.apigwv2_alb_integration
         )
         rt_catchall_cfn: apigwv2.CfnRoute = rt_catchall.node.default_child
-        rt_catchall_cfn.authorization_type = "AWS_IAM"
+        rt_catchall_cfn.authorizer_id = cognito_authzr.ref
+        rt_catchall_cfn.authorization_type = "JWT"
 
         # Comment this to opt-out setting up experimental Passport + htsget
         self.setup_ga4gh_passport()

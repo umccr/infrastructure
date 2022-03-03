@@ -1,15 +1,22 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 1.0.5"
 
   backend "s3" {
     bucket = "umccr-terraform-states"
     key    = "networking/terraform.tfstate"
     region = "ap-southeast-2"
+    dynamodb_table = "terraform-state-lock"
+  }
+
+  required_providers {
+    aws = {
+      version = "3.56.0"
+      source = "hashicorp/aws"
+    }
   }
 }
 
 provider "aws" {
-  version = "~> 2.64"
   region  = "ap-southeast-2"
 }
 
@@ -27,7 +34,7 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 
 module "main_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "2.38.0"
+  version = "2.77.0"
 
   name = "main-vpc"
   cidr = "10.2.0.0/16"

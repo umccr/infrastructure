@@ -38,5 +38,7 @@ echo formatting and mounting disk
 # assuming the device is available under the requested name
 sudo mkfs -t xfs /dev/xvdf
 mount /dev/xvdf /mnt
+# set uid and gid of /mnt/ as the 'umccrise' user and group defined in the Umccrise Dockerfile
+chown 1000:1000 /mnt
 docker info
 echo END CUSTOM USERDATA

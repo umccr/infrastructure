@@ -1,4 +1,6 @@
 *.swp
+package-lock.json
+yarn.*
 
 # CDK asset staging directory
 .cdk.staging
@@ -7,41 +9,42 @@ cdk.out
 # generated python packages for lambda layers
 lambdas/layers/**/*.zip
 
-
 # Distribution / packaging
 .Python
 env/
+venv/
+.venv/
+.env/
 build/
+node_modules/
 develop-eggs/
 dist/
 downloads/
-eggs/
-.eggs/
+
 lib/
 lib64/
 parts/
 sdist/
 var/
-venv/
-.venv/
-.env
+eggs/
+.eggs/
 *.egg-info/
-.installed.cfg
+*.egg-info
 *.egg
+*.egg*
 *__pycache__*
+.installed.cfg
 package-lock.json
 .pytest_cache
-*.egg-info
 
 # Serverless
 .aws-sam
 .serverless/
 node_modules/
 
+*.log
+
 # IDE
 .idea
 .DS_Store
 .vscode
-
-# Environment files
-*.log

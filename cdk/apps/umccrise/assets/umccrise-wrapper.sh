@@ -61,10 +61,7 @@ sig_handler() {
 }
 trap sig_handler INT HUP TERM QUIT EXIT
 
-
-
 timestamp="$(date +%s)"
-instance_type="$(curl http://169.254.169.254/latest/meta-data/instance-type/)"
 
 echo "Processing $S3_INPUT_DIR in bucket $S3_DATA_BUCKET with refdata from ${S3_REFDATA_BUCKET}"
 
@@ -79,7 +76,12 @@ mkdir -p /work/{bcbio_project,${job_output_dir},panel_of_normals,pcgr,seq,tmp,va
 # Install the AWS CLI
 curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip -qq awscliv2.zip
-./aws/install
+# Executing user in umccrise <=1.2.3 is root and has no home directory, so install AWS CLI into system directory
+if [[ ${EUID} -ne 0 ]]; then
+  ./aws/install --install-dir "${HOME}/.local/" --bin-dir "${HOME}/.local/bin"
+else
+  ./aws/install
+fi
 
 echo "PULL referenece data"
 # clone the refData repo making sure we are not clashing with another process

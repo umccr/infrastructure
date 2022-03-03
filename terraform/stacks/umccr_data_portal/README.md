@@ -36,8 +36,6 @@ aws ssm put-parameter --name '/data_portal/dev/rds_db_username' --type "SecureSt
 aws ssm put-parameter --name '/data_portal/dev/rds_db_password' --type "SecureString" --value '<Secure Password>'
 aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_id' --type "SecureString" --value '<Client ID>'
 aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_secret' --type "SecureString" --value '<Client secret>'
-aws ssm put-parameter --name '/data_portal/dev/google/lims_service_account_json' --type "SecureString" --value file://umccr-portal-123456789abc.json
-aws ssm put-parameter --name '/data_portal/dev/google/lims_spreadsheet_id' --type "SecureString" --value '<Spreadsheet ID>'
 ```
 
 You can check existing parameter, example as follows.
@@ -45,24 +43,6 @@ You can check existing parameter, example as follows.
 aws ssm get-parameter --name '/data_portal/dev/rds_db_password' | jq
 aws ssm get-parameter --name '/data_portal/dev/rds_db_password' --with-decryption | jq -r .Parameter.Value
 ```
-
-#### Github Webhooks
-
-A `GITHUB_TOKEN` env variable is required.
-
-IMPORTANT: If `GITHUB_TOKEN` env var is not defined, it is prompted by Terraform, *BUT*, it will result in a failure similar to this:
-
-```shell
-    * aws_codepipeline.codepipeline_apis: 1 error occurred:
-    * aws_codepipeline.codepipeline_apis: Error creating CodePipeline: InvalidActionDeclarationException: Action configuration for action 'Source' is missing required configuration 'OAuthToken'
-    status code: 400, request id: 9f703a62-9d75-409f-9cc8-3d208546d2b1
-```
-
-TODO: Find out why the user input is not properly sanitized?
-
-In order for terraform to create GitHub webhooks, the personal access token
-should have `admin:repo_hook` scope at least, and the associated account should
-be admin-level user for both repositories (`data-portal-apis` and `data-portal-client`).
 
 ### Post Deployment
 

@@ -115,7 +115,7 @@ locals {
 
   wgs_alignment_qc_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--0d6bc70"
+    prod = "3.9.3--7ba55e9"
   }
 
   wgs_alignment_qc_wfl_input = {
@@ -166,7 +166,7 @@ locals {
 
   wgs_tumor_normal_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--61a372d"
+    prod = "3.9.3--7ba55e9"
   }
 
   wgs_tumor_normal_wfl_input = {
@@ -209,7 +209,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--9961e75"
+    prod = "3.9.3--7ba55e9"
   }
 
   wts_tumor_only_wfl_input = {
@@ -284,7 +284,7 @@ locals {
 
   tso_ctdna_tumor_only_wfl_version = {
     dev = "1.1.0--1.0.0"
-    prod = "1.1.0--1.0.0--9c97fe9"
+    prod = "1.1.0--1.0.0--b8f38b3"
   }
 
   tso_ctdna_tumor_only_wfl_input = {
@@ -329,7 +329,7 @@ locals {
 
   umccrise_wfl_version = {
     dev = "2.0.1--3.9.3"
-    prod = "2.0.1--3.9.3--092ccf4"
+    prod = "2.0.1--3.9.3--a75eb35"
   }
 
   umccrise_wfl_input = {

@@ -5,7 +5,6 @@ from typing import Any
 
 import boto3
 
-from ica_common import api_key_to_jwt_for_project
 from secret_manager_common import (
     get_master_api_key,
     do_finish_secret,
@@ -43,28 +42,38 @@ def main(ev: Any, _: Any) -> Any:
     if not ica_base_url:
         raise Exception("ICA_BASE_URL must be specified in the JWT producer")
 
-    # we operate in two basic modes - in one we have a single project id and generate a single JWT for it
-    # when given multiple ids however, ICA doesn't allow a combined JWT - so instead we generate a dictionary
-    # of JWTS one per project - and put that dictionary into the secret
-    if "PROJECT_ID" in os.environ:
-        project_id = os.environ["PROJECT_ID"]
-    else:
-        project_id = None
+    # Initialise v1 vars
+    project_id = None
+    project_ids = None
 
-    if "PROJECT_IDS" in os.environ:
-        project_ids = os.environ["PROJECT_IDS"].split()
-    else:
-        project_ids = []
+    if is_ica_v2_platform := os.environ["ICA_PLATFORM_VERSION"] == "V2":
+        from ica_common import api_key_to_jwt_for_project_v2 as api_key_to_jwt_for_project
+    else:  # V1
+        # We import the api_key_to_jwt_for_project method for v1
+        from ica_common import api_key_to_jwt_for_project_v1 as api_key_to_jwt_for_project
 
-    if project_id and project_ids:
-        raise Exception(
-            "Only one of PROJECT_ID or PROJECT_IDS can be specified in the JWT producer"
-        )
+        # we operate in two basic modes - in one we have a single project id and generate a single JWT for it
+        # when given multiple ids however, ICA doesn't allow a combined JWT - so instead we generate a dictionary
+        # of JWTS one per project - and put that dictionary into the secret
+        if "PROJECT_ID" in os.environ:
+            project_id = os.environ["PROJECT_ID"]
+        else:
+            project_id = None
 
-    if not project_id and not project_ids:
-        raise Exception(
-            "One of PROJECT_ID or PROJECT_IDS must be specified in the JWT producer"
-        )
+        if "PROJECT_IDS" in os.environ:
+            project_ids = os.environ["PROJECT_IDS"].split()
+        else:
+            project_ids = []
+
+        if project_id and project_ids:
+            raise Exception(
+                "Only one of PROJECT_ID or PROJECT_IDS can be specified in the JWT producer"
+            )
+
+        if not project_id and not project_ids:
+            raise Exception(
+                "One of PROJECT_ID or PROJECT_IDS must be specified in the JWT producer"
+            )
 
     sm_client = boto3.client("secretsmanager")
 
@@ -89,7 +98,9 @@ def main(ev: Any, _: Any) -> Any:
             return api_key_to_jwt_for_project(ica_base_url, master_val, project_id)
 
         do_create_secret(
-            sm_client, arn, tok, exchange_single if project_id else exchange_multi
+            sm_client, arn, tok,
+            exchange_single if is_ica_v2_platform or project_id is not None
+            else exchange_multi
         )
 
         # JWTs are not immediately useful due to ICA clock skew and nbf claims

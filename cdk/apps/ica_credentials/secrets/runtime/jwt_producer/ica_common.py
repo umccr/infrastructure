@@ -1,19 +1,38 @@
 import json
-from typing import Any
+from typing import Optional
 from urllib.parse import urlencode
 
 import urllib3
 
 
-def api_key_to_jwt_for_project(ica_base_url: str, api_key: str, cid: str) -> str:
+# Two wrapper scripts for v1 and v2 platforms respectfully
+def api_key_to_jwt_for_project_v1(ica_base_url: str, api_key: str, cid: str) -> str:
+    return api_key_to_jwt_for_project(url=f"{ica_base_url}/v1/tokens",
+                                      accept_value="application/json",
+                                      encoded_params=urlencode({'cid': cid}),
+                                      api_key=api_key,
+                                      output_attribute="access_token")
+
+
+def api_key_to_jwt_for_project_v2(ica_base_url: str, api_key: str) -> str:
+    return api_key_to_jwt_for_project(url=f"{ica_base_url}/ica/rest/api/tokens",
+                                      accept_value="application/vnd.illumina.v3+json",
+                                      encoded_params=None,
+                                      api_key=api_key,
+                                      output_attribute="token")
+
+
+def api_key_to_jwt_for_project(url: str, accept_value: str, encoded_params: Optional[str], api_key: str, output_attribute: str) -> str:
     """
     Using the API key, exchanges it for a JWT that will have the API keys user permission
     *only* in the passed in project context.
 
     Args:
         ica_base_url: the base URL for ICA
+        accept_value: Either 'application/json' or 'application/vnd.illumina.v3+json' for v1 or v2 respectfully
         api_key: the API key for a user
-        cid: the project id
+        encoded_params: For v1 projects, is a project ID required? Or a tenant required for v2?
+        cid: the project id, for v1 projects only.
 
     Returns:
         a JWT access token
@@ -24,16 +43,14 @@ def api_key_to_jwt_for_project(ica_base_url: str, api_key: str, cid: str) -> str
     """
     http = urllib3.PoolManager()
 
-    # restrict to project (cid) level
-    encoded_params = urlencode({'cid': cid})
-
-    url = f"{ica_base_url}/v1/tokens?{encoded_params}"
+    if encoded_params is not None:
+        url = f"{url}?{encoded_params}"
 
     r = http.request(
         "POST",
         url,
         headers={
-            "Accept": "application/json",
+            "Accept": accept_value,
             "X-API-Key": api_key,
         },
         body=None,
@@ -43,9 +60,9 @@ def api_key_to_jwt_for_project(ica_base_url: str, api_key: str, cid: str) -> str
         body = r.data.decode("utf-8")
         body_as_json = json.loads(body)
 
-        if "access_token" in body_as_json:
+        if output_attribute in body_as_json:
             # success
-            return body_as_json["access_token"]
+            return body_as_json[output_attribute]
 
     # fall through to failure
     print(f"Failed ICA token exchange POST to '{url}'")

@@ -120,16 +120,16 @@ resource "aws_iam_user" "thangu_consent" {
 #   }
 # }
 
-# resource "aws_iam_user" "chiaraf" {
-#   name = "chiaraf"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "22253832@student.uwa.edu.au",
-#     name    = "Chiara Folland",
-#     keybase = "chiaraf"
-#   }
-# }
+resource "aws_iam_user" "chiaraf" {
+  name = "chiaraf"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "22253832@student.uwa.edu.au",
+    name    = "Chiara Folland",
+    keybase = "chiaraf"
+  }
+}
 
 # resource "aws_iam_user" "qimrbscott" {
 #   name = "qimrbscott"
@@ -235,7 +235,7 @@ resource "aws_iam_group_membership" "default" {
     # module.shyrav.username,
     # module.yingzhu.username,
     # module.seanlianu.username,
-    # module.chiaraf.username,
+    aws_iam_user.chiaraf.name,
     # module.qimrbscott.username,
     # aws_iam_user.fzhanghealth.name,
     aws_iam_user.evachan.name,
@@ -259,7 +259,7 @@ resource "aws_iam_group_membership" "submitter" {
     module.simon.username,
     # module.yingzhu.username,
     # module.seanlianu.username,
-    # module.chiaraf.username,
+    aws_iam_user.chiaraf.name,
     # module.qimrbscott.username,
   ]
 }

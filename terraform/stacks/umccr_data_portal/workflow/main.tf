@@ -241,6 +241,36 @@ locals {
       "reference_tar": {
         "class": "File",
         "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+      },
+      "qc_reference_samples":[
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00061_MDX190049_L1900440/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00061"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00188_MDX190169_L1900877/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00188"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00199_MDX190193_L1900920/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00199"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00236_MDX190219_L1901023/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00236"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00238_MDX190231_L1901028/analysis/dragen_wts/2021-11-29--3.9.3/SBJ00238"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
+          }
+      ],
+      "replace_names": {
+          "class": "File",
+          "location": "gds://development/multiqc/sample-names-replace.tsv"
       }
     }
     EOT
@@ -272,6 +302,36 @@ locals {
       "reference_tar": {
         "class": "File",
         "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+      },
+      "qc_reference_samples":[
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00061_MDX190049_L1900440/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00061"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00188_MDX190169_L1900877/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00188"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00199_MDX190193_L1900920/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00199"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00236_MDX190219_L1901023/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00236"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00238_MDX190231_L1901028/analysis/dragen_wts/2021-11-29--3.9.3/SBJ00238"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
+          }
+      ],
+      "replace_names": {
+          "class": "File",
+          "location": "gds://production/multiqc/sample-names-replace.tsv"
       }
     }
     EOT

@@ -268,7 +268,11 @@ locals {
               "location": "gds://development/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
           }
       ],
-      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}"
+      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}",
+      "sites_somalier": {
+            "class": "File",
+            "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
+        }
     }
     EOT
     prod = <<-EOT
@@ -326,7 +330,11 @@ locals {
               "location": "gds://production/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
           }
       ],
-      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}"
+      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}",
+      "sites_somalier": {
+            "class": "File",
+            "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"
+        }
     }
     EOT
   }

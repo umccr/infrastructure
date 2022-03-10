@@ -8,17 +8,22 @@ data "aws_ssm_parameter" "codestar_github_arn" {
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
-  acl           = "private"
+  tags = merge(local.default_tags)
+}
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+resource "aws_s3_bucket_acl" "codepipeline_bucket" {
+  bucket = aws_s3_bucket.codepipeline_bucket.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "codepipeline_bucket" {
+  bucket = aws_s3_bucket.codepipeline_bucket.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
-
-  tags = merge(local.default_tags)
 }
 
 resource "aws_iam_role" "codepipeline_base_role" {
@@ -166,9 +171,9 @@ resource "aws_iam_policy" "codebuild_apis_policy" {
 
   # IAM policy specific for the apis side
   policy = templatefile("policies/codebuild_apis_policy.json", {
-    subnet_id0 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[0],
-    subnet_id1 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[1],
-    subnet_id2 = sort(data.aws_subnet_ids.private_subnets_ids.ids)[2],
+    subnet_id0 = sort(data.aws_subnets.private_subnets_ids.ids)[0],
+    subnet_id1 = sort(data.aws_subnets.private_subnets_ids.ids)[1],
+    subnet_id2 = sort(data.aws_subnets.private_subnets_ids.ids)[2],
 
     region = data.aws_region.current.name,
     account_id = data.aws_caller_identity.current.account_id

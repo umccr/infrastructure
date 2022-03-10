@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.0.5"
+  required_version = ">= 1.1.7"
 
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -11,7 +11,7 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      version = "3.56.0"
+      version = "4.4.0"
     }
   }
 }
@@ -122,24 +122,33 @@ data "aws_vpc" "main_vpc" {
   }
 }
 
-data "aws_subnet_ids" "public_subnets_ids" {
-  vpc_id = data.aws_vpc.main_vpc.id
+data "aws_subnets" "public_subnets_ids" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main_vpc.id]
+  }
 
   tags = {
     Tier = "public"
   }
 }
 
-data "aws_subnet_ids" "private_subnets_ids" {
-  vpc_id = data.aws_vpc.main_vpc.id
+data "aws_subnets" "private_subnets_ids" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main_vpc.id]
+  }
 
   tags = {
     Tier = "private"
   }
 }
 
-data "aws_subnet_ids" "database_subnets_ids" {
-  vpc_id = data.aws_vpc.main_vpc.id
+data "aws_subnets" "database_subnets_ids" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main_vpc.id]
+  }
 
   tags = {
     Tier = "database"
@@ -152,22 +161,34 @@ data "aws_subnet_ids" "database_subnets_ids" {
 # S3 bucket storing client side (compiled) code
 resource "aws_s3_bucket" "client_bucket" {
   bucket = "${local.org_name}-${local.stack_name_dash}-client-${terraform.workspace}"
-  acl    = "private"
+  tags = merge(local.default_tags)
+}
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+resource "aws_s3_bucket_acl" "client_bucket" {
+  bucket = aws_s3_bucket.client_bucket.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "client_bucket" {
+  bucket = aws_s3_bucket.client_bucket.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
+}
 
-  website {
-    index_document = "index.html"
-    error_document = "index.html"
+resource "aws_s3_bucket_website_configuration" "client_bucket" {
+  bucket = aws_s3_bucket.client_bucket.id
+
+  index_document {
+    suffix = "index.html"
   }
 
-  tags = merge(local.default_tags)
+  error_document {
+    key = "index.html"
+  }
 }
 
 # Attach the policy to the client bucket
@@ -551,7 +572,7 @@ resource "aws_security_group" "rds_security_group" {
 
 resource "aws_db_subnet_group" "rds" {
   name = "${local.stack_name_us}_db_subnet_group"
-  subnet_ids = data.aws_subnet_ids.database_subnets_ids.ids
+  subnet_ids = data.aws_subnets.database_subnets_ids.ids
   tags = merge(local.default_tags)
 }
 
@@ -913,7 +934,7 @@ resource "aws_ssm_parameter" "lambda_iam_role_arn" {
 resource "aws_ssm_parameter" "lambda_subnet_ids" {
   name  = "${local.ssm_param_key_backend_prefix}/lambda_subnet_ids"
   type  = "String"
-  value = join(",", data.aws_subnet_ids.private_subnets_ids.ids)
+  value = join(",", data.aws_subnets.private_subnets_ids.ids)
   tags  = merge(local.default_tags)
 }
 

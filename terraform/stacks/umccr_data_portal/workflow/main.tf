@@ -209,7 +209,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--7ba55e9"
+    prod = "3.9.3--099bb76"
   }
 
   wts_tumor_only_wfl_input = {

@@ -115,7 +115,7 @@ locals {
 
   wgs_alignment_qc_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--0d6bc70"
+    prod = "3.9.3--7ba55e9"
   }
 
   wgs_alignment_qc_wfl_input = {
@@ -166,7 +166,7 @@ locals {
 
   wgs_tumor_normal_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--61a372d"
+    prod = "3.9.3--7ba55e9"
   }
 
   wgs_tumor_normal_wfl_input = {
@@ -209,7 +209,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--9961e75"
+    prod = "3.9.3--099bb76"
   }
 
   wts_tumor_only_wfl_input = {
@@ -241,7 +241,38 @@ locals {
       "reference_tar": {
         "class": "File",
         "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
-      }
+      },
+      "qc_reference_samples":[
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00061_MDX190049_L1900440/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00061"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00188_MDX190169_L1900877/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00188"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00199_MDX190193_L1900920/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00199"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00236_MDX190219_L1901023/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00236"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00238_MDX190231_L1901028/analysis/dragen_wts/2021-11-29--3.9.3/SBJ00238"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://development/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
+          }
+      ],
+      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}",
+      "sites_somalier": {
+            "class": "File",
+            "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
+        }
     }
     EOT
     prod = <<-EOT
@@ -272,7 +303,38 @@ locals {
       "reference_tar": {
         "class": "File",
         "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
-      }
+      },
+      "qc_reference_samples":[
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00061_MDX190049_L1900440/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00061"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00188_MDX190169_L1900877/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00188"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00199_MDX190193_L1900920/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00199"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00236_MDX190219_L1901023/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00236"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00238_MDX190231_L1901028/analysis/dragen_wts/2021-11-29--3.9.3/SBJ00238"
+          },
+          {
+              "class": "Directory",
+              "location": "gds://production/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
+          }
+      ],
+      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}",
+      "sites_somalier": {
+            "class": "File",
+            "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"
+        }
     }
     EOT
   }
@@ -284,7 +346,7 @@ locals {
 
   tso_ctdna_tumor_only_wfl_version = {
     dev = "1.1.0--1.0.0"
-    prod = "1.1.0--1.0.0--9c97fe9"
+    prod = "1.1.0--1.0.0--b8f38b3"
   }
 
   tso_ctdna_tumor_only_wfl_input = {
@@ -329,7 +391,7 @@ locals {
 
   umccrise_wfl_version = {
     dev = "2.0.1--3.9.3"
-    prod = "2.0.1--3.9.3--092ccf4"
+    prod = "2.0.1--3.9.3--a75eb35"
   }
 
   umccrise_wfl_input = {

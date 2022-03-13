@@ -126,11 +126,11 @@ locals {
       "fastq_list_rows": null,
       "sites_somalier": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/somalier/sites.hg38.vcf.gz"
+        "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
       },
       "reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-dev/dragen/genomes/hg38/hg38.fa"
+        "location": "gds://development/reference-data/genomes/hg38/hg38.fa"
       },
       "reference_tar": {
         "class": "File",
@@ -145,11 +145,11 @@ locals {
       "fastq_list_rows": null,
       "sites_somalier": {
         "class": "File",
-        "location": "gds://umccr-refdata-prod/somalier/sites.hg38.vcf.gz"
+        "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"
       },
       "reference_fasta": {
         "class": "File",
-        "location": "gds://umccr-refdata-prod/dragen/genomes/hg38/hg38.fa"
+        "location": "gds://production/reference-data/genomes/hg38/hg38.fa"
       },
       "reference_tar": {
         "class": "File",

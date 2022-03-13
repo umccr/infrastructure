@@ -131,16 +131,16 @@ resource "aws_iam_user" "chiaraf" {
   }
 }
 
-# resource "aws_iam_user" "qimrbscott" {
-#   name = "qimrbscott"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "Scott.Wood@qimrberghofer.edu.au",
-#     name    = "Scott Wood",
-#     keybase = "qimrbscott"
-#   }
-# }
+resource "aws_iam_user" "qimrbscott" {
+  name = "qimrbscott"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "Scott.Wood@qimrberghofer.edu.au",
+    name    = "Scott Wood",
+    keybase = "qimrbscott"
+  }
+}
 
 # Mackenzie's Mission
 # resource "aws_iam_user" "fzhanghealth" {
@@ -236,7 +236,7 @@ resource "aws_iam_group_membership" "default" {
     # module.yingzhu.username,
     # module.seanlianu.username,
     aws_iam_user.chiaraf.name,
-    # module.qimrbscott.username,
+    aws_iam_user.qimrbscott.name,
     # aws_iam_user.fzhanghealth.name,
     aws_iam_user.evachan.name,
     aws_iam_user.shyrav_consent.name,
@@ -260,7 +260,7 @@ resource "aws_iam_group_membership" "submitter" {
     # module.yingzhu.username,
     # module.seanlianu.username,
     aws_iam_user.chiaraf.name,
-    # module.qimrbscott.username,
+    aws_iam_user.qimrbscott.name,
   ]
 }
 

@@ -452,7 +452,7 @@ locals {
       "dataset": null,
       "report_directory": null,
       "ref_data_directory": {
-        "class": "File",
+        "class": "Directory",
         "location": "gds://development/reference-data/rnasum/"
       }
     }
@@ -465,7 +465,7 @@ locals {
       "dataset": null,
       "report_directory": null,
       "ref_data_directory": {
-        "class": "File",
+        "class": "Directory",
         "location": "gds://production/reference-data/rnasum/"
       }
     }

@@ -440,7 +440,7 @@ locals {
 
   rnasum_wfl_version = {
     dev = "0.4.2"
-    prod = "0.4.1--170cae7"
+    prod = "0.4.2--da9937b"
   }
 
   rnasum_wfl_input = {
@@ -461,6 +461,7 @@ locals {
     prod = <<-EOT
     {
       "dragen_transcriptome_directory": null,
+      "arriba_directory": null,
       "umccrise_directory": null,
       "sample_name": null,
       "dataset": null,

@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.0.5"
+  required_version = ">= 1.1.7"
 
   backend "s3" {
     bucket = "umccr-terraform-states"
@@ -10,7 +10,7 @@ terraform {
 
   required_providers {
     aws = {
-      version = "3.56.0"
+      version = "4.4.0"
       source = "hashicorp/aws"
     }
   }
@@ -34,7 +34,7 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 
 module "main_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "2.77.0"
+  version = "3.13.0"
 
   name = "main-vpc"
   cidr = "10.2.0.0/16"
@@ -59,28 +59,6 @@ module "main_vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
-
-  # Enable Gateway VPC endpoints
-  # No additional charge for using Gateway Endpoints https://docs.aws.amazon.com/vpc/latest/userguide/vpce-gateway.html
-  enable_s3_endpoint       = true
-  enable_dynamodb_endpoint = true
-
-  # To enable more VPC Endpoints, see table in https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/
-  # Note that Interface Endpoints are not free and use AWS PrivateLink https://aws.amazon.com/privatelink/pricing/
-  # However it is still more cost effective than NAT Gateway for data communication within AWS Services
-  # TODO monitor NAT Gateway cost +/- gradually enable most inter-communicated AWS Services depends on our usage here
-  #enable_events_endpoint = true
-  #enable_logs_endpoint = true
-  #enable_monitoring_endpoint = true
-  #enable_codebuild_endpoint = true
-  #enable_codepipeline_endpoint = true
-  #enable_ec2_endpoint = true
-  #enable_ecs_endpoint = true
-  #enable_ecr_dkr_endpoint = true
-  #enable_ssm_endpoint = true
-  #enable_sqs_endpoint = true
-  #enable_sns_endpoint = true
-  #enable_sts_endpoint = true
 
   # See README Subnet Tagging section for the following tags combination
   public_subnet_tags = {
@@ -108,6 +86,69 @@ module "main_vpc" {
     Environment = terraform.workspace
     Stack       = var.stack_name
     Creator     = "terraform"
+  }
+}
+
+module "main_vpc_endpoints" {
+  source = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+
+  vpc_id             = module.main_vpc.vpc_id
+  security_group_ids = [data.aws_security_group.default_sg.id]
+
+  # See below for config example
+  # https://github.com/terraform-aws-modules/terraform-aws-vpc/tree/master/modules/vpc-endpoints
+  # https://github.com/terraform-aws-modules/terraform-aws-vpc/blob/master/examples/complete-vpc/main.tf
+
+  # Enable Gateway VPC endpoints for S3 and DynamoDB
+  # No additional charge for using Gateway Endpoints https://docs.aws.amazon.com/vpc/latest/userguide/vpce-gateway.html
+
+  # Note that Interface Endpoints are not free and use AWS PrivateLink https://aws.amazon.com/privatelink/pricing/
+  # However it is still more cost effective than NAT Gateway for data communication within AWS Services
+
+  endpoints = {
+    s3 = {
+      service         = "s3"
+      service_type    = "Gateway"
+      route_table_ids = flatten([module.main_vpc.intra_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
+      tags            = { Name = "s3-vpc-endpoint" }
+    },
+    dynamodb = {
+      service         = "dynamodb"
+      service_type    = "Gateway"
+      route_table_ids = flatten([module.main_vpc.intra_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
+      # policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
+      tags            = { Name = "dynamodb-vpc-endpoint" }
+    }
+  }
+
+  tags = {
+    Environment = terraform.workspace
+    Stack       = var.stack_name
+    Creator     = "terraform"
+  }
+}
+
+data "aws_security_group" "default_sg" {
+  name   = "default"
+  vpc_id = module.main_vpc.vpc_id
+}
+
+data "aws_iam_policy_document" "dynamodb_endpoint_policy" {
+  statement {
+    effect    = "Deny"
+    actions   = ["dynamodb:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:sourceVpce"
+      values   = [module.main_vpc.vpc_id]
+    }
   }
 }
 
@@ -148,7 +189,7 @@ resource "aws_security_group" "main_vpc_sg_uom" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["10.1.0.0/20"]
+    cidr_blocks = ["128.250.0.0/16"]  # UoM IP ranges https://ipinfo.io/AS10148
   }
 
   tags = {

@@ -334,6 +334,18 @@ resource "aws_iam_group_policy_attachment" "gen3_services_store_ro_policy_attach
 ################################################################################
 # Create access policies
 
+# # test policy to experiment with policy templates for flagship specific access permissions
+# resource "aws_iam_policy" "agha_staging_rbac_mito_policy" {
+#   name_prefix = "test_template_policy"
+#   path        = "/agha/"
+#   policy = templatefile("policies/bucket-rbac-flagship-template-policy.json", {
+#     bucket_name = data.aws_s3_bucket.agha_gdr_staging.id, 
+#     prefixes = ["Mito/*"],
+#     consent_group = "True"
+#     })
+# }
+
+
 data "template_file" "agha_staging_ro_policy" {
   template = file("policies/bucket-ro-policy.json")
 

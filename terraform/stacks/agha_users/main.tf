@@ -254,7 +254,6 @@ resource "aws_iam_group_membership" "submitter" {
   name  = "${aws_iam_group.submitter.name}_membership"
   group = aws_iam_group.submitter.name
   users = [
-    module.agha_presign.username,
     module.sarah_dm.username,
     module.simon.username,
     # module.yingzhu.username,
@@ -293,6 +292,7 @@ resource "aws_iam_group_membership" "data_controller" {
   name  = "${aws_iam_group.data_controller.name}_membership"
   group = aws_iam_group.data_controller.name
   users = [
+    module.agha_presign.username,
     module.sarah_dm.username
   ]
 }
@@ -310,6 +310,11 @@ resource "aws_iam_group_policy_attachment" "controller_staging_ro_policy_attachm
 resource "aws_iam_group_policy_attachment" "controller_store_ro_policy_attachment" {
   group      = aws_iam_group.data_controller.name
   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
+}
+
+resource "aws_iam_group_policy_attachment" "controller_dynamodb_ro_policy_attachment" {
+  group      = aws_iam_group.data_controller.name
+  policy_arn = var.policy_arn_dynamodb_ro
 }
 
 # Gen3 services

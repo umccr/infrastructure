@@ -450,7 +450,7 @@ locals {
       "arriba_directory": null,
       "umccrise_directory": null,
       "sample_name": null,
-      "dataset": null,
+      "dataset": "PANCAN",
       "report_directory": null,
       "ref_data_directory": {
         "class": "Directory",

@@ -181,9 +181,9 @@ def get_batch_container_resource(batch_container, resource):
     # Collect resource value
     if key_container in batch_container:
         return batch_container[key_container]
-    elif 'resourceRequirements' in batch_container:
+    if 'resourceRequirements' in batch_container:
         for entry in batch_container['resourceRequirements']:
             if entry['type'] == key_requirements:
                 return entry['value']
-    else:
-        print(f'Failed to get Batch container resource \'{resource}\'')
+    print(f'Failed to get Batch container resource \'{resource}\'')
+    return 'Not available'

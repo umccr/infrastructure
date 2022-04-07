@@ -98,16 +98,28 @@ resource "aws_iam_user" "thangu_consent" {
     keybase = "thangu"
   }
 }
-# resource "aws_iam_user" "yingzhu" {
-#   name = "yingzhu"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "Ying.Zhu@health.nsw.gov.au",
-#     name    = "Ying Zhu",
-#     keybase = "yingzhu"
-#   }
-# }
+
+resource "aws_iam_user" "yingzhu" {
+  name = "yingzhu"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "Ying.Zhu@health.nsw.gov.au",
+    name    = "Ying Zhu",
+    keybase = "yingzhu"
+  }
+}
+
+resource "aws_iam_user" "fzhanghealth" {
+  name = "fzhanghealth"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "futao.zhang@health.nsw.gov.au",
+    name    = "Futao Zhang",
+    keybase = "fzhanghealth"
+  }
+}
 
 # resource "aws_iam_user" "seanlianu" {
 #   name = "seanlianu"
@@ -142,17 +154,6 @@ resource "aws_iam_user" "qimrbscott" {
   }
 }
 
-# Mackenzie's Mission
-# resource "aws_iam_user" "fzhanghealth" {
-#   name = "fzhanghealth"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "futao.zhang@health.nsw.gov.au",
-#     name    = "Futao Zhang",
-#     keybase = "fzhanghealth"
-#   }
-# }
 
 resource "aws_iam_user" "evachan" {
   name = "evachan"
@@ -233,11 +234,11 @@ resource "aws_iam_group_membership" "default" {
     module.sarah_dm.username,
     module.simon.username,
     # module.shyrav.username,
-    # module.yingzhu.username,
+    aws_iam_user.yingzhu.name,
+    aws_iam_user.fzhanghealth.name,
     # module.seanlianu.username,
     aws_iam_user.chiaraf.name,
     aws_iam_user.qimrbscott.name,
-    # aws_iam_user.fzhanghealth.name,
     aws_iam_user.evachan.name,
     aws_iam_user.shyrav_consent.name,
     aws_iam_user.thangu_consent.name,
@@ -256,7 +257,8 @@ resource "aws_iam_group_membership" "submitter" {
   users = [
     module.sarah_dm.username,
     module.simon.username,
-    # module.yingzhu.username,
+    aws_iam_user.yingzhu.name,
+    aws_iam_user.fzhanghealth.name,
     # module.seanlianu.username,
     aws_iam_user.chiaraf.name,
     aws_iam_user.qimrbscott.name,

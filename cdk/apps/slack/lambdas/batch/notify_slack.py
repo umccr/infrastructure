@@ -104,8 +104,8 @@ def lambda_handler(event, context):
 
         batch_container = event_detail.get('container')
         container_image = batch_container.get('image')
-        container_vcpu = batch_container.get('vcpus')
-        container_mem = batch_container.get('memory')
+        container_vcpu = get_batch_container_resource(batch_container, 'vcpus')
+        container_mem = get_batch_container_resource(batch_container, 'memory')
         log_stream_name = batch_container.get('logStreamName')
         print(f"Log stream name: {log_stream_name}")
 
@@ -168,3 +168,22 @@ def lambda_handler(event, context):
 
     except Exception as e:
         print(e)
+
+
+def get_batch_container_resource(batch_container, resource):
+    # Set appropriate keys
+    resource_map = {
+        'vcpus': {'container': 'vcpus', 'requirements': 'VCPU'},
+        'memory': {'container': 'memory', 'requirements': 'MEMORY'},
+    }
+    key_container = resource_map[resource]['container']
+    key_requirements = resource_map[resource]['requirements']
+    # Collect resource value
+    if key_container in batch_container:
+        return batch_container[key_container]
+    if 'resourceRequirements' in batch_container:
+        for entry in batch_container['resourceRequirements']:
+            if entry['type'] == key_requirements:
+                return entry['value']
+    print(f'Failed to get Batch container resource \'{resource}\'')
+    return 'Not available'

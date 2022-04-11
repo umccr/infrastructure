@@ -10,7 +10,7 @@ terraform {
 
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
       version = "4.4.0"
     }
   }
@@ -34,7 +34,7 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 locals {
-  # Stack name in under socre
+  # Stack name in underscore
   stack_name_us = "data_portal"
 
   # Stack name in dash
@@ -90,24 +90,12 @@ locals {
 # Query for Pre-configured SSM Parameter Store
 # These are pre-populated outside of terraform i.e. manually using Console or CLI
 
-data "aws_ssm_parameter" "google_oauth_client_id" {
-  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
-}
-
-data "aws_ssm_parameter" "google_oauth_client_secret" {
-  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
-}
-
 data "aws_ssm_parameter" "rds_db_password" {
   name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_password"
 }
 
 data "aws_ssm_parameter" "rds_db_username" {
   name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
-}
-
-data "aws_ssm_parameter" "htsget_domain" {
-  name = "/htsget/domain"
 }
 
 ################################################################################
@@ -335,144 +323,6 @@ resource "aws_acm_certificate_validation" "client_cert_dns" {
 data "aws_acm_certificate" "backend_cert" {
   domain   = local.app_domain
   statuses = ["ISSUED"]
-}
-
-# Cognito
-
-resource "aws_cognito_user_pool" "user_pool" {
-  name = "${local.stack_name_dash}-${terraform.workspace}"
-
-  user_pool_add_ons {
-    advanced_security_mode = "AUDIT"
-  }
-
-  tags = merge(local.default_tags)
-}
-
-# Google identity provider
-resource "aws_cognito_identity_provider" "identity_provider" {
-  user_pool_id  = aws_cognito_user_pool.user_pool.id
-  provider_name = "Google"
-  provider_type = "Google"
-
-  provider_details = {
-    client_id                     = data.aws_ssm_parameter.google_oauth_client_id.value
-    client_secret                 = data.aws_ssm_parameter.google_oauth_client_secret.value
-    authorize_scopes              = "openid profile email"
-    attributes_url                = "https://people.googleapis.com/v1/people/me?personFields="
-    attributes_url_add_attributes = true
-    authorize_url                 = "https://accounts.google.com/o/oauth2/v2/auth"
-    oidc_issuer                   = "https://accounts.google.com"
-    token_request_method          = "POST"
-    token_url                     = "https://www.googleapis.com/oauth2/v4/token"
-  }
-
-  attribute_mapping = {
-    email    = "email"
-    username = "sub"
-  }
-}
-
-# Identity pool
-resource "aws_cognito_identity_pool" "identity_pool" {
-  identity_pool_name               = "Data Portal ${terraform.workspace}"
-  allow_unauthenticated_identities = false
-
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.user_pool_client.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.user_pool_client_localhost.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.sscheck_app_client.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  tags = merge(local.default_tags)
-}
-
-resource "aws_iam_role" "role_authenticated" {
-  name = "${local.stack_name_us}_identity_pool_authenticated"
-  path = local.iam_role_path
-
-  # IAM role for the identity pool for authenticated identities
-  assume_role_policy = templatefile("policies/iam_role_authenticated_assume_role_policy.json", {
-    identity_pool_id = aws_cognito_identity_pool.identity_pool.id
-  })
-
-  tags = merge(local.default_tags)
-}
-
-resource "aws_iam_role_policy" "role_policy_authenticated" {
-  name = "${local.stack_name_us}_authenticated_policy"
-  role = aws_iam_role.role_authenticated.id
-
-  # IAM role policy for authenticated identities
-  policy = templatefile("policies/iam_role_authenticated_policy.json", {})
-}
-
-# Attach the IAM role to the identity pool
-resource "aws_cognito_identity_pool_roles_attachment" "identity_pool_role_attach" {
-  identity_pool_id = aws_cognito_identity_pool.identity_pool.id
-
-  roles = {
-    "authenticated" = aws_iam_role.role_authenticated.arn
-  }
-}
-
-# User pool client
-resource "aws_cognito_user_pool_client" "user_pool_client" {
-  name                         = "${local.stack_name_dash}-app-${terraform.workspace}"
-  user_pool_id                 = aws_cognito_user_pool.user_pool.id
-  supported_identity_providers = ["Google"]
-
-  callback_urls = local.callback_urls[terraform.workspace]
-  logout_urls   = local.callback_urls[terraform.workspace]
-
-  generate_secret = false
-
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
-
-  id_token_validity = 24
-
-  # Need to explicitly specify this dependency
-  depends_on = [aws_cognito_identity_provider.identity_provider]
-}
-
-# User pool client (localhost access)
-resource "aws_cognito_user_pool_client" "user_pool_client_localhost" {
-  name                         = "${local.stack_name_dash}-app-${terraform.workspace}-localhost"
-  user_pool_id                 = aws_cognito_user_pool.user_pool.id
-  supported_identity_providers = ["Google"]
-
-  callback_urls = [var.localhost_url]
-  logout_urls   = [var.localhost_url]
-
-  generate_secret = false
-
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
-  explicit_auth_flows                  = ["ADMIN_NO_SRP_AUTH"]
-
-  # Need to explicitly specify this dependency
-  depends_on = [aws_cognito_identity_provider.identity_provider]
-}
-
-# Assign an explicit domain
-resource "aws_cognito_user_pool_domain" "user_pool_client_domain" {
-  domain       = "${local.stack_name_dash}-app-${terraform.workspace}"
-  user_pool_id = aws_cognito_user_pool.user_pool.id
 }
 
 ################################################################################
@@ -856,71 +706,6 @@ resource "aws_sns_topic_policy" "portal_ops_sns_topic_access_policy" {
 
 ################################################################################
 # Save configurations in SSM Parameter Store
-
-# Save these in SSM Parameter Store for frontend client localhost development purpose
-
-resource "aws_ssm_parameter" "cog_user_pool_id" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
-  type  = "String"
-  value = aws_cognito_user_pool.user_pool.id
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "cog_identity_pool_id" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
-  type  = "String"
-  value = aws_cognito_identity_pool.identity_pool.id
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "cog_app_client_id_local" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_app_client_id_local"
-  type  = "String"
-  value = aws_cognito_user_pool_client.user_pool_client_localhost.id
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "cog_app_client_id_stage" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_app_client_id_stage"
-  type  = "String"
-  value = aws_cognito_user_pool_client.user_pool_client.id
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "oauth_domain" {
-  name  = "${local.ssm_param_key_client_prefix}/oauth_domain"
-  type  = "String"
-  value = aws_cognito_user_pool_domain.user_pool_client_domain.domain
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "oauth_redirect_in_local" {
-  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_local"
-  type  = "String"
-  value = sort(aws_cognito_user_pool_client.user_pool_client_localhost.callback_urls)[0]
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "oauth_redirect_out_local" {
-  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_local"
-  type  = "String"
-  value = sort(aws_cognito_user_pool_client.user_pool_client_localhost.logout_urls)[0]
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "oauth_redirect_in_stage" {
-  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_stage"
-  type  = "String"
-  value = local.oauth_redirect_url[terraform.workspace]
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "oauth_redirect_out_stage" {
-  name  = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_stage"
-  type  = "String"
-  value = local.oauth_redirect_url[terraform.workspace]
-  tags  = merge(local.default_tags)
-}
 
 # Save these in SSM Parameter Store for backend api
 

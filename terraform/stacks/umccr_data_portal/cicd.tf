@@ -5,6 +5,26 @@ data "aws_ssm_parameter" "codestar_github_arn" {
   name  = "codestar_github_arn"
 }
 
+data "aws_ssm_parameter" "cog_user_pool_id" {
+  name  = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
+}
+
+data "aws_ssm_parameter" "cog_identity_pool_id" {
+  name  = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
+}
+
+data "aws_ssm_parameter" "cog_app_client_id_stage" {
+  name  = "${local.ssm_param_key_client_prefix}/cog_app_client_id_stage"
+}
+
+data "aws_ssm_parameter" "oauth_domain" {
+  name  = "${local.ssm_param_key_client_prefix}/oauth_domain"
+}
+
+data "aws_ssm_parameter" "htsget_domain" {
+  name = "/htsget/domain"
+}
+
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
@@ -247,22 +267,22 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "COGNITO_USER_POOL_ID"
-      value = aws_cognito_user_pool.user_pool.id
+      value = data.aws_ssm_parameter.cog_user_pool_id.value
     }
 
     environment_variable {
       name  = "COGNITO_IDENTITY_POOL_ID"
-      value = aws_cognito_identity_pool.identity_pool.id
+      value = data.aws_ssm_parameter.cog_identity_pool_id.value
     }
 
     environment_variable {
       name  = "COGNITO_APP_CLIENT_ID_STAGE"
-      value = aws_cognito_user_pool_client.user_pool_client.id
+      value = data.aws_ssm_parameter.cog_app_client_id_stage.value
     }
 
     environment_variable {
       name  = "OAUTH_DOMAIN"
-      value = aws_cognito_user_pool_domain.user_pool_client_domain.domain
+      value = data.aws_ssm_parameter.oauth_domain.value
     }
 
     environment_variable {

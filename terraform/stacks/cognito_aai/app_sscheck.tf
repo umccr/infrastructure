@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
-# Note: sscheck or sample sheet check app reuse some Portal TF created resources
-# such as Cognito. This streamlines integrate UI login to the same authority.
+# Note: Samplesheet Checker App Client
+#
 
 locals {
   sscheck = "sscheck"
 
-  sscheck_app_domain = "${local.sscheck}.${var.base_domain[terraform.workspace]}"
+  sscheck_domain = "${local.sscheck}.${var.base_domain[terraform.workspace]}"
 
   sscheck_alias_domain = {
     prod = "sscheck.umccr.org"
@@ -14,16 +14,16 @@ locals {
   }
 
   sscheck_callback_urls = {
-    prod = ["https://${local.sscheck_app_domain}", "https://${local.sscheck_alias_domain[terraform.workspace]}"]
-    dev  = ["https://${local.sscheck_app_domain}"]
+    prod = ["https://${local.sscheck_domain}", "https://${local.sscheck_alias_domain[terraform.workspace]}"]
+    dev  = ["https://${local.sscheck_domain}"]
   }
 
   sscheck_oauth_redirect_url = {
     prod = "https://${local.sscheck_alias_domain[terraform.workspace]}"
-    dev  = "https://${local.sscheck_app_domain}"
+    dev  = "https://${local.sscheck_domain}"
   }
 
-  sscheck_client_prefix = "/${local.sscheck}/client"
+  sscheck_param_prefix = "/${local.sscheck}/client"
 }
 
 # sscheck app client
@@ -48,21 +48,21 @@ resource "aws_cognito_user_pool_client" "sscheck_app_client" {
 }
 
 resource "aws_ssm_parameter" "sscheck_app_client_id_stage" {
-  name  = "${local.sscheck_client_prefix}/cog_app_client_id_stage"
+  name  = "${local.sscheck_param_prefix}/cog_app_client_id_stage"
   type  = "String"
   value = aws_cognito_user_pool_client.sscheck_app_client.id
   tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "sscheck_oauth_redirect_in_stage" {
-  name  = "${local.sscheck_client_prefix}/oauth_redirect_in_stage"
+  name  = "${local.sscheck_param_prefix}/oauth_redirect_in_stage"
   type  = "String"
   value = local.sscheck_oauth_redirect_url[terraform.workspace]
   tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "sscheck_oauth_redirect_out_stage" {
-  name  = "${local.sscheck_client_prefix}/oauth_redirect_out_stage"
+  name  = "${local.sscheck_param_prefix}/oauth_redirect_out_stage"
   type  = "String"
   value = local.sscheck_oauth_redirect_url[terraform.workspace]
   tags  = merge(local.default_tags)

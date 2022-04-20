@@ -89,7 +89,7 @@ while [ -d "$REFDATA_DIR" ]; do
   echo "Refdata dir already exists. Creating new one..."
   REFDATA_DIR="${REFDATA_DIR}_1"
 done
-git clone https://github.com/umccr/reference_data $REFDATA_DIR
+git clone -b 1.0.11 https://github.com/umccr/reference_data $REFDATA_DIR
 cd $REFDATA_DIR
 
 # use a common cache dir for all DVC repos/processes

@@ -33,7 +33,7 @@
                 "s3:GetBucketLocation"
             ],
             "Resource": [
-                "arn:aws:s3:::${bucket_name}/{prefix}*"
+                "arn:aws:s3:::${bucket_name}/${prefix}*"
             ]
         }
     ]

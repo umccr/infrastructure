@@ -60,8 +60,12 @@
             "Principal": {
                 "AWS": "arn:aws:iam::657206756013:group/agha_gdr_mm"
             },
-            "Action": "*",
-            "Resource": "arn:aws:s3:::agha-gdr-mm/**"
+            "Action": [
+                "s3:PutObject*",
+                "s3:GetObject*",
+                "s3:DeleteObject*"
+            ],
+            "Resource": "arn:aws:s3:::agha-gdr-mm/*"
         }
     ]
 }

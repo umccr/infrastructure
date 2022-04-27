@@ -209,7 +209,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--099bb76"
+    prod = "3.9.3--e24feb2"
   }
 
   wts_tumor_only_wfl_input = {
@@ -440,7 +440,7 @@ locals {
 
   rnasum_wfl_version = {
     dev = "0.4.2"
-    prod = "0.4.2--da9937b"
+    prod = "0.4.2--e24feb2"
   }
 
   rnasum_wfl_input = {

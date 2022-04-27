@@ -54,6 +54,14 @@
             },
             "Action": "s3:GetObject",
             "Resource": "arn:aws:s3:::agha-gdr-mm/nswhp*"
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::657206756013:group/agha_gdr_mm"
+            },
+            "Action": "*",
+            "Resource": "arn:aws:s3:::agha-gdr-mm/**"
         }
     ]
 }

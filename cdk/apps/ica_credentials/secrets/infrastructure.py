@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 from aws_cdk import (
     core as cdk,
@@ -23,8 +23,8 @@ class Secrets(cdk.Construct):
         self,
         scope: cdk.Construct,
         id_: str,
-        data_project: str,
-        workflow_projects: List[str],
+        data_project: Optional[str],
+        workflow_projects: Optional[List[str]],
         ica_base_url: str,
         slack_host_ssm_name: str,
         slack_webhook_ssm_name: str,
@@ -120,7 +120,7 @@ class Secrets(cdk.Construct):
         master_secret: secretsmanager.Secret,
         ica_base_url: str,
         key_name: str,
-        project_ids: Union[str, List[str]],
+        project_ids: Optional[Union[str, List[str]]],
     ) -> Tuple[secretsmanager.Secret, lambda_.Function]:
         """
         Create a JWT holding secret - that will use the master secret for JWT making - and which will have
@@ -146,10 +146,14 @@ class Secrets(cdk.Construct):
 
         # flip the instructions to our single lambda - the handle either a single JWT generator or
         # dictionary of JWTS
-        if isinstance(project_ids, List):
-            env["PROJECT_IDS"] = " ".join(project_ids)
-        else:
-            env["PROJECT_ID"] = project_ids
+        if ica_base_url == "https://ica.illumina.com":  # V2
+            env["ICA_PLATFORM_VERSION"] = "V2"
+        else:  # V1
+            env["ICA_PLATFORM_VERSION"] = "V1"
+            if isinstance(project_ids, List):
+                env["PROJECT_IDS"] = " ".join(project_ids)
+            else:
+                env["PROJECT_ID"] = project_ids
 
         jwt_producer = lambda_.Function(
             self,

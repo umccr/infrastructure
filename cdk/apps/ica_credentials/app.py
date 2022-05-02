@@ -10,6 +10,7 @@ CDK_APP_NAME = "ica-credentials"
 CDK_APP_PYTHON_VERSION = "3.8"
 
 ICA_BASE_URL = "https://aps2.platform.illumina.com"
+ICAV2_BASE_URL = "https://ica.illumina.com"
 
 SLACK_HOST_SSM_NAME = "/slack/webhook/host"
 SLACK_WEBHOOK_SSM_NAME = "/slack/webhook/id"
@@ -47,7 +48,25 @@ IcaCredentialsDeployment(
     ICA_BASE_URL,
     SLACK_HOST_SSM_NAME,
     SLACK_WEBHOOK_SSM_NAME,
-    env=cdk.Environment(account="472057503814", region="ap-southeast-2"),
+    env=cdk.Environment(
+        account="472057503814",
+        region="ap-southeast-2"
+    ),
+)
+
+# V2 (single token)
+IcaCredentialsDeployment(
+    app,
+    f"{CDK_APP_NAME}-dev-v2",
+    None,  # Token does not require project context in v2
+    None,  # Token does not require additional project list in v2
+    ICAV2_BASE_URL,
+    SLACK_HOST_SSM_NAME,
+    SLACK_WEBHOOK_SSM_NAME,
+    env=cdk.Environment(
+        account=os.environ["CDK_DEFAULT_ACCOUNT"],
+        region=os.environ["CDK_DEFAULT_REGION"],
+    ),
 )
 
 app.synth()

@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 from aws_cdk import core as cdk
 
@@ -10,8 +10,8 @@ class IcaCredentialsDeployment(cdk.Stage):
         self,
         scope: cdk.Construct,
         id_: str,
-        data_project: str,
-        workflow_projects: List[str],
+        data_project: Optional[str],
+        workflow_projects: Optional[List[str]],
         ica_base_url: str,
         slack_host_ssm_name: str,
         slack_webhook_ssm_name: str,

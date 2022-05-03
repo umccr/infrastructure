@@ -14,7 +14,7 @@ def api_key_to_jwt_for_project_v1(ica_base_url: str, api_key: str, cid: str) -> 
                                       output_attribute="access_token")
 
 
-def api_key_to_jwt_for_project_v2(ica_base_url: str, api_key: str) -> str:
+def api_key_to_jwt_for_project_v2(ica_base_url: str, api_key: str, cid: None) -> str:
     return api_key_to_jwt_for_project(url=f"{ica_base_url}/ica/rest/api/tokens",
                                       accept_value="application/vnd.illumina.v3+json",
                                       encoded_params=None,
@@ -56,11 +56,11 @@ def api_key_to_jwt_for_project(url: str, accept_value: str, encoded_params: Opti
         body=None,
     )
 
-    if r.status == 201:
+    if r.status in [200, 201]:
         body = r.data.decode("utf-8")
         body_as_json = json.loads(body)
 
-        if output_attribute in body_as_json:
+        if output_attribute in body_as_json.keys():
             # success
             return body_as_json[output_attribute]
 

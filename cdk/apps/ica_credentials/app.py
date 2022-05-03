@@ -15,11 +15,17 @@ ICAV2_BASE_URL = "https://ica.illumina.com"
 SLACK_HOST_SSM_NAME = "/slack/webhook/host"
 SLACK_WEBHOOK_SSM_NAME = "/slack/webhook/id"
 
+SECRET_PREFIX_NAME_MAP = {
+    "v1": "IcaSecrets",
+    "v2": "IcaV2Secrets"
+}
+
 
 # Development
 IcaCredentialsDeployment(
     app,
     f"{CDK_APP_NAME}-dev",
+    SECRET_PREFIX_NAME_MAP.get("v1"),
     "dc8e6ba9-b744-437b-b070-4cf014694b3d",
     [
         # development_workflows
@@ -40,6 +46,7 @@ IcaCredentialsDeployment(
 IcaCredentialsDeployment(
     app,
     f"{CDK_APP_NAME}-prod",
+    SECRET_PREFIX_NAME_MAP.get("v1"),
     "20b42a71-1ebc-4e7b-b659-313f2f4524c3",
     [
         # production_workflows
@@ -58,6 +65,7 @@ IcaCredentialsDeployment(
 IcaCredentialsDeployment(
     app,
     f"{CDK_APP_NAME}-dev-v2",
+    SECRET_PREFIX_NAME_MAP.get("v2"),
     None,  # Token does not require project context in v2
     None,  # Token does not require additional project list in v2
     ICAV2_BASE_URL,

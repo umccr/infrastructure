@@ -10,6 +10,7 @@ class IcaCredentialsDeployment(cdk.Stage):
         self,
         scope: cdk.Construct,
         id_: str,
+        secret_name: Optional[str],
         data_project: Optional[str],
         workflow_projects: Optional[List[str]],
         ica_base_url: str,
@@ -38,7 +39,7 @@ class IcaCredentialsDeployment(cdk.Stage):
         # obvious when someone sees them that they are associated with ICA
         Secrets(
             stateful,
-            "IcaSecrets",
+            secret_name,
             data_project,
             workflow_projects,
             ica_base_url,

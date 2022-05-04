@@ -390,8 +390,8 @@ locals {
   }
 
   umccrise_wfl_version = {
-    dev = "2.0.1--3.9.3"
-    prod = "2.0.1--3.9.3--a75eb35"
+    dev = "2.0.2--3.9.3"
+    prod = "2.0.2--3.9.3--0a80def"
   }
 
   umccrise_wfl_input = {

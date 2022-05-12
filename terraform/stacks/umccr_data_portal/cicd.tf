@@ -25,6 +25,18 @@ data "aws_ssm_parameter" "htsget_domain" {
   name = "/htsget/domain"
 }
 
+data "aws_ssm_parameter" "gpl_submit_job" {
+  name = "/gpl/submit_job_lambda_fn_url"
+}
+
+data "aws_ssm_parameter" "gpl_submit_job_manual" {
+  name = "/gpl/submit_job_manual_lambda_fn_url"
+}
+
+data "aws_ssm_parameter" "gpl_create_linx_plot" {
+  name = "/gpl/create_linx_plot_lambda_fn_url"
+}
+
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
@@ -258,6 +270,21 @@ resource "aws_codebuild_project" "codebuild_client" {
     environment_variable {
       name  = "HTSGET_URL"
       value = data.aws_ssm_parameter.htsget_domain.value
+    }
+
+    environment_variable {
+      name  = "GPL_SUBMIT_JOB"
+      value = data.aws_ssm_parameter.gpl_submit_job.value
+    }
+
+    environment_variable {
+      name  = "GPL_SUBMIT_JOB_MANUAL"
+      value = data.aws_ssm_parameter.gpl_submit_job_manual.value
+    }
+
+    environment_variable {
+      name  = "GPL_CREATE_LINX_PLOT"
+      value = data.aws_ssm_parameter.gpl_create_linx_plot.value
     }
 
     environment_variable {

@@ -15,7 +15,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "execute-api:Invoke"
+        "execute-api:Invoke",
+        "lambda:InvokeFunctionUrl"
       ],
       "Resource": [
         "*"

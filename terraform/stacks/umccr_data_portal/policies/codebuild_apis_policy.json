@@ -21,7 +21,11 @@
                 "route53:*",
                 "waf-regional:*",
                 "ssm:*",
-                "events:*"
+                "events:*",
+                "servicediscovery:ListServices",
+                "servicediscovery:ListInstances",
+                "states:DescribeExecution",
+                "states:StartExecution"
             ],
             "Resource": "*"
         },

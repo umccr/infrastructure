@@ -44,7 +44,11 @@
                 "secretsmanager:ListSecretVersionIds",
                 "xray:PutTraceSegments",
                 "xray:PutTelemetryRecords",
-                "lambda:InvokeFunction"
+                "lambda:InvokeFunction",
+                "servicediscovery:ListServices",
+                "servicediscovery:ListInstances",
+                "states:DescribeExecution",
+                "states:StartExecution"
             ],
             "Resource": "*"
         }

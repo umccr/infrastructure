@@ -206,10 +206,10 @@ resource "aws_iam_group" "submitter" {
 }
 
 # Consumers
-resource "aws_iam_group" "consumer" {
-  name = "agha_gdr_consumers"
-  path = "/agha/"
-}
+# resource "aws_iam_group" "consumer" {
+#   name = "agha_gdr_consumers"
+#   path = "/agha/"
+# }
 
 # Data Controllers
 resource "aws_iam_group" "data_controller" {
@@ -270,24 +270,24 @@ resource "aws_iam_group_policy_attachment" "submit_staging_rw_policy_attachment"
   policy_arn = aws_iam_policy.agha_staging_rw_policy.arn
 }
 
-resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
-  group      = aws_iam_group.submitter.name
-  policy_arn = aws_iam_policy.agha_store_ro_policy.arn
-}
+# resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
+#   group      = aws_iam_group.submitter.name
+#   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
+# }
 
 # Consumers
-resource "aws_iam_group_membership" "consumer" {
-  name  = "${aws_iam_group.consumer.name}_membership"
-  group = aws_iam_group.consumer.name
-  users = [
-    # module.shyrav.username
-  ]
-}
+# resource "aws_iam_group_membership" "consumer" {
+#   name  = "${aws_iam_group.consumer.name}_membership"
+#   group = aws_iam_group.consumer.name
+#   users = [
+#     # module.shyrav.username
+#   ]
+# }
 
-resource "aws_iam_group_policy_attachment" "consumer_store_ro_policy_attachment" {
-  group      = aws_iam_group.consumer.name
-  policy_arn = aws_iam_policy.agha_store_ro_policy.arn
-}
+# resource "aws_iam_group_policy_attachment" "consumer_store_ro_policy_attachment" {
+#   group      = aws_iam_group.consumer.name
+#   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
+# }
 
 # Controllers
 resource "aws_iam_group_membership" "data_controller" {

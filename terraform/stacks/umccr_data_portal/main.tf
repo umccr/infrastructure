@@ -428,23 +428,23 @@ resource "aws_db_subnet_group" "rds" {
 
 resource "aws_rds_cluster_parameter_group" "db_parameter_group" {
   name        = "${local.stack_name_dash}-db-parameter-group"
-  family      = "aurora-mysql5.7"
+  family      = "aurora-mysql8.0"
   description = "${local.stack_name_us} RDS Aurora cluster parameter group"
 
   parameter {
-    # Set to max 1GB. See https://dev.mysql.com/doc/refman/5.7/en/packet-too-large.html
+    # Set to max 1GB. See https://dev.mysql.com/doc/refman/8.0/en/packet-too-large.html
     name  = "max_allowed_packet"
     value = 1073741824
   }
 
   parameter {
-    # Set to 3x. See https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_net_read_timeout
+    # Set to 3x. See https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_net_read_timeout
     name  = "net_read_timeout"
     value = 30 * 3  # 30s (default) * 3
   }
 
   parameter {
-    # Set to 3x. See https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_net_write_timeout
+    # Set to 3x. See https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_net_write_timeout
     name  = "net_write_timeout"
     value = 60 * 3  # 60s (default) * 3
   }
@@ -454,8 +454,10 @@ resource "aws_rds_cluster_parameter_group" "db_parameter_group" {
 
 resource "aws_rds_cluster" "db" {
   cluster_identifier  = "${local.stack_name_dash}-aurora-cluster"
+  # Engine & Mode. See https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBEngineVersions.html
   engine              = "aurora-mysql"
-  engine_mode         = "serverless"
+  engine_mode         = "provisioned"
+  engine_version      = "8.0.mysql_aurora.3.02.0"
   skip_final_snapshot = true
 
   database_name   = local.stack_name_us
@@ -464,15 +466,12 @@ resource "aws_rds_cluster" "db" {
 
   vpc_security_group_ids = [aws_security_group.rds_security_group.id]
 
-  # Workaround from https://github.com/terraform-providers/terraform-provider-aws/issues/3060
   db_subnet_group_name = aws_db_subnet_group.rds.name
-
-  enable_http_endpoint = true  # Enable RDS Data API (needed for Query Editor)
 
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.db_parameter_group.name
 
-  scaling_configuration {
-    auto_pause   = var.rds_auto_pause[terraform.workspace]
+  serverlessv2_scaling_configuration {
+    # See https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2-administration.html
     min_capacity = var.rds_min_capacity[terraform.workspace]
     max_capacity = var.rds_max_capacity[terraform.workspace]
   }
@@ -480,6 +479,19 @@ resource "aws_rds_cluster" "db" {
   backup_retention_period = var.rds_backup_retention_period[terraform.workspace]
 
   deletion_protection = true
+  storage_encrypted   = true
+
+  tags = merge(local.default_tags)
+}
+
+resource "aws_rds_cluster_instance" "db_instance" {
+  cluster_identifier = aws_rds_cluster.db.id
+  instance_class     = "db.serverless"
+  engine             = aws_rds_cluster.db.engine
+  engine_version     = aws_rds_cluster.db.engine_version
+
+  db_subnet_group_name = aws_rds_cluster.db.db_subnet_group_name
+  publicly_accessible  = false
 
   tags = merge(local.default_tags)
 }

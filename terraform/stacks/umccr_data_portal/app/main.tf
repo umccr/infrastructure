@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.1.7"
+  required_version = ">= 1.2.1"
 
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -11,7 +11,7 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      version = "4.4.0"
+      version = "4.16.0"
     }
   }
 }

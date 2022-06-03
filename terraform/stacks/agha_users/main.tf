@@ -205,12 +205,6 @@ resource "aws_iam_group" "submitter" {
   path = "/agha/"
 }
 
-# Consumers
-# resource "aws_iam_group" "consumer" {
-#   name = "agha_gdr_consumers"
-#   path = "/agha/"
-# }
-
 # Data Controllers
 resource "aws_iam_group" "data_controller" {
   name = "agha_gdr_controller"
@@ -267,27 +261,8 @@ resource "aws_iam_group_membership" "submitter" {
 
 resource "aws_iam_group_policy_attachment" "submit_staging_rw_policy_attachment" {
   group      = aws_iam_group.submitter.name
-  policy_arn = aws_iam_policy.agha_staging_rw_policy.arn
+  policy_arn = aws_iam_policy.agha_staging_submit_policy.arn
 }
-
-# resource "aws_iam_group_policy_attachment" "submit_store_ro_policy_attachment" {
-#   group      = aws_iam_group.submitter.name
-#   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
-# }
-
-# Consumers
-# resource "aws_iam_group_membership" "consumer" {
-#   name  = "${aws_iam_group.consumer.name}_membership"
-#   group = aws_iam_group.consumer.name
-#   users = [
-#     # module.shyrav.username
-#   ]
-# }
-
-# resource "aws_iam_group_policy_attachment" "consumer_store_ro_policy_attachment" {
-#   group      = aws_iam_group.consumer.name
-#   policy_arn = aws_iam_policy.agha_store_ro_policy.arn
-# }
 
 # Controllers
 resource "aws_iam_group_membership" "data_controller" {
@@ -304,9 +279,14 @@ resource "aws_iam_group_policy_attachment" "controller_additional_policy_attachm
   policy_arn = aws_iam_policy.data_controller_policy.arn
 }
 
-resource "aws_iam_group_policy_attachment" "controller_staging_ro_policy_attachment" {
+resource "aws_iam_group_policy_attachment" "controller_staging_manage_policy_attachment" {
   group      = aws_iam_group.data_controller.name
-  policy_arn = aws_iam_policy.agha_staging_ro_policy.arn
+  policy_arn = aws_iam_policy.agha_staging_manage_policy.arn
+}
+
+resource "aws_iam_group_policy_attachment" "controller_mm_manage_policy_attachment" {
+  group      = aws_iam_group.data_controller.name
+  policy_arn = aws_iam_policy.agha_mm_manage_policy.arn
 }
 
 resource "aws_iam_group_policy_attachment" "controller_store_ro_policy_attachment" {
@@ -347,31 +327,6 @@ resource "aws_iam_group_policy_attachment" "gen3_services_store_ro_policy_attach
 #     })
 # }
 
-
-data "template_file" "agha_staging_ro_policy" {
-  template = file("policies/bucket-ro-policy.json")
-
-  vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
-  }
-}
-
-data "template_file" "agha_staging_rw_policy" {
-  template = file("policies/bucket-rw-policy.json")
-
-  vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
-  }
-}
-
-data "template_file" "agha_store_ro_policy" {
-  template = file("policies/bucket-ro-policy.json")
-
-  vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_store.id
-  }
-}
-
 resource "aws_iam_policy" "default_user_policy" {
   name_prefix = "default_user_policy"
   path        = "/agha/"
@@ -384,18 +339,52 @@ resource "aws_iam_policy" "data_controller_policy" {
   policy = file("policies/data-controller-policy.json")
 }
 
+data "template_file" "agha_staging_manage_policy" {
+  template = file("policies/bucket-manage-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
+  }
+}
+resource "aws_iam_policy" "agha_staging_manage_policy" {
+  name_prefix = "agha_staging_ro_policy"
+  path        = "/agha/"
+  policy      = data.template_file.agha_staging_manage_policy.rendered
+}
+
+data "template_file" "agha_staging_ro_policy" {
+  template = file("policies/bucket-ro-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
+  }
+}
 resource "aws_iam_policy" "agha_staging_ro_policy" {
   name_prefix = "agha_staging_ro_policy"
   path        = "/agha/"
   policy      = data.template_file.agha_staging_ro_policy.rendered
 }
 
-resource "aws_iam_policy" "agha_staging_rw_policy" {
-  name_prefix = "agha_staging_rw_policy"
+data "template_file" "agha_staging_submit_policy" {
+  template = file("policies/bucket-submit-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id
+  }
+}
+resource "aws_iam_policy" "agha_staging_submit_policy" {
+  name_prefix = "agha_staging_submit_policy"
   path        = "/agha/"
-  policy      = data.template_file.agha_staging_rw_policy.rendered
+  policy      = data.template_file.agha_staging_submit_policy.rendered
 }
 
+data "template_file" "agha_store_ro_policy" {
+  template = file("policies/bucket-ro-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_store.id
+  }
+}
 resource "aws_iam_policy" "agha_store_ro_policy" {
   name_prefix = "agha_store_ro_policy"
   path        = "/agha/"
@@ -500,24 +489,37 @@ resource "aws_iam_group_membership" "mm" {
 # group policies
 resource "aws_iam_group_policy_attachment" "mm_mm_rw_policy_attachment" {
   group      = aws_iam_group.mm.name
-  policy_arn = aws_iam_policy.agha_mm_rw_policy.arn
+  policy_arn = aws_iam_policy.agha_mm_submit_policy.arn
 }
 
 # policy
-data "template_file" "agha_mm_rw_policy" {
-  template = file("policies/bucket-rw-policy.json")
+data "template_file" "agha_mm_submit_policy" {
+  template = file("policies/bucket-submit-policy.json")
 
   vars = {
     bucket_name = data.aws_s3_bucket.agha_gdr_mm.id
   }
 }
 
-resource "aws_iam_policy" "agha_mm_rw_policy" {
-  name_prefix = "agha_mm_rw_policy"
+resource "aws_iam_policy" "agha_mm_submit_policy" {
+  name_prefix = "agha_mm_submit_policy"
   path        = "/agha/"
-  policy      = data.template_file.agha_mm_rw_policy.rendered
+  policy      = data.template_file.agha_mm_submit_policy.rendered
 }
 
+data "template_file" "agha_mm_manage_policy" {
+  template = file("policies/bucket-manage-policy.json")
+
+  vars = {
+    bucket_name = data.aws_s3_bucket.agha_gdr_mm.id
+  }
+}
+
+resource "aws_iam_policy" "agha_mm_manage_policy" {
+  name_prefix = "agha_mm_manage_policy"
+  path        = "/agha/"
+  policy      = data.template_file.agha_mm_manage_policy.rendered
+}
 ##### VCGS specific access to MM
 
 # group

@@ -53,16 +53,16 @@ variable "rds_auto_pause" {
 
 variable "rds_min_capacity" {
   default = {
-    prod = 1
-    dev  = 1
+    prod = 0.5
+    dev  = 0.5
   }
   description = "The minimum capacity in Aurora Capacity Units (ACUs)"
 }
 
 variable "rds_max_capacity" {
   default = {
-    prod = 16
-    dev  = 16
+    prod = 16.0
+    dev  = 4.0
   }
   description = "The maximum capacity in Aurora Capacity Units (ACUs)"
 }

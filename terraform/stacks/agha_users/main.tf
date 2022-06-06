@@ -67,6 +67,17 @@ module "simon" {
   email     = "simon.sadedin@vcgs.org.au"
 }
 
+resource "aws_iam_user" "adavawala" {
+  name = "adavawala"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "ashil.davawala@vcgs.org.au",
+    name    = "Ashil Davawala",
+    keybase = "adavawala"
+  }
+}
+
 # resource "aws_iam_user" "shyrav" {
 #   name = "shyrav"
 #   path = "/agha/"
@@ -227,6 +238,7 @@ resource "aws_iam_group_membership" "default" {
   users = [
     module.sarah_dm.username,
     module.simon.username,
+    aws_iam_user.adavawala.name,
     # module.shyrav.username,
     aws_iam_user.yingzhu.name,
     aws_iam_user.fzhanghealth.name,
@@ -251,6 +263,7 @@ resource "aws_iam_group_membership" "submitter" {
   users = [
     module.sarah_dm.username,
     module.simon.username,
+    aws_iam_user.adavawala.name,
     aws_iam_user.yingzhu.name,
     aws_iam_user.fzhanghealth.name,
     # module.seanlianu.username,

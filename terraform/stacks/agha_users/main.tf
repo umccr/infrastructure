@@ -535,39 +535,39 @@ resource "aws_iam_policy" "agha_mm_manage_policy" {
 }
 ##### VCGS specific access to MM
 
-# group
-resource "aws_iam_group" "mm_vcgs" {
-  name = "agha_gdr_mm_vcgs"
-  path = "/agha/"
-}
+# # group
+# resource "aws_iam_group" "mm_vcgs" {
+#   name = "agha_gdr_mm_vcgs"
+#   path = "/agha/"
+# }
 
-# group membership
-resource "aws_iam_group_membership" "mm_vcgs" {
-  name  = "${aws_iam_group.mm_vcgs.name}_membership"
-  group = aws_iam_group.mm_vcgs.name
-  users = [
-    module.simon.username
-  ]
-}
+# # group membership
+# resource "aws_iam_group_membership" "mm_vcgs" {
+#   name  = "${aws_iam_group.mm_vcgs.name}_membership"
+#   group = aws_iam_group.mm_vcgs.name
+#   users = [
+#     module.simon.username
+#   ]
+# }
 
-# group policies
-resource "aws_iam_group_policy_attachment" "mm_mm_vcgs_rw_policy_attachment" {
-  group      = aws_iam_group.mm_vcgs.name
-  policy_arn = aws_iam_policy.agha_mm_vcgs_rw_policy.arn
-}
+# # group policies
+# resource "aws_iam_group_policy_attachment" "mm_mm_vcgs_rw_policy_attachment" {
+#   group      = aws_iam_group.mm_vcgs.name
+#   policy_arn = aws_iam_policy.agha_mm_vcgs_rw_policy.arn
+# }
 
-# policy
-data "template_file" "agha_mm_vcgs_rw_policy" {
-  template = file("policies/bucket-rw-prefix-policy.json")
+# # policy
+# data "template_file" "agha_mm_vcgs_rw_policy" {
+#   template = file("policies/bucket-rw-prefix-policy.json")
 
-  vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_mm.id,
-    prefix = "vcgs"
-  }
-}
+#   vars = {
+#     bucket_name = data.aws_s3_bucket.agha_gdr_mm.id,
+#     prefix = "vcgs"
+#   }
+# }
 
-resource "aws_iam_policy" "agha_mm_vcgs_rw_policy" {
-  name_prefix = "agha_mm_vcgs_rw_policy"
-  path        = "/agha/"
-  policy      = data.template_file.agha_mm_vcgs_rw_policy.rendered
-}
+# resource "aws_iam_policy" "agha_mm_vcgs_rw_policy" {
+#   name_prefix = "agha_mm_vcgs_rw_policy"
+#   path        = "/agha/"
+#   policy      = data.template_file.agha_mm_vcgs_rw_policy.rendered
+# }

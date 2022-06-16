@@ -209,7 +209,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--e24feb2"
+    prod = "3.9.3--f9461fb"
   }
 
   wts_tumor_only_wfl_input = {
@@ -224,15 +224,15 @@ locals {
         },
       "cytobands": {
             "class": "File",
-            "location": "gds://development/reference-data/dragen_wts/arriba/hg38/arriba-cytobands.tsv"
+            "location": "gds://development/reference-data/dragen_wts/arriba/2.3.0/cytobands_hg38_GRCh38_v2.3.0.tsv"
         },
       "blacklist": {
             "class": "File",
-            "location": "gds://development/reference-data/dragen_wts/arriba/hg38/arriba-blacklist.tsv.gz"
+            "location": "gds://development/reference-data/dragen_wts/arriba/2.3.0/blacklist_hg38_GRCh38_v2.3.0.tsv.gz"
         },
       "protein_domains": {
             "class": "File",
-            "location": "gds://development/reference-data/dragen_wts/arriba/hg38/arriba-protein-domains.gff3"
+            "location": "gds://development/reference-data/dragen_wts/arriba/2.3.0/protein_domains_hg38_GRCh38_v2.3.0.gff3"
         },
       "reference_fasta": {
         "class": "File",
@@ -286,15 +286,15 @@ locals {
         },
       "cytobands": {
             "class": "File",
-            "location": "gds://production/reference-data/dragen_wts/arriba/hg38/arriba-cytobands.tsv"
+            "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/cytobands_hg38_GRCh38_v2.3.0.tsv"
         },
       "blacklist": {
             "class": "File",
-            "location": "gds://production/reference-data/dragen_wts/arriba/hg38/arriba-blacklist.tsv.gz"
+            "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/blacklist_hg38_GRCh38_v2.3.0.tsv.gz"
         },
       "protein_domains": {
             "class": "File",
-            "location": "gds://production/reference-data/dragen_wts/arriba/hg38/arriba-protein-domains.gff3"
+            "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/protein_domains_hg38_GRCh38_v2.3.0.gff3"
         },
       "reference_fasta": {
         "class": "File",

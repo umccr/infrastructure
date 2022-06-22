@@ -118,6 +118,34 @@ module "main_vpc_endpoints" {
       route_table_ids = flatten([module.main_vpc.intra_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
       # policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
       tags            = { Name = "dynamodb-vpc-endpoint" }
+    },
+
+    # Added ECR, ECS, Log VPC Interface Endpoints for Amazon Genomics CLI (AGC)
+    # https://aws.github.io/amazon-genomics-cli/docs/concepts/accounts/#vpc-endpoints
+
+    ecr_api = {
+      service         = "ecr.api"
+      tags            = { Name = "ecr-api-vpc-endpoint" }
+    },
+    ecr_dkr = {
+      service         = "ecr.dkr"
+      tags            = { Name = "ecr-dkr-vpc-endpoint" }
+    },
+    ecs = {
+      service         = "ecs"
+      tags            = { Name = "ecs-vpc-endpoint" }
+    },
+    ecs_agent = {
+      service         = "ecs-agent"
+      tags            = { Name = "ecs-agent-vpc-endpoint" }
+    },
+    ecs_telemetry = {
+      service         = "ecs-telemetry"
+      tags            = { Name = "ecs-telemetry-vpc-endpoint" }
+    },
+    logs = {
+      service         = "logs"
+      tags            = { Name = "logs-vpc-endpoint" }
     }
   }
 

@@ -1,17 +1,17 @@
 ### Service Users
 
 # output for serivce: packer
-output "packer_username" {
-  value = "${module.packer_user.username}"
-}
+#output "packer_username" {
+#  value = "${module.packer_user.username}"
+#}
 
-output "packer_access_key" {
-  value = "${module.packer_user.access_key}"
-}
+#output "packer_access_key" {
+#  value = "${module.packer_user.access_key}"
+#}
 
-output "packer_secret_access_key" {
-  value = "${module.packer_user.encrypted_secret_access_key}"
-}
+#output "packer_secret_access_key" {
+#  value = "${module.packer_user.encrypted_secret_access_key}"
+#}
 
 # output for serivce: terraform
 output "terraform_username" {

@@ -18,11 +18,11 @@ provider "aws" {
 ##### create service users
 
 # packer
-module "packer_user" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "packer"
-  pgp_key  = "keybase:freisinger"
-}
+#module "packer_user" {
+#  source   = "../../modules/iam_user/secure_user"
+#  username = "packer"
+#  pgp_key  = "keybase:freisinger"
+#}
 
 # terraform
 module "terraform_user" {
@@ -59,27 +59,27 @@ resource "aws_iam_user_policy_attachment" "novastor_cloudwatch_user_policy_2" {
 # define the assume role policies and who can use them
 
 # packer_role (on dev)
-data "template_file" "assume_packer_role_policy" {
-  template = "${file("policies/assume_role_no_mfa.json")}"
+#data "template_file" "assume_packer_role_policy" {
+#  template = "${file("policies/assume_role_no_mfa.json")}"
+#
+#  vars {
+#    role_arn = "arn:aws:iam::620123204273:role/packer_role"
+#  }
+#}
 
-  vars {
-    role_arn = "arn:aws:iam::620123204273:role/packer_role"
-  }
-}
+#resource "aws_iam_policy" "assume_packer_role_policy" {
+#  name   = "assume_packer_role_policy"
+#  path   = "/"
+#  policy = "${data.template_file.assume_packer_role_policy.rendered}"
+#}
 
-resource "aws_iam_policy" "assume_packer_role_policy" {
-  name   = "assume_packer_role_policy"
-  path   = "/"
-  policy = "${data.template_file.assume_packer_role_policy.rendered}"
-}
-
-resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
-  name       = "packer_assume_packer_role_attachment"
-  policy_arn = "${aws_iam_policy.assume_packer_role_policy.arn}"
-  groups     = []
-  users      = ["${module.packer_user.username}"]
-  roles      = []
-}
+#resource "aws_iam_policy_attachment" "packer_assume_packer_role_attachment" {
+#  name       = "packer_assume_packer_role_attachment"
+#  policy_arn = "${aws_iam_policy.assume_packer_role_policy.arn}"
+#  groups     = []
+#  users      = ["${module.packer_user.username}"]
+#  roles      = []
+#}
 
 # ops_admin_no_mfa (on dev)
 data "template_file" "assume_ops_admin_dev_no_mfa_role_policy" {

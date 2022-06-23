@@ -1,7 +1,18 @@
 # bastion stack
 
+> NOTES: 
+>  - No terraform workspace required for bastion account. 
+>  - Required terraform1 for this stack.
+
 ```
-terraform ...
+export AWS_PROFILE=bastion
+
+terraform1 workspace list
+* default
+
+terraform1 plan
+terraform1 apply
+...
 ```
 
 

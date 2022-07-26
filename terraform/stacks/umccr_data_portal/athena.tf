@@ -1,5 +1,8 @@
 locals {
-  secret_name_prefix = "data_portal/rds/master"
+  secret_name_prefix = {
+    prod = "data_portal/rds/readonly"
+    dev  = "data_portal/rds/master"
+  }
 }
 
 resource "aws_serverlessapplicationrepository_cloudformation_stack" "athena_jdbc_connector" {
@@ -14,7 +17,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "athena_jdbc
 
   parameters = {
     # The default connection string is used when catalog is "lambda:${LambdaFunctionName}". Catalog specific Connection Strings can be added later. Format: ${DatabaseType}://${NativeJdbcConnectionString}.
-    DefaultConnectionString = "mysql://jdbc:mysql://${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}?$${${local.secret_name_prefix}}"
+    DefaultConnectionString = "mysql://jdbc:mysql://${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}?$${${local.secret_name_prefix[terraform.workspace]}}"
     # If set to 'false' data spilled to S3 is encrypted with AES GCM. Default is 'false'
     # DisableSpillEncryption  = "true"
     # The name you will give to this catalog in Athena. It will also be used as the function name. This name must satisfy the pattern ^[a-z0-9-_]{1,64}$
@@ -24,7 +27,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "athena_jdbc
     # Maximum Lambda invocation runtime in seconds. (min 1 - 900 max)
     # LambdaTimeout           = "120"
     # Used to create resource-based authorization policy for "secretsmanager:GetSecretValue" action. E.g. All Athena JDBC Federation secret names can be prefixed with "AthenaJdbcFederation" and authorization policy will allow "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:AthenaJdbcFederation*". Parameter value in this case should be "AthenaJdbcFederation". If you do not have a prefix, you can manually update the IAM policy to add allow any secret names.
-    SecretNamePrefix        = local.secret_name_prefix
+    SecretNamePrefix        = local.secret_name_prefix[terraform.workspace]
     # One or more SecurityGroup IDs corresponding to the SecurityGroup that should be applied to the Lambda function. (e.g. sg1,sg2,sg3)
     SecurityGroupIds        = aws_security_group.lambda_security_group.id
     # The name of the bucket where this function can spill data.

@@ -243,32 +243,28 @@ locals {
         "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
       },
       "qc_reference_samples":[
-          {
-              "class": "Directory",
-              "location": "gds://development/validation_data/wts/SBJ00061_MDX190049_L1900440/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00061"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://development/validation_data/wts/SBJ00188_MDX190169_L1900877/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00188"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://development/validation_data/wts/SBJ00199_MDX190193_L1900920/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00199"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://development/validation_data/wts/SBJ00236_MDX190219_L1901023/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00236"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://development/validation_data/wts/SBJ00238_MDX190231_L1901028/analysis/dragen_wts/2021-11-29--3.9.3/SBJ00238"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://development/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
-          }
-      ],
-      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}",
+            {
+                "class": "Directory",
+                "location": "gds://development/analysis_data/SBJ01563/wts_tumor_only/202207254fcc677a/L2200121_dragen"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://development/analysis_data/SBJ01147/wts_tumor_only/2022071381c4257a/L2101521_dragen"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://development/analysis_data/SBJ01620/wts_tumor_only/2022042945b6e532/L2200188_dragen"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://development/analysis_data/SBJ01286/wts_tumor_only/20220218f266199c/L2101763_dragen"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://development/analysis_data/SBJ01673/wts_tumor_only/20220313567fd227/L2200311_dragen"
+            }
+        ],
+      "cl_config": "{\"sample_names_replace\":{\"PRJ220412\":\"Ref_1_Good\",\"MDX210318\":\"Ref_2_Good\",\"PRJ220466\":\"Ref_3_Good\",\"PRJ211234\":\"Ref_4_Bad\",\"PRJ220790\":\"Ref_5_Bad\"}}",
       "sites_somalier": {
             "class": "File",
             "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
@@ -307,30 +303,26 @@ locals {
       "qc_reference_samples":[
           {
               "class": "Directory",
-              "location": "gds://production/validation_data/wts/SBJ00061_MDX190049_L1900440/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00061"
+              "location": "gds://production/analysis_data/SBJ01563/wts_tumor_only/202207254fcc677a/L2200121_dragen"
           },
           {
               "class": "Directory",
-              "location": "gds://production/validation_data/wts/SBJ00188_MDX190169_L1900877/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00188"
+              "location": "gds://production/analysis_data/SBJ01147/wts_tumor_only/2022071381c4257a/L2101521_dragen"
           },
           {
               "class": "Directory",
-              "location": "gds://production/validation_data/wts/SBJ00199_MDX190193_L1900920/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00199"
+              "location": "gds://production//analysis_data/SBJ01620/wts_tumor_only/2022042945b6e532/L2200188_dragen"
           },
           {
               "class": "Directory",
-              "location": "gds://production/validation_data/wts/SBJ00236_MDX190219_L1901023/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00236"
+              "location": "gds://production/analysis_data/SBJ01286/wts_tumor_only/20220218f266199c/L2101763_dragen"
           },
           {
               "class": "Directory",
-              "location": "gds://production/validation_data/wts/SBJ00238_MDX190231_L1901028/analysis/dragen_wts/2021-11-29--3.9.3/SBJ00238"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://production/validation_data/wts/SBJ00028_PRJ190190_L1900423/analysis/dragen_wts/2021-12-01--3.9.3/SBJ00028"
+              "location": "gds://production/analysis_data/SBJ01673/wts_tumor_only/20220313567fd227/L2200311_dragen"
           }
       ],
-      "cl_config": "{\"sample_names_replace\":{\"L1900440\":\"Ref_1\",\"L1900877\":\"Ref_2\",\"L1900920\":\"Ref_3\",\"L1901023\":\"Ref_4\",\"L1901028\":\"Ref_5\",\"L1900423\":\"Ref_6\"}}",
+      "cl_config": "{\"sample_names_replace\":{\"PRJ220412\":\"Ref_1_Good\",\"MDX210318\":\"Ref_2_Good\",\"PRJ220466\":\"Ref_3_Good\",\"PRJ211234\":\"Ref_4_Bad\",\"PRJ220790\":\"Ref_5_Bad\"}}",
       "sites_somalier": {
             "class": "File",
             "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"

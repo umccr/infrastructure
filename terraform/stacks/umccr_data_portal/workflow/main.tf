@@ -311,7 +311,7 @@ locals {
           },
           {
               "class": "Directory",
-              "location": "gds://production//analysis_data/SBJ01620/wts_tumor_only/2022042945b6e532/L2200188_dragen"
+              "location": "gds://production/analysis_data/SBJ01620/wts_tumor_only/2022042945b6e532/L2200188_dragen"
           },
           {
               "class": "Directory",

@@ -245,26 +245,26 @@ locals {
       "qc_reference_samples":[
             {
                 "class": "Directory",
-                "location": "gds://development/analysis_data/SBJ01563/wts_tumor_only/202207254fcc677a/L2200121_dragen"
+                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01563"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/analysis_data/SBJ01147/wts_tumor_only/2022071381c4257a/L2101521_dragen"
+                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01147"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/analysis_data/SBJ01620/wts_tumor_only/2022042945b6e532/L2200188_dragen"
+                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01620"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/analysis_data/SBJ01286/wts_tumor_only/20220218f266199c/L2101763_dragen"
+                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01286"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/analysis_data/SBJ01673/wts_tumor_only/20220313567fd227/L2200311_dragen"
+                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01673"
             }
         ],
-      "cl_config": "{\"sample_names_replace\":{\"PRJ220412\":\"Ref_1_Good\",\"MDX210318\":\"Ref_2_Good\",\"PRJ220466\":\"Ref_3_Good\",\"PRJ211234\":\"Ref_4_Bad\",\"PRJ220790\":\"Ref_5_Bad\"}}",
+      "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",
       "sites_somalier": {
             "class": "File",
             "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
@@ -301,28 +301,28 @@ locals {
         "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
       },
       "qc_reference_samples":[
-          {
-              "class": "Directory",
-              "location": "gds://production/analysis_data/SBJ01563/wts_tumor_only/202207254fcc677a/L2200121_dragen"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://production/analysis_data/SBJ01147/wts_tumor_only/2022071381c4257a/L2101521_dragen"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://production/analysis_data/SBJ01620/wts_tumor_only/2022042945b6e532/L2200188_dragen"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://production/analysis_data/SBJ01286/wts_tumor_only/20220218f266199c/L2101763_dragen"
-          },
-          {
-              "class": "Directory",
-              "location": "gds://production/analysis_data/SBJ01673/wts_tumor_only/20220313567fd227/L2200311_dragen"
-          }
-      ],
-      "cl_config": "{\"sample_names_replace\":{\"PRJ220412\":\"Ref_1_Good\",\"MDX210318\":\"Ref_2_Good\",\"PRJ220466\":\"Ref_3_Good\",\"PRJ211234\":\"Ref_4_Bad\",\"PRJ220790\":\"Ref_5_Bad\"}}",
+            {
+                "class": "Directory",
+                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01563"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01147"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01620"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01286"
+            },
+            {
+                "class": "Directory",
+                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01673"
+            }
+        ],
+      "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",
       "sites_somalier": {
             "class": "File",
             "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"

@@ -245,23 +245,23 @@ locals {
       "qc_reference_samples":[
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01563"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01563"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01147"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01147"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01620"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01620"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01286"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01286"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/multiqc/2022-08-17--3.9.3/SBJ01673"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01673"
             }
         ],
       "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",
@@ -303,23 +303,23 @@ locals {
       "qc_reference_samples":[
             {
                 "class": "Directory",
-                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01563"
+                "location": "gds://production/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01563"
             },
             {
                 "class": "Directory",
-                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01147"
+                "location": "gds://production/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01147"
             },
             {
                 "class": "Directory",
-                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01620"
+                "location": "gds://production/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01620"
             },
             {
                 "class": "Directory",
-                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01286"
+                "location": "gds://production/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01286"
             },
             {
                 "class": "Directory",
-                "location": "gds://production/reference-data/multiqc/2022-08-17--3.9.3/SBJ01673"
+                "location": "gds://production/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01673"
             }
         ],
       "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",

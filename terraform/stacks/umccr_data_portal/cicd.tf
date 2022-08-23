@@ -33,9 +33,12 @@ data "aws_ssm_parameter" "gpl_submit_job_manual" {
   name = "/gpl/submit_job_manual_lambda_fn_url"
 }
 
-data "aws_ssm_parameter" "gpl_create_linx_plot" {
-  name = "/gpl/create_linx_plot_lambda_fn_url"
-}
+# As of GPL v0.2.0, Do not deploy LINX plotting Lambda
+# See https://github.com/umccr/gridss-purple-linx-nf/commit/a015146e95e1b7cd3de3bc639cbc600887ba42ff
+# FIXME If re-enable, also uncomment env var in client CodeBuild -- search GPL_CREATE_LINX_PLOT
+#data "aws_ssm_parameter" "gpl_create_linx_plot" {
+#  name = "/gpl/create_linx_plot_lambda_fn_url"
+#}
 
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
@@ -282,10 +285,10 @@ resource "aws_codebuild_project" "codebuild_client" {
       value = data.aws_ssm_parameter.gpl_submit_job_manual.value
     }
 
-    environment_variable {
-      name  = "GPL_CREATE_LINX_PLOT"
-      value = data.aws_ssm_parameter.gpl_create_linx_plot.value
-    }
+#    environment_variable {
+#      name  = "GPL_CREATE_LINX_PLOT"
+#      value = data.aws_ssm_parameter.gpl_create_linx_plot.value
+#    }
 
     environment_variable {
       name  = "REGION"

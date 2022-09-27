@@ -14,15 +14,6 @@
     {
       "Effect": "Allow",
       "Action": [
-        "lakeformation:*"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "kms:Decrypt"
       ],
       "Resource": [

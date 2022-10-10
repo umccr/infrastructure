@@ -12,7 +12,7 @@ from aws_cdk.aws_events_targets import LambdaFunction
 from aws_cdk.aws_iam import PolicyStatement
 from aws_cdk.core import Duration
 
-ROTATION_DAYS = 7
+ROTATION_DAYS = 1
 
 
 class Secrets(cdk.Construct):

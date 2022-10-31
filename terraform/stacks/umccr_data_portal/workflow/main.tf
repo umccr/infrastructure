@@ -115,7 +115,7 @@ locals {
 
   wgs_alignment_qc_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--7ba55e9"
+    prod = "3.9.3--4e00721"
   }
 
   wgs_alignment_qc_wfl_input = {
@@ -143,14 +143,9 @@ locals {
       "output_file_prefix": null,
       "output_directory": null,
       "fastq_list_rows": null,
-      "sites_somalier": {
-        "class": "File",
-        "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"
-      },
-      "reference_fasta": {
-        "class": "File",
-        "location": "gds://production/reference-data/genomes/hg38/hg38.fa"
-      },
+      "enable_duplicate_marking": true,
+      "enable_map_align_output": true,
+      "enable_sort": true,
       "reference_tar": {
         "class": "File",
         "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
@@ -166,7 +161,7 @@ locals {
 
   wgs_tumor_normal_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--7ba55e9"
+    prod = "3.9.3--4e00721"
   }
 
   wgs_tumor_normal_wfl_input = {
@@ -209,7 +204,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "3.9.3"
-    prod = "3.9.3--a4236ba"
+    prod = "3.9.3--4e00721"
   }
 
   wts_tumor_only_wfl_input = {
@@ -276,6 +271,8 @@ locals {
       "fastq_list_rows": null,
       "output_file_prefix": null,
       "output_directory": null,
+      "enable_map_align_output": true,
+      "enable_duplicate_marking": false,
       "annotation_file": {
             "class": "File",
             "location": "gds://production/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
@@ -326,7 +323,7 @@ locals {
       "sites_somalier": {
             "class": "File",
             "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"
-        }
+      }
     }
     EOT
   }

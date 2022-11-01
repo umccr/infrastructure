@@ -11,16 +11,19 @@ locals {
   status_page_alias_domain = {
     prod = "status.data.umccr.org"
     dev  = ""
+    stg  = ""
   }
 
   status_page_callback_urls = {
     prod = ["https://${local.status_page_domain}", "https://${local.status_page_alias_domain[terraform.workspace]}"]
     dev  = ["https://${local.status_page_domain}"]
+    stg  = ["https://${local.status_page_domain}"]
   }
 
   status_page_oauth_redirect_url = {
     prod = "https://${local.status_page_alias_domain[terraform.workspace]}"
     dev  = "https://${local.status_page_domain}"
+    stg  = "https://${local.status_page_domain}"
   }
 
   status_page_param_prefix = "/data_portal/status_page"

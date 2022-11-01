@@ -2,11 +2,18 @@
 
 - This stack is originally break out from Data Portal; and contains AWS Cognito User Pool and Identity Pool. 
 - User Pool is used as both AAI and OAuth broker roles for some client application authentication needs.
-- User Pool is configured to use UMCCR Google Workspace account as Identity Provider (IdP).
 - Authenticated user can then assume role with web identity through Identity Pool to access some AWS resources.
 - Access activities are audited through CloudTrail.
 
-## TL;DR
+## IdP
+
+User Pool is configured to use UMCCR Google Workspace account as Identity Provider (IdP).
+
+- Go to https://console.developers.google.com/
+- Select `umccr-portal` from Project list
+- Go to `Credentials > OAuth 2.0 Client IDs > UMCCR Data Portal Client [Dev|Prod|Stg]`
+
+## Deploy
 
 Login to AWS.
 ```
@@ -19,9 +26,10 @@ terraform workspace list
   default
 * dev
   prod
+  stg
 ```
 
-It is typically applied against the AWS `prod` and `dev` accounts and uses Terraform workspaces to distinguish between those accounts.
+It is typically applied against the AWS `prod`, `dev` or `stg` accounts and uses Terraform workspaces to distinguish between those accounts.
 
 ```
 terraform workspace select dev

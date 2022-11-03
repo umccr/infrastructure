@@ -430,7 +430,7 @@ locals {
   }
 
   rnasum_wfl_version = {
-    dev = "0.4.4"
+    dev = "0.4.5"
     prod = "0.4.4--c3e3093"
   }
 

@@ -1,3 +1,12 @@
+# Prerequisite:
+#  $ cdk version
+#       2.49.1 (build be5fcf4)
+# Usage:
+#   pip install aws-cdk-lib constructs
+#   aws sso login --profile=dev
+#   cdk synth --app="python3 debug.py" --profile=dev
+#   cdk context -j | jq
+
 import os
 
 from aws_cdk import (
@@ -16,8 +25,8 @@ env_profile = Environment(
 
 
 class DebugStack(Stack):
-    def __init__(self, scope: Construct, id: str, props, **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
+    def __init__(self, scope: Construct, id_: str, props, **kwargs) -> None:
+        super().__init__(scope, id_, **kwargs)
 
         # Using tags filter on networking stack to get main-vpc in given env context
         vpc_name = "main-vpc"
@@ -73,11 +82,6 @@ class DebugApp(App):
 if __name__ == '__main__':
     DebugApp().synth()
 
-# Usage:
-#   pip install aws-cdk-lib constructs
-#   aws sso login --profile=dev
-#   cdk synth --app="python3 debug.py" --profile=dev
-#   cdk context -j | jq
 
 # Footnote:
 # Wondering those wired subnets id print upon first time synth like the following?

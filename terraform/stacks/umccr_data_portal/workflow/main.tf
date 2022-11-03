@@ -382,8 +382,8 @@ locals {
   }
 
   umccrise_wfl_version = {
-    dev = "2.1.1--3.9.3"
-    prod = "2.1.1--3.9.3--e4195a6"
+    dev = "2.2.0--3.9.3"
+    prod = "2.2.0--3.9.3--4e00721"
   }
 
   umccrise_wfl_input = {
@@ -394,6 +394,7 @@ locals {
       "output_directory_germline": null,
       "output_directory_umccrise": null,
       "output_file_prefix_germline": null,
+      "enable_duplicate_marking": true,
       "reference_tar_germline": {
         "class": "File",
         "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
@@ -412,6 +413,7 @@ locals {
       "output_directory_germline": null,
       "output_directory_umccrise": null,
       "output_file_prefix_germline": null,
+      "enable_duplicate_marking": true,
       "reference_tar_germline": {
         "class": "File",
         "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"

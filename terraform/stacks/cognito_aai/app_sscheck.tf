@@ -11,16 +11,19 @@ locals {
   sscheck_alias_domain = {
     prod = "sscheck.umccr.org"
     dev  = ""
+    stg  = ""
   }
 
   sscheck_callback_urls = {
     prod = ["https://${local.sscheck_domain}", "https://${local.sscheck_alias_domain[terraform.workspace]}"]
     dev  = ["https://${local.sscheck_domain}"]
+    stg  = ["https://${local.sscheck_domain}"]
   }
 
   sscheck_oauth_redirect_url = {
     prod = "https://${local.sscheck_alias_domain[terraform.workspace]}"
     dev  = "https://${local.sscheck_domain}"
+    stg  = "https://${local.sscheck_domain}"
   }
 
   sscheck_param_prefix = "/${local.sscheck}/client"

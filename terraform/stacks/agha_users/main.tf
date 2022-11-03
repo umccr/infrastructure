@@ -78,6 +78,18 @@ resource "aws_iam_user" "adavawala" {
   }
 }
 
+resource "aws_iam_user" "sgao" {
+  name = "sgao"
+  path = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "song.gao@sa.gov.au",
+    name    = "Song Gao",
+    keybase = "sgao"
+  }
+}
+
+
 # resource "aws_iam_user" "shyrav" {
 #   name = "shyrav"
 #   path = "/agha/"
@@ -239,6 +251,7 @@ resource "aws_iam_group_membership" "default" {
     module.sarah_dm.username,
     module.simon.username,
     aws_iam_user.adavawala.name,
+    aws_iam_user.sgao.name,
     # module.shyrav.username,
     aws_iam_user.yingzhu.name,
     aws_iam_user.fzhanghealth.name,
@@ -264,6 +277,7 @@ resource "aws_iam_group_membership" "submitter" {
     module.sarah_dm.username,
     module.simon.username,
     aws_iam_user.adavawala.name,
+    aws_iam_user.sgao.name,
     aws_iam_user.yingzhu.name,
     aws_iam_user.fzhanghealth.name,
     # module.seanlianu.username,

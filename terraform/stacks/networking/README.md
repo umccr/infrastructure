@@ -193,7 +193,7 @@ terraform workspace list
   default
 * dev
   prod
-  tothill
+  stg
 ```
 
 It is typically applied against the AWS `prod` and `dev` accounts and uses Terraform workspaces to distinguish between those accounts.

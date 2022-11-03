@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.2.5"
+  required_version = ">= 1.3.3"
 
   backend "s3" {
     bucket = "umccr-terraform-states"
@@ -10,7 +10,7 @@ terraform {
 
   required_providers {
     aws = {
-      version = "4.23.0"
+      version = "4.37.0"
       source = "hashicorp/aws"
     }
   }
@@ -34,7 +34,7 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 
 module "main_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "3.14.2"
+  version = "3.18.1"
 
   name = "main-vpc"
   cidr = "10.2.0.0/16"

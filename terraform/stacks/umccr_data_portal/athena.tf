@@ -6,10 +6,10 @@ locals {
 }
 
 resource "aws_serverlessapplicationrepository_cloudformation_stack" "athena_jdbc_connector" {
-  # See https://serverlessrepo.aws.amazon.com/applications/us-east-1/292517598671/AthenaJdbcConnector
-  name             = "AthenaJdbcConnector"
-  application_id   = "arn:aws:serverlessrepo:us-east-1:292517598671:applications/AthenaJdbcConnector"
-  semantic_version = "2022.4.1"
+  # See https://github.com/awslabs/aws-athena-query-federation/issues/815
+  name             = "AthenaMySQLConnector"
+  application_id   = "arn:aws:serverlessrepo:us-east-1:292517598671:applications/AthenaMySQLConnector"
+  semantic_version = "2022.42.2"
 
   capabilities = [
     "CAPABILITY_IAM",

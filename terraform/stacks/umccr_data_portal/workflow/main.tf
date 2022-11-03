@@ -431,7 +431,7 @@ locals {
 
   rnasum_wfl_version = {
     dev = "0.4.4"
-    prod = "0.4.4--c3e3093"
+    prod = "0.4.5--c801102"
   }
 
   rnasum_wfl_input = {

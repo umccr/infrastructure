@@ -259,11 +259,7 @@ locals {
                 "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01673"
             }
         ],
-      "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",
-      "sites_somalier": {
-            "class": "File",
-            "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
-        }
+      "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}"
     }
     EOT
     prod = <<-EOT
@@ -319,11 +315,7 @@ locals {
                 "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01673"
             }
         ],
-      "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",
-      "sites_somalier": {
-            "class": "File",
-            "location": "gds://production/reference-data/somalier/sites.hg38.rna.vcf.gz"
-      }
+      "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}"
     }
     EOT
   }

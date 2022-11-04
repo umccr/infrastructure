@@ -11,16 +11,19 @@ locals {
   portal_alias_domain = {
       prod = "data.umccr.org"
       dev  = ""
+      stg  = ""
   }
 
   portal_callback_urls = {
     prod = ["https://${local.portal_domain}", "https://${local.portal_alias_domain[terraform.workspace]}"]
     dev  = ["https://${local.portal_domain}"]
+    stg  = ["https://${local.portal_domain}"]
   }
 
   portal_oauth_redirect_url = {
     prod = "https://${local.portal_alias_domain[terraform.workspace]}"
     dev  = "https://${local.portal_domain}"
+    stg  = "https://${local.portal_domain}"
   }
 
   portal_param_prefix = "/data_portal/client"

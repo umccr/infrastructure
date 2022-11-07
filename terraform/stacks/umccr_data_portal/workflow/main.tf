@@ -124,14 +124,9 @@ locals {
       "output_file_prefix": null,
       "output_directory": null,
       "fastq_list_rows": null,
-      "sites_somalier": {
-        "class": "File",
-        "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
-      },
-      "reference_fasta": {
-        "class": "File",
-        "location": "gds://development/reference-data/genomes/hg38/hg38.fa"
-      },
+      "enable_duplicate_marking": true,
+      "enable_map_align_output": true,
+      "enable_sort": true,
       "reference_tar": {
         "class": "File",
         "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
@@ -213,6 +208,8 @@ locals {
       "fastq_list_rows": null,
       "output_file_prefix": null,
       "output_directory": null,
+      "enable_map_align_output": true,
+      "enable_duplicate_marking": false,
       "annotation_file": {
             "class": "File",
             "location": "gds://development/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
@@ -422,7 +419,7 @@ locals {
   }
 
   rnasum_wfl_version = {
-    dev = "0.4.4"
+    dev = "0.4.5"
     prod = "0.4.5--c801102"
   }
 

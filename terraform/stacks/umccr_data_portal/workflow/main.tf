@@ -124,14 +124,9 @@ locals {
       "output_file_prefix": null,
       "output_directory": null,
       "fastq_list_rows": null,
-      "sites_somalier": {
-        "class": "File",
-        "location": "gds://development/reference-data/somalier/sites.hg38.rna.vcf.gz"
-      },
-      "reference_fasta": {
-        "class": "File",
-        "location": "gds://development/reference-data/genomes/hg38/hg38.fa"
-      },
+      "enable_duplicate_marking": true,
+      "enable_map_align_output": true,
+      "enable_sort": true,
       "reference_tar": {
         "class": "File",
         "location": "gds://development/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
@@ -218,6 +213,8 @@ locals {
       "fastq_list_rows": null,
       "output_file_prefix": null,
       "output_directory": null,
+      "enable_map_align_output": true,
+      "enable_duplicate_marking": false,
       "annotation_file": {
             "class": "File",
             "location": "gds://development/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
@@ -245,23 +242,23 @@ locals {
       "qc_reference_samples":[
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01563"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01563"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01147"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01147"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01620"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01620"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01286"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01286"
             },
             {
                 "class": "Directory",
-                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-08-17--3.9.3/SBJ01673"
+                "location": "gds://development/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01673"
             }
         ],
       "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}",
@@ -433,7 +430,7 @@ locals {
   }
 
   rnasum_wfl_version = {
-    dev = "0.4.4"
+    dev = "0.4.5"
     prod = "0.4.4--c3e3093"
   }
 

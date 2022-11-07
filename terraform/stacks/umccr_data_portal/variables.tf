@@ -2,6 +2,7 @@ variable "base_domain" {
   default = {
     prod = "prod.umccr.org"
     dev  = "dev.umccr.org"
+    stg  = "stg.umccr.org"
   }
   description = "Base domain for current stage"
 }
@@ -10,6 +11,7 @@ variable "alias_domain" {
   default = {
     prod = "data.umccr.org"
     dev  = ""
+    stg  = ""
   }
   description = "Additional domains to alias base_domain"
 }
@@ -26,6 +28,7 @@ variable "certificate_validation" {
   default = {
     prod = 0
     dev  = 1
+    stg  = 1
   }
   description = "Whether automatic validate the cert (1) or, to manually validate (0)"
 }
@@ -34,6 +37,7 @@ variable "github_branch" {
   default = {
     prod = "main"
     dev  = "dev"
+    stg  = "stg"
   }
   description = "The branch corresponding to current stage"
 }
@@ -47,6 +51,7 @@ variable "rds_auto_pause" {
   default = {
     prod = false
     dev  = false
+    stg  = false
   }
   description = "Whether to keep RDS serverless alive or pause if no load"
 }
@@ -55,6 +60,7 @@ variable "rds_min_capacity" {
   default = {
     prod = 0.5
     dev  = 0.5
+    stg  = 0.5
   }
   description = "The minimum capacity in Aurora Capacity Units (ACUs)"
 }
@@ -63,6 +69,7 @@ variable "rds_max_capacity" {
   default = {
     prod = 16.0
     dev  = 4.0
+    stg  = 16.0
   }
   description = "The maximum capacity in Aurora Capacity Units (ACUs)"
 }
@@ -71,6 +78,7 @@ variable "rds_backup_retention_period" {
   default = {
     prod = 7
     dev  = 1
+    stg  = 7
   }
   description = "RDS Aurora managed automated backup, must have 1 at least for Aurora Serverless DB"
 }
@@ -79,6 +87,7 @@ variable "create_aws_backup" {
   default = {
     prod = 1
     dev  = 0
+    stg  = 1
   }
   description = "Create AWS Backup for RDS Aurora Serverless DB, 1 create, 0 not"
 }
@@ -87,6 +96,7 @@ variable "slack_channel" {
   default = {
     prod = "#biobots",
     dev  = "#arteria-dev"
+    stg  = "#devops-alerts"
   }
   description = "Slack channel to send operational status message"
 }

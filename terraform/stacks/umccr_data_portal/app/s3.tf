@@ -5,6 +5,7 @@ variable "s3_primary_data_bucket" {
   default = {
     prod = "umccr-primary-data-prod"
     dev  = "umccr-primary-data-dev"
+    stg  = "umccr-primary-data-stg"
   }
   description = "Name of the S3 bucket storing s3 primary data to be used by crawler "
 }
@@ -13,6 +14,7 @@ variable "s3_run_data_bucket" {
   default = {
     prod = "umccr-run-data-prod"
     dev  = "umccr-run-data-dev"
+    stg  = "umccr-run-data-stg"
   }
   description = "Name of the S3 bucket storing s3 run data to be used by crawler "
 }

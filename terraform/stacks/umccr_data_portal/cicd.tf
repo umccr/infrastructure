@@ -397,6 +397,7 @@ locals {
   notification_sns_topic_arn = {
     prod = aws_sns_topic.portal_ops_sns_topic.arn
     dev  = data.aws_sns_topic.chatbot_topic.arn
+    stg  = data.aws_sns_topic.chatbot_topic.arn
   }
 }
 

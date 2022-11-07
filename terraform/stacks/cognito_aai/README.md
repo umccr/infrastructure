@@ -13,6 +13,18 @@ User Pool is configured to use UMCCR Google Workspace account as Identity Provid
 - Select `umccr-portal` from Project list
 - Go to `Credentials > OAuth 2.0 Client IDs > UMCCR Data Portal Client [Dev|Prod|Stg]`
 
+### SSM Parameters
+
+Required to set up SSM parameters as follows.
+
+- Google OAuth Client ID: `/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id`
+- Google OAuth Client Secret: `/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret`
+
+```
+aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_id' --type "SecureString" --value '<Client ID>'
+aws ssm put-parameter --name '/data_portal/dev/google/oauth_client_secret' --type "SecureString" --value '<Client secret>'
+```
+
 ## Deploy
 
 Login to AWS.

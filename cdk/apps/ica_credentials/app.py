@@ -36,6 +36,24 @@ IcaCredentialsDeployment(
     ),
 )
 
+# Staging
+IcaCredentialsDeployment(
+    app,
+    f"{CDK_APP_NAME}-stg",
+    "c9173925-a838-4394-9fc6-61cb93c252a1",
+    [
+        # staging_workflows
+        # FIXME
+    ],
+    ICA_BASE_URL,
+    SLACK_HOST_SSM_NAME,
+    SLACK_WEBHOOK_SSM_NAME,
+    env=cdk.Environment(
+        account="455634345446",
+        region="ap-southeast-2"
+    ),
+)
+
 # Production
 IcaCredentialsDeployment(
     app,

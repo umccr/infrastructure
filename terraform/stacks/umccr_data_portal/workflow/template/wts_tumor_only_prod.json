@@ -1,0 +1,54 @@
+{
+  "fastq_list_rows": null,
+  "output_file_prefix": null,
+  "output_directory": null,
+  "enable_map_align_output": true,
+  "enable_duplicate_marking": false,
+  "annotation_file": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
+  },
+  "cytobands": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/cytobands_hg38_GRCh38_v2.3.0.tsv"
+  },
+  "blacklist": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/blacklist_hg38_GRCh38_v2.3.0.tsv.gz"
+  },
+  "protein_domains": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/protein_domains_hg38_GRCh38_v2.3.0.gff3"
+  },
+  "reference_fasta": {
+    "class": "File",
+    "location": "gds://production/reference-data/genomes/hg38/hg38.fa"
+  },
+  "reference_tar": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+  },
+  "qc_reference_samples": [
+    {
+      "class": "Directory",
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01563"
+    },
+    {
+      "class": "Directory",
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01147"
+    },
+    {
+      "class": "Directory",
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01620"
+    },
+    {
+      "class": "Directory",
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01286"
+    },
+    {
+      "class": "Directory",
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01673"
+    }
+  ],
+  "cl_config": "{\"sample_names_replace\":{\"L2200121\":\"Ref_1_Good\",\"L2101521\":\"Ref_2_Good\",\"L2200188\":\"Ref_3_Good\",\"L2101763\":\"Ref_4_Bad\",\"L2200311\":\"Ref_5_Bad\"}}"
+}

@@ -1,0 +1,14 @@
+{
+  "tso500_samples": null,
+  "fastq_list_rows": null,
+  "samplesheet_prefix": "BCLConvert",
+  "samplesheet": null,
+  "resources_dir": {
+    "class": "Directory",
+    "location": "gds://development/reference-data/dragen_tso_ctdna/ruo-1.1.0.3/"
+  },
+  "dragen_license_key": {
+    "class": "File",
+    "location": "gds://development/dragen-license/cttso/license_umccr.txt"
+  }
+}

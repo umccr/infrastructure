@@ -9,6 +9,8 @@ import http.client
 def get_aws_account_name(id: str) -> str:
     if id == "472057503814":
         return "prod"
+    elif id == "455634345446":
+        return "stg"
     elif id == "843407916570":
         return "dev"
     elif id == "620123204273":

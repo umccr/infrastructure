@@ -2,6 +2,7 @@ locals {
   secret_name_prefix = {
     prod = "data_portal/rds/readonly"
     dev  = "data_portal/rds/master"
+    stg  = "data_portal/rds/master"
   }
 }
 

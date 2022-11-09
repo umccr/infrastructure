@@ -63,21 +63,25 @@ locals {
   cert_subject_alt_names = {
     prod = sort(["*.${local.app_domain}", var.alias_domain[terraform.workspace]])
     dev  = sort(["*.${local.app_domain}"])
+    stg  = sort(["*.${local.app_domain}"])
   }
 
   cloudfront_domain_aliases = {
     prod = [local.app_domain, var.alias_domain[terraform.workspace]]
     dev  = [local.app_domain]
+    stg  = [local.app_domain]
   }
 
   callback_urls = {
     prod = ["https://${local.app_domain}", "https://${var.alias_domain[terraform.workspace]}"]
     dev  = ["https://${local.app_domain}"]
+    stg  = ["https://${local.app_domain}"]
   }
 
   oauth_redirect_url = {
     prod = "https://${var.alias_domain[terraform.workspace]}"
     dev  = "https://${local.app_domain}"
+    stg  = "https://${local.app_domain}"
   }
 
   org_name = "umccr"

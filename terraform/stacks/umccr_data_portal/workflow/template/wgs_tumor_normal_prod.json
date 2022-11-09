@@ -1,0 +1,13 @@
+{
+  "output_file_prefix": null,
+  "output_directory": null,
+  "fastq_list_rows": [],
+  "tumor_fastq_list_rows": [],
+  "enable_map_align_output": true,
+  "enable_duplicate_marking": true,
+  "enable_sv": true,
+  "reference_tar": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+  }
+}

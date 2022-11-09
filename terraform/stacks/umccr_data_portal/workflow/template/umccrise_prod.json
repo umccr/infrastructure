@@ -1,0 +1,17 @@
+{
+  "dragen_somatic_directory": null,
+  "fastq_list_rows_germline": null,
+  "output_directory_germline": null,
+  "output_directory_umccrise": null,
+  "output_file_prefix_germline": null,
+  "enable_duplicate_marking": true,
+  "reference_tar_germline": {
+    "class": "File",
+    "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+  },
+  "reference_tar_umccrise": {
+    "class": "File",
+    "location": "gds://production/reference-data/umccrise/1.0.10/genomes.tar.gz"
+  },
+  "subject_identifier_umccrise": null
+}

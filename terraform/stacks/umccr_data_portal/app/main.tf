@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.2.5"
+  required_version = ">= 1.3.3"
 
   backend "s3" {
     bucket         = "umccr-terraform-states"
@@ -11,7 +11,7 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      version = "4.23.0"
+      version = "4.38.0"
     }
   }
 }
@@ -24,7 +24,7 @@ provider "aws" {
 }
 
 locals {
-  # Stack name in under socre
+  # Stack name in underscore
   stack_name_us = "data_portal"
 
   # Stack name in dash

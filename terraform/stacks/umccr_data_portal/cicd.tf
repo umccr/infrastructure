@@ -1,24 +1,32 @@
 ################################################################################
 # Deployment pipeline configurations
 
+locals {
+  github_repo_client = "data-portal-client"
+  github_repo_apis   = "data-portal-apis"
+
+  codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
+  codebuild_project_name_apis   = "data-portal-apis-${terraform.workspace}"
+}
+
 data "aws_ssm_parameter" "codestar_github_arn" {
-  name  = "codestar_github_arn"
+  name = "codestar_github_arn"
 }
 
 data "aws_ssm_parameter" "cog_user_pool_id" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
+  name = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
 }
 
 data "aws_ssm_parameter" "cog_identity_pool_id" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
+  name = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
 }
 
 data "aws_ssm_parameter" "cog_app_client_id_stage" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_app_client_id_stage"
+  name = "${local.ssm_param_key_client_prefix}/cog_app_client_id_stage"
 }
 
 data "aws_ssm_parameter" "oauth_domain" {
-  name  = "${local.ssm_param_key_client_prefix}/oauth_domain"
+  name = "${local.ssm_param_key_client_prefix}/oauth_domain"
 }
 
 data "aws_ssm_parameter" "htsget_domain" {
@@ -42,8 +50,8 @@ data "aws_ssm_parameter" "gpl_submit_job_manual" {
 
 # Bucket storing codepipeline artifacts (both client and apis)
 resource "aws_s3_bucket" "codepipeline_bucket" {
-  bucket        = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
-  tags = merge(local.default_tags)
+  bucket = "${local.org_name}-${local.stack_name_dash}-build-${terraform.workspace}"
+  tags   = merge(local.default_tags)
 }
 
 resource "aws_s3_bucket_acl" "codepipeline_bucket" {
@@ -72,12 +80,12 @@ resource "aws_iam_role" "codepipeline_base_role" {
 }
 
 resource "aws_iam_role_policy" "codepipeline_base_role_policy" {
-  name   = "${local.stack_name_us}_codepipeline_base_role_policy"
-  role   = aws_iam_role.codepipeline_base_role.id
+  name = "${local.stack_name_us}_codepipeline_base_role_policy"
+  role = aws_iam_role.codepipeline_base_role.id
 
   # Base IAM policy for codepiepline service role
   policy = templatefile("policies/codepipeline_base_role_policy.json", {
-    codepipeline_bucket_arn = aws_s3_bucket.codepipeline_bucket.arn
+    codepipeline_bucket_arn              = aws_s3_bucket.codepipeline_bucket.arn
     codepipeline_codestar_connection_arn = data.aws_ssm_parameter.codestar_github_arn.value
   })
 }
@@ -210,7 +218,7 @@ resource "aws_iam_policy" "codebuild_apis_policy" {
     subnet_id1 = sort(data.aws_subnets.private_subnets_ids.ids)[1],
     subnet_id2 = sort(data.aws_subnets.private_subnets_ids.ids)[2],
 
-    region = data.aws_region.current.name,
+    region     = data.aws_region.current.name,
     account_id = data.aws_caller_identity.current.account_id
   })
 }
@@ -285,10 +293,10 @@ resource "aws_codebuild_project" "codebuild_client" {
       value = data.aws_ssm_parameter.gpl_submit_job_manual.value
     }
 
-#    environment_variable {
-#      name  = "GPL_CREATE_LINX_PLOT"
-#      value = data.aws_ssm_parameter.gpl_create_linx_plot.value
-#    }
+    #    environment_variable {
+    #      name  = "GPL_CREATE_LINX_PLOT"
+    #      value = data.aws_ssm_parameter.gpl_create_linx_plot.value
+    #    }
 
     environment_variable {
       name  = "REGION"
@@ -356,12 +364,12 @@ resource "aws_codebuild_project" "codebuild_apis" {
     }
 
     environment_variable {
-      name = "ICA_BASE_URL"      # this is used only within CodeBuild dind scope
+      name  = "ICA_BASE_URL"      # this is used only within CodeBuild dind scope
       value = "http://localhost"
     }
 
     environment_variable {
-      name = "ICA_ACCESS_TOKEN"
+      name  = "ICA_ACCESS_TOKEN"
       value = "any_value_work"  # this is used only within CodeBuild dind Prism mock stack for build test purpose only
     }
   }
@@ -402,8 +410,8 @@ locals {
 }
 
 resource "aws_codestarnotifications_notification_rule" "apis_build_status" {
-  name = "${local.stack_name_us}_apis_code_build_status"
-  resource = aws_codebuild_project.codebuild_apis.arn
+  name        = "${local.stack_name_us}_apis_code_build_status"
+  resource    = aws_codebuild_project.codebuild_apis.arn
   detail_type = "BASIC"
 
   target {
@@ -419,8 +427,8 @@ resource "aws_codestarnotifications_notification_rule" "apis_build_status" {
 }
 
 resource "aws_codestarnotifications_notification_rule" "client_build_status" {
-  name = "${local.stack_name_us}_client_code_build_status"
-  resource = aws_codebuild_project.codebuild_client.arn
+  name        = "${local.stack_name_us}_client_code_build_status"
+  resource    = aws_codebuild_project.codebuild_client.arn
   detail_type = "BASIC"
 
   target {

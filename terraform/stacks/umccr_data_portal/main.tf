@@ -48,12 +48,17 @@ locals {
     "Environment" = terraform.workspace
   }
 
-  data_portal_domain_prefix = "data"
-  app_domain                = "${local.data_portal_domain_prefix}.${var.base_domain[terraform.workspace]}"
+  subdomain  = "data"
+  app_domain = "${local.subdomain}.${var.base_domain[terraform.workspace]}"
+  api_domain = "api.${local.app_domain}"
 
-  api_domain    = "api.${local.app_domain}"
-  iam_role_path = "/${local.stack_name_us}/"
+  # FIXME: one day we shall replace the following with above `data.` subdomain
+  #  See https://github.com/umccr/infrastructure/issues/272
+  subdomain2  = "portal"
+  app_domain2 = "${local.subdomain2}.${var.base_domain[terraform.workspace]}"
+  api_domain2 = "api.${local.app_domain2}"
 
+  iam_role_path                = "/${local.stack_name_us}/"
   ssm_param_key_client_prefix  = "/${local.stack_name_us}/client"
   ssm_param_key_backend_prefix = "/${local.stack_name_us}/backend"
 }
@@ -68,6 +73,11 @@ data "aws_ssm_parameter" "rds_db_password" {
 
 data "aws_ssm_parameter" "rds_db_username" {
   name = "/${local.stack_name_us}/${terraform.workspace}/rds_db_username"
+}
+
+# Hosted zone for organisation domain
+data "aws_route53_zone" "org_zone" {
+  name = "${var.base_domain[terraform.workspace]}."
 }
 
 ################################################################################

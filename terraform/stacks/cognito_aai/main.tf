@@ -23,7 +23,7 @@ provider "aws" {
 locals {
   # Retain stack name to data-portal for now as rename will escalate recreation.
   # And this is purely textual to this point. Stack itself is pretty much independent code-wise.
-  stack_name_us = "data_portal"
+  stack_name_us   = "data_portal"
   stack_name_dash = "data-portal"
 
   default_tags = {
@@ -42,11 +42,11 @@ locals {
 # These are pre-populated outside of terraform i.e. manually using Console or CLI
 
 data "aws_ssm_parameter" "google_oauth_client_id" {
-  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
+  name = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_id"
 }
 
 data "aws_ssm_parameter" "google_oauth_client_secret" {
-  name  = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
+  name = "/${local.stack_name_us}/${terraform.workspace}/google/oauth_client_secret"
 }
 
 ################################################################################
@@ -106,6 +106,15 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 
   cognito_identity_providers {
     client_id               = aws_cognito_user_pool_client.portal_app_client.id
+    provider_name           = aws_cognito_user_pool.user_pool.endpoint
+    server_side_token_check = false
+  }
+
+  # FIXME: Data Portal App Client for data2 -- this shall be replaced with above, one day.
+  #  See `app_data_portal_data2.tf`
+  #  See https://github.com/umccr/infrastructure/issues/272
+  cognito_identity_providers {
+    client_id               = aws_cognito_user_pool_client.data2_client.id
     provider_name           = aws_cognito_user_pool.user_pool.endpoint
     server_side_token_check = false
   }

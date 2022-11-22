@@ -17,6 +17,7 @@
                 "apigateway:PUT",
                 "apigateway:SetWebACL",
                 "apigateway:UpdateRestApiPolicy",
+                "apigateway:TagResource",
                 "acm:*",
                 "route53:*",
                 "waf-regional:*",

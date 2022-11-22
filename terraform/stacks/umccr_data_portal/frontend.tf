@@ -15,18 +15,6 @@ locals {
     dev  = [local.app_domain]
     stg  = [local.app_domain]
   }
-
-  callback_urls = {
-    prod = ["https://${local.app_domain}", "https://${var.alias_domain[terraform.workspace]}"]
-    dev  = ["https://${local.app_domain}"]
-    stg  = ["https://${local.app_domain}"]
-  }
-
-  oauth_redirect_url = {
-    prod = "https://${var.alias_domain[terraform.workspace]}"
-    dev  = "https://${local.app_domain}"
-    stg  = "https://${local.app_domain}"
-  }
 }
 
 # S3 bucket storing client side (compiled) code
@@ -132,11 +120,6 @@ resource "aws_cloudfront_distribution" "client_distribution" {
   }
 
   tags = merge(local.default_tags)
-}
-
-# Hosted zone for organisation domain
-data "aws_route53_zone" "org_zone" {
-  name = "${var.base_domain[terraform.workspace]}."
 }
 
 # Alias the client domain name to CloudFront distribution address

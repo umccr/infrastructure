@@ -5,3 +5,8 @@ output "main_region" {
 output "api_domain" {
   value = local.api_domain
 }
+
+# FIXME: https://github.com/umccr/infrastructure/issues/272
+output "api_domain2" {
+  value = local.api_domain2
+}

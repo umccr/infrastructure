@@ -16,6 +16,16 @@ variable "alias_domain" {
   description = "Additional domains to alias base_domain"
 }
 
+# FIXME: https://github.com/umccr/infrastructure/issues/272
+variable "alias_domain2" {
+  default = {
+    prod = "portal.umccr.org"
+    dev  = ""
+    stg  = ""
+  }
+  description = "Additional domains to alias base_domain"
+}
+
 # NOTE:
 # Automatic cert validation required to create records in hosted zone (zone_id), see [1].
 # Since subject alternate name compose of alias_domain -- data.umccr.org, which is hosted in BASTION account (i.e required cross-account access).
@@ -33,9 +43,18 @@ variable "certificate_validation" {
   description = "Whether automatic validate the cert (1) or, to manually validate (0)"
 }
 
-variable "github_branch" {
+variable "github_branch_backend" {
   default = {
     prod = "main"
+    dev  = "dev"
+    stg  = "stg"
+  }
+  description = "The branch corresponding to current stage"
+}
+
+variable "github_branch_frontend" {
+  default = {
+    prod = "v1-main"
     dev  = "dev"
     stg  = "stg"
   }

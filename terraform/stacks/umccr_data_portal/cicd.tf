@@ -21,12 +21,20 @@ data "aws_ssm_parameter" "cog_identity_pool_id" {
   name = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
 }
 
+data "aws_ssm_parameter" "oauth_domain" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_domain"
+}
+
 data "aws_ssm_parameter" "cog_app_client_id_stage" {
   name = "${local.ssm_param_key_client_prefix}/cog_app_client_id_stage"
 }
 
-data "aws_ssm_parameter" "oauth_domain" {
-  name = "${local.ssm_param_key_client_prefix}/oauth_domain"
+data "aws_ssm_parameter" "oauth_redirect_in_stage" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_in_stage"
+}
+
+data "aws_ssm_parameter" "oauth_redirect_out_stage" {
+  name = "${local.ssm_param_key_client_prefix}/oauth_redirect_out_stage"
 }
 
 data "aws_ssm_parameter" "htsget_domain" {
@@ -114,7 +122,7 @@ resource "aws_codepipeline" "codepipeline_client" {
       configuration = {
         ConnectionArn    = data.aws_ssm_parameter.codestar_github_arn.value
         FullRepositoryId = "${local.org_name}/${local.github_repo_client}"
-        BranchName       = var.github_branch[terraform.workspace]
+        BranchName       = var.github_branch_frontend[terraform.workspace]
       }
     }
   }
@@ -163,7 +171,7 @@ resource "aws_codepipeline" "codepipeline_apis" {
       configuration = {
         ConnectionArn    = data.aws_ssm_parameter.codestar_github_arn.value
         FullRepositoryId = "${local.org_name}/${local.github_repo_apis}"
-        BranchName       = var.github_branch[terraform.workspace]
+        BranchName       = var.github_branch_backend[terraform.workspace]
       }
     }
   }
@@ -276,6 +284,8 @@ resource "aws_codebuild_project" "codebuild_client" {
     environment_variable {
       name  = "API_URL"
       value = local.api_domain
+      # FIXME: https://github.com/umccr/infrastructure/issues/272
+      #value = local.api_domain2
     }
 
     environment_variable {
@@ -325,12 +335,12 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "OAUTH_REDIRECT_IN_STAGE"
-      value = local.oauth_redirect_url[terraform.workspace]
+      value = data.aws_ssm_parameter.oauth_redirect_in_stage.value
     }
 
     environment_variable {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
-      value = local.oauth_redirect_url[terraform.workspace]
+      value = data.aws_ssm_parameter.oauth_redirect_out_stage.value
     }
   }
 
@@ -395,7 +405,7 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
 ################################################################################
 # Notification: CodeBuild build status send through SNS topic to ChatBot to
-# Slack channel #arteria-dev (for DEV account) Or #data-portal (for PROD account)
+# Slack channel #arteria-dev for DEV, #data-portal for PROD, #devops-alerts for STG
 
 data "aws_sns_topic" "chatbot_topic" {
   name = "AwsChatBotTopic"

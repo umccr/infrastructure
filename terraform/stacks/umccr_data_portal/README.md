@@ -25,6 +25,7 @@ Need to create deployment environment specific secret parameters as follows.
 - Google LIMS Spreadsheet ID: `/umccr/google/drive/lims_sheet_id`
 - Google LIMS Service Account JSON: `/umccr/google/drive/lims_service_account_json`
 - Lab Tracking Sheet ID: `/umccr/google/drive/tracking_sheet_id`
+- Slack Webhook ID: `/slack/webhook/id`
 
 e.g. For `dev` environment
 ```

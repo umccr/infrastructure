@@ -339,6 +339,11 @@ resource "aws_codebuild_project" "codebuild_data2" {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
       value = data.aws_ssm_parameter.data2_oauth_redirect_out_stage[0].value
     }
+
+    environment_variable {
+      name  = "UNSPLASH_CLIENT_ID"
+      value = data.aws_ssm_parameter.unsplash_client_id.value
+    }
   }
 
   source {

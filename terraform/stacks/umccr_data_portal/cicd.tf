@@ -13,6 +13,10 @@ data "aws_ssm_parameter" "codestar_github_arn" {
   name = "codestar_github_arn"
 }
 
+data "aws_ssm_parameter" "unsplash_client_id" {
+  name = "/${local.stack_name_us}/unsplash/client_id"
+}
+
 data "aws_ssm_parameter" "cog_user_pool_id" {
   name = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
 }
@@ -341,6 +345,11 @@ resource "aws_codebuild_project" "codebuild_client" {
     environment_variable {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
       value = data.aws_ssm_parameter.oauth_redirect_out_stage.value
+    }
+
+    environment_variable {
+      name  = "UNSPLASH_CLIENT_ID"
+      value = data.aws_ssm_parameter.unsplash_client_id.value
     }
   }
 

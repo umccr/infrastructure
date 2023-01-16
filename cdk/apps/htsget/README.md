@@ -1,5 +1,9 @@
 # htsget-refserver 
 
+> NOTE: WE HAVE DEPRECATED THE FOLLOWING SETUP IN FAVOUR OF [htsget-rs](https://github.com/umccr/htsget-rs).
+
+---
+
 UMCCR Deployment of [`htsget-refserver`](https://github.com/ga4gh/htsget-refserver) implementation
 
 ## TL;DR
@@ -80,8 +84,8 @@ Alternatively, use AWS SSM Console UI.
 
 (client to htsget api gateway endpoint)
 
-- Within UMCCR workflow and, especially [Data Portal client](https://github.com/umccr/data-portal-client), we use API Gateway [JWT Authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-jwt-authorizer.html) that integrate with [Cognito User Pool as authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-integrate-with-cognito.html) i.e. Cognito acts as OIDC/OAuth broker provider.
-- This makes it seamlessly possible since our Data Portal client make use of [Amplify React](https://aws.amazon.com/blogs/mobile/building-an-application-with-aws-amplify-amazon-cognito-and-an-openid-connect-identity-provider/) to generate short live JWT on-the-fly for those federated login identities/users.
+- Within UMCCR workflow and, especially [Data Portal client v1](https://github.com/umccr/data-portal-client/tree/1.0.0), we use API Gateway [JWT Authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-jwt-authorizer.html) that integrate with [Cognito User Pool as authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-integrate-with-cognito.html) i.e. Cognito acts as OIDC/OAuth broker provider.
+- This makes it seamlessly possible since our Data Portal client v1 make use of [Amplify React](https://aws.amazon.com/blogs/mobile/building-an-application-with-aws-amplify-amazon-cognito-and-an-openid-connect-identity-provider/) to generate short live JWT on-the-fly for those federated login identities/users.
 - With short-live Bearer JWT authorization, client can make a call to the secured htsget API Gateway endpoint to access the private resources.
 
 
@@ -135,16 +139,16 @@ Alternatively, use AWS SSM Console UI.
 
 ### Compose Stack
 
-**Q**. Is there docker compose that I could ran on my local to quick demo htsget-refserver?
+**Q**. Is there docker compose that I could run on my local to quick demo htsget-refserver?
 
-**A**. Yes. Our [Data Portal client](https://github.com/umccr/data-portal-client) use this htsget-refserver backend and, hence, we have docker compose ready for local dev purpose as follows:
+**A**. Yes. Our [Data Portal client v1](https://github.com/umccr/data-portal-client/tree/1.0.0) use this htsget-refserver backend and, hence, we have docker compose ready for local dev purpose as follows:
 
-  - [docker-compose.yml](https://github.com/umccr/data-portal-client/blob/dev/docker-compose.yml)
-  - [htsget-config-local.json](https://github.com/umccr/data-portal-client/blob/dev/htsget-config-local.json)
+  - https://github.com/umccr/data-portal-client/blob/1.0.0/docker-compose.yml
+  - https://github.com/umccr/data-portal-client/blob/1.0.0/htsget-config-local.json
 
 ```
-wget https://raw.githubusercontent.com/umccr/data-portal-client/dev/docker-compose.yml
-wget https://raw.githubusercontent.com/umccr/data-portal-client/dev/htsget-config-local.json
+wget https://raw.githubusercontent.com/umccr/data-portal-client/1.0.0/docker-compose.yml
+wget https://raw.githubusercontent.com/umccr/data-portal-client/1.0.0/htsget-config-local.json
 yawsso login --profile dev --this
 export AWS_PROFILE=dev
 docker-compose up -d
@@ -267,6 +271,6 @@ samtools view -h giab.NA12878.NIST7035.1__kras__sliced.bam | less
 
 > **UPDATE**: PR #24 is now merged. You may also use [GA4GH image](https://hub.docker.com/r/ga4gh/htsget-refserver) at `docker pull ga4gh/htsget-refserver:1.5.0`
 
-- Hence, in our Portal client, we use [igv.js](https://github.com/igvteam/igv.js/) through htsget protocol to view BAM slices from a private S3 bucket.
+- Hence, in our Portal client v1, we use [igv.js](https://github.com/igvteam/igv.js/) through htsget protocol to view BAM slices from a private S3 bucket.
 
 ![igvjs_portal_kras_sliced.png](assets/igvjs_portal_kras_sliced.png)

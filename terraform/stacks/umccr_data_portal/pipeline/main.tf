@@ -232,17 +232,17 @@ resource "aws_ssm_parameter" "sqs_somalier_extract_queue_arn" {
 # This needs to be documented!
 
 # --- dracarys queue
-#resource "aws_sqs_queue" "sqs_dracarys_queue" {
-#  name = "${local.stack_name_dash}-dracarys-queue.fifo"
-#  fifo_queue = true
-#  content_based_deduplication = true
-#  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-#  tags = merge(local.default_tags)
-#}
-#
-#resource "aws_ssm_parameter" "sqs_dracarys_queue.arn" {
-#  name  = "${local.ssm_param_key_backend_prefix}/sqs_dracarys_queue_arn"
-#  type  = "String"
-#  value = aws_sqs_queue.dracarys_queue.arn
-#  tags  = merge(local.default_tags)
-#}
+resource "aws_sqs_queue" "sqs_dracarys_queue" {
+  name = "${local.stack_name_dash}-dracarys-queue.fifo"
+  fifo_queue = true
+  content_based_deduplication = true
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "sqs_dracarys_queue.arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_dracarys_queue_arn"
+  type  = "String"
+  value = aws_sqs_queue.sqs_dracarys_queue.arn
+  tags  = merge(local.default_tags)
+}

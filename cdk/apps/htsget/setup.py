@@ -18,20 +18,23 @@ setuptools.setup(
 
     install_requires=[
         "docker",
-        # deprecation note: pinned CDK v1 versions as deprecating this stack
-        "aws-cdk.core==1.128.0",
-        "aws-cdk.aws_ec2==1.128.0",
-        "aws-cdk.aws_ecs==1.128.0",
-        "aws-cdk.aws_ecr==1.128.0",
-        "aws-cdk.aws_iam==1.128.0",
-        "aws_cdk.aws_ssm==1.128.0",
-        "aws_cdk.aws_route53==1.128.0",
-        "aws_cdk.aws_route53_targets==1.128.0",
-        "aws-cdk.aws_certificatemanager==1.128.0",
-        "aws-cdk.aws_elasticloadbalancingv2==1.128.0",
-        "aws-cdk.aws_apigatewayv2==1.128.0",
-        "aws-cdk.aws_apigatewayv2_integrations==1.128.0",
-        "aws-cdk.aws_lambda==1.128.0",
+        # deprecation note:
+        # - pinned last known working CDK v1 versions as deprecating this stack
+        # - this stack has been completely tear down from both DEV and PROD
+        # - commented out dependencies to avoid dependabot such as #278
+        # "aws-cdk.core==1.128.0",
+        # "aws-cdk.aws_ec2==1.128.0",
+        # "aws-cdk.aws_ecs==1.128.0",
+        # "aws-cdk.aws_ecr==1.128.0",
+        # "aws-cdk.aws_iam==1.128.0",
+        # "aws_cdk.aws_ssm==1.128.0",
+        # "aws_cdk.aws_route53==1.128.0",
+        # "aws_cdk.aws_route53_targets==1.128.0",
+        # "aws-cdk.aws_certificatemanager==1.128.0",
+        # "aws-cdk.aws_elasticloadbalancingv2==1.128.0",
+        # "aws-cdk.aws_apigatewayv2==1.128.0",
+        # "aws-cdk.aws_apigatewayv2_integrations==1.128.0",
+        # "aws-cdk.aws_lambda==1.128.0",
     ],
 
     python_requires=">=3.6",

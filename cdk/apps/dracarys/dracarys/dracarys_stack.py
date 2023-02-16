@@ -4,6 +4,8 @@ from aws_cdk import (
     aws_sqs,
     aws_apigateway,
     aws_lambda_event_sources as lambda_event_source,
+    Stack,
+    Duration
 )
 
 from constructs import Construct
@@ -32,7 +34,7 @@ class DracarysStack(Stack):
                 directory="./lambda"
             ),
             role=lambda_role,
-            timeout=aws_cdk.Duration.minutes(15),
+            timeout=Duration.minutes(15),
             memory_size= 512,
             environment={
                 'NAME': 'dracarys-ingestion-lambda'

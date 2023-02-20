@@ -24,7 +24,7 @@ class DracarysStack(Stack):
                                 aws_iam.ManagedPolicy.from_aws_managed_policy_name(
                                     'service-role/AWSLambdaVPCAccessExecutionRole'),
                                 aws_iam.ManagedPolicy.from_aws_managed_policy_name(
-                                    'service-role/SecretsManagerReadWrite'), 
+                                    'SecretsManagerReadWrite')
                                 ])
 
 

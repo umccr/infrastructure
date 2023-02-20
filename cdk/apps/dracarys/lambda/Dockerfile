@@ -7,8 +7,7 @@ ARG MINI_URL=https://github.com/conda-forge/miniforge/releases/download/${MINI_V
 ARG MAMBA_PREFIX="/opt/mambaforge"
 
 RUN yum update -y && \
-    yum install -y curl python3 python3-dev python3-pip gcc which
-RUN yum install -y wget
+    yum install -y wget curl git python3 python3-dev python3-pip gcc which
 RUN   curl  -k --silent -L "${MINI_URL}" -o "/tmp/mambaforge.sh"
 RUN   curl  -k --silent  -L "${CONDA_LOCK_URL}" -o "/tmp/conda-lock.yml"
 RUN /bin/bash /tmp/mambaforge.sh -b -p "${MAMBA_PREFIX}" && rm /tmp/mambaforge.sh  

@@ -6,7 +6,6 @@ import base64
 import logging
 import subprocess
 from aws_lambda_powertools.utilities import parameters
- 
 
 def handler(event, context):
     logging.info('request: {}'.format(json.dumps(event)))

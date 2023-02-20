@@ -36,6 +36,7 @@ class DracarysStack(Stack):
             role=lambda_role,
             timeout=Duration.minutes(15),
             memory_size=512,
+            layers=["arn:aws:lambda:ap-southeast-2:017000801446:layer:AWSLambdaPowertoolsPythonV2:21"],
             environment={
                 'NAME': 'dracarys-ingestion-lambda'
             }

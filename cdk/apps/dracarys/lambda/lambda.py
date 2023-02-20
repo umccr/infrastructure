@@ -5,6 +5,7 @@ import datetime
 import base64
 import logging
 import subprocess
+from aws_lambda_powertools.utilities import parameters
  
 
 def handler(event, context):
@@ -13,17 +14,22 @@ def handler(event, context):
     body = json.loads(event['Records'][0]['body'])
     try:
         output_prefix=body['output_prefix']
-        presign_url=body['presign_url_json']
+        gds_input=body['presign_url_json']
         target_bucket_name=body['target_bucket_name']
     except Exception as e:
         logging.error("Exception:")
         logging.error(e)
         return { 'statusCode': 500 }
 
-    #do all work in /tmp
+    # Retrieve ICA secret
+    # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
+    ica_secret = parameters.get_secret("IcaV2SecretsPortal")
+    os.environ["ICA_ACCESS_TOKEN"] = ica_secret
+
+    # Do all work in /tmp
     WD = "/tmp"
-    output = run_command(["curl","-o",WD + "/" + output_prefix+".json",presign_url])
-    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -j " + WD + "/" + output_prefix + ".json -o " + WD + "/ -p "+ output_prefix])
+    #output = run_command(["curl","-o",WD + "/" + output_prefix+".json", gds_input]) # Not needed since newer versions of Dracarys handle GDS presign generation
+    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + WD + "/ -p " + output_prefix])
     #output = run_command(["cat",WD+"/"+output_prefix+".tsv"])
 
     region = 'ap-southeast-2'

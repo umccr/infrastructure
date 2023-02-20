@@ -5,7 +5,6 @@ import datetime
 import base64
 import logging
 import subprocess
-from aws_lambda_powertools.utilities import parameters
 
 def handler(event, context):
     logging.info('request: {}'.format(json.dumps(event)))
@@ -22,7 +21,8 @@ def handler(event, context):
 
     # Retrieve ICA secret
     # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
-    ica_secret = parameters.get_secret("IcaV2SecretsPortal")
+    secrets_mgr = boto3.client('secretsmanager')
+    ica_secret = secrets_mgr.get_secret_value("IcaV2SecretsPortal")
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
     # Do all work in /tmp

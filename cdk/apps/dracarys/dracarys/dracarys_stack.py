@@ -35,7 +35,7 @@ class DracarysStack(Stack):
             ),
             role=lambda_role,
             timeout=Duration.minutes(15),
-            memory_size= 512,
+            memory_size=512,
             environment={
                 'NAME': 'dracarys-ingestion-lambda'
             }

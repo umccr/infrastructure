@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.10
+FROM public.ecr.aws/lambda/python:3.9
 
 ARG CONDA_LOCK_VERSION=0.2.0
 ARG CONDA_LOCK_URL=https://raw.githubusercontent.com/umccr/dracarys/v${CONDA_LOCK_VERSION}/conda/env/lock/conda-lock.yml
@@ -8,7 +8,7 @@ ARG MAMBA_PREFIX="/opt/mambaforge"
 
 RUN yum update -y && \
     yum install -y curl python3 python3-dev python3-pip gcc which
-RUN yum install -y wge
+RUN yum install -y wget
 RUN   curl  -k --silent -L "${MINI_URL}" -o "/tmp/mambaforge.sh"
 RUN   curl  -k --silent  -L "${CONDA_LOCK_URL}" -o "/tmp/conda-lock.yml"
 RUN /bin/bash /tmp/mambaforge.sh -b -p "${MAMBA_PREFIX}" && rm /tmp/mambaforge.sh  

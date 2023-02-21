@@ -9,11 +9,11 @@ import subprocess
 def handler(event, context):
     logging.info('request: {}'.format(json.dumps(event)))
     print('request: {}'.format(json.dumps(event)))
-    body = json.loads(event['Records'][0]['messageAttributes'])
+    msg_attrs = event['Records'][0]['messageAttributes']
     try:
-        output_prefix=body['output_prefix']['stringValue']
-        gds_input=body['presign_url_json']['stringValue']
-        target_bucket_name=body['target_bucket_name']['stringValue']
+        output_prefix = msg_attrs['output_prefix']['stringValue']
+        gds_input = msg_attrs['presign_url_json']['stringValue']
+        target_bucket_name = msg_attrs['target_bucket_name']['stringValue']
     except Exception as e:
         logging.error("Exception:")
         logging.error(e)
@@ -22,7 +22,7 @@ def handler(event, context):
     # Retrieve ICA secret
     # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
     secrets_mgr = boto3.client('secretsmanager')
-    ica_secret = secrets_mgr.get_secret_value("IcaV2SecretsPortal")
+    ica_secret = secrets_mgr.get_secret_value(SecretId="IcaV2SecretsPortal")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
     # Do all work in /tmp

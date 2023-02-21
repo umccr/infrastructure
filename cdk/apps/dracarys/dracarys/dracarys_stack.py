@@ -33,7 +33,8 @@ class DracarysStack(Stack):
         queue_name = "/data_portal/backend/sqs_dracarys_queue"
         queue_arn = aws_ssm.StringParameter.from_string_parameter_attributes(self, "dracarys_sqs_queue",
                 parameter_name=queue_name).string_value
-        queue = aws_sqs.Queue(self, queue_arn)
+
+        queue = aws_sqs.Queue.from_queue_arn(self, id="dracarys_fifo_queue", queue_arn=queue_arn)
 
         sqs_event_source = lambda_event_source.SqsEventSource(queue)
 
@@ -50,7 +51,6 @@ class DracarysStack(Stack):
             environment={
                 'NAME': 'dracarys-ingestion-lambda'
             },
-            #source = sqs_event_source
         )
 
         docker_lambda.add_event_source(sqs_event_source)

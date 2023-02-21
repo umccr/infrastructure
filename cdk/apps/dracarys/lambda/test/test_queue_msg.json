@@ -5,7 +5,7 @@
   },
   "presign_url_json": {
     "DataType": "String",
-    "StringValue": "gds://production/analysis_data/SBJ03088/wgs_tumor_normal/2023020442e239ef/PRJ230067_dragen_somatic_multiqc/PRJ230067_dragen_somatic_multiqc_data"
+    "StringValue": "gds://production/analysis_data/SBJ00006/wgs_alignment_qc/20230204abc086ec/NTC_Tsqn230130_dragen_alignment_multiqc/NTC_Tsqn230130_dragen_alignment_multiqc_data/"
   },
   "target_bucket_name": {
     "DataType": "String",

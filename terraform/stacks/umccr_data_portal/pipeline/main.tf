@@ -233,9 +233,7 @@ resource "aws_ssm_parameter" "sqs_somalier_extract_queue_arn" {
 
 # --- dracarys queue
 resource "aws_sqs_queue" "sqs_dracarys_queue" {
-  name = "${local.stack_name_dash}-dracarys-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
+  name = "${local.stack_name_dash}-dracarys-queue"
   visibility_timeout_seconds = 1000 # exceed lambda timeout
   tags = merge(local.default_tags)
 }

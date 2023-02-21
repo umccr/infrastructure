@@ -1,0 +1,14 @@
+{
+  "output_prefix": {
+    "DataType": "String",
+    "StringValue": "dracarys/tidy/"
+  },
+  "presign_url_json": {
+    "DataType": "String",
+    "StringValue": "gds://production/analysis_data/SBJ03088/wgs_tumor_normal/2023020442e239ef/PRJ230067_dragen_somatic_multiqc/PRJ230067_dragen_somatic_multiqc_data"
+  },
+  "target_bucket_name": {
+    "DataType": "String",
+    "StringValue":"umccr-datalake-dev" 
+  }
+}

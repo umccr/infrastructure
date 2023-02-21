@@ -1,0 +1,5 @@
+{
+  "output_prefix": "dracarys/tidy/",
+  "presign_url_json": "gds://production/analysis_data/SBJ03088/wgs_tumor_normal/2023020442e239ef/PRJ230067_dragen_somatic_multiqc/PRJ230067_dragen_somatic_multiqc_data",
+  "target_bucket_name": "umccr-datalake-dev"
+}

@@ -2,6 +2,7 @@ from aws_cdk import (
     aws_lambda,
     aws_iam,
     aws_sqs,
+    aws_ssm,
     aws_apigateway,
     aws_lambda_event_sources as lambda_event_source,
     Stack,
@@ -27,8 +28,14 @@ class DracarysStack(Stack):
                                     'SecretsManagerReadWrite')
                                 ])
 
+        # Fetch dracarys queue ARN from pre-existing SSM
+        # created by terraform's data portal pipeline stack
+        queue_name = "/data_portal/backend/sqs_dracarys_queue"
+        queue_arn = aws_ssm.StringParameter.from_string_parameter_attributes(self, "dracarys_sqs_queue",
+                parameter_name=queue_name).string_value
+        queue = aws_sqs.Queue(self, queue_name)
 
-        cdk_lambda = aws_lambda.DockerImageFunction(
+        docker_lambda = aws_lambda.DockerImageFunction(
             self, 'dracarys-ingestion-lambda',
             function_name='dracarys-ingestion-lambda',
             description='dracarys lambda',
@@ -40,5 +47,7 @@ class DracarysStack(Stack):
             memory_size=512,
             environment={
                 'NAME': 'dracarys-ingestion-lambda'
-            }
+            },
+            #events=queue
+            #source=queue_arn
         )

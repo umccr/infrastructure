@@ -241,7 +241,7 @@ resource "aws_sqs_queue" "sqs_dracarys_queue" {
 }
 
 resource "aws_ssm_parameter" "sqs_dracarys_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_dracarys_queue_arn"
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_dracarys_queue"
   type  = "String"
   value = aws_sqs_queue.sqs_dracarys_queue.arn
   tags  = merge(local.default_tags)

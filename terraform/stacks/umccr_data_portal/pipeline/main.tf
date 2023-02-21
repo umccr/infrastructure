@@ -236,7 +236,7 @@ resource "aws_sqs_queue" "sqs_dracarys_queue" {
   name = "${local.stack_name_dash}-dracarys-queue.fifo"
   fifo_queue = true
   content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  visibility_timeout_seconds = 1000 # exceed lambda timeout
   tags = merge(local.default_tags)
 }
 

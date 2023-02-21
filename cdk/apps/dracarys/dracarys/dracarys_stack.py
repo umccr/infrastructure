@@ -34,7 +34,7 @@ class DracarysStack(Stack):
         queue_arn = aws_ssm.StringParameter.from_string_parameter_attributes(self, "dracarys_sqs_queue",
                 parameter_name=queue_name).string_value
 
-        queue = aws_sqs.Queue.from_queue_arn(self, id="dracarys_fifo_queue", queue_arn=queue_arn)
+        queue = aws_sqs.Queue.from_queue_arn(self, id="data-portal-dracarys-queue", queue_arn=queue_arn)
 
         sqs_event_source = lambda_event_source.SqsEventSource(queue)
 

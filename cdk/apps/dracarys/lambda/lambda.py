@@ -9,11 +9,11 @@ import subprocess
 def handler(event, context):
     logging.info('request: {}'.format(json.dumps(event)))
     print('request: {}'.format(json.dumps(event)))
-    body = json.loads(event['Records'][0]['body'])
+    body = json.loads(event['Records'][0]['messageAttributes'])
     try:
-        output_prefix=body['output_prefix']
-        gds_input=body['presign_url_json']
-        target_bucket_name=body['target_bucket_name']
+        output_prefix=body['output_prefix']['stringValue']
+        gds_input=body['presign_url_json']['stringValue']
+        target_bucket_name=body['target_bucket_name']['stringValue']
     except Exception as e:
         logging.error("Exception:")
         logging.error(e)

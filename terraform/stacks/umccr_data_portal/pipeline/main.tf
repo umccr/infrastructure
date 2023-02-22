@@ -232,9 +232,19 @@ resource "aws_ssm_parameter" "sqs_somalier_extract_queue_arn" {
 # This needs to be documented!
 
 # --- dracarys queue
+resource "aws_sqs_queue" "dracarys_queue_dlq" {
+  name = "${local.stack_name_dash}-${terraform.workspace}-dracarys-queue-dlq"
+  message_retention_seconds = 1209600
+  tags = merge(local.default_tags)
+}
+
 resource "aws_sqs_queue" "sqs_dracarys_queue" {
   name = "${local.stack_name_dash}-dracarys-queue"
-  visibility_timeout_seconds = 1000 # exceed lambda timeout
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dracarys_queue_dlq.arn
+    maxReceiveCount = 3
+  })
+  visibility_timeout_seconds = 900*6 # https://docs.aws.amazon.com/lambda/latest/operatorguide/sqs-retries.html 
   tags = merge(local.default_tags)
 }
 

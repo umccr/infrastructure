@@ -5,7 +5,7 @@
   },
   "presign_url_json": {
     "DataType": "String",
-    "StringValue": "gds://production/analysis_data/SBJ00006/wgs_alignment_qc/20230204abc086ec/NTC_Tsqn230130_dragen_alignment_multiqc/NTC_Tsqn230130_dragen_alignment_multiqc_data/"
+    "StringValue": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data/multiqc_data.json"
   },
   "target_bucket_name": {
     "DataType": "String",

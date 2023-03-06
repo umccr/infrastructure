@@ -1,6 +1,6 @@
 locals {
   umccrise_wfl_id = {
-    dev  = "wfl.e4cd73b0e6e941b3b48afe03a7b5dc43"
+    dev  = "wfl.af61d2b172e84cbfa85eaf184226db8b"
     prod = "wfl.7ed9c6014ac9498fbcbd4c17c28bc0d4"
     stg  = "wfl.7ed9c6014ac9498fbcbd4c17c28bc0d4"
   }

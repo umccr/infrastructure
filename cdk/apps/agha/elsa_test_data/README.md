@@ -1,6 +1,6 @@
 # Elsa Test Data
 
-This is just a CDK for mock data of the AGHA store bucket. The aim is for [`elsa-data`](https://github.com/umccr/elsa-data) to use this for testing before using the store ag data.
+This is just a CDK for mock data of the AGHA store bucket. The aim is for [`elsa-data`](https://github.com/umccr/elsa-data) to use this for testing before configuring the production AGHA data.
 
 Ref: https://github.com/umccr/elsa-data/issues/207
 

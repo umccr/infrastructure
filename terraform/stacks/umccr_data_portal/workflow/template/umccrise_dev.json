@@ -1,8 +1,10 @@
 {
+  "dragen_normal_id": null,
+  "dragen_tumor_id": null,
   "dragen_somatic_directory": null,
   "dragen_germline_directory": null,
   "output_directory_name": null,
-  "reference_tar": {
+  "genomes_tar": {
     "class": "File",
     "location": "gds://development/reference-data/umccrise/1.0.10/genomes.tar.gz"
   },

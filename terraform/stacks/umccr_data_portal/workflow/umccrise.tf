@@ -2,13 +2,13 @@ locals {
   umccrise_wfl_id = {
     dev  = "wfl.af61d2b172e84cbfa85eaf184226db8b"
     prod = "wfl.7ed9c6014ac9498fbcbd4c17c28bc0d4"
-    stg  = "wfl.7ed9c6014ac9498fbcbd4c17c28bc0d4"
+    stg  = "wfl.714e9172f3674023b210ccc7c47db05a"
   }
 
   umccrise_wfl_version = {
     dev  = "2.2.0--0"
     prod = "2.2.0--3.9.3--4e00721"
-    stg  = "2.2.0--3.9.3--4e00721"
+    stg  = "2.2.0--0--052b3fa"
   }
 
   umccrise_wfl_input = {

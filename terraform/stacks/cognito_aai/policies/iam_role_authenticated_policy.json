@@ -8,19 +8,16 @@
         "cognito-sync:*",
         "cognito-identity:*"
       ],
-      "Resource": [
-        "*"
-      ]
+      "Resource": ["*"]
     },
     {
       "Effect": "Allow",
       "Action": [
         "execute-api:Invoke",
-        "lambda:InvokeFunctionUrl"
+        "lambda:InvokeFunctionUrl",
+        "lambda:InvokeFunction"
       ],
-      "Resource": [
-        "*"
-      ]
+      "Resource": ["*"]
     }
   ]
 }

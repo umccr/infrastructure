@@ -1,5 +1,5 @@
 {
-  "output_prefix": "dracarys/tidy/",
-  "presign_url_json": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data/multiqc_data.json",
+  "output_prefix": "",
+  "presign_url_json": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data",
   "target_bucket_name": "umccr-datalake-dev"
 }

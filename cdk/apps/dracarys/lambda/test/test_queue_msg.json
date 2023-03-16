@@ -1,11 +1,11 @@
 {
   "output_prefix": {
     "DataType": "String",
-    "StringValue": "dracarys/tidy/"
+    "StringValue": ""
   },
   "presign_url_json": {
     "DataType": "String",
-    "StringValue": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data/multiqc_data.json"
+    "StringValue": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data"
   },
   "target_bucket_name": {
     "DataType": "String",

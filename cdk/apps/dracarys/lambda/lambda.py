@@ -1,6 +1,6 @@
 import json
 import os
-import boto3 #todo all to pip
+import boto3
 import datetime
 import base64
 import logging
@@ -25,14 +25,16 @@ def handler(event, context):
     ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretsPortal")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
+    # TODO: Use lambda env vars instead
+    DATA_ENV = "portal" # warehouse would be the other option
     # Do all work in /tmp
     WD = "/tmp"
-    os.mkdir("/tmp/{}" + output_prefix)
+    os.makedirs("/tmp/" + output_prefix, exist_ok=True)
     output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + WD + "/ -p " + output_prefix])
 
     region = 'ap-southeast-2'
     s3 = boto3.resource('s3',region_name=region)
-    target_filename = output_prefix+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    target_filename = output_prefix+"/"+DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+"/files"
     s3.meta.client.upload_file(WD+"/"+output_prefix, target_bucket_name, target_filename)
     returnmessage = ('Wrote ' + str(target_filename) + ' to s3://' + target_bucket_name )
 

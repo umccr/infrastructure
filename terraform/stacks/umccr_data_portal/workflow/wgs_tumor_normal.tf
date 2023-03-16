@@ -1,6 +1,6 @@
 locals {
   wgs_tumor_normal_wfl_id = {
-    dev  = "wfl.32e346cdbb854f6487e7594ec17a81f9"
+    dev  = "wfl.a4056543ef9a474d8b16182a4e6b6c50"
     prod = "wfl.aa0ccece4e004839aa7374d1d6530633"
     stg  = "wfl.aa0ccece4e004839aa7374d1d6530633"
   }

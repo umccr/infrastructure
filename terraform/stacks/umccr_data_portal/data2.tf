@@ -291,21 +291,6 @@ resource "aws_codebuild_project" "codebuild_data2" {
     }
 
     environment_variable {
-      name  = "GPL_SUBMIT_JOB"
-      value = data.aws_ssm_parameter.gpl_submit_job.value
-    }
-
-    environment_variable {
-      name  = "GPL_SUBMIT_JOB_MANUAL"
-      value = data.aws_ssm_parameter.gpl_submit_job_manual.value
-    }
-
-    #    environment_variable {
-    #      name  = "GPL_CREATE_LINX_PLOT"
-    #      value = data.aws_ssm_parameter.gpl_create_linx_plot.value
-    #    }
-
-    environment_variable {
       name  = "REGION"
       value = data.aws_region.current.name
     }

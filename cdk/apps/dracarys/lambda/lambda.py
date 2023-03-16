@@ -32,8 +32,8 @@ def handler(event, context):
 
     region = 'ap-southeast-2'
     s3 = boto3.resource('s3',region_name=region)
-    target_filename = output_prefix+"."+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+".tsv"
-    s3.meta.client.upload_file(WD+"/"+output_prefix+".tsv", target_bucket_name, target_filename)
+    target_filename = output_prefix+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    s3.meta.client.upload_file(WD+"/"+output_prefix, target_bucket_name, target_filename)
     returnmessage = ('Wrote ' + str(target_filename) + ' to s3://' + target_bucket_name )
 
     logging.info(returnmessage)

@@ -27,15 +27,15 @@ def handler(event, context):
 
     # Do all work in /tmp
     WD = "/tmp"
-    #output = run_command(["curl","-o",WD + "/" + output_prefix+".json", gds_input]) # Not needed since newer versions of Dracarys handle GDS presign generation
+    os.mkdir("/tmp/{}" + output_prefix)
     output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + WD + "/ -p " + output_prefix])
-    #output = run_command(["cat",WD+"/"+output_prefix+".tsv"])
 
     region = 'ap-southeast-2'
     s3 = boto3.resource('s3',region_name=region)
     target_filename = output_prefix+"."+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+".tsv"
     s3.meta.client.upload_file(WD+"/"+output_prefix+".tsv", target_bucket_name, target_filename)
-    returnmessage = ('Wrote ' + str(target_filename) + ' to s3://' + target_bucket_name ) 
+    returnmessage = ('Wrote ' + str(target_filename) + ' to s3://' + target_bucket_name )
+
     logging.info(returnmessage)
     return {
         'statusCode': 200,

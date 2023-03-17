@@ -25,7 +25,9 @@ class DracarysStack(Stack):
                                 aws_iam.ManagedPolicy.from_aws_managed_policy_name(
                                     'service-role/AWSLambdaVPCAccessExecutionRole'),
                                 aws_iam.ManagedPolicy.from_aws_managed_policy_name(
-                                    'SecretsManagerReadWrite')
+                                    'SecretsManagerReadWrite'),
+                                aws_iam.ManagedPolicy.from_aws_managed_policy_name(
+                                    'AmazonS3FullAccess')
                                 ])
 
         # Fetch dracarys queue ARN from pre-existing SSM

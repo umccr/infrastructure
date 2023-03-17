@@ -1,9 +1,9 @@
 from aws_cdk import (
     aws_lambda,
     aws_iam,
+    aws_s3,
     aws_sqs,
     aws_ssm,
-    aws_apigateway,
     aws_lambda_event_sources as lambda_event_source,
     Stack,
     Duration
@@ -36,6 +36,8 @@ class DracarysStack(Stack):
 
         queue = aws_sqs.Queue.from_queue_arn(self, id="data-portal-dracarys-queue", queue_arn=queue_arn)
 
+        bucket = aws_s3.Bucket(self, "umccr-datalake-dev")
+
         sqs_event_source = lambda_event_source.SqsEventSource(queue)
 
         docker_lambda = aws_lambda.DockerImageFunction(
@@ -54,3 +56,4 @@ class DracarysStack(Stack):
         )
 
         docker_lambda.add_event_source(sqs_event_source)
+        bucket.grant_read_write(docker_lambda)

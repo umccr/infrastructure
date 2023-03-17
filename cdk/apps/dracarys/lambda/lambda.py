@@ -37,7 +37,7 @@ def handler(event, context):
     target_prefix = DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d")+"/"
     target_fname = "dracarys_multiqc.tsv.gz"
     target_fname_path = find(target_fname, CWD)
-    s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_prefix)
+    s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
     returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
 
     logging.info(returnmessage)

@@ -34,7 +34,7 @@ def handler(event, context):
     output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix])
 
     s3 = boto3.resource('s3')
-    target_prefix = "/"+DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+"/"
+    target_prefix = DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d")+"/"
     target_fname = "dracarys_multiqc.tsv.gz"
     target_fname_path = find(target_fname, CWD)
     s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_prefix)

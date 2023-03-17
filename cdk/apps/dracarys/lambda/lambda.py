@@ -35,9 +35,10 @@ def handler(event, context):
 
     s3 = boto3.resource('s3')
     target_prefix = "/"+DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+"/"
-    target_filename = "dracarys_multiqc.tsv.gz"
-    s3.meta.client.upload_file(target_filename, target_bucket_name, target_prefix)
-    returnmessage = ('Wrote ' + str(target_filename) + ' to s3://' + target_bucket_name )
+    target_fname = "dracarys_multiqc.tsv.gz"
+    target_fname_path = find(target_fname, CWD)
+    s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_prefix)
+    returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
 
     logging.info(returnmessage)
     return {
@@ -47,6 +48,11 @@ def handler(event, context):
         },
         'body':  (returnmessage ) 
     }
+
+def find(name, path):
+    for root, _, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
 
 def run_command(args):
     p = subprocess.Popen(args,

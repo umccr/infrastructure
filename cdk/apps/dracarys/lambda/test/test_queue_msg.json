@@ -1,7 +1,7 @@
 {
   "output_prefix": {
     "DataType": "String",
-    "StringValue": "/"
+    "StringValue": "dracarys"
   },
   "presign_url_json": {
     "DataType": "String",

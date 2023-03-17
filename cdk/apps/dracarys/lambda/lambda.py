@@ -11,7 +11,7 @@ def handler(event, context):
     print('request: {}'.format(json.dumps(event)))
     msg_attrs = event['Records'][0]['messageAttributes']
     try:
-        output_prefix = msg_attrs['output_prefix']['stringValue']
+        file_prefix = msg_attrs['output_prefix']['stringValue']
         gds_input = msg_attrs['presign_url_json']['stringValue']
         target_bucket_name = msg_attrs['target_bucket_name']['stringValue']
     except Exception as e:
@@ -27,15 +27,16 @@ def handler(event, context):
 
     # TODO: Use lambda env vars instead
     DATA_ENV = "portal" # warehouse would be the other option
-    # Do all work in /tmp
-    WD = "/tmp"
-    os.makedirs("/tmp/" + output_prefix, exist_ok=True)
-    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + WD + "/ -p " + output_prefix])
+    # Do all work in /tmp (ill-advised operationally, though)
+    CWD = "/tmp/dracarys"
+    os.makedirs(CWD, exist_ok=True)
 
-    region = 'ap-southeast-2'
-    s3 = boto3.resource('s3',region_name=region)
-    target_filename = output_prefix+"/"+DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+"/files"
-    s3.meta.client.upload_file(WD+"/"+output_prefix, target_bucket_name, target_filename)
+    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix])
+
+    s3 = boto3.resource('s3')
+    target_prefix = "/"+DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+"/"
+    target_filename = "dracarys_multiqc.tsv.gz"
+    s3.meta.client.upload_file(target_filename, target_bucket_name, target_prefix)
     returnmessage = ('Wrote ' + str(target_filename) + ' to s3://' + target_bucket_name )
 
     logging.info(returnmessage)

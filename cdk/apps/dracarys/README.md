@@ -1,1 +1,1 @@
-This is a CDK repo deploying a lambda that takes in a presign URL and a prefix, runs Dracarys on the file downloaded from the presign URL, and writes the output to S3.
+This is a CDK repo deploying a lambda that takes in a SQS message with an Illumina GDS path to a directory, runs [Dracarys](https://github.com/umccr/dracarys/) against the supplied Illumina GDS endpoint parameters and writes the output to S3.

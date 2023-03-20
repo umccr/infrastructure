@@ -1,3 +1,5 @@
+# Originally authored by @andrei-seleznev in https://github.com/umccr/dracarys-to-s3-cdk
+
 from aws_cdk import (
     aws_lambda,
     aws_iam,

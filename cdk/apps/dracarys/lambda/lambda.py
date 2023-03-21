@@ -25,12 +25,13 @@ def handler(event, context):
     ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretsPortal")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
-    # TODO: Use lambda env vars instead
+    # TODO: Use lambda env vars or SSM instead
     DATA_ENV = "portal" # warehouse would be the other option
     # Do all work in /tmp (ill-advised operationally, though)
     CWD = "/tmp/dracarys"
     os.makedirs(CWD, exist_ok=True)
 
+    # TODO: Add 3 more sample inputs
     output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix])
 
     s3 = boto3.resource('s3')

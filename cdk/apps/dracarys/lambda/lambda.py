@@ -10,6 +10,7 @@ def handler(event, context):
     logging.info('request: {}'.format(json.dumps(event)))
     print('request: {}'.format(json.dumps(event)))
     msg_attrs = event['Records'][0]['messageAttributes']
+    # TODO: Pass portal_run_id to dracarys and other attributes that are crucial for downstream linking
     try:
         file_prefix = msg_attrs['output_prefix']['stringValue']
         gds_input = msg_attrs['presign_url_json']['stringValue']

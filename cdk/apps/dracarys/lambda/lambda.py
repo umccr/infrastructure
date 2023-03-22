@@ -13,8 +13,9 @@ def handler(event, context):
     # TODO: Pass portal_run_id to dracarys and other attributes that are crucial for downstream linking
     try:
         file_prefix = msg_attrs['output_prefix']['stringValue']
-        gds_input = msg_attrs['presign_url_json']['stringValue']
+        gds_input = msg_attrs['gds_input']['stringValue']
         target_bucket_name = msg_attrs['target_bucket_name']['stringValue']
+        portal_run_id = msg_attrs['portal_run_id']['stringValue']
     except Exception as e:
         logging.error("Exception:")
         logging.error(e)
@@ -33,7 +34,7 @@ def handler(event, context):
     os.makedirs(CWD, exist_ok=True)
 
     # TODO: Add 3 more sample inputs
-    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix])
+    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, "--portal-run-id", portal_run_id])
 
     s3 = boto3.resource('s3')
     target_prefix = DATA_ENV+"/creation_date="+datetime.datetime.now().strftime("%Y-%m-%d")+"/"

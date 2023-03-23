@@ -3,10 +3,6 @@
     "DataType": "String",
     "StringValue": "dracarys"
   },
-  "portal_run_id": {
-    "DataType": "String",
-    "StringValue": "20230226cfd47328"
-  },
   "gds_input": {
     "DataType": "String",
     "StringValue": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data"

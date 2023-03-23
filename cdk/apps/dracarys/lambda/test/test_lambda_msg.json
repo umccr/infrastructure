@@ -1,6 +1,0 @@
-{
-  "output_prefix": "dracarys",
-  "gds_input": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data",
-  "portal_run_id": "20230226cfd47328",
-  "target_bucket_name": "umccr-datalake-dev"
-}

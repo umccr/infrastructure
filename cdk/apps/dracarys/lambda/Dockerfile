@@ -1,7 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.9
 
 ARG CONDA_LOCK_VERSION=0.8.0
-ARG CONDA_LOCK_URL=https://raw.githubusercontent.com/umccr/dracarys/v${CONDA_LOCK_VERSION}/conda/env/lock/conda-lock.yml
+ARG CONDA_LOCK_URL=https://raw.githubusercontent.com/pdiakumis/dracarys/v${CONDA_LOCK_VERSION}/conda/env/lock/conda-lock.yml
 ARG MINI_VERSION=22.11.1-4
 ARG MINI_URL=https://github.com/conda-forge/miniforge/releases/download/${MINI_VERSION}/Mambaforge-${MINI_VERSION}-Linux-x86_64.sh
 ARG MAMBA_PREFIX="/opt/mambaforge"

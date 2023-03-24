@@ -26,7 +26,7 @@ def handler(event, context):
     # Retrieve ICA secret
     # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
     secrets_mgr = boto3.client('secretsmanager')
-    ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretsPortal")['SecretString']
+    ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretPortalProd")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
     # TODO: Use lambda env vars or SSM instead
@@ -43,14 +43,14 @@ def handler(event, context):
     output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"])
 
     # Write in both TSV and Parquet formats
-    target_fname = "multiqc_data.parquet"
-    target_fname_path = find(target_fname, CWD)
-    target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=parquet"
-    s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
+    # target_fname = "dracarys_multiqc.parquet"
+    # target_fname_path = find(target_fname, CWD)
+    # target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=parquet/"
+    # s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
 
-    target_fname = "multiqc_data.tsv.gz"
+    target_fname = "dracarys_multiqc.tsv.gz"
     target_fname_path = find(target_fname, CWD)
-    target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=tsv"
+    target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=tsv/"
     s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
 
     returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
@@ -68,17 +68,19 @@ def parse_gds_path_info(gds_url: str):
     ''' A portal run id (20230311b504283e) is a string composed of
         a datetime 20230311 and a UUID/hash: b504283e 
     '''
-    #                                                      SBJID   PORTAL_RUN_ID_DATE+HASH  MULTIQC_DIR
-    gds_url_regex = r"gds:\/\/production\/analysis_data\/(\w+)\/\w+\/(\d{8})(\w+)\/\w+\/(\w+)\/"
-    match = re.search(gds_url_regex, gds_url)
-    components = dict()
+    #                                SBJID                     PORTAL_RUN_ID_DATE+HASH                             MULTIQC_DIR
+    # gds://production/analysis_data/SBJXXXXX/wgs_alignment_qc/20230318aaf5c999/PRJXXXXXX_dragen_alignment_multiqc/PRJXXXXXX_dragen_alignment_multiqc_data
+    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/\w+\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
+    match = re.search(gds_url_regex_multiqc, gds_url)
 
+    components = dict()
     if match:
         components['sbj_id'] = match.group(1)
         components['portal_run_id_date'] = match.group(2)
         components['portal_run_id_hash'] = match.group(3)
         components['portal_run_id'] = match.group(2) + match.group(3)
         components['multiqc_dir'] = match.group(4)
+        components['prj_id'] = match.group(5)
 
         return components
     else:

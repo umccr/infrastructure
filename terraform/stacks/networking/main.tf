@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.3.3"
+  required_version = ">= 1.4.2"
 
   backend "s3" {
     bucket = "umccr-terraform-states"
@@ -10,7 +10,7 @@ terraform {
 
   required_providers {
     aws = {
-      version = "4.37.0"
+      version = "4.59.0"
       source = "hashicorp/aws"
     }
   }
@@ -34,7 +34,7 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 
 module "main_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "3.18.1"
+  version = "3.19.0"
 
   name = "main-vpc"
   cidr = "10.2.0.0/16"
@@ -125,26 +125,32 @@ module "main_vpc_endpoints" {
 
     ecr_api = {
       service         = "ecr.api"
+      subnet_ids      = module.main_vpc.private_subnets
       tags            = { Name = "ecr-api-vpc-endpoint" }
     },
     ecr_dkr = {
       service         = "ecr.dkr"
+      subnet_ids      = module.main_vpc.private_subnets
       tags            = { Name = "ecr-dkr-vpc-endpoint" }
     },
     ecs = {
       service         = "ecs"
+      subnet_ids      = module.main_vpc.private_subnets
       tags            = { Name = "ecs-vpc-endpoint" }
     },
     ecs_agent = {
       service         = "ecs-agent"
+      subnet_ids      = module.main_vpc.private_subnets
       tags            = { Name = "ecs-agent-vpc-endpoint" }
     },
     ecs_telemetry = {
       service         = "ecs-telemetry"
+      subnet_ids      = module.main_vpc.private_subnets
       tags            = { Name = "ecs-telemetry-vpc-endpoint" }
     },
     logs = {
       service         = "logs"
+      subnet_ids      = module.main_vpc.private_subnets
       tags            = { Name = "logs-vpc-endpoint" }
     }
   }

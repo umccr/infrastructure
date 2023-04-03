@@ -48,9 +48,26 @@ def handler(event, context):
     # target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=parquet/"
     # s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
 
+    target_prefix = ""
     target_fname = "dracarys_multiqc.tsv.gz"
     target_fname_path = find(target_fname, CWD)
-    target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=tsv/"
+
+    if "umccrise" in gds_input:
+        target_prefix = DATA_ENV + "/umccrise/multiqc" + \
+            "/subject_id=" + gds_path_data['sbj_id'] + \
+            "/portal_run_id=" + gds_path_data['portal_run_id'] + \
+            "/project_id=" + gds_path_data['prj_id'] + \
+            "/tumor_lib=" + gds_path_data['tumor_lib'] + \
+            "/normal_lib=" + gds_path_data['normal_lib'] + \
+            "/format=tsv/"
+
+    elif "wgs_alignment_qc" in gds_input:
+        target_prefix = DATA_ENV + \
+            "/subject_id=" + gds_path_data['sbj_id'] + \
+            "/portal_run_id=" + gds_path_data['portal_run_id'] + \
+            "/project_id=" + gds_path_data['prj_id'] + \
+            "/format=tsv/"
+
     s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
 
     returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
@@ -68,23 +85,48 @@ def parse_gds_path_info(gds_url: str):
     ''' A portal run id (20230311b504283e) is a string composed of
         a datetime 20230311 and a UUID/hash: b504283e 
     '''
+    components = dict()
+
+    # wgs_alignment_qc  multiqc regex
     #                                SBJID                     PORTAL_RUN_ID_DATE+HASH                             MULTIQC_DIR
     # gds://production/analysis_data/SBJXXXXX/wgs_alignment_qc/20230318aaf5c999/PRJXXXXXX_dragen_alignment_multiqc/PRJXXXXXX_dragen_alignment_multiqc_data
-    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/\w+\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
-    match = re.search(gds_url_regex_multiqc, gds_url)
+    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/\wgs_alignment\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
+    # umccrise          multiqc regex
+    #                                SBJID             PORTAL_RUN_ID    TUMOR_LIB NORMAL_LIB  SBJID   PRJID     SBJID     PRJ_ID
+    # gds://production/analysis_data/SBJXXXXX/umccrise/2022102142ed4512/LXXXXXXXX__LXXXXXXX/SBJXXXXX__MDXYYYYYY/SBJXXXXX__MDXYYYYYY-multiqc_report_data/multiqc_data.json
+    gds_url_regex_multiqc_umccrise = r"gds:\/\/production\/analysis_data\/(\w+)\/umccrise\/(\d{8})(\w+)\/(\w+)__(\w+)\/(\w+)__(\w+)\/(\w+)__(\w+)-multiqc_report_data"
 
-    components = dict()
-    if match:
-        components['sbj_id'] = match.group(1)
-        components['portal_run_id_date'] = match.group(2)
-        components['portal_run_id_hash'] = match.group(3)
-        components['portal_run_id'] = match.group(2) + match.group(3)
-        components['multiqc_dir'] = match.group(4)
-        components['prj_id'] = match.group(5)
+    wgs_alignment_qc = re.search(gds_url_regex_multiqc, gds_url)
+    umccrise_qc = re.search(gds_url_regex_multiqc_umccrise, gds_url)
 
-        return components
+    # TODO: Refactor later, following worse is better mode
+    if wgs_alignment_qc:
+        components['sbj_id'] = wgs_alignment_qc.group(1)
+        components['portal_run_id_date'] = wgs_alignment_qc.group(2)
+        components['portal_run_id_hash'] = wgs_alignment_qc.group(3)
+        components['portal_run_id'] = wgs_alignment_qc.group(2) + wgs_alignment_qc.group(3)
+
+        components['multiqc_dir'] = wgs_alignment_qc.group(4)
+        components['prj_id'] = wgs_alignment_qc.group(5)
+    elif umccrise_qc:
+        components['sbj_id'] = umccrise_qc.group(1)
+        components['portal_run_id_date'] = umccrise_qc.group(2)
+        components['portal_run_id_hash'] = umccrise_qc.group(3)
+        components['portal_run_id'] = umccrise_qc.group(2) + umccrise_qc.group(3)
+
+        components['tumor_lib'] = umccrise_qc.group(4)
+        components['normal_lib'] = umccrise_qc.group(5)
+
+        if umccrise_qc.group(6) != umccrise_qc.group(8):
+            raise ValueError("SubjectID discrepancy detected")
+        if umccrise_qc.group(7) != umccrise_qc.group(9):
+            raise ValueError("ProjectID discrepancy detected")
+
+        components['prj_id'] = umccrise_qc.group(7)
     else:
         return None
+
+    return components
 
 def find(name, path):
     for root, _, files in os.walk(path):

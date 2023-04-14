@@ -5,10 +5,10 @@
   },
   "gds_input": {
     "DataType": "String",
-    "StringValue": "gds://development/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data"
+    "StringValue": "gds://production/test-data/dracarys/umccrise/CUP-Pairs8/multiqc_data"
   },
   "target_bucket_name": {
     "DataType": "String",
-    "StringValue":"umccr-datalake-dev" 
+    "StringValue":"umccr-datalake-prod"
   }
 }

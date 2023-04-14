@@ -7,6 +7,11 @@ import base64
 import logging
 import subprocess
 
+# Globals controlling early S3 path prefix
+# TODO: Use lambda env vars or SSM instead
+#DATA_ENV = "portal" # lakehouse would be the other option
+LAKEHOUSE_VERSION = "v2"
+
 def handler(event, context):
     #now = datetime.datetime.now().strftime("%Y-%m-%d")
     s3 = boto3.resource('s3')
@@ -29,8 +34,6 @@ def handler(event, context):
     ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretPortalProd")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
-    # TODO: Use lambda env vars or SSM instead
-    DATA_ENV = "portal" # warehouse would be the other option
     # Do all work in /tmp (ill-advised operationally, though)
     CWD = "/tmp/dracarys"
     os.makedirs(CWD, exist_ok=True)
@@ -38,22 +41,21 @@ def handler(event, context):
     gds_path_data = parse_gds_path_info(gds_input)
     assert gds_path_data is not None
 
+    portal_id_date = gds_path_data['portal_run_id_date']
+
     # Forced to parse portal_run_id from GDS URL for now... 
     #output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, "--portal-run-id", portal_run_id])
     output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"])
 
-    # Write in both TSV and Parquet formats
-    # target_fname = "dracarys_multiqc.parquet"
-    # target_fname_path = find(target_fname, CWD)
-    # target_prefix = DATA_ENV+"/subject_id="+ gds_path_data['sbj_id'] +"/portal_run_id="+gds_path_data['portal_run_id']+"/format=parquet/"
-    # s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
-
     target_prefix = ""
-    target_fname = "dracarys_multiqc.tsv.gz"
+    target_fname = file_prefix+"_multiqc.tsv.gz"
     target_fname_path = find(target_fname, CWD)
 
     if "umccrise" in gds_input:
-        target_prefix = DATA_ENV + "/umccrise/multiqc" + \
+        target_prefix = LAKEHOUSE_VERSION +"/"+ \
+            "/year=" + portal_id_date[0:3] + \
+            "/month=" + portal_id_date[4:5] + \
+            "/umccrise/multiqc" + \
             "/subject_id=" + gds_path_data['sbj_id'] + \
             "/portal_run_id=" + gds_path_data['portal_run_id'] + \
             "/project_id=" + gds_path_data['prj_id'] + \
@@ -62,7 +64,10 @@ def handler(event, context):
             "/format=tsv/"
 
     elif "wgs_alignment_qc" in gds_input:
-        target_prefix = DATA_ENV + \
+        target_prefix = LAKEHOUSE_VERSION +"/"+ \
+            "/year=" + portal_id_date[0:3] + \
+            "/month=" + portal_id_date[4:5] + \
+            "/wgs_alignment_qc/multiqc" + \
             "/subject_id=" + gds_path_data['sbj_id'] + \
             "/portal_run_id=" + gds_path_data['portal_run_id'] + \
             "/project_id=" + gds_path_data['prj_id'] + \

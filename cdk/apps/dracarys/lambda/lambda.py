@@ -31,7 +31,7 @@ def handler(event, context):
     # Retrieve ICA secret
     # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
     secrets_mgr = boto3.client('secretsmanager')
-    ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretPortalProd")['SecretString']
+    ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretsPortal")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
 
     # Do all work in /tmp (ill-advised operationally, though)

@@ -1,0 +1,15 @@
+attrs==21.4.0
+aws-cdk-lib==2.19.0
+boto3==1.24.32
+botocore==1.27.32
+cattrs==22.1.0
+constructs==10.1.49
+exceptiongroup==1.0.0rc8
+jmespath==1.0.1
+jsii==1.62.0
+publication==0.0.3
+python-dateutil==2.8.2
+s3transfer==0.6.0
+six==1.16.0
+typing-extensions==4.3.0
+urllib3==1.26.10

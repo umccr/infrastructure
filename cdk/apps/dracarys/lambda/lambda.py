@@ -45,11 +45,10 @@ def handler(event, context):
     cmd = ["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"]
     subprocess.check_output(cmd)
 
-    # TODO: Finding the file shouldn't be needed, rework this
+    # Collect output path
     target_s3_prefix = ""
     target_fname = file_prefix+"_multiqc.tsv.gz"
     target_fname_path = CWD+"/"+target_fname
-    #target_fname_path = find(target_fname, CWD)
 
     if "umccrise" in gds_input:
         target_s3_prefix = LAKEHOUSE_VERSION + \

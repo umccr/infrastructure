@@ -29,7 +29,6 @@ def handler(event, context):
         return { 'statusCode': 500 }
 
     # Retrieve ICA secret
-    # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
     secrets_mgr = boto3.client('secretsmanager')
     ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretsPortal")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
@@ -43,18 +42,19 @@ def handler(event, context):
 
     portal_id_date = gds_path_data['portal_run_id_date']
 
-    # Forced to parse portal_run_id from GDS URL for now... 
-    #output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, "--portal-run-id", portal_run_id])
-    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"])
+    # Run Dracarys
+    cmd = ["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"]
+    subprocess.check_output(cmd)
 
-    target_prefix = ""
+    # Collect output path
+    target_s3_prefix = ""
     target_fname = file_prefix+"_multiqc.tsv.gz"
-    target_fname_path = find(target_fname, CWD)
+    target_fname_path = CWD+"/"+target_fname
 
     if "umccrise" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION +"/"+ \
-            "/year=" + portal_id_date[0:3] + \
-            "/month=" + portal_id_date[4:5] + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
+            "/year=" + portal_id_date[0:4] + \
+            "/month=" + portal_id_date[4:6] + \
             "/umccrise/multiqc" + \
             "/subject_id=" + gds_path_data['sbj_id'] + \
             "/portal_run_id=" + gds_path_data['portal_run_id'] + \
@@ -64,16 +64,17 @@ def handler(event, context):
             "/format=tsv/"
 
     elif "wgs_alignment_qc" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION +"/"+ \
-            "/year=" + portal_id_date[0:3] + \
-            "/month=" + portal_id_date[4:5] + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
+            "/year=" + portal_id_date[0:4] + \
+            "/month=" + portal_id_date[4:6] + \
             "/wgs_alignment_qc/multiqc" + \
             "/subject_id=" + gds_path_data['sbj_id'] + \
             "/portal_run_id=" + gds_path_data['portal_run_id'] + \
             "/project_id=" + gds_path_data['prj_id'] + \
             "/format=tsv/"
 
-    s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
+    target_on_s3 = os.path.join(target_s3_prefix, target_fname)
+    s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
 
     returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
 
@@ -95,7 +96,7 @@ def parse_gds_path_info(gds_url: str):
     # wgs_alignment_qc  multiqc regex
     #                                SBJID                     PORTAL_RUN_ID_DATE+HASH                             MULTIQC_DIR
     # gds://production/analysis_data/SBJXXXXX/wgs_alignment_qc/20230318aaf5c999/PRJXXXXXX_dragen_alignment_multiqc/PRJXXXXXX_dragen_alignment_multiqc_data
-    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/\wgs_alignment\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
+    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/wgs_alignment_qc\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
     # umccrise          multiqc regex
     #                                SBJID             PORTAL_RUN_ID    TUMOR_LIB NORMAL_LIB  SBJID   PRJID     SBJID     PRJ_ID
     # gds://production/analysis_data/SBJXXXXX/umccrise/2022102142ed4512/LXXXXXXXX__LXXXXXXX/SBJXXXXX__MDXYYYYYY/SBJXXXXX__MDXYYYYYY-multiqc_report_data/multiqc_data.json
@@ -132,28 +133,3 @@ def parse_gds_path_info(gds_url: str):
         return None
 
     return components
-
-def find(name, path):
-    for root, _, files in os.walk(path):
-        if name in files:
-            return os.path.join(root, name)
-
-def run_command(args):
-    p = subprocess.Popen(args,
-                          cwd = os.getcwd(),
-                          stdin = subprocess.PIPE, 
-                          stdout = subprocess.PIPE, 
-                          stderr = subprocess.PIPE) 
-
-    output, error = p.communicate() 
-    logging.info("the commandline is {}".format(p.args))
-    logging.info("the return code is " + str(p.returncode))
-    if p.returncode == 0: 
-        print('output :\n {0}'.format(output.decode("utf-8"))) 
-        return output.decode("utf-8")
-    else: 
-        print('error due to return code ' + str(p.returncode ) + ':\n {0}'.format(error.decode("utf-8"))) 
-        return error.decode("utf-8")
-
-    return output
-

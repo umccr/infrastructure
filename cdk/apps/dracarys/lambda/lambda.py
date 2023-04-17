@@ -13,7 +13,6 @@ import subprocess
 LAKEHOUSE_VERSION = "v2"
 
 def handler(event, context):
-    #now = datetime.datetime.now().strftime("%Y-%m-%d")
     s3 = boto3.resource('s3')
 
     logging.info('request: {}'.format(json.dumps(event)))
@@ -29,7 +28,6 @@ def handler(event, context):
         return { 'statusCode': 500 }
 
     # Retrieve ICA secret
-    # https://aws.amazon.com/blogs/compute/securely-retrieving-secrets-with-aws-lambda/
     secrets_mgr = boto3.client('secretsmanager')
     ica_secret = secrets_mgr.get_secret_value(SecretId="IcaSecretsPortal")['SecretString']
     os.environ["ICA_ACCESS_TOKEN"] = ica_secret
@@ -43,19 +41,20 @@ def handler(event, context):
 
     portal_id_date = gds_path_data['portal_run_id_date']
 
-    # Forced to parse portal_run_id from GDS URL for now... 
-    #output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, "--portal-run-id", portal_run_id])
+    # Run Dracarys
     cmd = ["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"]
     subprocess.check_output(cmd)
 
-    target_prefix = ""
+    # TODO: Finding the file shouldn't be needed, rework this
+    target_s3_prefix = ""
     target_fname = file_prefix+"_multiqc.tsv.gz"
-    target_fname_path = find(target_fname, CWD)
+    target_fname_path = CWD+"/"+target_fname
+    #target_fname_path = find(target_fname, CWD)
 
     if "umccrise" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION +"/"+ \
-            "/year=" + portal_id_date[0:3] + \
-            "/month=" + portal_id_date[4:5] + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
+            "/year=" + portal_id_date[0:4] + \
+            "/month=" + portal_id_date[4:6] + \
             "/umccrise/multiqc" + \
             "/subject_id=" + gds_path_data['sbj_id'] + \
             "/portal_run_id=" + gds_path_data['portal_run_id'] + \
@@ -65,16 +64,19 @@ def handler(event, context):
             "/format=tsv/"
 
     elif "wgs_alignment_qc" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION +"/"+ \
-            "/year=" + portal_id_date[0:3] + \
-            "/month=" + portal_id_date[4:5] + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
+            "/year=" + portal_id_date[0:4] + \
+            "/month=" + portal_id_date[4:6] + \
             "/wgs_alignment_qc/multiqc" + \
             "/subject_id=" + gds_path_data['sbj_id'] + \
             "/portal_run_id=" + gds_path_data['portal_run_id'] + \
             "/project_id=" + gds_path_data['prj_id'] + \
             "/format=tsv/"
 
-    s3.meta.client.upload_file(target_fname_path, target_bucket_name, os.path.join(target_prefix, target_fname))
+    target_on_s3 = os.path.join(target_s3_prefix, target_fname)
+    print(target_fname_path)
+    print(target_on_s3)
+    s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
 
     returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
 
@@ -133,8 +135,3 @@ def parse_gds_path_info(gds_url: str):
         return None
 
     return components
-
-def find(name, path):
-    for root, _, files in os.walk(path):
-        if name in files:
-            return os.path.join(root, name)

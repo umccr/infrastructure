@@ -45,7 +45,8 @@ def handler(event, context):
 
     # Forced to parse portal_run_id from GDS URL for now... 
     #output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, "--portal-run-id", portal_run_id])
-    output = run_command(["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"])
+    cmd = ["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"]
+    subprocess.check_output(cmd)
 
     target_prefix = ""
     target_fname = file_prefix+"_multiqc.tsv.gz"
@@ -137,23 +138,3 @@ def find(name, path):
     for root, _, files in os.walk(path):
         if name in files:
             return os.path.join(root, name)
-
-def run_command(args):
-    p = subprocess.Popen(args,
-                          cwd = os.getcwd(),
-                          stdin = subprocess.PIPE, 
-                          stdout = subprocess.PIPE, 
-                          stderr = subprocess.PIPE) 
-
-    output, error = p.communicate() 
-    logging.info("the commandline is {}".format(p.args))
-    logging.info("the return code is " + str(p.returncode))
-    if p.returncode == 0: 
-        print('output :\n {0}'.format(output.decode("utf-8"))) 
-        return output.decode("utf-8")
-    else: 
-        print('error due to return code ' + str(p.returncode ) + ':\n {0}'.format(error.decode("utf-8"))) 
-        return error.decode("utf-8")
-
-    return output
-

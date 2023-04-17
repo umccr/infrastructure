@@ -97,7 +97,7 @@ def parse_gds_path_info(gds_url: str):
     # wgs_alignment_qc  multiqc regex
     #                                SBJID                     PORTAL_RUN_ID_DATE+HASH                             MULTIQC_DIR
     # gds://production/analysis_data/SBJXXXXX/wgs_alignment_qc/20230318aaf5c999/PRJXXXXXX_dragen_alignment_multiqc/PRJXXXXXX_dragen_alignment_multiqc_data
-    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/\wgs_alignment\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
+    gds_url_regex_multiqc = r"gds:\/\/production\/analysis_data\/(\w+)\/wgs_alignment_qc\/(\d{8})(\w+)\/\w+\/((\w+)_dragen_alignment_multiqc_data)"
     # umccrise          multiqc regex
     #                                SBJID             PORTAL_RUN_ID    TUMOR_LIB NORMAL_LIB  SBJID   PRJID     SBJID     PRJ_ID
     # gds://production/analysis_data/SBJXXXXX/umccrise/2022102142ed4512/LXXXXXXXX__LXXXXXXX/SBJXXXXX__MDXYYYYYY/SBJXXXXX__MDXYYYYYY-multiqc_report_data/multiqc_data.json

@@ -1,6 +1,8 @@
 {
-  "output_file_prefix": null,
-  "output_directory": null,
+  "output_file_prefix_germline": null,
+  "output_file_prefix_somatic": null,
+  "output_directory_germline": null,
+  "output_directory_somatic": null,
   "fastq_list_rows": [],
   "tumor_fastq_list_rows": [],
   "enable_map_align_output": true,

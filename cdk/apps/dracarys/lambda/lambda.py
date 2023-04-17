@@ -13,6 +13,7 @@ import subprocess
 LAKEHOUSE_VERSION = "v2"
 
 def handler(event, context):
+    #now = datetime.datetime.now().strftime("%Y-%m-%d")
     s3 = boto3.resource('s3')
 
     logging.info('request: {}'.format(json.dumps(event)))
@@ -73,8 +74,6 @@ def handler(event, context):
             "/format=tsv/"
 
     target_on_s3 = os.path.join(target_s3_prefix, target_fname)
-    print(target_fname_path)
-    print(target_on_s3)
     s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
 
     returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )

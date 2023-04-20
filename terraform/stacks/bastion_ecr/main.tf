@@ -66,7 +66,7 @@ resource "aws_ecr_lifecycle_policy" "cttso_ica_to_pieriandx_lifecycle" {
 #
 
 resource "aws_ecr_repository" "oncoanalyser" {
-  name                 = "cttso-ica-to-pieriandx"
+  name                 = "oncoanalyser"
   image_tag_mutability = "MUTABLE"
   image_scanning_configuration {
     scan_on_push = false

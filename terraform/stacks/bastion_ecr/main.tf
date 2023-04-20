@@ -59,3 +59,27 @@ resource "aws_ecr_lifecycle_policy" "cttso_ica_to_pieriandx_lifecycle" {
   repository = aws_ecr_repository.cttso_ica_to_pieriandx.name
   policy     = templatefile("policies/untagged_image_policy.json", {})
 }
+
+
+####
+# oncoanalyser
+#
+
+resource "aws_ecr_repository" "oncoanalyser" {
+  name                 = "oncoanalyser"
+  image_tag_mutability = "MUTABLE"
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+}
+
+resource "aws_ecr_repository_policy" "oncoanalyser_cross_accounts" {
+  repository = aws_ecr_repository.oncoanalyser.name
+  policy     = templatefile("policies/cross_accounts_policy_umccr.json", {})
+}
+
+# Policy on untagged image
+resource "aws_ecr_lifecycle_policy" "oncoanalyser_lifecycle" {
+  repository = aws_ecr_repository.oncoanalyser.name
+  policy     = templatefile("policies/untagged_image_policy.json", {})
+}

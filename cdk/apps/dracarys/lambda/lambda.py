@@ -150,6 +150,7 @@ def parse_gds_path_info(gds_url: str):
         components['sbj_id'] = tso_ctdna_tumor.group(1)
         components['portal_run_id_date'] = tso_ctdna_tumor.group(2)
         components['portal_run_id_hash'] = tso_ctdna_tumor.group(3)
+        components['portal_run_id'] = tso_ctdna_tumor.group(2) + tso_ctdna_tumor.group(3)
         components['tumor_lib'] = tso_ctdna_tumor.group(4)
         components['prj_id'] = tso_ctdna_tumor.group(5)
 

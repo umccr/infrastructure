@@ -38,7 +38,8 @@ def handler(event, context):
     os.makedirs(CWD, exist_ok=True)
 
     gds_path_data = parse_gds_path_info(gds_input)
-    assert gds_path_data is not None
+    if gds_path_data == None:
+        raise ValueError("The GDS path {gds_input} is not recognised by this ingestor")
 
     # Deconstruct common gds_url components
     portal_run_id = gds_path_data['portal_run_id']

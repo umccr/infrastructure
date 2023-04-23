@@ -6,6 +6,7 @@ import datetime
 import base64
 import logging
 import subprocess
+from glob import glob
 
 # Globals controlling early S3 path prefix
 # TODO: Use lambda env vars or SSM instead
@@ -54,11 +55,11 @@ def handler(event, context):
 
     # Collect output path
     target_s3_prefix = ""
-    target_fname = file_prefix+"_multiqc.tsv.gz"
-    target_fname_path = CWD+"/"+target_fname
+    target_glob = file_prefix+"_*.tsv.gz" # TODO: Generalise for different file formats
+    target_fname_paths = glob(os.path.join(CWD, target_glob))
 
     if "umccrise" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
             "/year=" + portal_id_date_year + \
             "/month=" + portal_id_date_month + \
             "/umccrise/multiqc" + \
@@ -68,7 +69,7 @@ def handler(event, context):
             "/tumor_lib=" + gds_path_data['tumor_lib'] + \
             "/normal_lib=" + gds_path_data['normal_lib']
     elif "wgs_alignment_qc" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
             "/year=" + portal_id_date_year + \
             "/month=" + portal_id_date_month + \
             "/wgs_alignment_qc/multiqc" + \
@@ -76,7 +77,7 @@ def handler(event, context):
             "/portal_run_id=" + portal_run_id + \
             "/project_id=" + prj_id
     elif "tso_ctdna_tumor_only" in gds_input:
-        target_prefix = LAKEHOUSE_VERSION + \
+        target_s3_prefix = LAKEHOUSE_VERSION + \
             "/year=" + portal_id_date_year + \
             "/month=" + portal_id_date_month + \
             "/tso/tso_ctdna_tumor_only" + \
@@ -85,18 +86,16 @@ def handler(event, context):
             "/project_id=" + prj_id + \
             "/tumor_lib=" + gds_path_data['tumor_lib']
 
-    target_on_s3 = os.path.join(target_s3_prefix, target_fname)
-    s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
+    for target_fname_path in target_fname_paths:
+        target_on_s3 = os.path.join(target_s3_prefix, os.path.basename(target_fname_path))
+        s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
+        logging.info("Wrote {target_on_s3}")
 
-    returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
-
-    logging.info(returnmessage)
     return {
         'statusCode': 200,
         'headers': {
             'Content-Type': 'text/plain'
-        },
-        'body':  (returnmessage ) 
+        }
     }
 
 def parse_gds_path_info(gds_url: str):

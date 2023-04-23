@@ -6,6 +6,7 @@ import datetime
 import base64
 import logging
 import subprocess
+from glob import glob
 
 # Globals controlling early S3 path prefix
 # TODO: Use lambda env vars or SSM instead
@@ -38,9 +39,15 @@ def handler(event, context):
     os.makedirs(CWD, exist_ok=True)
 
     gds_path_data = parse_gds_path_info(gds_input)
-    assert gds_path_data is not None
+    if gds_path_data == None:
+        raise ValueError("The GDS path {gds_input} is not recognised by this ingestor")
 
-    portal_id_date = gds_path_data['portal_run_id_date']
+    # Deconstruct common gds_url components
+    portal_run_id = gds_path_data['portal_run_id']
+    portal_id_date_year = gds_path_data['portal_run_id_date'][0:4]
+    portal_id_date_month = gds_path_data['portal_run_id_date'][4:6]
+    sbj_id = gds_path_data['sbj_id']
+    prj_id = gds_path_data['prj_id']
 
     # Run Dracarys
     cmd = ["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"]
@@ -48,43 +55,47 @@ def handler(event, context):
 
     # Collect output path
     target_s3_prefix = ""
-    target_fname = file_prefix+"_multiqc.tsv.gz"
-    target_fname_path = CWD+"/"+target_fname
+    target_glob = file_prefix+"_*.tsv.gz" # TODO: Generalise for different file formats
+    target_fname_paths = glob(os.path.join(CWD, target_glob))
 
     if "umccrise" in gds_input:
         target_s3_prefix = LAKEHOUSE_VERSION + \
-            "/year=" + portal_id_date[0:4] + \
-            "/month=" + portal_id_date[4:6] + \
+            "/year=" + portal_id_date_year + \
+            "/month=" + portal_id_date_month + \
             "/umccrise/multiqc" + \
-            "/subject_id=" + gds_path_data['sbj_id'] + \
-            "/portal_run_id=" + gds_path_data['portal_run_id'] + \
-            "/project_id=" + gds_path_data['prj_id'] + \
+            "/subject_id=" + sbj_id + \
+            "/portal_run_id=" + portal_run_id + \
+            "/project_id=" + prj_id + \
             "/tumor_lib=" + gds_path_data['tumor_lib'] + \
-            "/normal_lib=" + gds_path_data['normal_lib'] + \
-            "/format=tsv/"
-
+            "/normal_lib=" + gds_path_data['normal_lib']
     elif "wgs_alignment_qc" in gds_input:
         target_s3_prefix = LAKEHOUSE_VERSION + \
-            "/year=" + portal_id_date[0:4] + \
-            "/month=" + portal_id_date[4:6] + \
+            "/year=" + portal_id_date_year + \
+            "/month=" + portal_id_date_month + \
             "/wgs_alignment_qc/multiqc" + \
-            "/subject_id=" + gds_path_data['sbj_id'] + \
-            "/portal_run_id=" + gds_path_data['portal_run_id'] + \
-            "/project_id=" + gds_path_data['prj_id'] + \
-            "/format=tsv/"
+            "/subject_id=" + sbj_id + \
+            "/portal_run_id=" + portal_run_id + \
+            "/project_id=" + prj_id
+    elif "tso_ctdna_tumor_only" in gds_input:
+        target_s3_prefix = LAKEHOUSE_VERSION + \
+            "/year=" + portal_id_date_year + \
+            "/month=" + portal_id_date_month + \
+            "/tso/tso_ctdna_tumor_only" + \
+            "/subject_id=" + sbj_id + \
+            "/portal_run_id=" + portal_run_id + \
+            "/project_id=" + prj_id + \
+            "/tumor_lib=" + gds_path_data['tumor_lib']
 
-    target_on_s3 = os.path.join(target_s3_prefix, target_fname)
-    s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
+    for target_fname_path in target_fname_paths:
+        target_on_s3 = os.path.join(target_s3_prefix, os.path.basename(target_fname_path))
+        s3.meta.client.upload_file(target_fname_path, target_bucket_name, target_on_s3)
+        logging.info("Wrote {target_on_s3}")
 
-    returnmessage = ('Wrote ' + str(target_fname) + ' to s3://' + target_bucket_name )
-
-    logging.info(returnmessage)
     return {
         'statusCode': 200,
         'headers': {
             'Content-Type': 'text/plain'
-        },
-        'body':  (returnmessage ) 
+        }
     }
 
 def parse_gds_path_info(gds_url: str):
@@ -101,9 +112,14 @@ def parse_gds_path_info(gds_url: str):
     #                                SBJID             PORTAL_RUN_ID    TUMOR_LIB NORMAL_LIB  SBJID   PRJID     SBJID     PRJ_ID
     # gds://production/analysis_data/SBJXXXXX/umccrise/2022102142ed4512/LXXXXXXXX__LXXXXXXX/SBJXXXXX__MDXYYYYYY/SBJXXXXX__MDXYYYYYY-multiqc_report_data/multiqc_data.json
     gds_url_regex_multiqc_umccrise = r"gds:\/\/production\/analysis_data\/(\w+)\/umccrise\/(\d{8})(\w+)\/(\w+)__(\w+)\/(\w+)__(\w+)\/(\w+)__(\w+)-multiqc_report_data"
+    # tso
+    #
+    # gds://production/analysis_data/SBJXXXXX/tso_ctdna_tumor_only/2021121773d2377a/L2100356/Results/PRJ210017_L2100356/
+    gds_url_regex_tso_ctdna_tumor_only = r"gds:\/\/production\/analysis_data\/(\w+)\/tso_ctdna_tumor_only\/(\d{8})(\w+)\/(\w+)\/Results\/(\w+)_(\w+)"
 
     wgs_alignment_qc = re.search(gds_url_regex_multiqc, gds_url)
     umccrise_qc = re.search(gds_url_regex_multiqc_umccrise, gds_url)
+    tso_ctdna_tumor = re.search(gds_url_regex_tso_ctdna_tumor_only, gds_url)
 
     # TODO: Refactor later, following worse is better mode
     if wgs_alignment_qc:
@@ -124,11 +140,22 @@ def parse_gds_path_info(gds_url: str):
         components['normal_lib'] = umccrise_qc.group(5)
 
         if umccrise_qc.group(6) != umccrise_qc.group(8):
-            raise ValueError("SubjectID discrepancy detected")
+            raise ValueError("umccrise: SubjectID discrepancy detected in path")
         if umccrise_qc.group(7) != umccrise_qc.group(9):
-            raise ValueError("ProjectID discrepancy detected")
+            raise ValueError("umccrise: ProjectID discrepancy detected in path")
 
         components['prj_id'] = umccrise_qc.group(7)
+    elif tso_ctdna_tumor:
+        components['sbj_id'] = tso_ctdna_tumor.group(1)
+        components['portal_run_id_date'] = tso_ctdna_tumor.group(2)
+        components['portal_run_id_hash'] = tso_ctdna_tumor.group(3)
+        components['portal_run_id'] = tso_ctdna_tumor.group(2) + tso_ctdna_tumor.group(3)
+        components['tumor_lib'] = tso_ctdna_tumor.group(4)
+        components['prj_id'] = tso_ctdna_tumor.group(5)
+
+        if tso_ctdna_tumor.group(6) != tso_ctdna_tumor.group(4):
+            raise ValueError("tso_ctdna_tumor: Library discrepancy detected in path")
+
     else:
         return None
 

@@ -7,6 +7,8 @@ from aws_cdk import (
     aws_sqs,
     aws_ssm,
     aws_lambda_event_sources as lambda_event_source,
+    aws_stepfunctions as sfn,
+    aws_stepfunctions_tasks as sfn_task,
     Stack,
     Duration
 )
@@ -61,3 +63,16 @@ class DracarysStack(Stack):
 
         docker_lambda.add_event_source(sqs_event_source)
         bucket.grant_read_write(docker_lambda)
+
+        ## Step function task definitions
+        task_run_dracarys = sfn.Task(
+            self, "DracarysLambda",
+            task = sfn_task.LambdaInvoke(
+                self,
+                "DracarysLambda",
+                lambda_function=docker_lambda,
+                # #integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
+                # payload = {"taskCallbackToken": sfn.},
+                # result_path="$.guid"
+            )
+        )

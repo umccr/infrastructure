@@ -65,14 +65,31 @@ class DracarysStack(Stack):
         bucket.grant_read_write(docker_lambda)
 
         ## Step function task definitions
-        task_run_dracarys = sfn.Task(
-            self, "DracarysLambda",
-            task = sfn_task.LambdaInvoke(
-                self,
-                "DracarysLambda",
-                lambda_function=docker_lambda,
-                # #integration_pattern=sfn.ServiceIntegrationPattern.WAIT_FOR_TASK_TOKEN,
-                # payload = {"taskCallbackToken": sfn.},
-                # result_path="$.guid"
-            )
+        run_dracarys = sfn_task.LambdaInvoke(
+            self,
+            "DracarysLambda",
+            lambda_function=docker_lambda
+        )
+
+        fail_job = sfn.Fail(
+            self, "Fail",
+            cause='Dracarys run failed',
+            error='DescribeJob returned FAILED'
+        )
+
+        succeed_job = sfn.Succeed(
+            self, "Succeeded",
+            comment='Dracarys run succeded'
+        )
+
+        # Create Chain
+        definition = run_dracarys.next(sfn.Choice(self, 'Run completed successfully?')
+                  .when(sfn.Condition.string_equals('$.status', 'FAILED'), fail_job) # TODO: Wire up against Slack notification lambda(s) w/ rate limiting
+                  .when(sfn.Condition.string_equals('$.status', 'SUCCEEDED'), succeed_job))
+
+        # Create state machine
+        sm = sfn.StateMachine(
+            self, "DracarysRunFSM",
+            definition=definition,
+            timeout=Duration.minutes(10),
         )

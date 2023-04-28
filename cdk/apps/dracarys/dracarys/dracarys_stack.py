@@ -46,6 +46,10 @@ class DracarysStack(Stack):
 
         sqs_event_source = lambda_event_source.SqsEventSource(queue)
 
+        slack_lambda = aws_lambda.AssetCode(
+            path="../lambda/slack.py"
+        )
+
         docker_lambda = aws_lambda.DockerImageFunction(
             self, 'dracarys-ingestion-lambda',
             function_name='dracarys-ingestion-lambda',
@@ -67,8 +71,20 @@ class DracarysStack(Stack):
         ## Step function task definitions
         run_dracarys = sfn_task.LambdaInvoke(
             self,
-            "DracarysLambda",
+            "DracarysRunLambda",
             lambda_function=docker_lambda
+        )
+
+        status_job = _aws_stepfunctions_tasks.LambdaInvoke(
+            self, "Get Status",
+            lambda_function=status_lambda,
+            output_path="$.Payload",
+        )
+
+        slack_notify = sfn_task.LambdaInvoke(
+            self,
+            "DracarysRunFailed",
+            lambda_function=slack_lambda
         )
 
         fail_job = sfn.Fail(
@@ -84,7 +100,7 @@ class DracarysStack(Stack):
 
         # Create Chain
         definition = run_dracarys.next(sfn.Choice(self, 'Run completed successfully?')
-                  .when(sfn.Condition.string_equals('$.status', 'FAILED'), fail_job) # TODO: Wire up against Slack notification lambda(s) w/ rate limiting
+                  .when(sfn.Condition.string_equals('$.status', 'FAILED'), fail_job) # TODO: Ratelimit this
                   .when(sfn.Condition.string_equals('$.status', 'SUCCEEDED'), succeed_job))
 
         # Create state machine

@@ -8,7 +8,7 @@ locals {
   wgs_tumor_normal_wfl_version = {
     dev  = "3.9.3"
     prod = "3.9.3--e4acc1a"
-    stg  = "3.9.3--e4acc1a"
+    stg  = "3.9.3--ae21995"
   }
 
   wgs_tumor_normal_wfl_input = {

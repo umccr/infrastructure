@@ -123,36 +123,39 @@ module "main_vpc_endpoints" {
     # Added ECR, ECS, Log VPC Interface Endpoints for Amazon Genomics CLI (AGC)
     # https://aws.github.io/amazon-genomics-cli/docs/concepts/accounts/#vpc-endpoints
 
-    ecr_api = {
-      service         = "ecr.api"
-      subnet_ids      = module.main_vpc.private_subnets
-      tags            = { Name = "ecr-api-vpc-endpoint" }
-    },
-    ecr_dkr = {
-      service         = "ecr.dkr"
-      subnet_ids      = module.main_vpc.private_subnets
-      tags            = { Name = "ecr-dkr-vpc-endpoint" }
-    },
-    ecs = {
-      service         = "ecs"
-      subnet_ids      = module.main_vpc.private_subnets
-      tags            = { Name = "ecs-vpc-endpoint" }
-    },
-    ecs_agent = {
-      service         = "ecs-agent"
-      subnet_ids      = module.main_vpc.private_subnets
-      tags            = { Name = "ecs-agent-vpc-endpoint" }
-    },
-    ecs_telemetry = {
-      service         = "ecs-telemetry"
-      subnet_ids      = module.main_vpc.private_subnets
-      tags            = { Name = "ecs-telemetry-vpc-endpoint" }
-    },
-    logs = {
-      service         = "logs"
-      subnet_ids      = module.main_vpc.private_subnets
-      tags            = { Name = "logs-vpc-endpoint" }
-    }
+    # Remove all Interface Endpoints. See https://trello.com/c/C861asAT
+
+#    ecr_api = {
+#      service         = "ecr.api"
+#      subnet_ids      = module.main_vpc.private_subnets
+#      tags            = { Name = "ecr-api-vpc-endpoint" }
+#    },
+#    ecr_dkr = {
+#      service         = "ecr.dkr"
+#      subnet_ids      = module.main_vpc.private_subnets
+#      tags            = { Name = "ecr-dkr-vpc-endpoint" }
+#    },
+#    ecs = {
+#      service         = "ecs"
+#      subnet_ids      = module.main_vpc.private_subnets
+#      tags            = { Name = "ecs-vpc-endpoint" }
+#    },
+#    ecs_agent = {
+#      service         = "ecs-agent"
+#      subnet_ids      = module.main_vpc.private_subnets
+#      tags            = { Name = "ecs-agent-vpc-endpoint" }
+#    },
+#    ecs_telemetry = {
+#      service         = "ecs-telemetry"
+#      subnet_ids      = module.main_vpc.private_subnets
+#      tags            = { Name = "ecs-telemetry-vpc-endpoint" }
+#    },
+#    logs = {
+#      service         = "logs"
+#      subnet_ids      = module.main_vpc.private_subnets
+#      tags            = { Name = "logs-vpc-endpoint" }
+#    }
+
   }
 
   tags = {

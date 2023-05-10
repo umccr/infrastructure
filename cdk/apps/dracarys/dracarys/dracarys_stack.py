@@ -46,66 +46,66 @@ class DracarysStack(Stack):
 
         sqs_event_source = lambda_event_source.SqsEventSource(queue)
 
-        slack_lambda = aws_lambda.AssetCode(
-            path="../lambda/slack.py"
-        )
+        # slack_lambda = aws_lambda.AssetCode(
+        #     path="../lambda/slack.py"
+        # )
 
-        docker_lambda = aws_lambda.DockerImageFunction(
-            self, 'dracarys-ingestion-lambda',
-            function_name='dracarys-ingestion-lambda',
-            description='dracarys lambda',
-            code=aws_lambda.DockerImageCode.from_image_asset(
-                directory="./lambda"
-            ),
-            role=lambda_role,
-            timeout=Duration.minutes(15),
-            memory_size=2048,
-            environment={
-                'NAME': 'dracarys-ingestion-lambda'
-            },
-        )
+        # docker_lambda = aws_lambda.DockerImageFunction(
+        #     self, 'dracarys-ingestion-lambda',
+        #     function_name='dracarys-ingestion-lambda',
+        #     description='dracarys lambda',
+        #     code=aws_lambda.DockerImageCode.from_image_asset(
+        #         directory="./lambda"
+        #     ),
+        #     role=lambda_role,
+        #     timeout=Duration.minutes(15),
+        #     memory_size=2048,
+        #     environment={
+        #         'NAME': 'dracarys-ingestion-lambda'
+        #     },
+        # )
 
-        docker_lambda.add_event_source(sqs_event_source)
-        bucket.grant_read_write(docker_lambda)
+        # docker_lambda.add_event_source(sqs_event_source)
+        # bucket.grant_read_write(docker_lambda)
 
-        ## Step function task definitions
-        run_dracarys = sfn_task.LambdaInvoke(
-            self,
-            "DracarysRunLambda",
-            lambda_function=docker_lambda
-        )
+        # ## Step function task definitions
+        # run_dracarys = sfn_task.LambdaInvoke(
+        #     self,
+        #     "DracarysRunLambda",
+        #     lambda_function=docker_lambda
+        # )
 
-        status_job = _aws_stepfunctions_tasks.LambdaInvoke(
-            self, "Get Status",
-            lambda_function=status_lambda,
-            output_path="$.Payload",
-        )
+        # status_job = _aws_stepfunctions_tasks.LambdaInvoke(
+        #     self, "Get Status",
+        #     lambda_function=status_lambda,
+        #     output_path="$.Payload",
+        # )
 
-        slack_notify = sfn_task.LambdaInvoke(
-            self,
-            "DracarysRunFailed",
-            lambda_function=slack_lambda
-        )
+        # slack_notify = sfn_task.LambdaInvoke(
+        #     self,
+        #     "DracarysRunFailed",
+        #     lambda_function=slack_lambda
+        # )
 
-        fail_job = sfn.Fail(
-            self, "Fail",
-            cause='Dracarys run failed',
-            error='DescribeJob returned FAILED'
-        )
+        # fail_job = sfn.Fail(
+        #     self, "Fail",
+        #     cause='Dracarys run failed',
+        #     error='DescribeJob returned FAILED'
+        # )
 
-        succeed_job = sfn.Succeed(
-            self, "Succeeded",
-            comment='Dracarys run succeded'
-        )
+        # succeed_job = sfn.Succeed(
+        #     self, "Succeeded",
+        #     comment='Dracarys run succeded'
+        # )
 
-        # Create Chain
-        definition = run_dracarys.next(sfn.Choice(self, 'Run completed successfully?')
-                  .when(sfn.Condition.string_equals('$.status', 'FAILED'), fail_job) # TODO: Ratelimit this
-                  .when(sfn.Condition.string_equals('$.status', 'SUCCEEDED'), succeed_job))
+        # # Create Chain
+        # definition = run_dracarys.next(sfn.Choice(self, 'Run completed successfully?')
+        #           .when(sfn.Condition.string_equals('$.status', 'FAILED'), fail_job) # TODO: Ratelimit this
+        #           .when(sfn.Condition.string_equals('$.status', 'SUCCEEDED'), succeed_job))
 
-        # Create state machine
-        sm = sfn.StateMachine(
-            self, "DracarysRunFSM",
-            definition=definition,
-            timeout=Duration.minutes(10),
-        )
+        # # Create state machine
+        # sm = sfn.StateMachine(
+        #     self, "DracarysRunFSM",
+        #     definition=definition,
+        #     timeout=Duration.minutes(10),
+        # )

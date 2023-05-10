@@ -47,7 +47,11 @@ def handler(event, context):
     prj_id = gds_path_data['prj_id']
 
     # Run Dracarys
-    cmd = ["conda","run","-n","dracarys_env","/bin/bash","-c","dracarys.R tidy -i " + gds_input + " -o " + CWD + " -p " + file_prefix, " -f both"]
+    cmd = ["conda", "run", "-n", "dracarys_env", "/bin/bash", "-c", "dracarys.R tidy -i " + gds_input + \
+                                                                                   " -o " + CWD + \
+                                                                                   " -p " + file_prefix + \
+                                                                                   " -g " + portal_run_id + \
+                                                                                   " -f both"]
     subprocess.check_output(cmd)
 
     # Collect output path

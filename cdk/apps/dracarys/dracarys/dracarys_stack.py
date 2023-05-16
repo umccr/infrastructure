@@ -7,13 +7,15 @@ from aws_cdk import (
     aws_sqs,
     aws_ssm,
     aws_lambda_event_sources as lambda_event_source,
-    aws_stepfunctions as sfn,
-    aws_stepfunctions_tasks as sfn_task,
+    aws_cloudwatch as cloudwatch,
+    aws_chatbot as chatbot,
     Stack,
     Duration
 )
 
 from constructs import Construct
+
+ENV = "prod"
 
 class DracarysStack(Stack):
 
@@ -42,70 +44,37 @@ class DracarysStack(Stack):
 
         queue = aws_sqs.Queue.from_queue_arn(self, id="data-portal-dracarys-queue", queue_arn=queue_arn)
 
-        bucket = aws_s3.Bucket(self, "umccr-datalake-dev")
+        bucket = aws_s3.Bucket(self, "umccr-datalake-"+ENV)
 
         sqs_event_source = lambda_event_source.SqsEventSource(queue)
 
-        # slack_lambda = aws_lambda.AssetCode(
-        #     path="../lambda/slack.py"
-        # )
+        docker_lambda = aws_lambda.DockerImageFunction(
+            self, 'dracarys-ingestion-lambda',
+            function_name='dracarys-ingestion-lambda',
+            description='dracarys lambda',
+            code=aws_lambda.DockerImageCode.from_image_asset(
+                directory="./lambda"
+            ),
+            role=lambda_role,
+            timeout=Duration.minutes(15),
+            memory_size=4096,
+            environment={
+                'NAME': 'dracarys-ingestion-lambda'
+            },
+        )
 
-        # docker_lambda = aws_lambda.DockerImageFunction(
-        #     self, 'dracarys-ingestion-lambda',
-        #     function_name='dracarys-ingestion-lambda',
-        #     description='dracarys lambda',
-        #     code=aws_lambda.DockerImageCode.from_image_asset(
-        #         directory="./lambda"
-        #     ),
-        #     role=lambda_role,
-        #     timeout=Duration.minutes(15),
-        #     memory_size=2048,
-        #     environment={
-        #         'NAME': 'dracarys-ingestion-lambda'
-        #     },
-        # )
+        docker_lambda.add_event_source(sqs_event_source)
+        bucket.grant_read_write(docker_lambda)
 
-        # docker_lambda.add_event_source(sqs_event_source)
-        # bucket.grant_read_write(docker_lambda)
+        metric = docker_lambda.metric("Error")
+        metric.create_alarm(self, "Dracarys failure",
+                            threshold=100,
+                            evaluation_periods=3,
+                            datapoints_to_alarm=1
+        )
 
-        # ## Step function task definitions
-        # run_dracarys = sfn_task.LambdaInvoke(
-        #     self,
-        #     "DracarysRunLambda",
-        #     lambda_function=docker_lambda
-        # )
-
-        # status_job = _aws_stepfunctions_tasks.LambdaInvoke(
-        #     self, "Get Status",
-        #     lambda_function=status_lambda,
-        #     output_path="$.Payload",
-        # )
-
-        # slack_notify = sfn_task.LambdaInvoke(
-        #     self,
-        #     "DracarysRunFailed",
-        #     lambda_function=slack_lambda
-        # )
-
-        # fail_job = sfn.Fail(
-        #     self, "Fail",
-        #     cause='Dracarys run failed',
-        #     error='DescribeJob returned FAILED'
-        # )
-
-        # succeed_job = sfn.Succeed(
-        #     self, "Succeeded",
-        #     comment='Dracarys run succeded'
-        # )
-
-        # # Create Chain
-        # definition = run_dracarys.next(sfn.Choice(self, 'Run completed successfully?')
-        #           .when(sfn.Condition.string_equals('$.status', 'FAILED'), fail_job) # TODO: Ratelimit this
-        #           .when(sfn.Condition.string_equals('$.status', 'SUCCEEDED'), succeed_job))
-
-        # # Create state machine
-        # sm = sfn.StateMachine(
-        #     self, "DracarysRunFSM",
-        #     definition=definition,
-        #     timeout=Duration.minutes(10),
-        # )
+        target = chatbot.SlackChannelConfiguration(self, "UMCCR Slack chatbot",
+            slack_channel_configuration_name="biobots",
+            slack_workspace_id="",
+            slack_channel_id=""
+        )

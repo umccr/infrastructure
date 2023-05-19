@@ -5,6 +5,7 @@
   "output_directory_somatic": null,
   "fastq_list_rows": [],
   "tumor_fastq_list_rows": [],
+  "enable_map_align_output": true,
   "enable_map_align_output_germline": false,
   "enable_duplicate_marking": true,
   "enable_sv": true,

@@ -48,14 +48,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
   bucket = aws_s3_bucket.oncoanalyser_bucket.bucket
 
   rule {
-    id = "oncoanalyser_bucket_lifecycle_config"
+    id = "base_rule"
 
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-
-    # Versioning configuration
     expiration {
       expired_object_delete_marker = true
     }
@@ -70,4 +64,39 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
 
     status = "Enabled"
   }
+
+  rule {
+    id = "analysis_data_rule"
+
+	filter {
+		prefix = "analysis_data/"
+	}
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+
+    status = "Enabled"
+  }
+
+  rule {
+    id = "temp_rule"
+
+	filter {
+		prefix = "temp/"
+	}
+
+    transition {
+      days          = 0
+      storage_class = "ONEZONE_IA"
+    }
+
+	expiration {
+      days = 30
+    }
+
+    status = "Enabled"
+  }
+
 }

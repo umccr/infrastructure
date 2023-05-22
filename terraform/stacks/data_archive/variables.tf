@@ -4,6 +4,6 @@ variable "raw_data_bucket_name" {
 }
 
 variable "oncoanalyser_bucket_name" {
-  description = "The name of the bucket for raw sequencer output (BCLs)."
+  description = "The name of the bucket for OncoAnalyser output."
   default     = "org.umccr.data.oncoanalyser"
 }

@@ -100,3 +100,28 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
   }
 
 }
+
+resource "aws_s3_bucket_policy" "oncoanalyser_bucket" {
+  bucket = aws_s3_bucket.oncoanalyser_bucket.id
+  policy = data.aws_iam_policy_document.prod_cross_account_access.json
+}
+
+data "aws_iam_policy_document" "prod_cross_account_access" {
+  statement {
+	sid = "prod_cross_account_access"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["472057503814"]
+    }
+
+    actions = [
+      "s3:*",
+    ]
+
+    resources = [
+      aws_s3_bucket.oncoanalyser_bucket.arn,
+      "${aws_s3_bucket.oncoanalyser_bucket.arn}/*",
+    ]
+  }
+}

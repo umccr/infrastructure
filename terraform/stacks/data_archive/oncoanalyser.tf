@@ -87,10 +87,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
 		prefix = "temp_data/"
 	}
 
-    transition {
-      days          = 0
-      storage_class = "ONEZONE_IA"
-    }
+	# ONEZONE_IA requires min 30, so unless the expiration time
+	# is increased, this is not needed
+    # transition {
+    #   days          = 30
+    #   storage_class = "ONEZONE_IA"
+    # }
 
 	expiration {
       days = 30

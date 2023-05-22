@@ -84,7 +84,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
     id = "temp_rule"
 
 	filter {
-		prefix = "temp/"
+		prefix = "temp_data/"
 	}
 
     transition {

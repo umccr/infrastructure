@@ -77,18 +77,14 @@ class BatchLambdaStack(core.Stack):
             role=lambda_role
         )
 
-        job_queue_eb_prefixes = [
-            'cdk-umccrise_job_queue',
-            'cttso-ica-to-pieriandx-',
-            'gpl-job-queue',
-            'nextflow-pipeline-ondemand',
-            'wts_report_batch_queue_',
+        job_queue_exclude_eb_prefixes = [
+            'nextflow-task-',
         ]
 
-        job_queue_eb_patterns = list()
-        for job_queue_eb_prefix in job_queue_eb_prefixes:
-            pattern = f'arn:aws:batch:{self.region}:{self.account}:job-queue/{job_queue_eb_prefix}'
-            job_queue_eb_patterns.append(pattern)
+        job_queue_exclude_eb_patterns = list()
+        for prefix in job_queue_exclude_eb_prefixes:
+            pattern = f'arn:aws:batch:{self.region}:{self.account}:job-queue/{prefix}'
+            job_queue_exclude_eb_patterns.append(pattern)
 
         _events.Rule(
             self,
@@ -100,7 +96,7 @@ class BatchLambdaStack(core.Stack):
                         'SUCCEEDED',
                         'RUNNABLE',
                     ],
-                    'jobQueue': [{'prefix': s} for s in job_queue_eb_patterns],
+                    'jobQueue': [{'anything-but': {'prefix': s}} for s in job_queue_exclude_eb_patterns],
                 },
                 detail_type=['Batch Job State Change'],
                 source=['aws.batch'],

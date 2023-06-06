@@ -7,7 +7,7 @@ locals {
 
   umccrise_wfl_version = {
     dev  = "2.3.0--0"
-    prod = "2.2.0--0--3fc7b5e"
+    prod = "2.3.0--0--2990cf1"
     stg  = "2.3.0--0--2990cf1"
   }
 

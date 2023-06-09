@@ -126,6 +126,17 @@ data "aws_iam_policy_document" "prod_ro_access" {
   }
 }
 
+resource "aws_s3_bucket_cors_configuration" "example" {
+  bucket = aws_s3_bucket.analysis_data_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["HEAD", "GET", "DELETE", "PUT", "POST"]
+    allowed_origins = ["https://ica.illumina.com"]
+    expose_headers  = ["ETag", "x-amz-meta-custom-header"]
+    max_age_seconds = 3000
+  }
+}
 
 ################################################################################
 # BYOB IAM User

@@ -3,7 +3,7 @@
 
 variable "analysis_data_bucket" {
   description = "This bucket is holding production data."
-  default     = "org.umccr.data.analysis_data"
+  default     = "org.umccr.data.analysis-data"
 }
 variable "analysis_data_prefix" {
   description = "The prefix under which all analysis data is collected."
@@ -105,7 +105,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "analysis_data_bucket" {
 
 resource "aws_s3_bucket_policy" "analysis_data_bucket" {
   bucket = aws_s3_bucket.analysis_data_bucket.id
-  policy = data.aws_iam_policy_document.prod_cross_account_access.json
+  policy = data.aws_iam_policy_document.prod_ro_access.json
 }
 
 data "aws_iam_policy_document" "prod_ro_access" {

@@ -1,32 +1,44 @@
 ################################################################################
 # Variables
 
-variable "analysis_data_bucket" {
+variable "production_data_bucket" {
   description = "This bucket is holding production data."
-  default     = "org.umccr.data.analysis-data"
+  default     = "org.umccr.data.production"
 }
-variable "analysis_data_prefix" {
-  description = "The prefix under which all analysis data is collected."
-  default     = "analysis_data/"
+variable "ica_byob_prefix" {
+  description = "The prefix linked to ICAv2 BYOB configuration."
+  default     = "icav2/byob/"
+}
+variable "production_data_prefix" {
+  description = "The prefix linked to ICAv2 'production' project'."
+  default     = "${var.ica_byob_prefix}production/"
+}
+variable "production_temp_data_prefix" {
+  description = "The prefix for temporary data in the ICAv2 'production' project. Subject to lifecycle management."
+  default     = "${var.production_data_prefix}temp/"
+}
+variable "production_analysis_data_prefix" {
+  description = "The prefix for analysis data in the ICAv2 'production' project Subject to lifecycle management."
+  default     = "${var.production_data_prefix}analysis-data/"
 }
 
 ################################################################################
 # Buckets
 
-resource "aws_s3_bucket" "analysis_data_bucket" {
-  bucket = var.analysis_data_bucket
+resource "aws_s3_bucket" "production_data_bucket" {
+  bucket = var.production_data_bucket
 
   tags = merge(
     local.default_tags,
     {
-      "Name"=var.analysis_data_bucket
+      "Name"=var.production_data_bucket
     }
   )
 }
 
 ##### Bucket Config
-resource "aws_s3_bucket_public_access_block" "analysis_data_bucket" {
-  bucket = aws_s3_bucket.analysis_data_bucket.id
+resource "aws_s3_bucket_public_access_block" "production_data_bucket" {
+  bucket = aws_s3_bucket.production_data_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -34,8 +46,8 @@ resource "aws_s3_bucket_public_access_block" "analysis_data_bucket" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "analysis_data_bucket" {
-  bucket = aws_s3_bucket.analysis_data_bucket.bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "production_data_bucket" {
+  bucket = aws_s3_bucket.production_data_bucket.bucket
 
   rule {
     apply_server_side_encryption_by_default {
@@ -44,19 +56,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "analysis_data_buc
   }
 }
 
-resource "aws_s3_bucket_versioning" "analysis_data_bucket" {
-  bucket = aws_s3_bucket.analysis_data_bucket.id
+resource "aws_s3_bucket_versioning" "production_data_bucket" {
+  bucket = aws_s3_bucket.production_data_bucket.id
 
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "analysis_data_bucket" {
+resource "aws_s3_bucket_lifecycle_configuration" "production_data_bucket" {
   # Must have bucket versioning enabled first to apply noncurrent version expiration
-  depends_on = [aws_s3_bucket_versioning.analysis_data_bucket]
+  depends_on = [aws_s3_bucket_versioning.production_data_bucket]
 
-  bucket = aws_s3_bucket.analysis_data_bucket.bucket
+  bucket = aws_s3_bucket.production_data_bucket.bucket
 
   rule {
     id = "base_rule"
@@ -76,7 +88,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "analysis_data_bucket" {
     id = "analysis_data_rule"
     status = "Enabled"
     filter {
-      prefix = var.analysis_data_prefix
+      prefix = var.production_analysis_data_prefix
     }
     transition {
       days          = 0
@@ -88,7 +100,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "analysis_data_bucket" {
     id = "temp_rule"
     status = "Enabled"
     filter {
-      prefix = "temp_data/"
+      prefix = var.production_temp_data_prefix
     }
   	expiration {
       days = 30
@@ -103,8 +115,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "analysis_data_bucket" {
 
 }
 
-resource "aws_s3_bucket_policy" "analysis_data_bucket" {
-  bucket = aws_s3_bucket.analysis_data_bucket.id
+resource "aws_s3_bucket_policy" "production_data_bucket" {
+  bucket = aws_s3_bucket.production_data_bucket.id
   policy = data.aws_iam_policy_document.prod_ro_access.json
 }
 
@@ -120,14 +132,16 @@ data "aws_iam_policy_document" "prod_ro_access" {
       "s3:Get*",
     ]
     resources = [
-      aws_s3_bucket.analysis_data_bucket.arn,
-      "${aws_s3_bucket.analysis_data_bucket.arn}/*",
+      aws_s3_bucket.production_data_bucket.arn,
+      "${aws_s3_bucket.production_data_bucket.arn}/*",
     ]
   }
 }
 
+# CORS configuration for ILMN BYO buckets to support UI uploads
+# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
 resource "aws_s3_bucket_cors_configuration" "example" {
-  bucket = aws_s3_bucket.analysis_data_bucket.id
+  bucket = aws_s3_bucket.production_data_bucket.id
 
   cors_rule {
     allowed_headers = ["*"]
@@ -139,7 +153,7 @@ resource "aws_s3_bucket_cors_configuration" "example" {
 }
 
 ################################################################################
-# BYOB IAM User
+# BYOB IAM User for ICAv2
 
 resource "aws_iam_user" "icav2_byob_admin" {
   name = "icav2_byob_admin"
@@ -174,7 +188,7 @@ data "aws_iam_policy_document" "icav2_byob_user_policy" {
       "s3:GetBucketLocation"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.analysis_data_bucket.id}"
+      "arn:aws:s3:::${aws_s3_bucket.production_data_bucket.id}"
     ]
   }
 
@@ -186,7 +200,7 @@ data "aws_iam_policy_document" "icav2_byob_user_policy" {
       "s3:DeleteObject"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.analysis_data_bucket.id}/*"
+      "arn:aws:s3:::${aws_s3_bucket.production_data_bucket.id}/${var.ica_byob_prefix}*"
     ]
   }
 

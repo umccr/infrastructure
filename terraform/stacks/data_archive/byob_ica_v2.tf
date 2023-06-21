@@ -1,37 +1,29 @@
 ################################################################################
-# Variables
+# Local constants
 
-variable "production_data_bucket" {
-  description = "This bucket is holding production data."
-  default     = "org.umccr.data.production"
-}
-variable "ica_byob_prefix" {
-  description = "The prefix linked to ICAv2 BYOB configuration."
-  default     = "icav2/byob/"
-}
-variable "production_data_prefix" {
-  description = "The prefix linked to ICAv2 'production' project'."
-  default     = "${var.ica_byob_prefix}production/"
-}
-variable "production_temp_data_prefix" {
-  description = "The prefix for temporary data in the ICAv2 'production' project. Subject to lifecycle management."
-  default     = "${var.production_data_prefix}temp/"
-}
-variable "production_analysis_data_prefix" {
-  description = "The prefix for analysis data in the ICAv2 'production' project Subject to lifecycle management."
-  default     = "${var.production_data_prefix}analysis-data/"
+locals {
+  # The bucket holding all "production" data
+  production_data_bucket = "org.umccr.data.production"
+  # prefix used for the ICAv2 BYOB config (mapped to and accessible from ICA)
+  ica_byob_prefix = "icav2/byob/"
+  # prefix for data in the ICA "production" project
+  production_data_prefix = "${local.ica_byob_prefix}production/"
+  # prefix for analysis data in the ICA "production" project, subject to lifecycle management
+  production_temp_data_prefix = "${local.production_data_prefix}temp/"
+  # prefix for temporary data in the ICA "production" project, subject to lifecycle management
+  production_analysis_data_prefix = "${local.production_data_prefix}analysis-data/"
 }
 
 ################################################################################
 # Buckets
 
 resource "aws_s3_bucket" "production_data_bucket" {
-  bucket = var.production_data_bucket
+  bucket = local.production_data_bucket
 
   tags = merge(
     local.default_tags,
     {
-      "Name"=var.production_data_bucket
+      "Name"=local.production_data_bucket
     }
   )
 }
@@ -88,7 +80,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_data_bucket" {
     id = "analysis_data_rule"
     status = "Enabled"
     filter {
-      prefix = var.production_analysis_data_prefix
+      prefix = local.production_analysis_data_prefix
     }
     transition {
       days          = 0
@@ -100,7 +92,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_data_bucket" {
     id = "temp_rule"
     status = "Enabled"
     filter {
-      prefix = var.production_temp_data_prefix
+      prefix = local.production_temp_data_prefix
     }
   	expiration {
       days = 30
@@ -200,7 +192,7 @@ data "aws_iam_policy_document" "icav2_byob_user_policy" {
       "s3:DeleteObject"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.production_data_bucket.id}/${var.ica_byob_prefix}*"
+      "arn:aws:s3:::${aws_s3_bucket.production_data_bucket.id}/${local.ica_byob_prefix}*"
     ]
   }
 

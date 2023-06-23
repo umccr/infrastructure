@@ -225,32 +225,3 @@ resource "aws_ssm_parameter" "sqs_somalier_extract_queue_arn" {
   value = aws_sqs_queue.somalier_extract_queue.arn
   tags  = merge(local.default_tags)
 }
-
-# TODO: There's no clear guidance/documentation about where to plug new "apps"
-# in the (data-portal pipeline?): it's either in here or in app/ dir?
-#
-# This needs to be documented!
-
-# --- dracarys queue
-resource "aws_sqs_queue" "dracarys_queue_dlq" {
-  name = "${local.stack_name_dash}-${terraform.workspace}-dracarys-queue-dlq"
-  message_retention_seconds = 1209600
-  tags = merge(local.default_tags)
-}
-
-resource "aws_sqs_queue" "sqs_dracarys_queue" {
-  name = "${local.stack_name_dash}-dracarys-queue"
-  redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.dracarys_queue_dlq.arn
-    maxReceiveCount = 3
-  })
-  visibility_timeout_seconds = 900*6 # https://docs.aws.amazon.com/lambda/latest/operatorguide/sqs-retries.html 
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_dracarys_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_dracarys_queue"
-  type  = "String"
-  value = aws_sqs_queue.sqs_dracarys_queue.arn
-  tags  = merge(local.default_tags)
-}

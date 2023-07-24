@@ -1,4 +1,16 @@
 # data_archive stack
-Stack to deploy central resources into the `umccr_data` data archival account.
-This AWS account is meant to be solely be use for data archival, so mainly configure S3 buckets.
 
+Stack to deploy centralised S3 resources into the `5180-umccr-data` data archival account in UoM AWS. 
+This AWS account is meant to be solely use for data archival purpose.
+
+No terraform workspace use.
+
+```
+export AWS_PROFILE=data
+
+terraform workspace list
+* default
+
+terraform plan
+terraform apply
+```

@@ -1,5 +1,5 @@
 terraform {
-  required_version = "~> 1.3.3"
+  required_version = ">= 1.3.3"
 
   backend "s3" {
     # AWS access credentials are retrieved from env variables

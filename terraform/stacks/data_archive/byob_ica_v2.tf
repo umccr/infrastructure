@@ -7,7 +7,7 @@ locals {
   # prefix for temporary data, subject to lifecycle management
   production_temp_data_prefix = "temp/"
   # prefix for analysis data, subject to lifecycle management
-  production_analysis_data_prefix = "analysis-data/"
+  production_analysis_data_prefix = "analysis_data/"
 }
 
 ################################################################################

@@ -19,12 +19,25 @@ variable "s3_run_data_bucket" {
   description = "Name of the S3 bucket storing s3 run data to be used by crawler "
 }
 
+variable "s3_oncoanalyser_bucket" {
+  default = {
+    prod = "org.umccr.data.oncoanalyser"
+    dev  = "umccr-temp-dev"
+    stg  = "umccr-temp-stg"
+  }
+  description = "Name of the S3 bucket storing s3 oncoanalyser output to be used by crawler "
+}
+
 data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = var.s3_primary_data_bucket[terraform.workspace]
 }
 
 data "aws_s3_bucket" "s3_run_data_bucket" {
   bucket = var.s3_run_data_bucket[terraform.workspace]
+}
+
+data "aws_s3_bucket" "s3_oncoanalyser_bucket" {
+  bucket = var.s3_oncoanalyser_bucket[terraform.workspace]
 }
 
 resource "aws_sqs_queue" "s3_event_dlq" {
@@ -41,6 +54,7 @@ resource "aws_sqs_queue" "s3_event_queue" {
     sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
     s3_primary_data_bucket_arn = data.aws_s3_bucket.s3_primary_data_bucket.arn
     s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
+    s3_oncoanalyser_arn = data.aws_s3_bucket.s3_oncoanalyser_bucket.arn
   })
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
@@ -76,6 +90,22 @@ resource "aws_s3_bucket_notification" "run_data_notification" {
       "s3:ObjectCreated:*",
       "s3:ObjectRemoved:*",
     ]
+  }
+}
+
+# Enable oncoanalyser bucket s3 event notification to SQS
+resource "aws_s3_bucket_notification" "oncoanalyser_notification" {
+  bucket = data.aws_s3_bucket.s3_oncoanalyser_bucket.id
+
+  queue {
+    queue_arn = aws_sqs_queue.s3_event_queue.arn
+
+    events = [
+      "s3:ObjectCreated:*",
+      "s3:ObjectRemoved:*",
+    ]
+
+    filter_prefix = "analysis_data/"
   }
 }
 

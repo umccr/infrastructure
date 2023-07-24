@@ -57,6 +57,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw_data_bucket" {
       storage_class = "DEEP_ARCHIVE"
     }
 
+    filter {
+      object_size_greater_than = 500000
+    }
+
     # Versioning configuration
     expiration {
       expired_object_delete_marker = true

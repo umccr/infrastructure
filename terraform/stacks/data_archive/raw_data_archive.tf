@@ -52,15 +52,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw_data_bucket" {
   rule {
     id = "raw_data_bucket_lifecycle_config"
 
-    transition {
-      days          = 0
-      storage_class = "DEEP_ARCHIVE"
-    }
-
-    filter {
-      object_size_greater_than = 500000
-    }
-
     # Versioning configuration
     expiration {
       expired_object_delete_marker = true
@@ -72,6 +63,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "raw_data_bucket" {
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
+    }
+
+    status = "Enabled"
+  }
+
+  rule {
+    id = "deep_archive_500kb"
+
+    transition {
+      days          = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    filter {
+      object_size_greater_than = 500000
     }
 
     status = "Enabled"

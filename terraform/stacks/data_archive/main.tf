@@ -13,16 +13,21 @@ terraform {
 ################################################################################
 # Generic resources
 
+# Configure the AWS Provider
 provider "aws" {
-  # AWS access credentials are retrieved from env variables
-  region = "ap-southeast-2"
+  region = local.region
 }
+provider "awscc" {
+  region = local.region
+}
+
 
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
 locals {
+  region = "ap-southeast-2"
   stack_name = "data_archive"
 
   default_tags = {

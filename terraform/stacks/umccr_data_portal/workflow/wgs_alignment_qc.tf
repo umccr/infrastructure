@@ -6,7 +6,7 @@ locals {
   }
 
   wgs_alignment_qc_wfl_version = {
-    dev  = "3.9.3"
+    dev  = "4.2.4"
     prod = "3.9.3--4e00721"
     stg  = "3.9.3--4e00721"
   }

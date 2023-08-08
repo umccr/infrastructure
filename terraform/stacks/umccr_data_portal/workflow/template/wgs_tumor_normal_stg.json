@@ -10,8 +10,11 @@
   "enable_duplicate_marking": true,
   "enable_sv": true,
   "enable_sv_germline": false,
+  "cnv_use_somatic_vc_baf": true,
+  "enable_cnv": true,
+  "enable_hrd": true,
   "reference_tar": {
     "class": "File",
-    "location": "gds://staging/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+    "location": "gds://staging/reference-data/dragen_hash_tables/v9-r3/hg38-alt_masked-cnv-hla-rna/hg38-alt_masked.cnv.hla.rna-9-r3.0-1.tar.gz"
   }
 }

@@ -8,5 +8,12 @@
   "reference_tar": {
     "class": "File",
     "location": "gds://development/reference-data/dragen_hash_tables/v9-r3/hg38-alt_masked-cnv-hla-rna/hg38-alt_masked.cnv.hla.rna-9-r3.0-1.tar.gz"
+  },
+  "enable_rna": false,
+  "enable_rna_quantification": false,
+  "enable_rrna_filter": false,
+  "annotation_file": {
+    "class": "File",
+    "location": "gds://development/reference-data/dragen_wts/hg38/gencode.v39.annotation.gtf"
   }
 }

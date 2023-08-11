@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.4.2"
+  required_version = ">= 1.5.4"
 
   backend "s3" {
     bucket = "umccr-terraform-states"
@@ -10,7 +10,7 @@ terraform {
 
   required_providers {
     aws = {
-      version = "4.59.0"
+      version = "5.12.0"
       source = "hashicorp/aws"
     }
   }
@@ -22,7 +22,7 @@ provider "aws" {
 
 resource "aws_eip" "main_vpc_nat_gateway" {
   count = 1
-  vpc = true
+  domain = "vpc"
 
   tags = {
     Name        = "main-vpc-nat-gateway-eip"
@@ -34,7 +34,7 @@ resource "aws_eip" "main_vpc_nat_gateway" {
 
 module "main_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "3.19.0"
+  version = "5.1.1"
 
   name = "main-vpc"
   cidr = "10.2.0.0/16"
@@ -59,6 +59,7 @@ module "main_vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
+  map_public_ip_on_launch = true
 
   # See README Subnet Tagging section for the following tags combination
   public_subnet_tags = {

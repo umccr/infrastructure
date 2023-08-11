@@ -2,13 +2,13 @@ locals {
   wgs_alignment_qc_wfl_id = {
     dev  = "wfl.ff6ca1789f4e4eb0982ea3e01407aca8"
     prod = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
-    stg  = "wfl.23f61cb1baab412a8c37dc93bed6c2af"
+    stg  = "wfl.c07ecc424a5a41bd94abe9ef519867a0"
   }
 
   wgs_alignment_qc_wfl_version = {
     dev  = "3.9.3"
     prod = "3.9.3--4e00721"
-    stg  = "3.9.3--4e00721"
+    stg  = "4.2.4--5bfabd0"
   }
 
   wgs_alignment_qc_wfl_input = {

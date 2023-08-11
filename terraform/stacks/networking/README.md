@@ -191,6 +191,7 @@ This stack uses terraform workspaces.
 ```
 terraform workspace list
   default
+  agha
 * dev
   prod
   stg

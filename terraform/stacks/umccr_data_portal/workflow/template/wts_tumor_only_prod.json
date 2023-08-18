@@ -6,19 +6,19 @@
   "enable_duplicate_marking": false,
   "annotation_file": {
     "class": "File",
-    "location": "gds://production/reference-data/dragen_wts/hg38/ref-transcripts.non-zero-length.gtf"
+    "location": "gds://production/reference-data/dragen_wts/hg38/gencode.v39.annotation.gtf"
   },
   "cytobands": {
     "class": "File",
-    "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/cytobands_hg38_GRCh38_v2.3.0.tsv"
+    "location": "gds://production/reference-data/dragen_wts/arriba/2.4.0/cytobands_hg38_GRCh38_v2.4.0.tsv"
   },
   "blacklist": {
     "class": "File",
-    "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/blacklist_hg38_GRCh38_v2.3.0.tsv.gz"
+    "location": "gds://production/reference-data/dragen_wts/arriba/2.4.0/blacklist_hg38_GRCh38_v2.4.0.tsv.gz"
   },
   "protein_domains": {
     "class": "File",
-    "location": "gds://production/reference-data/dragen_wts/arriba/2.3.0/protein_domains_hg38_GRCh38_v2.3.0.gff3"
+    "location": "gds://production/reference-data/dragen_wts/arriba/2.4.0/protein_domains_hg38_GRCh38_v2.4.0.gff3"
   },
   "reference_fasta": {
     "class": "File",
@@ -26,28 +26,28 @@
   },
   "reference_tar": {
     "class": "File",
-    "location": "gds://production/reference-data/dragen_hash_tables/v8/hg38/altaware-cnv-anchored/hg38-v8-altaware-cnv-anchored.tar.gz"
+    "location": "gds://production/reference-data/dragen_hash_tables/v9-r3/hg38-alt_masked-cnv-hla-rna/hg38-alt_masked.cnv.hla.rna-9-r3.0-1.tar.gz"
   },
   "qc_reference_samples": [
     {
       "class": "Directory",
-      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01563"
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2023-07-21--4.2.4/SBJ01563"
     },
     {
       "class": "Directory",
-      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01147"
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2023-07-21--4.2.4/SBJ01147"
     },
     {
       "class": "Directory",
-      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01620"
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2023-07-21--4.2.4/SBJ01620"
     },
     {
       "class": "Directory",
-      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01286"
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2023-07-21--4.2.4/SBJ01286"
     },
     {
       "class": "Directory",
-      "location": "gds://production/reference-data/dragen_wts/multiqc/2022-09-14--3.9.3/SBJ01673"
+      "location": "gds://production/reference-data/dragen_wts/multiqc/2023-07-21--4.2.4/SBJ01673"
     }
   ],
   "cl_config": "{\"sample_names_replace\":{\"PRJ220412\":\"Ref_1_Good\",\"MDX210318\":\"Ref_2_Good\",\"PRJ220466\":\"Ref_3_Good\",\"PRJ211234\":\"Ref_4_Bad\",\"PRJ220790\":\"Ref_5_Bad\",\"L2200121_dragen_qualimap\":\"Ref_1_Good\",\"L2101521_dragen_qualimap\":\"Ref_2_Good\",\"L2200188_dragen_qualimap\":\"Ref_3_Good\",\"L2101763_dragen_qualimap\":\"Ref_4_Bad\",\"L2200311_dragen_qualimap\":\"Ref_5_Bad\"}}"

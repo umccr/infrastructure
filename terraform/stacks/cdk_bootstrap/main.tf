@@ -30,6 +30,7 @@ resource "aws_cloudformation_stack" "CDKToolkit" {
     CloudFormationExecutionPolicies = "arn:aws:iam::aws:policy/AdministratorAccess"
     FileAssetsBucketKmsKeyId        = "AWS_MANAGED_KEY"
     PublicAccessBlockConfiguration  = true
+    // trust the umccr-build account for CDK pipeline deployments
     TrustedAccounts                 = "843407916570"
     UseExamplePermissionsBoundary   = false
   }

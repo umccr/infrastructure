@@ -1,8 +1,9 @@
 # AWS Security Hub Control Script
 
-The purpose of this script is to disable AWS Security Hub Controls in all UMCCR accounts that are not relevant to the UMCCR's workloads.
+The purpose of this script is to disable AWS Security Hub Controls not relevant to UMCCR's workloads across all UMCCR accounts.
 
-List of accounts that will be disabled:
+Affected AWS Accounts:
+(Note: The provided control will be disabled across all of these accounts)
 
 - agha
 - aws_onboarding
@@ -36,13 +37,14 @@ the SSO profiles.
 ./aws-login.sh
 ```
 
-### 3. Disable the relevant controls
+### 3. Disable a selected security control
 
-To disable the AWS SecurityHub Control with the script just run the `./aws-disable-security-hub-control.sh` followed by
-the Control Id.
+To deactivate the AWS SecurityHub Control using the script, execute the command `./aws-disable-security-hub-control.sh`
+and provide the corresponding Security Control Id as an argument. The Security Control Id can be obtained either from the AWS
+Security Hub console or through the CLI using the command `aws securityhub list-security-control-definitions`.
 
 ```#!/bin/bash
-./aws-disable-security-hub-control.sh [CONTROL_ID]
+./aws-disable-security-hub-control.sh [SECURITY_CONTROL_ID]
 ```
 
 

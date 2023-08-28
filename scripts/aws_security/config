@@ -1,0 +1,87 @@
+[profile AGHA_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 602836945884
+sso_role_name = SecurityOperator
+
+[profile ONBOARDING_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 702956374523
+sso_role_name = SecurityOperator
+
+[profile DATABRICKS_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 831090136584
+sso_role_name = SecurityOperator
+
+[profile HARTWIG_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 816817751144
+sso_role_name = SecurityOperator
+
+[profile ROOT_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 650704067584
+sso_role_name = SecurityOperator
+
+[profile TOTHILL_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 206808631540
+sso_role_name = SecurityOperator
+
+[profile BASTION_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 383856791668
+sso_role_name = SecurityOperator
+
+[profile DEV_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 843407916570
+sso_role_name = SecurityOperator
+
+[profile NF_TOWER_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 842385035780
+sso_role_name = SecurityOperator
+
+[profile PROD_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 472057503814
+sso_role_name = SecurityOperator
+
+[profile STG_SECURITY]
+region = ap-southeast-2
+output = json
+sso_start_url = https://umccr.awsapps.com/start#/
+sso_region = ap-southeast-2
+sso_account_id = 455634345446
+sso_role_name = SecurityOperator

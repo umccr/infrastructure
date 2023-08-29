@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.5.4"
 
   backend "s3" {
-    bucket         = "umccr-terraform-states"
+    bucket         = "umccr-terraform-states"   # FIXME still using UMCCR tenancy bucket for storing TF state
     key            = "cdk_bootstrap/terraform.tfstate"
     region         = "ap-southeast-2"
     dynamodb_table = "terraform-state-lock"
@@ -27,11 +27,11 @@ resource "aws_cloudformation_stack" "CDKToolkit" {
   ]
 
   parameters = {
-    CloudFormationExecutionPolicies = "arn:aws:iam::aws:policy/AdministratorAccess"
+    CloudFormationExecutionPolicies = "arn:aws:iam::aws:policy/AdministratorAccess"  # TODO perhaps further refinement, see README > Trello card
     FileAssetsBucketKmsKeyId        = "AWS_MANAGED_KEY"
     PublicAccessBlockConfiguration  = true
-    // trust the umccr-build account for CDK pipeline deployments
-    TrustedAccounts                 = "843407916570"
+    // trust the toolchain account for CDK pipeline deployments
+    TrustedAccounts                 = "442639098081"
     UseExamplePermissionsBoundary   = false
   }
 

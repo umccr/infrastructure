@@ -48,7 +48,7 @@ resource "aws_cloudwatch_event_target" "oncoanalyser" {
   arn            = aws_sqs_queue.batch_event_queue.arn  # send it to Portal Bach Event SQS
 }
 
-# --- oncoanalyser wts queue
+# --- star alignment queue
 
 resource "aws_sqs_queue" "star_alignment_queue" {
   name = "${local.stack_name_dash}-star-alignment-queue.fifo"

@@ -102,6 +102,12 @@ resource "aws_ecr_repository_policy" "star_align_nf_cross_accounts" {
   policy     = templatefile("policies/cross_accounts_policy_umccr.json", {})
 }
 
+# Policy on untagged image
+resource "aws_ecr_lifecycle_policy" "star_align_nf_lifecycle" {
+  repository = aws_ecr_repository.star_align_nf.name
+  policy     = templatefile("policies/untagged_image_policy.json", {})
+}
+
 
 ####
 # sash
@@ -121,7 +127,7 @@ resource "aws_ecr_repository_policy" "sash_cross_accounts" {
 }
 
 # Policy on untagged image
-resource "aws_ecr_lifecycle_policy" "star_align_nf_lifecycle" {
-  repository = aws_ecr_repository.star_align_nf.name
+resource "aws_ecr_lifecycle_policy" "sash_lifecycle" {
+  repository = aws_ecr_repository.sash.name
   policy     = templatefile("policies/untagged_image_policy.json", {})
 }

@@ -27,6 +27,9 @@ locals {
   # Stack name in dash
   stack_name_dash = "data-portal"
 
+  account_id = data.aws_caller_identity.current.account_id
+  region = data.aws_region.current.name
+
   ssm_param_key_backend_prefix = "/${local.stack_name_us}/backend"
 
   default_tags = {
@@ -36,11 +39,22 @@ locals {
   }
 }
 
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
 data "aws_sns_topic" "portal_ops_sns_topic" {
   name = "DataPortalTopic"
 }
 
-# --- main queue
+# ---
+# --- Portal "main" queues from external services
+# --- See https://github.com/umccr/data-portal-apis/blob/dev/docs/model/architecture_code_design.pdf
+# ---
+
+# ---
+# --- Portal main ICA queue for WES and BSSH through ENS subscription
+# ---
 
 resource "aws_sqs_queue" "iap_ens_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-dlq"
@@ -90,138 +104,51 @@ resource "aws_cloudwatch_metric_alarm" "ica_ens_event_sqs_dlq_alarm" {
   tags = merge(local.default_tags)
 }
 
-# --- batch notification queue
+# ---
+# --- Portal main queue for tapping into AWS Batch events within account
+# ---
 
-resource "aws_sqs_queue" "notification_queue" {
-  name = "${local.stack_name_dash}-notification-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  delay_seconds = 5
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
+resource "aws_sqs_queue" "batch_event_dlq" {
+  name                      = "${local.stack_name_dash}-batch-event-dlq"
+  message_retention_seconds = 1209600
+  tags                      = merge(local.default_tags)
 }
 
-resource "aws_ssm_parameter" "sqs_notification_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_notification_queue_arn"
+resource "aws_sqs_queue" "batch_event_queue" {
+  name = "${local.stack_name_dash}-batch-event-queue"
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.batch_event_dlq.arn
+    maxReceiveCount     = 3
+  })
+
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  tags                       = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "batch_event_sqs_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/batch_event_sqs_arn"
   type  = "String"
-  value = aws_sqs_queue.notification_queue.arn
+  value = aws_sqs_queue.batch_event_queue.arn
   tags  = merge(local.default_tags)
 }
 
-# --- wgs qc queue
-
-resource "aws_sqs_queue" "dragen_wgs_qc_queue" {
-  name = "${local.stack_name_dash}-dragen-wgs-qc-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+resource "aws_cloudwatch_metric_alarm" "batch_event_sqs_dlq_alarm" {
+  alarm_name        = "DataPortalBatchEventSQSDLQ"
+  alarm_description = "Data Portal Batch Event SQS DLQ having > 0 messages"
+  alarm_actions     = [
+    data.aws_sns_topic.portal_ops_sns_topic.arn
+  ]
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
+  period              = 60
+  threshold           = 0.0
+  namespace           = "AWS/SQS"
+  statistic           = "Sum"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  dimensions          = {
+    QueueName = aws_sqs_queue.batch_event_dlq.name
+  }
   tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_dragen_wgs_qc_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_dragen_wgs_qc_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.dragen_wgs_qc_queue.arn
-  tags  = merge(local.default_tags)
-}
-
-# --- tso ctdna queue
-
-resource "aws_sqs_queue" "dragen_tso_ctdna_queue" {
-  name = "${local.stack_name_dash}-dragen-tso-ctdna-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_dragen_tso_ctdna_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_dragen_tso_ctdna_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.dragen_tso_ctdna_queue.arn
-  tags  = merge(local.default_tags)
-}
-
-# --- tumor normal queue
-
-resource "aws_sqs_queue" "tn_queue" {
-  name = "${local.stack_name_dash}-tn-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_tn_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_tumor_normal_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.tn_queue.arn
-  tags  = merge(local.default_tags)
-}
-
-# --- wts queue
-
-resource "aws_sqs_queue" "dragen_wts_queue" {
-  name = "${local.stack_name_dash}-dragen-wts-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_dragen_wts_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_dragen_wts_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.dragen_wts_queue.arn
-  tags  = merge(local.default_tags)
-}
-
-# --- umccrise queue
-
-resource "aws_sqs_queue" "umccrise_queue" {
-  name = "${local.stack_name_dash}-umccrise-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_umccrise_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_umccrise_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.umccrise_queue.arn
-  tags  = merge(local.default_tags)
-}
-
-# --- rnasum queue
-
-resource "aws_sqs_queue" "rnasum_queue" {
-  name = "${local.stack_name_dash}-rnasum-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_rnasum_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_rnasum_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.rnasum_queue.arn
-  tags  = merge(local.default_tags)
-}
-
-# --- somalier extract queue
-resource "aws_sqs_queue" "somalier_extract_queue" {
-  name = "${local.stack_name_dash}-somalier_extract-queue.fifo"
-  fifo_queue = true
-  content_based_deduplication = true
-  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-  tags = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "sqs_somalier_extract_queue_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/sqs_somalier_extract_queue_arn"
-  type  = "String"
-  value = aws_sqs_queue.somalier_extract_queue.arn
-  tags  = merge(local.default_tags)
 }

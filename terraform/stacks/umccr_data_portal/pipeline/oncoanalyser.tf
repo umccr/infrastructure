@@ -50,6 +50,23 @@ resource "aws_cloudwatch_event_target" "oncoanalyser" {
 
 # --- oncoanalyser wts queue
 
+resource "aws_sqs_queue" "star_alignment_queue" {
+  name = "${local.stack_name_dash}-star-alignment-queue.fifo"
+  fifo_queue = true
+  content_based_deduplication = true
+  visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "sqs_star_alignment_queue_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/sqs_star_alignment_queue_arn"
+  type  = "String"
+  value = aws_sqs_queue.star_alignment_queue.arn
+  tags  = merge(local.default_tags)
+}
+
+# --- oncoanalyser wts queue
+
 resource "aws_sqs_queue" "oncoanalyser_wts_queue" {
   name = "${local.stack_name_dash}-oncoanalyser-wts-queue.fifo"
   fifo_queue = true

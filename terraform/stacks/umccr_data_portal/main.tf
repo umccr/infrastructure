@@ -58,6 +58,13 @@ locals {
   app_domain2 = "${local.subdomain2}.${var.base_domain[terraform.workspace]}"
   api_domain2 = "api.${local.app_domain2}"
 
+  # FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+  api_domain_by_env = {
+    prod = local.api_domain
+    dev  = local.api_domain2
+    stg  = local.api_domain2
+  }
+
   iam_role_path                = "/${local.stack_name_us}/"
   ssm_param_key_client_prefix  = "/${local.stack_name_us}/client"
   ssm_param_key_backend_prefix = "/${local.stack_name_us}/backend"

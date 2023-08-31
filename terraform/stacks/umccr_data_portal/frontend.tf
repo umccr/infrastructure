@@ -4,16 +4,22 @@
 locals {
   client_s3_origin_id = "clientS3"
 
+  cert_domain_name = {
+    prod = local.app_domain
+    dev  = local.app_domain2
+    stg  = local.app_domain2
+  }
+
   cert_subject_alt_names = {
     prod = sort(["*.${local.app_domain}", var.alias_domain[terraform.workspace]])
-    dev  = sort(["*.${local.app_domain}"])
-    stg  = sort(["*.${local.app_domain}"])
+    dev  = sort(["*.${local.app_domain2}"])
+    stg  = sort(["*.${local.app_domain2}"])
   }
 
   cloudfront_domain_aliases = {
     prod = [local.app_domain, var.alias_domain[terraform.workspace]]
-    dev  = [local.app_domain]
-    stg  = [local.app_domain]
+    dev  = [local.app_domain2]
+    stg  = [local.app_domain2]
   }
 }
 
@@ -125,7 +131,7 @@ resource "aws_cloudfront_distribution" "client_distribution" {
 # Alias the client domain name to CloudFront distribution address
 resource "aws_route53_record" "client_alias" {
   zone_id = data.aws_route53_zone.org_zone.zone_id
-  name    = "${local.app_domain}."
+  name    = "${local.cert_domain_name[terraform.workspace]}."
   type    = "A"
 
   alias {
@@ -157,7 +163,7 @@ resource "aws_route53_record" "client_cert_validation" {
 resource "aws_acm_certificate" "client_cert" {
   # Certificate needs to be US Virginia region in order to be used by cloudfront distribution
   provider          = aws.use1
-  domain_name       = local.app_domain
+  domain_name       = local.cert_domain_name[terraform.workspace]
   validation_method = "DNS"
 
   subject_alternative_names = local.cert_subject_alt_names[terraform.workspace]

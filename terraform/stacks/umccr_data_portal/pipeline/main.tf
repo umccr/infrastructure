@@ -116,7 +116,10 @@ resource "aws_sqs_queue" "batch_event_dlq" {
 
 resource "aws_sqs_queue" "batch_event_queue" {
   name = "${local.stack_name_dash}-batch-event-queue"
-
+  policy = templatefile("policies/sqs_eventbridge_policy.json", {
+    # Use the same name as above, if referring there will be circular dependency
+    sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-batch-event-queue"
+  })
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.batch_event_dlq.arn
     maxReceiveCount     = 3

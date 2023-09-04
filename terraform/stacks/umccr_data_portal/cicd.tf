@@ -7,6 +7,40 @@ locals {
 
   codebuild_project_name_client = "data-portal-client-${terraform.workspace}"
   codebuild_project_name_apis   = "data-portal-apis-${terraform.workspace}"
+
+  # FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+  cog_client_id_by_env = {
+    prod = data.aws_ssm_parameter.cog_app_client_id_stage.value
+    dev  = data.aws_ssm_parameter.tmp_cog_app_client_id_stage.value
+    stg  = data.aws_ssm_parameter.tmp_cog_app_client_id_stage.value
+  }
+  # FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+  cog_redirect_in_by_env = {
+    prod = data.aws_ssm_parameter.oauth_redirect_in_stage.value
+    dev  = data.aws_ssm_parameter.tmp_oauth_redirect_in_stage.value
+    stg  = data.aws_ssm_parameter.tmp_oauth_redirect_in_stage.value
+  }
+  # FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+  cog_redirect_out_by_env = {
+    prod = data.aws_ssm_parameter.oauth_redirect_out_stage.value
+    dev  = data.aws_ssm_parameter.tmp_oauth_redirect_out_stage.value
+    stg  = data.aws_ssm_parameter.tmp_oauth_redirect_out_stage.value
+  }
+}
+
+# FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+data "aws_ssm_parameter" "tmp_cog_app_client_id_stage" {
+  name  = "${local.data2_param_prefix}/cog_app_client_id_stage"
+}
+
+# FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+data "aws_ssm_parameter" "tmp_oauth_redirect_in_stage" {
+  name  = "${local.data2_param_prefix}/oauth_redirect_in_stage"
+}
+
+# FIXME: remove this when resolve https://github.com/umccr/infrastructure/issues/272
+data "aws_ssm_parameter" "tmp_oauth_redirect_out_stage" {
+  name  = "${local.data2_param_prefix}/oauth_redirect_out_stage"
 }
 
 data "aws_ssm_parameter" "codestar_github_arn" {
@@ -272,9 +306,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "API_URL"
-      value = local.api_domain
-      # FIXME: https://github.com/umccr/infrastructure/issues/272
-      #value = local.api_domain2
+      value = local.api_domain_by_env[terraform.workspace]
     }
 
     environment_variable {
@@ -299,7 +331,7 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "COGNITO_APP_CLIENT_ID_STAGE"
-      value = data.aws_ssm_parameter.cog_app_client_id_stage.value
+      value = local.cog_client_id_by_env[terraform.workspace]
     }
 
     environment_variable {
@@ -309,12 +341,12 @@ resource "aws_codebuild_project" "codebuild_client" {
 
     environment_variable {
       name  = "OAUTH_REDIRECT_IN_STAGE"
-      value = data.aws_ssm_parameter.oauth_redirect_in_stage.value
+      value = local.cog_redirect_in_by_env[terraform.workspace]
     }
 
     environment_variable {
       name  = "OAUTH_REDIRECT_OUT_STAGE"
-      value = data.aws_ssm_parameter.oauth_redirect_out_stage.value
+      value = local.cog_redirect_out_by_env[terraform.workspace]
     }
 
     environment_variable {

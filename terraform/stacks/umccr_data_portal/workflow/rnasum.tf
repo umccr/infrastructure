@@ -8,7 +8,7 @@ locals {
   rnasum_wfl_version = {
     dev  = "0.4.7"
     prod = "0.4.7--0758c9e"
-    stg  = "0.4.8--ba05ec9"
+    stg  = "0.4.9--3694eb2"
   }
 
   rnasum_wfl_input = {

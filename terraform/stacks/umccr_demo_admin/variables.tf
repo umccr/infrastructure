@@ -1,3 +1,6 @@
-variable "elsa_read_bucket_name" {
-  default = "org.umccr.demo.sbeacon-data"
+variable "elsa_data_data_bucket_paths" {
+  default = {
+    umccr-10f-data-dev = ["ASHKENAZIM/*", "CHINESE/*"]
+    umccr-10g-data-dev = ["*"]
+  }
 }

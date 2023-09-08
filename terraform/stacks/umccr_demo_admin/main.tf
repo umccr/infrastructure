@@ -26,10 +26,13 @@ data "aws_region" "current" {}
 
 locals {
   common_tags = {
-    "Environment" : "demo",
-    "Stack" : "umccr_demo_admin",
-    "org.umccr:Product" : "ElsaData"
+    "org.umccr:Environment" : "demo",
+    "org.umccr:Stack" : "umccr_demo_admin"
   }
+
+  elsa_data_tags = merge(local.common_tags, {
+    "org.umccr:Product" : "ElsaData"
+  })
 }
 
 
@@ -38,7 +41,7 @@ resource "aws_iam_user" "elsa_data_object_signing" {
   name          = "elsa_data_object_signing"
   path          = "/elsa/"
   force_destroy = true
-  tags          = local.common_tags
+  tags          = local.elsa_data_tags
 }
 
 resource "aws_iam_group" "elsa_data_object_signing" {
@@ -86,5 +89,5 @@ resource "aws_iam_policy" "elsa_data_object_signing" {
   name_prefix = "elsa_data_object_signing"
   path        = "/elsa/"
   policy      = data.aws_iam_policy_document.elsa_data_object_signing.json
-  tags        = local.common_tags
+  tags        = local.elsa_data_tags
 }

@@ -114,11 +114,30 @@ data "aws_iam_policy_document" "prod_cross_account_access" {
 
     principals {
       type        = "AWS"
-      identifiers = ["472057503814"]
+      identifiers = ["arn:aws:iam::472057503814:root"]
     }
 
     actions = [
       "s3:*",
+    ]
+
+    resources = [
+      aws_s3_bucket.oncoanalyser_bucket.arn,
+      "${aws_s3_bucket.oncoanalyser_bucket.arn}/*",
+    ]
+  }
+
+  statement {
+	sid = "AccessForMarko"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::843407916570:role/mmalenic_dev_ec2"]
+    }
+
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
     ]
 
     resources = [

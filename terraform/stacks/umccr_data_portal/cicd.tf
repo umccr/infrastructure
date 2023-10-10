@@ -291,8 +291,8 @@ resource "aws_codebuild_project" "codebuild_client" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/amazonlinux2-aarch64-standard:3.0"
-    type         = "ARM_CONTAINER"
+    image        = "aws/codebuild/standard:7.0"
+    type         = "LINUX_CONTAINER"
 
     environment_variable {
       name  = "STAGE"
@@ -375,8 +375,8 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
   environment {
     compute_type    = "BUILD_GENERAL1_SMALL"
-    image           = "aws/codebuild/amazonlinux2-aarch64-standard:3.0"
-    type            = "ARM_CONTAINER"
+    image           = "aws/codebuild/standard:7.0"
+    type            = "LINUX_CONTAINER"
     privileged_mode = true
 
     environment_variable {

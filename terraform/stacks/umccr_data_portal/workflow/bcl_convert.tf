@@ -1,12 +1,12 @@
 locals {
   bcl_convert_wfl_id = {
-    dev  = "wfl.59e481580c6243b6b237ca2b08fa1270"
+    dev  = "wfl.f257ca35ced94e648fdda1173144c476"
     prod = "wfl.f257ca35ced94e648fdda1173144c476"
     stg  = "wfl.f257ca35ced94e648fdda1173144c476"
   }
 
   bcl_convert_wfl_version = {
-    dev  = "3.7.5"
+    dev  = "3.7.5--6eacfb8"
     prod = "3.7.5--0bac6d0"
     stg  = "3.7.5--0bac6d0"
   }

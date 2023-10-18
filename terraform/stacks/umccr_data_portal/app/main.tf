@@ -37,10 +37,20 @@ locals {
     "Creator"     = "terraform"
     "Environment" = terraform.workspace
   }
+
+  notification_sns_topic_arn = {
+    prod = data.aws_sns_topic.portal_ops_sns_topic.arn
+    dev  = data.aws_sns_topic.chatbot_topic.arn
+    stg  = data.aws_sns_topic.chatbot_topic.arn
+  }
 }
 
 data "aws_sns_topic" "portal_ops_sns_topic" {
   name = "DataPortalTopic"
+}
+
+data "aws_sns_topic" "chatbot_topic" {
+  name = "AwsChatBotTopic"
 }
 
 # see each app resources in their own tf files: s3.tf, report.tf

@@ -37,6 +37,12 @@ locals {
     "Creator"     = "terraform"
     "Environment" = terraform.workspace
   }
+
+  notification_sns_topic_arn = {
+    prod = data.aws_sns_topic.portal_ops_sns_topic.arn
+    dev  = data.aws_sns_topic.chatbot_topic.arn
+    stg  = data.aws_sns_topic.chatbot_topic.arn
+  }
 }
 
 data "aws_region" "current" {}
@@ -45,6 +51,10 @@ data "aws_caller_identity" "current" {}
 
 data "aws_sns_topic" "portal_ops_sns_topic" {
   name = "DataPortalTopic"
+}
+
+data "aws_sns_topic" "chatbot_topic" {
+  name = "AwsChatBotTopic"
 }
 
 # ---
@@ -88,7 +98,7 @@ resource "aws_cloudwatch_metric_alarm" "ica_ens_event_sqs_dlq_alarm" {
   alarm_name = "DataPortalIAPENSEventSQSDLQ"
   alarm_description = "Data Portal IAP ENS Event SQS DLQ having > 0 messages"
   alarm_actions = [
-    data.aws_sns_topic.portal_ops_sns_topic.arn
+    local.notification_sns_topic_arn[terraform.workspace]
   ]
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods = 1
@@ -140,7 +150,7 @@ resource "aws_cloudwatch_metric_alarm" "batch_event_sqs_dlq_alarm" {
   alarm_name        = "DataPortalBatchEventSQSDLQ"
   alarm_description = "Data Portal Batch Event SQS DLQ having > 0 messages"
   alarm_actions     = [
-    data.aws_sns_topic.portal_ops_sns_topic.arn
+    local.notification_sns_topic_arn[terraform.workspace]
   ]
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1

@@ -33,7 +33,7 @@ resource "aws_cloudwatch_metric_alarm" "ica_gds_event_dlq_alarm" {
   alarm_name = "DataPortalICAGDSEventSQSDLQ"
   alarm_description = "Data Portal ICA GDS Event SQS DLQ having > 0 messages"
   alarm_actions = [
-    data.aws_sns_topic.portal_ops_sns_topic.arn
+    local.notification_sns_topic_arn[terraform.workspace]
   ]
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods = 1

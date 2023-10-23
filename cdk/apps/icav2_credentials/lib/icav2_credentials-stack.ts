@@ -3,10 +3,13 @@ import {RotationSchedule, Secret} from "aws-cdk-lib/aws-secretsmanager";
 import {AssetCode, Function, Runtime} from 'aws-cdk-lib/aws-lambda'
 import {join} from "path";
 import {AccountRootPrincipal, Effect, FederatedPrincipal, PolicyStatement, Role} from "aws-cdk-lib/aws-iam";
-import {Duration, Stack, StackProps} from "aws-cdk-lib";
+import {aws_iam, Duration, Stack, StackProps} from "aws-cdk-lib";
 import {IStringParameter, StringParameter} from "aws-cdk-lib/aws-ssm";
 import {Rule} from "aws-cdk-lib/aws-events";
 import {LambdaFunction} from "aws-cdk-lib/aws-events-targets";
+import {OpenIdConnectProvider} from "aws-cdk-lib/aws-eks";
+
+import {GITHUB_DOMAIN} from "../bin/icav2_credentials"
 
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 interface Icav2CredentialsStackProps extends StackProps {
@@ -294,8 +297,10 @@ export class Icav2CredentialsStack extends Stack {
                     {
                         StringEquals: {
                             'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-                            'token.actions.githubusercontent.com:sub': github_repositories.join(":")
                         },
+                        StringLike: {
+                            'token.actions.githubusercontent.com:sub': github_repositories.join(",")
+                        }
                     },
                     'sts:AssumeRoleWithWebIdentity',
                 ),

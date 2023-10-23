@@ -7,6 +7,9 @@ const app = new cdk.App();
 
 const CDK_APP_NAME = "icav2-credentials"
 const ICAV2_BASE_URL = "https://ica.illumina.com/ica/rest"
+
+export const GITHUB_DOMAIN = 'token.actions.githubusercontent.com'
+
 const SLACK_HOST_SSM_NAME = "/slack/webhook/host"
 const SLACK_WEBHOOK_SSM_NAME = "/slack/webhook/id"
 
@@ -24,7 +27,7 @@ new Icav2CredentialsStack(
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
         github_repos: [
-            "umccr/cwl-ica"
+            "repo:umccr/cwl-ica"
         ],
         github_role_name: "workflow-deployment-localstack",
         env: {
@@ -44,7 +47,7 @@ new Icav2CredentialsStack(
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
         github_repos: [
-            "umccr/cwl-ica"
+            "repo:umccr/cwl-ica:*"
         ],
         github_role_name: `${CDK_APP_NAME}-umccr-test-pipelines-deployment-role`,
         env: {

@@ -169,7 +169,7 @@ export class Icav2CredentialsStack extends Stack {
             'JwtICAv2SecretRotation', {
                 secret: icav2_jwt_secret,
                 // the properties below are optional
-                automaticallyAfter: Duration.hours(48),
+                automaticallyAfter: Duration.hours(12),
                 rotationLambda: icav2_jwt_lambda_producer
             }
         );
@@ -287,7 +287,7 @@ export class Icav2CredentialsStack extends Stack {
             console.log("Role name undefined")
             return
         }
-        
+
         // Set role
         const gh_action_role = new Role(
             this,

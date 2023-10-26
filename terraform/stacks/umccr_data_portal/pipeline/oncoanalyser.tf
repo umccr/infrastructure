@@ -31,11 +31,7 @@ resource "aws_cloudwatch_event_rule" "oncoanalyser" {
         "FAILED"
       ],
       "jobQueue" : [
-        {
-          "anything-but" : {
-            "prefix" : "arn:aws:batch:${local.region}:${local.account_id}:job-queue/nextflow-task-"
-          }
-        }
+        { "prefix" : "arn:aws:batch:${local.region}:${local.account_id}:job-queue/nextflow-pipeline" }
       ],
     }
   })

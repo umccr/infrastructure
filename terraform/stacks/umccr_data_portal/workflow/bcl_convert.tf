@@ -7,7 +7,7 @@ locals {
 
   bcl_convert_wfl_version = {
     dev  = "3.7.5--6eacfb8"
-    prod = "3.7.5--0bac6d0"
+    prod = "3.7.5--6eacfb8"
     stg  = "3.7.5--6eacfb8"
   }
 

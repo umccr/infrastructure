@@ -1,19 +1,21 @@
+from aws_cdk import Stack
 from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as _iam,
     aws_sns as _sns,
     aws_sns_subscriptions as _sns_subs,
     aws_events as _events,
-    aws_events_targets as _events_targets,
-    core
+    aws_events_targets as _events_targets
 )
+from constructs import Construct
 
 
-class IapLambdaStack(core.Stack):
+class IapLambdaStack(Stack):
+    """ TODO DEPRECATED STACK """
 
     illumina_iap_account = '079623148045'
 
-    def __init__(self, scope: core.Construct, id: str, slack_channel: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, slack_channel: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         lambda_role = _iam.Role(
@@ -30,8 +32,8 @@ class IapLambdaStack(core.Stack):
             self,
             'IapSlackLambda',
             handler='notify_slack.lambda_handler',
-            runtime=_lambda.Runtime.PYTHON_3_7,
-            code=_lambda.Code.asset('lambdas/iap'),
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            code=_lambda.Code.from_asset('lambdas/iap'),
             environment={
                 "SLACK_HOST": "hooks.slack.com",
                 "SLACK_CHANNEL": slack_channel
@@ -49,9 +51,9 @@ class IapLambdaStack(core.Stack):
         sns_topic.add_subscription(_sns_subs.LambdaSubscription(function))
 
 
-class BatchLambdaStack(core.Stack):
+class BatchLambdaStack(Stack):
 
-    def __init__(self, scope: core.Construct, id: str, slack_channel: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, slack_channel: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         lambda_role = _iam.Role(
@@ -68,8 +70,8 @@ class BatchLambdaStack(core.Stack):
             self,
             'BatchSlackLambda',
             handler='notify_slack.lambda_handler',
-            runtime=_lambda.Runtime.PYTHON_3_7,
-            code=_lambda.Code.asset('lambdas/batch'),
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            code=_lambda.Code.from_asset('lambdas/batch'),
             environment={
                 "SLACK_HOST": "hooks.slack.com",
                 "SLACK_CHANNEL": slack_channel

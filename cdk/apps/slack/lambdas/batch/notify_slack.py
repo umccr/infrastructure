@@ -28,6 +28,8 @@ def getAwsAccountName(id):
         return 'dev (old)'
     elif id == '602836945884':
         return 'agha'
+    elif id == '455634345446':
+        return 'stg'
     else:
         return id
 

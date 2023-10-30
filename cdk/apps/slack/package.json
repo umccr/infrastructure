@@ -1,0 +1,9 @@
+{
+  "name": "slack",
+  "version": "1.0.0",
+  "description": "Handles slack notifications while AWS Chatbot ups its game a bit more.",
+  "dependencies": {
+    "aws-cdk": "2.103.1"
+  },
+  "devDependencies": {}
+}

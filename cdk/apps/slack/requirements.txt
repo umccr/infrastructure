@@ -1,1 +1,4 @@
--e .
+# make sure to match up with _pinned_ cdk cli version from `package.json`
+aws-cdk-lib==2.103.1
+constructs==10.3.0
+boto3==1.28.72

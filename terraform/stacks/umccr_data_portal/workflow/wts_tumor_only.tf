@@ -7,7 +7,7 @@ locals {
 
   wts_tumor_only_wfl_version = {
     dev  = "4.2.4"
-    prod = "3.9.3--8fdabfc"
+    prod = "4.2.4--4b01ed3"
     stg  = "4.2.4--4b01ed3"
   }
 

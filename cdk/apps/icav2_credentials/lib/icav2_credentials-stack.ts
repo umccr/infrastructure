@@ -169,7 +169,7 @@ export class Icav2CredentialsStack extends Stack {
             'JwtICAv2SecretRotation', {
                 secret: icav2_jwt_secret,
                 // the properties below are optional
-                automaticallyAfter: Duration.hours(12),
+                automaticallyAfter: Duration.hours(24),
                 rotationLambda: icav2_jwt_lambda_producer
             }
         );

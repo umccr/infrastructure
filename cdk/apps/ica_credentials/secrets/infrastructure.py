@@ -55,12 +55,7 @@ class Secrets(cdk.Construct):
             slack_webhook_ssm_name,
         )
 
-        # create an AWS user specifically for allowing github to come over to AWS
-        # and get an up to date JWT set (only of the workflows JWTs)
-        workflow_user = iam.User(self, "WorkflowUser")  # FIXME - deprecated
-
-        jwt_workflow_secret.grant_read(workflow_user)  # FIXME - deprecated
-
+        # share the JWT secrets with the GitHub Actions repo
         self.share_jwt_secret_with_github_actions_repo(
             jwt_workflow_secret,
             github_repos,

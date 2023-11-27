@@ -15,6 +15,7 @@ ICAV2_BASE_URL = "https://ica.illumina.com"
 SLACK_HOST_SSM_NAME = "/slack/webhook/host"
 SLACK_WEBHOOK_SSM_NAME = "/slack/webhook/id"
 
+CWL_ICA_GITHUB_REPO = "repo:umccr/cwl-ica:*"
 
 # Development
 IcaCredentialsDeployment(
@@ -30,6 +31,8 @@ IcaCredentialsDeployment(
     ICA_BASE_URL,
     SLACK_HOST_SSM_NAME,
     SLACK_WEBHOOK_SSM_NAME,
+    github_repos=[CWL_ICA_GITHUB_REPO],
+    github_role_name=f"{CDK_APP_NAME}-dev-umccr-pipelines-deployment-role",
     env=cdk.Environment(
         account=os.environ["CDK_DEFAULT_ACCOUNT"],
         region=os.environ["CDK_DEFAULT_REGION"],
@@ -42,12 +45,13 @@ IcaCredentialsDeployment(
     f"{CDK_APP_NAME}-stg",
     "c9173925-a838-4394-9fc6-61cb93c252a1",
     [
-        # staging_workflows
-        # FIXME
+        # staging_workflows - no staging workflows project
     ],
     ICA_BASE_URL,
     SLACK_HOST_SSM_NAME,
     SLACK_WEBHOOK_SSM_NAME,
+    github_repos=[CWL_ICA_GITHUB_REPO],
+    github_role_name=f"{CDK_APP_NAME}-stg-umccr-pipelines-deployment-role",
     env=cdk.Environment(
         account="455634345446",
         region="ap-southeast-2"
@@ -66,6 +70,8 @@ IcaCredentialsDeployment(
     ICA_BASE_URL,
     SLACK_HOST_SSM_NAME,
     SLACK_WEBHOOK_SSM_NAME,
+    github_repos=[CWL_ICA_GITHUB_REPO],
+    github_role_name=f"{CDK_APP_NAME}-prod-umccr-pipelines-deployment-role",
     env=cdk.Environment(
         account="472057503814",
         region="ap-southeast-2"

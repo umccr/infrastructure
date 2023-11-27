@@ -300,7 +300,7 @@ class Secrets(cdk.Construct):
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                     },
                     "StringLike": {
-                        "token.actions.githubusercontent.com:sub": ",".join(github_repositories)
+                        "token.actions.githubusercontent.com:sub": github_repositories
                     }
                 },
                 "sts:AssumeRoleWithWebIdentity"

@@ -9,8 +9,9 @@ from aws_cdk import (
 )
 from aws_cdk.aws_events import Rule
 from aws_cdk.aws_events_targets import LambdaFunction
-from aws_cdk.aws_iam import PolicyStatement
+from aws_cdk.aws_iam import PolicyStatement, Role, FederatedPrincipal
 from aws_cdk.core import Duration
+import logging
 
 ROTATION_DAYS = 1
 
@@ -19,15 +20,19 @@ class Secrets(cdk.Construct):
     """
     A construct that maintains secrets for ICA and periodically generates fresh JWT secrets.
     """
+
     def __init__(
-        self,
-        scope: cdk.Construct,
-        id_: str,
-        data_project: Optional[str],
-        workflow_projects: Optional[List[str]],
-        ica_base_url: str,
-        slack_host_ssm_name: str,
-        slack_webhook_ssm_name: str,
+            self,
+            scope: cdk.Construct,
+            id_: str,
+            data_project: Optional[str],
+            workflow_projects: Optional[List[str]],
+            ica_base_url: str,
+            slack_host_ssm_name: str,
+            slack_webhook_ssm_name: str,
+            github_repos: Optional[List[str]],
+            github_role_name: str,
+            cdk_env: cdk.Environment
     ):
         super().__init__(scope, id_)
 
@@ -50,11 +55,13 @@ class Secrets(cdk.Construct):
             slack_webhook_ssm_name,
         )
 
-        # create an AWS user specifically for allowing github to come over to AWS
-        # and get an up to date JWT set (only of the workflows JWTs)
-        workflow_user = iam.User(self, "WorkflowUser")
-
-        jwt_workflow_secret.grant_read(workflow_user)
+        # share the JWT secrets with the GitHub Actions repo
+        self.share_jwt_secret_with_github_actions_repo(
+            jwt_workflow_secret,
+            github_repos,
+            github_role_name,
+            cdk_env.account
+        )
 
     def create_master_secret(self) -> secretsmanager.Secret:
         """
@@ -76,9 +83,9 @@ class Secrets(cdk.Construct):
         return master_secret
 
     def add_deny_for_everyone_except(
-        self,
-        master_secret: secretsmanager.Secret,
-        producer_functions: List[lambda_.Function],
+            self,
+            master_secret: secretsmanager.Secret,
+            producer_functions: List[lambda_.Function],
     ) -> None:
         """
         Sets up the master secret resource policy so that everything *except* the given functions
@@ -116,11 +123,11 @@ class Secrets(cdk.Construct):
         )
 
     def create_jwt_secret(
-        self,
-        master_secret: secretsmanager.Secret,
-        ica_base_url: str,
-        key_name: str,
-        project_ids: Optional[Union[str, List[str]]],
+            self,
+            master_secret: secretsmanager.Secret,
+            ica_base_url: str,
+            key_name: str,
+            project_ids: Optional[Union[str, List[str]]],
     ) -> Tuple[secretsmanager.Secret, lambda_.Function]:
         """
         Create a JWT holding secret - that will use the master secret for JWT making - and which will have
@@ -187,10 +194,10 @@ class Secrets(cdk.Construct):
         return jwt_secret, jwt_producer
 
     def create_event_handling(
-        self,
-        secrets: List[secretsmanager.Secret],
-        slack_host_ssm_name: str,
-        slack_webhook_ssm_name: str,
+            self,
+            secrets: List[secretsmanager.Secret],
+            slack_host_ssm_name: str,
+            slack_webhook_ssm_name: str,
     ) -> lambda_.Function:
         """
 
@@ -257,3 +264,57 @@ class Secrets(cdk.Construct):
         rule.add_target(LambdaFunction(notifier))
 
         return notifier
+
+    def share_jwt_secret_with_github_actions_repo(
+            self,
+            secret: secretsmanager.Secret,
+            github_repositories: Optional[List[str]],
+            role_name: Optional[str],
+            account_id: Optional[str]
+    ):
+        """
+        Given a list of GitHub repositories, allow this secret to be accessed by the repo
+        :param secret: The secretsmanager object that will shared the role will have access to the value of
+        :param github_repositories: A list of GitHub repositories that will be given access to the secret
+        :param role_name: The name of the role that will be created and given access to the secret
+        :param account_id: The AWS account ID of the account that the role will be created in
+        :return:
+        """
+        # Check inputs
+        if github_repositories is None or len(github_repositories) == 0:
+            logging.info("No GitHub repositories to add this role to")
+            return
+
+        if role_name is None:
+            logging.info("Role name not specified - not adding to GitHub repositories")
+            return
+
+        # Set role
+        gh_action_role = Role(
+            self,
+            role_name,
+            assumed_by=FederatedPrincipal(
+                f"arn:aws:iam::{account_id}:oidc-provider/token.actions.githubusercontent.com",
+                {
+                    "StringEquals": {
+                        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                    },
+                    "StringLike": {
+                        "token.actions.githubusercontent.com:sub": github_repositories
+                    }
+                },
+                "sts:AssumeRoleWithWebIdentity"
+            )
+        )
+
+        # Add permissions to role
+        gh_action_role.add_to_policy(
+            PolicyStatement(
+                actions=[
+                    "secretsmanager:GetSecretValue",
+                ],
+                resources=[
+                    secret.secret_arn
+                ]
+            )
+        )

@@ -274,10 +274,10 @@ class Secrets(cdk.Construct):
     ):
         """
         Given a list of GitHub repositories, allow this secret to be accessed by the repo
-        :param secret:
-        :param github_repositories:
-        :param role_name:
-        :param account_id:
+        :param secret: The secretsmanager object that will shared the role will have access to the value of
+        :param github_repositories: A list of GitHub repositories that will be given access to the secret
+        :param role_name: The name of the role that will be created and given access to the secret
+        :param account_id: The AWS account ID of the account that the role will be created in
         :return:
         """
         # Check inputs

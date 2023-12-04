@@ -28,6 +28,7 @@ locals {
 # S3 buckets
 # Note: changes to public access block requires the temporary detachment of an SCP blocking it on org level
 
+# Staging bucket
 resource "aws_s3_bucket" "agha_gdr_staging_2" {
   bucket = var.agha_gdr_staging_2_bucket_name
 
@@ -75,6 +76,7 @@ resource "aws_s3_bucket" "agha_gdr_staging_2" {
     }
   )
 }
+
 resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
   bucket = aws_s3_bucket.agha_gdr_staging_2.id
 
@@ -83,8 +85,14 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+resource "aws_s3_bucket_ownership_controls" "agha_gdr_staging_2" {
+  bucket = aws_s3_bucket.agha_gdr_staging_2.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
 
-
+# Store bucket
 resource "aws_s3_bucket" "agha_gdr_store_2" {
   bucket = var.agha_gdr_store_2_bucket_name
 
@@ -192,7 +200,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
   
 }
 
-
 resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
   bucket = aws_s3_bucket.agha_gdr_store_2.id
 
@@ -202,6 +209,14 @@ resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_ownership_controls" "agha_gdr_store_2" {
+  bucket = aws_s3_bucket.agha_gdr_store_2.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+# Result bucket
 resource "aws_s3_bucket" "agha_gdr_results_2" {
   bucket = var.agha_gdr_results_2_bucket_name
   acl = "private"
@@ -247,6 +262,13 @@ resource "aws_s3_bucket" "agha_gdr_results_2" {
       days          = 0
       storage_class = "INTELLIGENT_TIERING"
     }
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "agha_gdr_results_2" {
+  bucket = aws_s3_bucket.agha_gdr_results_2.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
   }
 }
 

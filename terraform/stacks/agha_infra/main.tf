@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12.6"
+  required_version = ">= 1.6.5"
 
   backend "s3" {
     bucket         = "agha-terraform-states"
@@ -77,14 +77,6 @@ resource "aws_s3_bucket" "agha_gdr_staging_2" {
   )
 }
 
-resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
-  bucket = aws_s3_bucket.agha_gdr_staging_2.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
 resource "aws_s3_bucket_ownership_controls" "agha_gdr_staging_2" {
   bucket = aws_s3_bucket.agha_gdr_staging_2.id
   rule {
@@ -180,15 +172,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
     }
   }
 
-}
-
-resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
-  bucket = aws_s3_bucket.agha_gdr_store_2.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_ownership_controls" "agha_gdr_store_2" {
@@ -297,14 +280,6 @@ resource "aws_s3_bucket" "agha_gdr_archive" {
 
     abort_incomplete_multipart_upload_days = 7
   }
-}
-resource "aws_s3_bucket_public_access_block" "agha_gdr_archive" {
-  bucket = aws_s3_bucket.agha_gdr_archive.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }
 data "template_file" "archive_bucket_policy" {
   template = file("policies/agha_bucket_policy.json")

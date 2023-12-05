@@ -146,7 +146,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
   # Will deep archive all 2022 MM data
   rule {
     status = "Enabled"
-    id = "[DeepArchive] MM_NSWHP/2022"
+    id = "deep_archive_MM_NSWHP_2022"
 
     filter {
       prefix = "MM_NSWHP/2022"
@@ -157,10 +157,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
       storage_class = "DEEP_ARCHIVE"
     }
 
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
   }
   rule {
     status = "Enabled"
-    id = "[DeepArchive] MM_VCGS/2022"
+    id = "deep_archive_MM_VCGS_2022"
     
     filter {
       prefix = "MM_VCGS/2022"
@@ -170,34 +174,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
       days = 0
       storage_class = "DEEP_ARCHIVE"
     }
-  }
-
-  rule {
-    status = "Enabled"
-    id = "[DELETE NonCurrVer] MM_NSWHP/2022"
-    
-    filter {
-      prefix = "MM_NSWHP/2022"
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 1
-    }
-  }
-  rule {
-    status = "Enabled"
-    id = "[DELETE NonCurrVer] MM_VCGS/2022"
-    
-    filter {
-      prefix = "MM_VCGS/2022"
-    }
 
     noncurrent_version_expiration {
       noncurrent_days = 1
     }
   }
 
-  
 }
 
 resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {

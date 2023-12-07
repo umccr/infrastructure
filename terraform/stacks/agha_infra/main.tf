@@ -135,6 +135,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
     }
 
   }
+  
   rule {
     status = "Enabled"
     id = "deep_archive_MM_VCGS_2022"
@@ -153,7 +154,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
     }
   }
 
-    rule {
+  rule {
     status = "Enabled"
     id = "intelligent_tiering"
 
@@ -176,7 +177,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
     }
 
     abort_incomplete_multipart_upload {
-      days_after_initiation = 90
+      days_after_initiation = 7
     }
   }
 

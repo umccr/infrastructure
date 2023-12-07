@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12.6"
+  required_version = ">= 1.6.5"
 
   backend "s3" {
     bucket         = "agha-terraform-states"
@@ -28,6 +28,12 @@ locals {
 # S3 buckets
 # Note: changes to public access block requires the temporary detachment of an SCP blocking it on org level
 
+# TF Note: Some TF arg for S3 are deprecated and the newer version is to break those arg into their own resource.
+#           If the argument is removed, TF will just forget what is currently deployed and requires to import it 
+#           when spawning the new resource
+#           Ref: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-4-upgrade#changes-to-s3-bucket-drift-detection
+
+# Staging bucket
 resource "aws_s3_bucket" "agha_gdr_staging_2" {
   bucket = var.agha_gdr_staging_2_bucket_name
 
@@ -75,19 +81,17 @@ resource "aws_s3_bucket" "agha_gdr_staging_2" {
     }
   )
 }
-resource "aws_s3_bucket_public_access_block" "agha_gdr_staging_2" {
-  bucket = aws_s3_bucket.agha_gdr_staging_2.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+resource "aws_s3_bucket_ownership_controls" "agha_gdr_staging_2" {
+  bucket = aws_s3_bucket.agha_gdr_staging_2.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
 }
 
-
+# Store bucket
 resource "aws_s3_bucket" "agha_gdr_store_2" {
   bucket = var.agha_gdr_store_2_bucket_name
-  acl    = "private"
 
   server_side_encryption_configuration {
     rule {
@@ -101,46 +105,92 @@ resource "aws_s3_bucket" "agha_gdr_store_2" {
     enabled = true
   }
 
-  lifecycle_rule {
-    id      = "noncurrent_version_expiration"
-    enabled = true
-    noncurrent_version_expiration {
-      days = 90
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
   tags = merge(
     local.common_tags,
     {
       Name=var.agha_gdr_store_2_bucket_name
     }
   )
+}
 
-  lifecycle_rule {
-    id      = "intelligent_tiering"
-    enabled = true
+resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
+  bucket = aws_s3_bucket.agha_gdr_store_2.id
+
+  # Will deep archive all 2022 MM data
+  rule {
+    status = "Enabled"
+    id = "deep_archive_MM_NSWHP_2022"
+
+    filter {
+      prefix = "MM_NSWHP/2022"
+    }
+
+    transition {
+      days = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
+  }
+  
+  rule {
+    status = "Enabled"
+    id = "deep_archive_MM_VCGS_2022"
+    
+    filter {
+      prefix = "MM_VCGS/2022"
+    }
+
+    transition {
+      days = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    status = "Enabled"
+    id = "intelligent_tiering"
 
     transition {
       days          = 0
       storage_class = "INTELLIGENT_TIERING"
     }
   }
+
+  rule {
+    id = "noncurrent_version_expiration"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
 }
-resource "aws_s3_bucket_public_access_block" "agha_gdr_store_2" {
+
+resource "aws_s3_bucket_ownership_controls" "agha_gdr_store_2" {
   bucket = aws_s3_bucket.agha_gdr_store_2.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
 }
 
+# Result bucket
 resource "aws_s3_bucket" "agha_gdr_results_2" {
   bucket = var.agha_gdr_results_2_bucket_name
   acl = "private"
@@ -189,6 +239,12 @@ resource "aws_s3_bucket" "agha_gdr_results_2" {
   }
 }
 
+resource "aws_s3_bucket_ownership_controls" "agha_gdr_results_2" {
+  bucket = aws_s3_bucket.agha_gdr_results_2.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
 
 ##### Archive bucket
 resource "aws_s3_bucket" "agha_gdr_archive" {
@@ -234,14 +290,6 @@ resource "aws_s3_bucket" "agha_gdr_archive" {
     abort_incomplete_multipart_upload_days = 7
   }
 }
-resource "aws_s3_bucket_public_access_block" "agha_gdr_archive" {
-  bucket = aws_s3_bucket.agha_gdr_archive.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
 data "template_file" "archive_bucket_policy" {
   template = file("policies/agha_bucket_policy.json")
 
@@ -255,69 +303,6 @@ resource "aws_s3_bucket_policy" "archive_bucket_policy" {
   bucket = aws_s3_bucket.agha_gdr_archive.id
   policy = data.template_file.archive_bucket_policy.rendered
 }
-
-##### MM bucket
-resource "aws_s3_bucket" "agha_gdr_mm" {
-  bucket = var.agha_gdr_mm_bucket_name
-  acl    = "private"
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  versioning {
-    enabled = true
-  }
-
-  tags = merge(
-    local.common_tags,
-    {
-      "Name"=var.agha_gdr_mm_bucket_name
-    }
-  )
-
-  lifecycle_rule {
-    id      = "version_expiry"
-    enabled = true
-
-    noncurrent_version_expiration {
-      days = 90
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-}
-resource "aws_s3_bucket_public_access_block" "agha_gdr_mm" {
-  bucket = aws_s3_bucket.agha_gdr_mm.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-data "template_file" "mm_bucket_policy" {
-  template = file("policies/agha_bucket_mm_policy.json")
-
-  vars = {
-    bucket_name = aws_s3_bucket.agha_gdr_mm.id
-    account_id  = data.aws_caller_identity.current.account_id
-    role_id     = aws_iam_role.s3_admin_delete.unique_id
-  }
-}
-resource "aws_s3_bucket_policy" "mm_bucket_policy" {
-  bucket = aws_s3_bucket.agha_gdr_mm.id
-  policy = data.template_file.mm_bucket_policy.rendered
-}
-
-
 
 ################################################################################
 # Dedicated IAM role to delete S3 objects (otherwise not allowed)

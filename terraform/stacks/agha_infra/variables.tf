@@ -22,10 +22,6 @@ variable "agha_gdr_store_2_bucket_name" {
   default = "agha-gdr-store-2.0"
 }
 
-variable "agha_gdr_mm_bucket_name" {
-  default = "agha-gdr-mm"
-}
-
 ########################################
 
 variable "saml_provider" {

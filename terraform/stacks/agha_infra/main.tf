@@ -28,6 +28,11 @@ locals {
 # S3 buckets
 # Note: changes to public access block requires the temporary detachment of an SCP blocking it on org level
 
+# TF Note: Some TF arg for S3 are deprecated and the newer version is to break those arg into their own resource.
+#           If the argument is removed, TF will just forget what is currently deployed and requires to import it 
+#           when spawning the new resource
+#           Ref: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-4-upgrade#changes-to-s3-bucket-drift-detection
+
 # Staging bucket
 resource "aws_s3_bucket" "agha_gdr_staging_2" {
   bucket = var.agha_gdr_staging_2_bucket_name
@@ -100,36 +105,12 @@ resource "aws_s3_bucket" "agha_gdr_store_2" {
     enabled = true
   }
 
-  lifecycle_rule {
-    id      = "noncurrent_version_expiration"
-    enabled = true
-    noncurrent_version_expiration {
-      days = 90
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
   tags = merge(
     local.common_tags,
     {
       Name=var.agha_gdr_store_2_bucket_name
     }
   )
-
-  lifecycle_rule {
-    id      = "intelligent_tiering"
-    enabled = true
-
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
@@ -169,6 +150,33 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
 
     noncurrent_version_expiration {
       noncurrent_days = 1
+    }
+  }
+
+    rule {
+    status = "Enabled"
+    id = "intelligent_tiering"
+
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+
+  rule {
+    id = "noncurrent_version_expiration"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 90
     }
   }
 

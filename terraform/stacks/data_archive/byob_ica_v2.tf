@@ -98,72 +98,40 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline_data" {
 
 resource "aws_s3_bucket_policy" "pipeline_data" {
   bucket = aws_s3_bucket.pipeline_data.id
-  policy = data.aws_iam_policy_document.prod_ro_access.json
+  policy = data.aws_iam_policy_document.pipeline_data.json
 }
 
-data "aws_iam_policy_document" "prod_ro_access" {
+data "aws_iam_policy_document" "pipeline_data" {
   statement {
-	  sid = "prod_ro_access"
+	  sid = "prod_lo_access"
     principals {
       type        = "AWS"
       identifiers = ["472057503814"]
     }
     actions = [
       "s3:List*",
-      "s3:Get*",
+      "s3:GetBucketLocation",
     ]
     resources = [
       aws_s3_bucket.pipeline_data.arn,
       "${aws_s3_bucket.pipeline_data.arn}/*",
     ]
   }
-}
-data "aws_iam_policy_document" "prod_ro_access" {
   statement {
-    sid = "basic_access_for_prod"
+	  sid = "icav2_cross_account_access"
     principals {
       type        = "AWS"
-      identifiers = ["472057503814"]
+      identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
     }
     actions = [
-      "s3:ListBucket",
-      "s3:GetBucketLocation"
-    ]
-    resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}"
-    ]
-  }
-
-  statement {
-    sid = "icav2_production_ro_access_for_prod"
-    principals {
-      type        = "AWS"
-      identifiers = ["472057503814"]
-    }
-    actions = [
-      "s3:List*",
+      "s3:PutObject",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
       "s3:GetObject"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/${icav2_prod_project_prefix}*"
-    ]
-  }
-
-  statement {
-    sid = "oa_write_access_for_prod"
-    # this should be split into r/o for general use
-    # and r/w specifically to OncoAnalyser (roles?)
-    principals {
-      type        = "AWS"
-      identifiers = ["472057503814"]
-    }
-    actions = [
-      "s3:List*",
-      "s3:GetObject",
-      "s3:PutObject"
-    ]
-    resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/${oa_prod_prefix}*"
+      aws_s3_bucket.pipeline_data.arn,
+      "${aws_s3_bucket.pipeline_data.arn}/*",
     ]
   }
 }
@@ -217,7 +185,9 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:PutBucketNotification",
       "s3:ListBucket",
       "s3:GetBucketNotification",
-      "s3:GetBucketLocation"
+      "s3:GetBucketLocation",
+      "s3:ListBucketVersions",
+      "s3:GetBucketVersioning"
     ]
     resources = [
       "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}"
@@ -229,7 +199,10 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:PutObject",
       "s3:GetObject",
       "s3:RestoreObject",
-      "s3:DeleteObject"
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+      "s3:ListObjectVersions",
+      "s3:GetObjectVersion"
     ]
     resources = [
       "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/*"

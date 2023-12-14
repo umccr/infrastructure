@@ -4,12 +4,14 @@
 locals {
   # The bucket holding all "active" production data
   pipeline_data_bucket_name = "${data.aws_caller_identity.current.account_id}-pipeline-cache"
+  # prefix for the BYOB data in ICAv2
+  icav2_prefix = "byob-icav2/"
   # prefix for the "production" project in ICAv2
-  icav2_prod_project_prefix = "byob-icav2/production/"
+  icav2_prod_project_prefix = "${local.icav2_prefix}production/"
   # prefix for the "staging" project in ICAv2
-  icav2_stg_project_prefix = "byob-icav2/staging/"
+  icav2_stg_project_prefix = "${local.icav2_prefix}staging/"
   # prefix for the "validation-data" project in ICAv2
-  icav2_val_project_prefix = "byob-icav2/validation-data/"
+  icav2_val_project_prefix = "${local.icav2_prefix}validation-data/"
   # prefix for oncoanalyser pipelines
   oa_prod_prefix = "oncoanalyser/production/"
 }
@@ -67,31 +69,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline_data" {
   }
 
   rule {
-    id = "prod_data_rule"
+    id = "icav2_data_it_rule"
     status = "Enabled"
     filter {
-      prefix = "${local.icav2_prod_project_prefix}"
+      prefix = "${local.icav2_prefix}"
     }
     transition {
       days          = 0
       storage_class = "INTELLIGENT_TIERING"
-    }
-  }
-
-  rule {
-    id = "staging_data_rule"
-    status = "Enabled"
-    # OZ_IA has minimum storage time of 30 days
-    # minimum billable object size of 128 KB
-    filter {
-      and {
-        prefix = "${local.icav2_stg_project_prefix}"
-        object_size_greater_than = 128 * 1024
-      }
-    }
-    transition {
-      days          = 0
-      storage_class = "ONEZONE_IA"
     }
   }
 }
@@ -154,6 +139,7 @@ resource "aws_s3_bucket_cors_configuration" "pipeline_data" {
 ################################################################################
 # BYOB IAM User for ICAv2
 # ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# NOTE: manipulating IAM user/groups in UoM accounts requires Owner access
 
 resource "aws_iam_user" "icav2_pipeline_data_admin" {
   name = "icav2_pipeline_data_admin"

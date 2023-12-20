@@ -2,7 +2,7 @@
 // Should be attached to the UMCCR_Library_Tracking_MetaData Google Spreadsheet
 
 var CURRENT_YEAR = '2022'
-var YEARS = ['2019', '2020', '2021', '2022', '2023', '2018', '2017'];  // make sure sheets with new data are listed last!
+var YEARS = ['2019', '2020', '2021', '2022', '2023', '2018', '2017', '2024'];  // make sure sheets with new data are listed last!
 var SBJ_ID_PREFIX = "SBJ"; // subject ID prefix (before zero filled running number)
 var SBJ_ID_INT_LEN = 5;    // length of the integer part of subject ID (used for zero filling)
 var SBJ_COL_IDX = 0;

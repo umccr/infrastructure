@@ -8,7 +8,7 @@ locals {
   tso_ctdna_tumor_only_wfl_version = {
     dev  = "1.2.0--1.0.0"
     prod = "1.2.0--1.0.0--3473aed"
-    stg  = "1.2.0--1.0.0--3473aed"
+    stg  = "1.2.0--1.0.0--e2eeccc"
   }
 
   tso_ctdna_tumor_only_wfl_input = {

@@ -1,0 +1,3 @@
+mypy-boto3-secretsmanager
+mypy-boto3-ssm
+mypy-boto3-iam

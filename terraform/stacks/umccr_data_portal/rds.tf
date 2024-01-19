@@ -38,7 +38,7 @@ resource "aws_rds_cluster" "db" {
   # Engine & Mode. See https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBEngineVersions.html
   engine              = "aurora-mysql"
   engine_mode         = "provisioned"
-  engine_version      = "8.0.mysql_aurora.3.02.2"
+  engine_version      = "8.0.mysql_aurora.3.04.1"
   skip_final_snapshot = true
 
   database_name   = local.stack_name_us
@@ -73,6 +73,7 @@ resource "aws_rds_cluster_instance" "db_instance" {
 
   db_subnet_group_name = aws_rds_cluster.db.db_subnet_group_name
   publicly_accessible  = false
+  monitoring_interval  = var.rds_monitoring_interval[terraform.workspace]
 
   tags = merge(local.default_tags)
 }

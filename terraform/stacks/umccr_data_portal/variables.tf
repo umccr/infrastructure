@@ -93,6 +93,19 @@ variable "rds_max_capacity" {
   description = "The maximum capacity in Aurora Capacity Units (ACUs)"
 }
 
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_cluster_instance#monitoring_interval
+# Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance.
+# To disable collecting Enhanced Monitoring metrics, specify 0.
+# The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60.
+variable "rds_monitoring_interval" {
+  default = {
+    prod = 60
+    dev  = 0
+    stg  = 0
+  }
+  description = "RDS Aurora instance enhanced monitoring interval"
+}
+
 variable "rds_backup_retention_period" {
   default = {
     prod = 7

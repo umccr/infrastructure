@@ -29,7 +29,7 @@ resource "aws_cloudformation_stack" "CDKToolkit" {
   parameters = {
     CloudFormationExecutionPolicies = "arn:aws:iam::aws:policy/AdministratorAccess"  # TODO perhaps further refinement, see README > Trello card
     FileAssetsBucketKmsKeyId        = "AWS_MANAGED_KEY"
-    PublicAccessBlockConfiguration  = true
+    PublicAccessBlockConfiguration  = false  # See https://github.com/aws/aws-cdk/issues/8724 and https://unimelb.slack.com/archives/C05A22M4B4L/p1693437379860939
     // trust the toolchain account for CDK pipeline deployments
     TrustedAccounts                 = "442639098081"
     UseExamplePermissionsBoundary   = false

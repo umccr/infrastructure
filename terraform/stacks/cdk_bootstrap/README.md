@@ -1,4 +1,10 @@
-# CDK Bootstrap
+# CDK Bootstrap (DEPRECATED)
+
+> !!! THIS STACK IS DEPRECATED AND NO LONGER USE. SEE [aws_bootstrap](../../../scripts/aws_bootstrap) !!!
+> THIS STACK IS SCHEDULED TO BE RECYCLED AT SOME POINT... ALL TF WORKSPACE AND STATE HAVE BEEN DETACHED AND WIPED.
+
+
+---
 
 See story https://trello.com/c/jn56wL6f
 

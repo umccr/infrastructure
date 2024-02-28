@@ -14,6 +14,7 @@ resource "aws_sqs_queue" "notification_queue" {
   content_based_deduplication = true
   delay_seconds = 5
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -31,6 +32,7 @@ resource "aws_sqs_queue" "dragen_wgs_qc_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -48,6 +50,7 @@ resource "aws_sqs_queue" "dragen_tso_ctdna_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -65,6 +68,7 @@ resource "aws_sqs_queue" "tn_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -82,6 +86,7 @@ resource "aws_sqs_queue" "dragen_wts_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -99,6 +104,7 @@ resource "aws_sqs_queue" "umccrise_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -116,6 +122,7 @@ resource "aws_sqs_queue" "rnasum_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 

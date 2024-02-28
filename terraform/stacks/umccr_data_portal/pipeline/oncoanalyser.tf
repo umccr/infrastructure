@@ -51,6 +51,7 @@ resource "aws_sqs_queue" "star_alignment_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -68,6 +69,7 @@ resource "aws_sqs_queue" "oncoanalyser_wts_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -85,6 +87,7 @@ resource "aws_sqs_queue" "oncoanalyser_wgs_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -102,6 +105,7 @@ resource "aws_sqs_queue" "oncoanalyser_wgts_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -119,6 +123,7 @@ resource "aws_sqs_queue" "sash_queue" {
   fifo_queue = true
   content_based_deduplication = true
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 

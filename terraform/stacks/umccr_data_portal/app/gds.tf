@@ -4,6 +4,7 @@
 resource "aws_sqs_queue" "ica_gds_event_dlq" {
   name = "${local.stack_name_dash}-ica-gds-event-dlq"
   message_retention_seconds = 1209600
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -18,6 +19,7 @@ resource "aws_sqs_queue" "ica_gds_event_queue" {
     maxReceiveCount = 3
   })
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled = true
 
   tags = merge(local.default_tags)
 }

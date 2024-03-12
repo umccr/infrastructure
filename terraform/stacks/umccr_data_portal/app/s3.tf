@@ -43,6 +43,7 @@ data "aws_s3_bucket" "s3_oncoanalyser_bucket" {
 resource "aws_sqs_queue" "s3_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-dlq"
   message_retention_seconds = 1209600
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -61,7 +62,7 @@ resource "aws_sqs_queue" "s3_event_queue" {
     maxReceiveCount = 20
   })
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -107,6 +108,8 @@ resource "aws_s3_bucket_notification" "oncoanalyser_notification" {
 
     filter_prefix = "analysis_data/"
   }
+
+  eventbridge = true
 }
 
 resource "aws_cloudwatch_metric_alarm" "s3_event_sqs_dlq_alarm" {

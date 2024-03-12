@@ -69,6 +69,7 @@ data "aws_sns_topic" "chatbot_topic" {
 resource "aws_sqs_queue" "iap_ens_event_dlq" {
   name = "${local.stack_name_dash}-${terraform.workspace}-iap-ens-event-dlq"
   message_retention_seconds = 1209600
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -83,7 +84,7 @@ resource "aws_sqs_queue" "iap_ens_event_queue" {
     maxReceiveCount = 3
   })
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
-
+  sqs_managed_sse_enabled = true
   tags = merge(local.default_tags)
 }
 
@@ -121,6 +122,7 @@ resource "aws_cloudwatch_metric_alarm" "ica_ens_event_sqs_dlq_alarm" {
 resource "aws_sqs_queue" "batch_event_dlq" {
   name                      = "${local.stack_name_dash}-batch-event-dlq"
   message_retention_seconds = 1209600
+  sqs_managed_sse_enabled   = true
   tags                      = merge(local.default_tags)
 }
 
@@ -136,6 +138,7 @@ resource "aws_sqs_queue" "batch_event_queue" {
   })
 
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
+  sqs_managed_sse_enabled    = true
   tags                       = merge(local.default_tags)
 }
 

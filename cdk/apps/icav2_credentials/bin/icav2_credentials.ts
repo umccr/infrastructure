@@ -24,6 +24,7 @@ new Icav2CredentialsStack(
     {
         icav2_base_url: ICAV2_BASE_URL,
         key_name: "umccr-test-workflow-deployment-localstack",
+        key_ssm_path: "/icav2/workflow-deployment-role-localstack",
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
         github_repos: [
@@ -33,23 +34,44 @@ new Icav2CredentialsStack(
         env: {
             account: LOCALSTACK_ACCOUNT_ID,
             region: LOCAL_REGION
-        },
-
+        }
     }
 );
 
 new Icav2CredentialsStack(
     app,
-    `${CDK_APP_NAME}-umccr-test-pipelines-dev`,
+    `${CDK_APP_NAME}-umccr-prod-trial-dev`,
     {
         icav2_base_url: ICAV2_BASE_URL,
-        key_name: `${CDK_APP_NAME}-umccr-test-pipelines`,
+        key_name: `${CDK_APP_NAME}-umccr-service-user-trial`,
+        key_ssm_path: "/icav2/umccr-prod/service-user-trial-jwt-token-secret-arn",
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
         github_repos: [
             "repo:umccr/cwl-ica:*"
         ],
-        github_role_name: `${CDK_APP_NAME}-umccr-test-pipelines-deployment-role`,
+        github_role_name: "gh-service-user-trial",
+        env: {
+            account: DEVELOPMENT_ACCOUNT_ID,
+            region: DEFAULT_REGION
+        },
+    }
+);
+
+
+new Icav2CredentialsStack(
+    app,
+    `${CDK_APP_NAME}-umccr-prod-pipelines-dev`,
+    {
+        icav2_base_url: ICAV2_BASE_URL,
+        key_name: `${CDK_APP_NAME}-umccr-prod-pipelines`,
+        key_ssm_path: "/icav2/umccr-prod/service-pipelines-jwt-token-secret-arn",
+        slack_host_ssm_name: SLACK_HOST_SSM_NAME,
+        slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
+        github_repos: [
+            "repo:umccr/cwl-ica:*"
+        ],
+        github_role_name: `${CDK_APP_NAME}-umccr-prod-pipelines-deployment-role`,
         env: {
             account: DEVELOPMENT_ACCOUNT_ID,
             region: DEFAULT_REGION
@@ -62,7 +84,8 @@ new Icav2CredentialsStack(
     `${CDK_APP_NAME}-umccr-test-staging-dev`,
     {
         icav2_base_url: ICAV2_BASE_URL,
-        key_name: `${CDK_APP_NAME}-umccr-test-staging`,
+        key_name: `${CDK_APP_NAME}-umccr-prod-staging`,
+        key_ssm_path: "/icav2/umccr-prod/service-staging-jwt-token-secret-arn",
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
         github_repos: [],
@@ -79,7 +102,8 @@ new Icav2CredentialsStack(
     `${CDK_APP_NAME}-umccr-test-production-dev`,
     {
         icav2_base_url: ICAV2_BASE_URL,
-        key_name: `${CDK_APP_NAME}-umccr-test-production`,
+        key_name: `${CDK_APP_NAME}-umccr-prod-production`,
+        key_ssm_path: "/icav2/umccr-prod/service-production-jwt-token-secret-arn",
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
         github_repos: [],

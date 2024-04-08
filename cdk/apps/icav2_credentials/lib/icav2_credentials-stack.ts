@@ -15,6 +15,7 @@ import {GITHUB_DOMAIN} from "../bin/icav2_credentials"
 interface Icav2CredentialsStackProps extends StackProps {
     icav2_base_url: string,
     key_name: string,
+    key_ssm_path: string,
     slack_host_ssm_name: string,
     slack_webhook_ssm_name: string,
     github_repos?: string[],
@@ -23,7 +24,6 @@ interface Icav2CredentialsStackProps extends StackProps {
         account: string
         region: string
     },
-
 }
 
 export class Icav2CredentialsStack extends Stack {
@@ -67,6 +67,12 @@ export class Icav2CredentialsStack extends Stack {
             jwt_secret,
             this.props.github_repos,
             this.props.github_role_name
+        )
+
+        // Add SSM Parameter to link to JWT path
+        this.create_ssm_parameter_for_jwt_secret_arn(
+            jwt_secret,
+            this.props.key_ssm_path
         )
 
     }
@@ -319,6 +325,19 @@ export class Icav2CredentialsStack extends Stack {
                     ]
                 }
             )
+        )
+    }
+
+    private create_ssm_parameter_for_jwt_secret_arn(
+        secret: Secret,
+        key_ssm_path?: string,
+    ) {
+        const ssm_parameter = new StringParameter(
+            this, 'jwt_secret_arn_ssm_path',
+            {
+                stringValue: secret.secretArn,
+                parameterName: key_ssm_path
+            }
         )
     }
 }

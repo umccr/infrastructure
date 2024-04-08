@@ -155,6 +155,9 @@ class Secrets(Construct):
             env["ICA_PLATFORM_VERSION"] = "V2"
         else:  # V1
             env["ICA_PLATFORM_VERSION"] = "V1"
+            if not project_ids:
+                raise Exception("No project_ids provided for a V1 rotator")
+
             if isinstance(project_ids, List):
                 env["PROJECT_IDS"] = " ".join(project_ids)
             else:
@@ -270,7 +273,7 @@ class Secrets(Construct):
             secret: secretsmanager.Secret,
             github_repositories: Optional[List[str]],
             role_name: Optional[str],
-    ):
+    ) -> None:
         """
         Given a list of GitHub repositories, allow this secret to be accessed by the repo
         :param secret: The secretsmanager object that will shared the role will have access to the value of

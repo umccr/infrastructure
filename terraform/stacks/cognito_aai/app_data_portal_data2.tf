@@ -47,8 +47,26 @@ resource "aws_cognito_user_pool_client" "data2_client" {
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
+  explicit_auth_flows                  = [
+    "ALLOW_CUSTOM_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH"
+  ]
 
-  id_token_validity = 24
+  access_token_validity  = 60     # minutes (cognito default)
+  id_token_validity      = 1440   # minutes (we bump this to max allow value)
+  refresh_token_validity = 30     # 30 days (cognito default)
+
+  # NOTE:
+  # https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_TokenValidityUnitsType.html
+  # Though, it says `hours` is avail in the API doc^^ but the actual allow unit type inside the Cognito Console
+  # are `minutes` and `days` only for some reason.
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
 
   # Need to explicitly specify this dependency
   depends_on = [aws_cognito_identity_provider.identity_provider]

@@ -1,7 +1,7 @@
 import os
 from typing import Any
 
-from notify_slack import send_secrets_event_to_slack
+from .notify_slack import send_secrets_event_to_slack
 
 
 def main(ev: Any, _: Any) -> Any:

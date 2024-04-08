@@ -1,14 +1,15 @@
-from typing import Any, List, Optional, Dict
+from typing import List, Optional
 
-from aws_cdk import core as cdk
+from constructs import Construct
+from aws_cdk import App, Stack, Stage
 
 from secrets.infrastructure import Secrets
 
 
-class IcaCredentialsDeployment(cdk.Stage):
+class IcaCredentialsDeployment(Stage):
     def __init__(
         self,
-        scope: cdk.Construct,
+        scope: Construct,
         id_: str,
         data_project: Optional[str],
         workflow_projects: Optional[List[str]],
@@ -34,7 +35,7 @@ class IcaCredentialsDeployment(cdk.Stage):
         """
         super().__init__(scope, id_, **kwargs)
 
-        stateful = cdk.Stack(self, "stack")
+        stateful = Stack(self, "stack")
 
         # this name becomes the prefix of our secrets so we slip in the word ICA to make it
         # obvious when someone sees them that they are associated with ICA

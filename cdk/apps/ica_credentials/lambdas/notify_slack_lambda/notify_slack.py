@@ -21,7 +21,7 @@ def get_aws_account_name(id: str) -> str:
         return id
 
 
-def get_ssm_param_value(name: str) -> str:
+def get_ssm_param_value(name: str) -> Any:
     """
     Fetch the parameter with the given name from SSM Parameter Store.
     """
@@ -33,8 +33,8 @@ def get_ssm_param_value(name: str) -> str:
 
 
 def call_slack_webhook(
-    slack_host_ssm_name: str, slack_webhook_ssm_name: str, message: any
-):
+    slack_host_ssm_name: str, slack_webhook_ssm_name: str, message: Any
+) -> int:
     slack_host = get_ssm_param_value(slack_host_ssm_name)
     slack_webhook_endpoint = "/services/" + get_ssm_param_value(slack_webhook_ssm_name)
 

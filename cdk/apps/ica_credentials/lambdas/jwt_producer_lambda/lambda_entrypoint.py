@@ -5,7 +5,7 @@ from typing import Any
 
 import boto3
 
-from secret_manager_common import (
+from .secret_manager_common import (
     get_master_api_key,
     do_finish_secret,
     do_create_secret,
@@ -47,10 +47,10 @@ def main(ev: Any, _: Any) -> Any:
     project_ids = None
 
     if is_ica_v2_platform := os.environ["ICA_PLATFORM_VERSION"] == "V2":
-        from ica_common import api_key_to_jwt_for_project_v2 as api_key_to_jwt_for_project
+        from .ica_common import api_key_to_jwt_for_project_v2 as api_key_to_jwt_for_project
     else:  # V1
         # We import the api_key_to_jwt_for_project method for v1
-        from ica_common import api_key_to_jwt_for_project_v1 as api_key_to_jwt_for_project
+        from .ica_common import api_key_to_jwt_for_project_v1 as api_key_to_jwt_for_project
 
         # we operate in two basic modes - in one we have a single project id and generate a single JWT for it
         # when given multiple ids however, ICA doesn't allow a combined JWT - so instead we generate a dictionary
@@ -90,12 +90,12 @@ def main(ev: Any, _: Any) -> Any:
 
         def exchange_multi() -> str:
             result = {}
-            for p in project_ids:
+            for p in project_ids or []:
                 result[p] = api_key_to_jwt_for_project(ica_base_url, master_val, p)
             return json.dumps(result)
 
         def exchange_single() -> str:
-            return api_key_to_jwt_for_project(ica_base_url, master_val, project_id)
+            return api_key_to_jwt_for_project(ica_base_url, master_val, str(project_id))
 
         do_create_secret(
             sm_client, arn, tok,

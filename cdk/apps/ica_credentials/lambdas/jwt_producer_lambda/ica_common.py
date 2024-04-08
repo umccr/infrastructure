@@ -14,7 +14,7 @@ def api_key_to_jwt_for_project_v1(ica_base_url: str, api_key: str, cid: str) -> 
                                       output_attribute="access_token")
 
 
-def api_key_to_jwt_for_project_v2(ica_base_url: str, api_key: str) -> str:
+def api_key_to_jwt_for_project_v2(ica_base_url: str, api_key: str, cid: str) -> str:
     return api_key_to_jwt_for_project(url=f"{ica_base_url}/ica/rest/api/tokens",
                                       accept_value="application/vnd.illumina.v3+json",
                                       encoded_params=None,
@@ -62,7 +62,7 @@ def api_key_to_jwt_for_project(url: str, accept_value: str, encoded_params: Opti
 
         if output_attribute in body_as_json:
             # success
-            return body_as_json[output_attribute]
+            return str(body_as_json[output_attribute])
 
     # fall through to failure
     print(f"Failed ICA token exchange POST to '{url}'")

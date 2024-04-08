@@ -1,29 +1,29 @@
 import os
 from typing import List, Tuple, Union, Optional
 
+from constructs import Construct
+from aws_cdk import App, Environment, Duration
+
 from aws_cdk import (
-    core as cdk,
     aws_lambda as lambda_,
-    aws_iam as iam,
     aws_secretsmanager as secretsmanager,
+    aws_events as events,
+    aws_events_targets as events_targets,
+    aws_iam as iam,
 )
-from aws_cdk.aws_events import Rule
-from aws_cdk.aws_events_targets import LambdaFunction
-from aws_cdk.aws_iam import PolicyStatement, Role, FederatedPrincipal
-from aws_cdk.core import Duration
 import logging
 
 ROTATION_DAYS = 1
 
 
-class Secrets(cdk.Construct):
+class Secrets(Construct):
     """
     A construct that maintains secrets for ICA and periodically generates fresh JWT secrets.
     """
 
     def __init__(
             self,
-            scope: cdk.Construct,
+            scope: Construct,
             id_: str,
             data_project: Optional[str],
             workflow_projects: Optional[List[str]],
@@ -32,7 +32,7 @@ class Secrets(cdk.Construct):
             slack_webhook_ssm_name: str,
             github_repos: Optional[List[str]],
             github_role_name: str,
-            cdk_env: cdk.Environment
+            cdk_env: Environment
     ):
         super().__init__(scope, id_)
 
@@ -144,7 +144,7 @@ class Secrets(cdk.Construct):
             the JWT secret
         """
         dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, "runtime/jwt_producer")
+        filename = os.path.join(dirname, "../../lambdas/jwt_producer_lambda")
 
         env = {
             "MASTER_ARN": master_secret.secret_arn,
@@ -165,7 +165,7 @@ class Secrets(cdk.Construct):
         jwt_producer = lambda_.Function(
             self,
             "JwtProduce" + key_name,
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_11,    # type: ignore
             code=lambda_.AssetCode(filename),
             handler="lambda_entrypoint.main",
             timeout=Duration.minutes(1),
@@ -210,7 +210,7 @@ class Secrets(cdk.Construct):
             a lambda event handler
         """
         dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, "runtime/notify_slack")
+        filename = os.path.join(dirname, "../../lambdas/notify_slack_lambda")
 
         env = {
             # for the moment we don't parametrise at the CDK level.. only needed if this is liable to change
@@ -221,14 +221,14 @@ class Secrets(cdk.Construct):
         notifier = lambda_.Function(
             self,
             "NotifySlack",
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_11,    # type: ignore
             code=lambda_.AssetCode(filename),
             handler="lambda_entrypoint.main",
             timeout=Duration.minutes(1),
             environment=env,
         )
 
-        get_ssm_policy = PolicyStatement()
+        get_ssm_policy = iam.PolicyStatement()
 
         # there is some weirdness around SSM parameter ARN formation and leading slashes.. can't be bothered
         # looking into right now - as the ones we want to use do a have a leading slash
@@ -245,7 +245,7 @@ class Secrets(cdk.Construct):
         notifier.add_to_role_policy(get_ssm_policy)
 
         # we want a rule that traps all the rotation failures for our JWT secrets
-        rule = Rule(
+        rule = events.Rule(
             self,
             "NotifySlackRule",
         )
@@ -261,7 +261,7 @@ class Secrets(cdk.Construct):
             },
         )
 
-        rule.add_target(LambdaFunction(notifier))
+        rule.add_target(events_targets.LambdaFunction(notifier))
 
         return notifier
 
@@ -290,10 +290,10 @@ class Secrets(cdk.Construct):
             return
 
         # Set role
-        gh_action_role = Role(
+        gh_action_role = iam.Role(
             self,
             role_name,
-            assumed_by=FederatedPrincipal(
+            assumed_by=iam.FederatedPrincipal(
                 f"arn:aws:iam::{account_id}:oidc-provider/token.actions.githubusercontent.com",
                 {
                     "StringEquals": {
@@ -309,7 +309,7 @@ class Secrets(cdk.Construct):
 
         # Add permissions to role
         gh_action_role.add_to_policy(
-            PolicyStatement(
+            iam.PolicyStatement(
                 actions=[
                     "secretsmanager:GetSecretValue",
                 ],

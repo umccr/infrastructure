@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from constructs import Construct
 from aws_cdk import App, Stack, Stage
@@ -17,8 +17,8 @@ class IcaCredentialsDeployment(Stage):
         slack_host_ssm_name: str,
         slack_webhook_ssm_name: str,
         github_role_name: Optional[str] = None,
-        github_repos: Optional[List] = None,
-        **kwargs,
+        github_repos: Optional[List[str]] = None,
+        **kwargs: Any,
     ):
         """
         Represents the deployment of our stack(s) to a particular environment with a particular set of settings.
@@ -49,5 +49,4 @@ class IcaCredentialsDeployment(Stage):
             slack_webhook_ssm_name,
             github_role_name=github_role_name,
             github_repos=github_repos,
-            cdk_env=kwargs.get("env")
         )

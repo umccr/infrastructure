@@ -2,16 +2,16 @@ EXECUTABLES = python3 uv npx
 K := $(foreach exec,$(EXECUTABLES), $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
 
 #
-# by default we do everything to set up for running any of the backends
+# by default we do everything to set up for running python and check the source is good
 #
 
-all: setup-python-cdk
+all: setup-python-cdk typecheck
 
 setup: setup-python-cdk
 
 setup-python-cdk: .venv/install.touch
 
-.PHONY: all build setup setup-python-cdk
+.PHONY: all setup setup-python-cdk
 
 #
 # the actual targets that should be targeted for running the various cdk steps
@@ -24,7 +24,7 @@ undeploy-cdk-dev: setup-python-cdk typecheck
 	. .venv/bin/activate; npx --yes cdk undeploy ica-credentials-dev/stack
 
 typecheck:
-	. .venv/bin/activate; mypy lambdas/notify_slack_lambda lambdas/jwt_producer_lambda
+	. .venv/bin/activate; mypy lambdas/notify_slack_lambda lambdas/jwt_producer_lambda cdk
 
 .PHONY: deploy-cdk undeploy-cdk typecheck
 
@@ -38,6 +38,7 @@ clean-python-cdk:
 	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
 	rm -rf .venv/
 	rm -rf cdk.out/
+	rm -rf .mypy_cache/
 
 .PHONY: clean clean-python-cdk
 

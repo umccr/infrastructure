@@ -1,8 +1,8 @@
 import os
-from typing import List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, Mapping, Dict
 
 from constructs import Construct
-from aws_cdk import App, Environment, Duration
+from aws_cdk import App, Environment, Duration, Stack
 
 from aws_cdk import (
     aws_lambda as lambda_,
@@ -31,8 +31,7 @@ class Secrets(Construct):
             slack_host_ssm_name: str,
             slack_webhook_ssm_name: str,
             github_repos: Optional[List[str]],
-            github_role_name: str,
-            cdk_env: Environment
+            github_role_name: Optional[str],
     ):
         super().__init__(scope, id_)
 
@@ -60,7 +59,6 @@ class Secrets(Construct):
             jwt_workflow_secret,
             github_repos,
             github_role_name,
-            cdk_env.account
         )
 
     def create_master_secret(self) -> secretsmanager.Secret:
@@ -146,7 +144,7 @@ class Secrets(Construct):
         dirname = os.path.dirname(__file__)
         filename = os.path.join(dirname, "../../lambdas/jwt_producer_lambda")
 
-        env = {
+        env: dict[str, str] = {
             "MASTER_ARN": master_secret.secret_arn,
             "ICA_BASE_URL": ica_base_url,
         }
@@ -165,7 +163,8 @@ class Secrets(Construct):
         jwt_producer = lambda_.Function(
             self,
             "JwtProduce" + key_name,
-            runtime=lambda_.Runtime.PYTHON_3_11,    # type: ignore
+            # yes this is a "got ()->Runtime" warning in PyCharm and no - it is not correct
+            runtime=lambda_.Runtime.PYTHON_3_11,
             code=lambda_.AssetCode(filename),
             handler="lambda_entrypoint.main",
             timeout=Duration.minutes(1),
@@ -221,7 +220,8 @@ class Secrets(Construct):
         notifier = lambda_.Function(
             self,
             "NotifySlack",
-            runtime=lambda_.Runtime.PYTHON_3_11,    # type: ignore
+            # yes this is a "got ()->Runtime" warning in PyCharm and no - it is not correct
+            runtime=lambda_.Runtime.PYTHON_3_11,
             code=lambda_.AssetCode(filename),
             handler="lambda_entrypoint.main",
             timeout=Duration.minutes(1),
@@ -270,14 +270,12 @@ class Secrets(Construct):
             secret: secretsmanager.Secret,
             github_repositories: Optional[List[str]],
             role_name: Optional[str],
-            account_id: Optional[str]
     ):
         """
         Given a list of GitHub repositories, allow this secret to be accessed by the repo
         :param secret: The secretsmanager object that will shared the role will have access to the value of
         :param github_repositories: A list of GitHub repositories that will be given access to the secret
         :param role_name: The name of the role that will be created and given access to the secret
-        :param account_id: The AWS account ID of the account that the role will be created in
         :return:
         """
         # Check inputs
@@ -294,7 +292,7 @@ class Secrets(Construct):
             self,
             role_name,
             assumed_by=iam.FederatedPrincipal(
-                f"arn:aws:iam::{account_id}:oidc-provider/token.actions.githubusercontent.com",
+                f"arn:aws:iam::" + Stack.of(self).account + ":oidc-provider/token.actions.githubusercontent.com",
                 {
                     "StringEquals": {
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"

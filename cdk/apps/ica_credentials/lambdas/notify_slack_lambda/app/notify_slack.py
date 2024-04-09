@@ -1,24 +1,30 @@
-import os
-import json
+from json import dumps
+from http.client import HTTPSConnection
 from typing import Any
 
 import boto3
-import http.client
 
 
-def get_aws_account_name(id: str) -> str:
-    if id == "472057503814":
+def get_aws_account_name(account_id: str) -> str:
+    """
+    Get a printable AWS account name for our known accounts ids.
+
+    Args:
+        account_id:
+
+    Returns:
+        a printable AWS account name, or the account number
+    """
+    if account_id == "472057503814":
         return "prod"
-    elif id == "455634345446":
+    elif account_id == "455634345446":
         return "stg"
-    elif id == "843407916570":
+    elif account_id == "843407916570":
         return "dev"
-    elif id == "620123204273":
-        return "dev (old)"
-    elif id == "602836945884":
+    elif account_id == "602836945884":
         return "agha"
     else:
-        return id
+        return account_id
 
 
 def get_ssm_param_value(name: str) -> Any:
@@ -38,9 +44,9 @@ def call_slack_webhook(
     slack_host = get_ssm_param_value(slack_host_ssm_name)
     slack_webhook_endpoint = "/services/" + get_ssm_param_value(slack_webhook_ssm_name)
 
-    connection = http.client.HTTPSConnection(slack_host)
+    connection = HTTPSConnection(slack_host)
 
-    content = json.dumps(message)
+    content = dumps(message)
 
     print(
         f"Making HTTPS POST to '{slack_host}' and endpoint '{slack_webhook_endpoint}'"
@@ -59,50 +65,12 @@ def call_slack_webhook(
     return response.status
 
 
-def send_secrets_event_to_slack(
-    event: Any, slack_host_ssm_name: str, slack_webhook_ssm_name: str
-) -> None:
-    """
-    Print the details of a SecretsManager event to Slack.
-
-    Args:
-        event: the event we are logging to Slack
-        slack_host_ssm_name: the SSM parameter name that holds the hostname of the Slack hook
-        slack_webhook_ssm_name: the SSM parameter name that holds the secret id for our webhook
-    """
-    # Log the received event in CloudWatch
-    print(f"Received event: {json.dumps(event)}")
-
-    # we expect events of a defined format so if not matching we must abort
-    if event.get("source") != "aws.secretsmanager":
-        raise ValueError("Unexpected event format!")
-
-    print("Processing SecretsManager event...")
-
-    try:
-        if event.get("detail-type") == "AWS Service Event via CloudTrail":
-            response = call_slack_webhook(
-                slack_host_ssm_name,
-                slack_webhook_ssm_name,
-                event_as_slack_message(event),
-            )
-
-            print(f"Response status: {response}")
-
-            return
-
-        print("Ended up not printing any Slack message")
-
-    except Exception as e:
-        print(e)
-
-
 def event_as_slack_message(event: Any) -> Any:
     """
     Convert the given AWS event for Secrets Manager into a message packet we can send to Slack.
 
     Args:
-        event:
+        event: a rotation event
 
     Returns:
         a dictionary representing a message that can be posted to Slack
@@ -163,18 +131,56 @@ def event_as_slack_message(event: Any) -> Any:
     }
 
     if event_name == "RotationFailed":
-        msg[
-            "text"
-        ] = f"❌ Periodic JWT key generation *failed* in `{aws_account_name}` for secret `{secret_id}`"
+        msg["text"] = (
+            f"❌ Periodic JWT key generation *failed* in `{aws_account_name}` for secret `{secret_id}`"
+        )
 
     elif event_name == "RotationSucceeded":
-        msg[
-            "text"
-        ] = f"✅ Periodic JWT key generation *succeeded* in `{aws_account_name}` for secret `{secret_id}`"
+        msg["text"] = (
+            f"✅ Periodic JWT key generation *succeeded* in `{aws_account_name}` for secret `{secret_id}`"
+        )
 
     else:
-        msg[
-            "text"
-        ] = f"? Unknown event named `{event_name}` in `{aws_account_name}` for secret `{secret_id}`"
+        msg["text"] = (
+            f"? Unknown event named `{event_name}` in `{aws_account_name}` for secret `{secret_id}`"
+        )
 
     return msg
+
+
+def send_secrets_event_to_slack(
+    event: Any, slack_host_ssm_name: str, slack_webhook_ssm_name: str
+) -> None:
+    """
+    Print the details of a SecretsManager event to Slack.
+
+    Args:
+        event: the event we are logging to Slack
+        slack_host_ssm_name: the SSM parameter name that holds the hostname of the Slack hook
+        slack_webhook_ssm_name: the SSM parameter name that holds the secret id for our webhook
+    """
+    # Log the received event in CloudWatch
+    print(f"Received event: {dumps(event)}")
+
+    # we expect events of a defined format so if not matching we must abort
+    if event.get("source") != "aws.secretsmanager":
+        raise ValueError("Unexpected event format!")
+
+    print("Processing SecretsManager event...")
+
+    try:
+        if event.get("detail-type") == "AWS Service Event via CloudTrail":
+            response = call_slack_webhook(
+                slack_host_ssm_name,
+                slack_webhook_ssm_name,
+                event_as_slack_message(event),
+            )
+
+            print(f"Response status: {response}")
+
+            return
+
+        print("Ended up not printing any Slack message")
+
+    except Exception as e:
+        print(e)

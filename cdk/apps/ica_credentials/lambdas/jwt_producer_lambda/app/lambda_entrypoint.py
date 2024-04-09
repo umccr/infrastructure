@@ -47,10 +47,14 @@ def main(ev: Any, _: Any) -> Any:
     project_ids = None
 
     if is_ica_v2_platform := os.environ["ICA_PLATFORM_VERSION"] == "V2":
-        from .ica_common import api_key_to_jwt_for_project_v2 as api_key_to_jwt_for_project
+        from .ica_common import (
+            api_key_to_jwt_for_project_v2 as api_key_to_jwt_for_project,
+        )
     else:  # V1
         # We import the api_key_to_jwt_for_project method for v1
-        from .ica_common import api_key_to_jwt_for_project_v1 as api_key_to_jwt_for_project
+        from .ica_common import (
+            api_key_to_jwt_for_project_v1 as api_key_to_jwt_for_project,
+        )
 
         # we operate in two basic modes - in one we have a single project id and generate a single JWT for it
         # when given multiple ids however, ICA doesn't allow a combined JWT - so instead we generate a dictionary
@@ -98,9 +102,14 @@ def main(ev: Any, _: Any) -> Any:
             return api_key_to_jwt_for_project(ica_base_url, master_val, str(project_id))
 
         do_create_secret(
-            sm_client, arn, tok,
-            exchange_single if is_ica_v2_platform or project_id is not None
-            else exchange_multi
+            sm_client,
+            arn,
+            tok,
+            (
+                exchange_single
+                if is_ica_v2_platform or project_id is not None
+                else exchange_multi
+            ),
         )
 
         # JWTs are not immediately useful due to ICA clock skew and nbf claims

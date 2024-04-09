@@ -1,3 +1,12 @@
+# used for the CDK deployment part of the project
 aws-cdk-lib>=2.18.0
 constructs>=10.0.0
-boto3
+
+# used for the lambdas
+# we pin these two to match the versions natively in our Python lambda layer
+# (you should change these when the Python lambda version changes)
+# we do not bundle any requirements for our lambdas which is why it is important
+# the version matches what is already in the lambda
+boto3==1.34.42
+botocore==1.34.42
+urllib3==1.26.18

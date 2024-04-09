@@ -45,6 +45,7 @@ class IcaCredentialsDeployment(Stage):
             data_project,
             workflow_projects,
             ica_base_url,
+            "cron(0 4/12 * * ? *)",
             slack_host_ssm_name,
             slack_webhook_ssm_name,
             github_role_name=github_role_name,

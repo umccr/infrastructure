@@ -14,7 +14,7 @@ setup-python-cdk: .venv/install.touch
 .PHONY: all setup setup-python-cdk
 
 #
-# the actual targets that should be targeted for running the various cdk steps
+# the actual targets that should be targeted for running the various interesting activities
 #
 
 deploy-cdk-dev: setup-python-cdk typecheck
@@ -24,9 +24,14 @@ undeploy-cdk-dev: setup-python-cdk typecheck
 	. .venv/bin/activate; npx --yes cdk undeploy ica-credentials-dev/stack
 
 typecheck:
-	. .venv/bin/activate; mypy lambdas/notify_slack_lambda lambdas/jwt_producer_lambda cdk
+	. .venv/bin/activate; mypy lambdas/notify_slack_lambda/app
+	. .venv/bin/activate; mypy lambdas/jwt_producer_lambda/app
+	. .venv/bin/activate; mypy cdk
 
-.PHONY: deploy-cdk undeploy-cdk typecheck
+format:
+	. .venv/bin/activate; black .
+
+.PHONY: deploy-cdk undeploy-cdk typecheck format
 
 #
 # clean up working folders
@@ -47,7 +52,7 @@ clean-python-cdk:
 # track the existence of the virtual with the activate script - everything is essentially dependent on this
 # NOTE: the python version chosen here should match that chosen for lambdas in the CDK!
 .venv/bin/activate:
-	uv venv -p 3.11
+	uv venv -p 3.12
 
 requirements.txt: requirements.in
 	. .venv/bin/activate; uv pip compile requirements.in -o requirements.txt

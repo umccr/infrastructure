@@ -7,32 +7,42 @@ import urllib3
 
 # Two wrapper scripts for v1 and v2 platforms respectfully
 def api_key_to_jwt_for_project_v1(ica_base_url: str, api_key: str, cid: str) -> str:
-    return api_key_to_jwt_for_project(url=f"{ica_base_url}/v1/tokens",
-                                      accept_value="application/json",
-                                      encoded_params=urlencode({'cid': cid}),
-                                      api_key=api_key,
-                                      output_attribute="access_token")
+    return api_key_to_jwt_for_project(
+        url=f"{ica_base_url}/v1/tokens",
+        accept_value="application/json",
+        encoded_params=urlencode({"cid": cid}),
+        api_key=api_key,
+        output_attribute="access_token",
+    )
 
 
 def api_key_to_jwt_for_project_v2(ica_base_url: str, api_key: str, cid: str) -> str:
-    return api_key_to_jwt_for_project(url=f"{ica_base_url}/ica/rest/api/tokens",
-                                      accept_value="application/vnd.illumina.v3+json",
-                                      encoded_params=None,
-                                      api_key=api_key,
-                                      output_attribute="token")
+    return api_key_to_jwt_for_project(
+        url=f"{ica_base_url}/ica/rest/api/tokens",
+        accept_value="application/vnd.illumina.v3+json",
+        encoded_params=None,
+        api_key=api_key,
+        output_attribute="token",
+    )
 
 
-def api_key_to_jwt_for_project(url: str, accept_value: str, encoded_params: Optional[str], api_key: str, output_attribute: str) -> str:
+def api_key_to_jwt_for_project(
+    url: str,
+    accept_value: str,
+    encoded_params: Optional[str],
+    api_key: str,
+    output_attribute: str,
+) -> str:
     """
     Using the API key, exchanges it for a JWT that will have the API keys user permission
     *only* in the passed in project context.
 
     Args:
-        ica_base_url: the base URL for ICA
+        url: the base URL for ICA
         accept_value: Either 'application/json' or 'application/vnd.illumina.v3+json' for v1 or v2 respectfully
-        api_key: the API key for a user
         encoded_params: For v1 projects, is a project ID required? Or a tenant required for v2?
-        cid: the project id, for v1 projects only.
+        api_key: the API key for a user
+        output_attribute:
 
     Returns:
         a JWT access token

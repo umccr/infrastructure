@@ -1,8 +1,8 @@
 import os
-from typing import List, Tuple, Union, Optional, Mapping, Dict
+from typing import List, Tuple, Union, Optional, Mapping, Dict,  cast
 
 from constructs import Construct
-from aws_cdk import App, Environment, Duration, Stack
+from aws_cdk import App, Environment, Duration, Stack, Fn
 
 from aws_cdk import (
     aws_lambda as lambda_,
@@ -19,29 +19,42 @@ ROTATION_DAYS = 1
 class Secrets(Construct):
     """
     A construct that maintains secrets for ICA and periodically generates fresh JWT secrets.
+
+    Args:
+        scope:
+        id_:
+        data_project:
+        workflow_projects:
+        ica_base_url:
+        rotation_cron:
+        slack_host_ssm_name:
+        slack_webhook_ssm_name:
+        github_repos:
+        github_role_name:
     """
 
     def __init__(
-            self,
-            scope: Construct,
-            id_: str,
-            data_project: Optional[str],
-            workflow_projects: Optional[List[str]],
-            ica_base_url: str,
-            slack_host_ssm_name: str,
-            slack_webhook_ssm_name: str,
-            github_repos: Optional[List[str]],
-            github_role_name: Optional[str],
+        self,
+        scope: Construct,
+        id_: str,
+        data_project: Optional[str],
+        workflow_projects: Optional[List[str]],
+        ica_base_url: str,
+        rotation_cron: str,
+        slack_host_ssm_name: str,
+        slack_webhook_ssm_name: str,
+        github_repos: Optional[List[str]],
+        github_role_name: Optional[str],
     ):
         super().__init__(scope, id_)
 
         master = self.create_master_secret()
 
         jwt_portal_secret, jwt_portal_func = self.create_jwt_secret(
-            master, ica_base_url, id_ + "Portal", data_project
+            master, ica_base_url, id_ + "Portal", rotation_cron, data_project
         )
         jwt_workflow_secret, jwt_workflow_func = self.create_jwt_secret(
-            master, ica_base_url, id_ + "Workflow", workflow_projects
+            master, ica_base_url, id_ + "Workflow", rotation_cron, workflow_projects
         )
 
         # set the policy for the master secret to deny everyone except the rotators access
@@ -54,12 +67,13 @@ class Secrets(Construct):
             slack_webhook_ssm_name,
         )
 
-        # share the JWT secrets with the GitHub Actions repo
-        self.share_jwt_secret_with_github_actions_repo(
-            jwt_workflow_secret,
-            github_repos,
-            github_role_name,
-        )
+        # share the JWT secrets with the GitHub Actions repo if asked
+        if github_repos and github_role_name:
+            self.share_jwt_secret_with_github_actions_repo(
+                jwt_workflow_secret,
+                github_repos,
+                github_role_name,
+            )
 
     def create_master_secret(self) -> secretsmanager.Secret:
         """
@@ -81,9 +95,9 @@ class Secrets(Construct):
         return master_secret
 
     def add_deny_for_everyone_except(
-            self,
-            master_secret: secretsmanager.Secret,
-            producer_functions: List[lambda_.Function],
+        self,
+        master_secret: secretsmanager.Secret,
+        producer_functions: List[lambda_.Function],
     ) -> None:
         """
         Sets up the master secret resource policy so that everything *except* the given functions
@@ -121,11 +135,12 @@ class Secrets(Construct):
         )
 
     def create_jwt_secret(
-            self,
-            master_secret: secretsmanager.Secret,
-            ica_base_url: str,
-            key_name: str,
-            project_ids: Optional[Union[str, List[str]]],
+        self,
+        master_secret: secretsmanager.Secret,
+        ica_base_url: str,
+        key_name: str,
+        rotation_cron: str,
+        project_ids: Optional[Union[str, List[str]]],
     ) -> Tuple[secretsmanager.Secret, lambda_.Function]:
         """
         Create a JWT holding secret - that will use the master secret for JWT making - and which will have
@@ -135,6 +150,7 @@ class Secrets(Construct):
             master_secret: the master secret to read for the API key for JWT making
             ica_base_url: the base url of ICA to be passed on to the rotators
             key_name: a unique string that we use to name this JWT secret
+            rotation_cron: a cron expression for the rotation times of the secret (must follow Secrets cron rules)
             project_ids: *either* a single string or a list of string - the choice of type *will* affect
                          the resulting secret output i.e a string input will end up different to a list with one string!
 
@@ -155,7 +171,7 @@ class Secrets(Construct):
             env["ICA_PLATFORM_VERSION"] = "V2"
         else:  # V1
             env["ICA_PLATFORM_VERSION"] = "V1"
-            if not project_ids:
+            if project_ids is None:
                 raise Exception("No project_ids provided for a V1 rotator")
 
             if isinstance(project_ids, List):
@@ -167,9 +183,9 @@ class Secrets(Construct):
             self,
             "JwtProduce" + key_name,
             # yes this is a "got ()->Runtime" warning in PyCharm and no - it is not correct
-            runtime=lambda_.Runtime.PYTHON_3_11,
+            runtime=lambda_.Runtime.PYTHON_3_12,
             code=lambda_.AssetCode(filename),
-            handler="lambda_entrypoint.main",
+            handler="app.lambda_entrypoint.main",
             timeout=Duration.minutes(1),
             environment=env,
         )
@@ -186,20 +202,31 @@ class Secrets(Construct):
             description="JWT(s) providing access to ICA projects",
         )
 
-        # the rotation function that creates JWTs
-        jwt_secret.add_rotation_schedule(
+        # we need to drop into L1 construct world in order to specify rotations using cron expressions
+        # (this should be replaced as soon as the L2 constructs have Cron)
+
+        sched = jwt_secret.add_rotation_schedule(
             "JwtSecretRotation",
-            automatically_after=Duration.days(ROTATION_DAYS),
             rotation_lambda=jwt_producer,
+            # this duration will be replaced below with the actual desired cron expression
+            automatically_after=Duration.hours(4),
         )
+
+        if not sched.node.default_child:
+            raise Exception("The assumption of our use of L1 CDK is that there is a default child")
+
+        # make direct property changes to support cron
+        sched_cfn = cast(secretsmanager.CfnRotationSchedule, sched.node.default_child)
+        sched_cfn.add_property_override("RotationRules.ScheduleExpression", rotation_cron)
+        sched_cfn.add_property_deletion_override("RotationRules.AutomaticallyAfterDays")
 
         return jwt_secret, jwt_producer
 
     def create_event_handling(
-            self,
-            secrets: List[secretsmanager.Secret],
-            slack_host_ssm_name: str,
-            slack_webhook_ssm_name: str,
+        self,
+        secrets: List[secretsmanager.Secret],
+        slack_host_ssm_name: str,
+        slack_webhook_ssm_name: str,
     ) -> lambda_.Function:
         """
 
@@ -224,25 +251,29 @@ class Secrets(Construct):
             self,
             "NotifySlack",
             # yes this is a "got ()->Runtime" warning in PyCharm and no - it is not correct
-            runtime=lambda_.Runtime.PYTHON_3_11,
+            runtime=lambda_.Runtime.PYTHON_3_12,
             code=lambda_.AssetCode(filename),
-            handler="lambda_entrypoint.main",
+            handler="app.lambda_entrypoint.main",
             timeout=Duration.minutes(1),
             environment=env,
         )
 
         get_ssm_policy = iam.PolicyStatement()
 
-        # there is some weirdness around SSM parameter ARN formation and leading slashes.. can't be bothered
+        # there is some weirdness around SSM parameter ARN formation and leading slashes... can't be bothered
         # looking into right now - as the ones we want to use do a have a leading slash
         # but put in this exception in case
-        if not slack_webhook_ssm_name.startswith("/") or not slack_host_ssm_name.startswith("/"):
+        if not slack_webhook_ssm_name.startswith(
+            "/"
+        ) or not slack_host_ssm_name.startswith("/"):
             raise Exception("SSM parameters need to start with a leading slash")
 
         # see here - the *required* slash between parameter and the actual name uses the leading slash from the actual
-        # name itself.. which is wrong..
+        # name itself... which is wrong...
         get_ssm_policy.add_resources(f"arn:aws:ssm:*:*:parameter{slack_host_ssm_name}")
-        get_ssm_policy.add_resources(f"arn:aws:ssm:*:*:parameter{slack_webhook_ssm_name}")
+        get_ssm_policy.add_resources(
+            f"arn:aws:ssm:*:*:parameter{slack_webhook_ssm_name}"
+        )
         get_ssm_policy.add_actions("ssm:GetParameter")
 
         notifier.add_to_role_policy(get_ssm_policy)
@@ -269,13 +300,14 @@ class Secrets(Construct):
         return notifier
 
     def share_jwt_secret_with_github_actions_repo(
-            self,
-            secret: secretsmanager.Secret,
-            github_repositories: Optional[List[str]],
-            role_name: Optional[str],
+        self,
+        secret: secretsmanager.Secret,
+        github_repositories: List[str],
+        role_name: str,
     ) -> None:
         """
-        Given a list of GitHub repositories, allow this secret to be accessed by the repo
+        Given a list of GitHub repositories, allow this secret to be accessed by the repos.
+
         :param secret: The secretsmanager object that will shared the role will have access to the value of
         :param github_repositories: A list of GitHub repositories that will be given access to the secret
         :param role_name: The name of the role that will be created and given access to the secret
@@ -295,17 +327,19 @@ class Secrets(Construct):
             self,
             role_name,
             assumed_by=iam.FederatedPrincipal(
-                f"arn:aws:iam::" + Stack.of(self).account + ":oidc-provider/token.actions.githubusercontent.com",
+                "arn:aws:iam::"
+                + Stack.of(self).account
+                + ":oidc-provider/token.actions.githubusercontent.com",
                 {
                     "StringEquals": {
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                     },
                     "StringLike": {
                         "token.actions.githubusercontent.com:sub": github_repositories
-                    }
+                    },
                 },
-                "sts:AssumeRoleWithWebIdentity"
-            )
+                "sts:AssumeRoleWithWebIdentity",
+            ),
         )
 
         # Add permissions to role
@@ -314,8 +348,6 @@ class Secrets(Construct):
                 actions=[
                     "secretsmanager:GetSecretValue",
                 ],
-                resources=[
-                    secret.secret_arn
-                ]
+                resources=[secret.secret_arn],
             )
         )

@@ -32,10 +32,7 @@ IcaCredentialsDeployment(
     SLACK_WEBHOOK_SSM_NAME,
     github_repos=[CWL_ICA_GITHUB_REPO],
     github_role_name=f"{CDK_APP_NAME}-dev-umccr-pipelines-deployment-role",
-    env=Environment(
-        account="843407916570",
-        region="ap-southeast-2"
-    ),
+    env=Environment(account="843407916570", region="ap-southeast-2"),
 )
 
 # V2 (single token)
@@ -47,10 +44,7 @@ IcaCredentialsDeployment(
     ICAV2_BASE_URL,
     SLACK_HOST_SSM_NAME,
     SLACK_WEBHOOK_SSM_NAME,
-    env=Environment(
-        account="843407916570",
-        region="ap-southeast-2"
-    ),
+    env=Environment(account="843407916570", region="ap-southeast-2"),
 )
 
 
@@ -67,10 +61,7 @@ IcaCredentialsDeployment(
     SLACK_WEBHOOK_SSM_NAME,
     github_repos=[CWL_ICA_GITHUB_REPO],
     github_role_name=f"{CDK_APP_NAME}-stg-umccr-pipelines-deployment-role",
-    env=Environment(
-        account="455634345446",
-        region="ap-southeast-2"
-    ),
+    env=Environment(account="455634345446", region="ap-southeast-2"),
 )
 
 # Production
@@ -87,10 +78,7 @@ IcaCredentialsDeployment(
     SLACK_WEBHOOK_SSM_NAME,
     github_repos=[CWL_ICA_GITHUB_REPO],
     github_role_name=f"{CDK_APP_NAME}-prod-umccr-pipelines-deployment-role",
-    env=Environment(
-        account="472057503814",
-        region="ap-southeast-2"
-    ),
+    env=Environment(account="472057503814", region="ap-southeast-2"),
 )
 
 app.synth()

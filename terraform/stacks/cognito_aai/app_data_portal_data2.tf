@@ -37,7 +37,7 @@ locals {
 resource "aws_cognito_user_pool_client" "data2_client" {
   name                         = "${local.portal}-app2-${terraform.workspace}"
   user_pool_id                 = aws_cognito_user_pool.user_pool.id
-  supported_identity_providers = ["Google"]
+  supported_identity_providers = ["Google", "COGNITO"]
 
   callback_urls = local.data2_callback_urls[terraform.workspace]
   logout_urls   = local.data2_callback_urls[terraform.workspace]

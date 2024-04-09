@@ -37,6 +37,8 @@ locals {
   ssm_param_key_client_prefix = "/${local.stack_name_us}/client"  # pls note this namespace param has few references
 }
 
+data "aws_region" "current" {}
+
 ################################################################################
 # Query for Pre-configured SSM Parameter Store
 # These are pre-populated outside of terraform i.e. manually using Console or CLI

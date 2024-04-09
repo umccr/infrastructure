@@ -6,11 +6,12 @@ from aws_cdk import App, Stack, Stage
 from secrets.infrastructure import Secrets
 
 
-class IcaCredentialsDeployment(Stage):
+class IcaCredentialsDeployment(Stack):
     def __init__(
         self,
         scope: Construct,
         id_: str,
+        v2_naming: bool,
         data_project: Optional[str],
         workflow_projects: Optional[List[str]],
         ica_base_url: str,
@@ -26,6 +27,7 @@ class IcaCredentialsDeployment(Stage):
         Args:
             scope:
             id_:
+            v2_naming:
             data_project:
             workflow_projects:
             ica_base_url:
@@ -35,13 +37,13 @@ class IcaCredentialsDeployment(Stage):
         """
         super().__init__(scope, id_, **kwargs)
 
-        stateful = Stack(self, "stack")
+        # stateful = Stack(self, "stack")
 
         # this name becomes the prefix of our secrets so we slip in the word ICA to make it
         # obvious when someone sees them that they are associated with ICA
         Secrets(
-            stateful,
-            "IcaSecrets",
+            self,
+            "IcaV2Secrets" if v2_naming else "IcaSecrets",
             data_project,
             workflow_projects,
             ica_base_url,

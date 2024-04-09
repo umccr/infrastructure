@@ -1,5 +1,3 @@
-import os
-
 from aws_cdk import App, Environment
 
 from deployment import IcaCredentialsDeployment
@@ -20,6 +18,7 @@ CWL_ICA_GITHUB_REPO = "repo:umccr/cwl-ica:*"
 IcaCredentialsDeployment(
     app,
     f"{CDK_APP_NAME}-dev",
+    False,
     "dc8e6ba9-b744-437b-b070-4cf014694b3d",
     [
         # development_workflows
@@ -38,7 +37,8 @@ IcaCredentialsDeployment(
 # V2 (single token)
 IcaCredentialsDeployment(
     app,
-    f"{CDK_APP_NAME}-dev-v2",
+    f"{CDK_APP_NAME}-dev-v2-stack",
+    True,
     None,  # Token does not require project context in v2
     None,  # Token does not require additional project list in v2
     ICAV2_BASE_URL,
@@ -52,6 +52,7 @@ IcaCredentialsDeployment(
 IcaCredentialsDeployment(
     app,
     f"{CDK_APP_NAME}-stg",
+    False,
     "c9173925-a838-4394-9fc6-61cb93c252a1",
     [
         # staging_workflows - no staging workflows project
@@ -68,6 +69,7 @@ IcaCredentialsDeployment(
 IcaCredentialsDeployment(
     app,
     f"{CDK_APP_NAME}-prod",
+    False,
     "20b42a71-1ebc-4e7b-b659-313f2f4524c3",
     [
         # production_workflows

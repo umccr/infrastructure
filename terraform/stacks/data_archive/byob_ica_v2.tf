@@ -61,7 +61,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline_data" {
       expired_object_delete_marker = true
     }
     noncurrent_version_expiration {
-      noncurrent_days = 30
+      noncurrent_days = 7
     }
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
@@ -187,7 +187,6 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:RestoreObject",
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
-      "s3:ListObjectVersions",
       "s3:GetObjectVersion"
     ]
     resources = [

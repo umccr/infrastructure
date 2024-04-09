@@ -20,8 +20,8 @@ setup-python-cdk: .venv/install.touch
 deploy-cdk-dev: setup-python-cdk typecheck
 	. .venv/bin/activate; npx --yes cdk deploy ica-credentials-dev/stack
 
-undeploy-cdk-dev: setup-python-cdk typecheck
-	. .venv/bin/activate; npx --yes cdk undeploy ica-credentials-dev/stack
+deploy-cdk-dev-v2: setup-python-cdk typecheck
+	. .venv/bin/activate; npx --yes cdk deploy ica-credentials-dev-v2/stack
 
 typecheck:
 	. .venv/bin/activate; mypy lambdas/notify_slack_lambda/app

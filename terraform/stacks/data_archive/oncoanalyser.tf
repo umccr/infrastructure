@@ -7,7 +7,7 @@ resource "aws_s3_bucket" "oncoanalyser_bucket" {
   tags = merge(
     local.default_tags,
     {
-      "Name"=var.oncoanalyser_bucket_name
+      "Name" = var.oncoanalyser_bucket_name
     }
   )
 }
@@ -37,7 +37,7 @@ resource "aws_s3_bucket_versioning" "oncoanalyser_bucket" {
   bucket = aws_s3_bucket.oncoanalyser_bucket.id
 
   versioning_configuration {
-    status = "Enabled"  ## Should we disable versioning?
+    status = "Enabled" ## Should we disable versioning?
   }
 }
 
@@ -68,9 +68,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
   rule {
     id = "analysis_data_rule"
 
-	filter {
-		prefix = "analysis_data/"
-	}
+    filter {
+      prefix = "analysis_data/"
+    }
 
     transition {
       days          = 0
@@ -83,18 +83,18 @@ resource "aws_s3_bucket_lifecycle_configuration" "oncoanalyser_bucket" {
   rule {
     id = "temp_rule"
 
-	filter {
-		prefix = "temp_data/"
-	}
+    filter {
+      prefix = "temp_data/"
+    }
 
-	# ONEZONE_IA requires min 30, so unless the expiration time
-	# is increased, this is not needed
+    # ONEZONE_IA requires min 30, so unless the expiration time
+    # is increased, this is not needed
     # transition {
     #   days          = 30
     #   storage_class = "ONEZONE_IA"
     # }
 
-	expiration {
+    expiration {
       days = 30
     }
 
@@ -110,7 +110,7 @@ resource "aws_s3_bucket_policy" "oncoanalyser_bucket" {
 
 data "aws_iam_policy_document" "prod_cross_account_access" {
   statement {
-	sid = "prod_cross_account_access"
+    sid = "prod_cross_account_access"
 
     principals {
       type        = "AWS"
@@ -118,7 +118,12 @@ data "aws_iam_policy_document" "prod_cross_account_access" {
     }
 
     actions = [
-      "s3:*",
+      "s3:List*",
+      "s3:Get*",
+      "s3:DeleteObject",
+      "s3:AbortMultipartUpload",
+      "s3:RestoreObject",
+      "s3:PutObject"
     ]
 
     resources = [
@@ -127,22 +132,30 @@ data "aws_iam_policy_document" "prod_cross_account_access" {
     ]
   }
 
-  statement {
-	sid = "AccessForMarko"
+  # TODO: test before implementation (possibility to look yourself out!)
+  # statement {
+  #   sid = "deny_sensitive_operations"
 
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::843407916570:role/mmalenic_dev_ec2"]
-    }
+  #   effect = "Deny"
 
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket",
-    ]
+  #   actions = [
+  #     "s3:DeleteBucketPolicy",
+  #     "s3:PutBucketAcl",
+  #     "s3:PutBucketPolicy",
+  #     "s3:PutEncryptionConfiguration",
+  #     "s3:PutObjectAcl"
+  #   ]
 
-    resources = [
-      aws_s3_bucket.oncoanalyser_bucket.arn,
-      "${aws_s3_bucket.oncoanalyser_bucket.arn}/*",
-    ]
-  }
+  #   resources = [
+  #     aws_s3_bucket.oncoanalyser_bucket.arn,
+  #     "${aws_s3_bucket.oncoanalyser_bucket.arn}/*",
+  #   ]
+
+  #   condition {
+  #     test     = "StringNotEquals"
+  #     variable = "aws:SourceAccount"
+  #     values   = ["503977275616"]
+  #   }
+  # }
+
 }

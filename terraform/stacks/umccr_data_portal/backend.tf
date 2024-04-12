@@ -1,13 +1,6 @@
 ################################################################################
 # Back end configurations
 
-data "aws_acm_certificate" "backend_cert" {
-  domain   = local.app_domain
-  statuses = ["ISSUED"]
-}
-
-# FIXME: https://github.com/umccr/infrastructure/issues/272
-#  To deprecate/replace above `app_domain` with the following
 data "aws_acm_certificate" "backend_cert2" {
   domain   = local.app_domain2
   statuses = ["ISSUED"]
@@ -132,14 +125,6 @@ resource "aws_ssm_parameter" "lambda_security_group_ids" {
   tags  = merge(local.default_tags)
 }
 
-resource "aws_ssm_parameter" "api_domain_name" {
-  name  = "${local.ssm_param_key_backend_prefix}/api_domain_name"
-  type  = "String"
-  value = local.api_domain
-  tags  = merge(local.default_tags)
-}
-
-# FIXME: https://github.com/umccr/infrastructure/issues/272
 resource "aws_ssm_parameter" "api_domain_name2" {
   name  = "${local.ssm_param_key_backend_prefix}/api_domain_name2"
   type  = "String"
@@ -147,14 +132,6 @@ resource "aws_ssm_parameter" "api_domain_name2" {
   tags  = merge(local.default_tags)
 }
 
-resource "aws_ssm_parameter" "certificate_arn" {
-  name  = "${local.ssm_param_key_backend_prefix}/certificate_arn"
-  type  = "String"
-  value = data.aws_acm_certificate.backend_cert.arn
-  tags  = merge(local.default_tags)
-}
-
-# FIXME: https://github.com/umccr/infrastructure/issues/272
 resource "aws_ssm_parameter" "certificate_arn2" {
   name  = "${local.ssm_param_key_backend_prefix}/certificate_arn2"
   type  = "String"

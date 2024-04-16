@@ -123,6 +123,7 @@ data "aws_iam_policy_document" "prod_cross_account_access" {
       "s3:DeleteObject",
       "s3:AbortMultipartUpload",
       "s3:RestoreObject",
+      "s3:PutObjectTagging",
       "s3:PutObject"
     ]
 

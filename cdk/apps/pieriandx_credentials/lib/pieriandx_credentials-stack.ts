@@ -19,6 +19,7 @@ interface PieriandxCredentialsStackProps extends StackProps {
     pieriandx_institution: string,
     api_key_name: string,
     jwt_key_name: string,
+    s3_key_name: string
     collect_function_name: string,
     key_ssm_root: string,
     slack_host_ssm_name: string,
@@ -75,6 +76,16 @@ export class PieriandxCredentialsStack extends cdk.Stack {
         this.create_ssm_parameter_for_jwt_secret_arn(
             jwt_secret.secretArn,
             `${props.key_ssm_root}/secretArn`
+        )
+
+        // Add secret for s3 bucket information
+        new secretsManager.Secret(
+            this,
+            `PierianDxS3Bucket${props.s3_key_name}`,
+            {
+                secretName: props.s3_key_name,
+                description: "S3 bucket information for PierianDx"
+            }
         )
 
     }

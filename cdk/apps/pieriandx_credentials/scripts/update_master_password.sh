@@ -55,7 +55,7 @@ fi
 
 secrets_json_file="$(mktemp secrets.XXXXXX.json)"
 
-trap 'rm -f "$secrets_json_file"' EXIT
+trap 'rm -f "$secrets_json_file" "$response_json"' EXIT
 
 # Generate secrets json file
 jq --null-input \
@@ -95,16 +95,15 @@ access_token="$( \
     --invocation-type "RequestResponse" \
     --function-name "${JWT_SECRET_COLLECTOR_FUNCTION_NAME}" \
     --payload '{}' \
-    response_json \
+    "${response_json}" \
     1>/dev/null;
-  cat response_json | \
-  jq -r;
+  jq -r < "${response_json}"; \
   rm -f "$response_json"
 )"
 
-echo "${access_token}" | wc -c
-
+echo "Showing number of characters in access token" 1>&2
+echo "${access_token}" | wc -c 1>&2
 
 # Exit cleanly
 trap - EXIT
-rm -f "$secrets_json_file"
+rm -f "$secrets_json_file" "$response_json"

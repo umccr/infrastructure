@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 from pieriandx_secrets_tools.secret_manager_common import (
     get_current_jwt_token, initiate_jwt_secret_rotation
 )
@@ -8,7 +8,7 @@ from pieriandx_secrets_tools.secret_manager_common import (
 from pieriandx_secrets_tools.pieriandx_common import jwt_is_valid
 
 
-def main(ev: Any, _: Any) -> Optional[str]:
+def main(ev: Any, _: Any) -> Optional[Dict]:
     """
     Uses a master API key secret to generate new JWTs. In order that we can use a single
     lambda, there are various environment variables that parametrise how the lambda works.
@@ -25,4 +25,4 @@ def main(ev: Any, _: Any) -> Optional[str]:
         initiate_jwt_secret_rotation()
         return None
 
-    return access_token
+    return {"auth_token": access_token}

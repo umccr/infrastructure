@@ -87,6 +87,7 @@ export class Icav2CredentialsStack extends Stack {
             this,
             `ICAv2ApiKey${key_name}`,
             {
+                secretName: `ICAv2ApiKey-${key_name}`,
                 description: "Master ICAv2 API Key - not for direct use - use corresponding JWT secrets instead"
             }
         );
@@ -164,7 +165,7 @@ export class Icav2CredentialsStack extends Stack {
             this,
             `ICAv2Jwt${key_name}`,
             {
-                secretName: `ICAv2Jwt${key_name}`,
+                secretName: `ICAv2JWTKey-${key_name}`,
                 description: "JWT providing access to ICAv2 projects"
             }
         )
@@ -255,8 +256,7 @@ export class Icav2CredentialsStack extends Stack {
                 ],
                 detail: {
                     "eventName": [
-                        "RotationFailed",
-                        "RotationSucceeded"
+                        "RotationFailed"
                     ],
                     "additionalEventData": {
                         "SecretId": secrets.map(
@@ -298,6 +298,7 @@ export class Icav2CredentialsStack extends Stack {
         const gh_action_role = new Role(
             this,
             role_name, {
+                roleName: role_name,
                 assumedBy: new FederatedPrincipal(
                     `arn:aws:iam::${this.props.env.account}:oidc-provider/token.actions.githubusercontent.com`,
                     {

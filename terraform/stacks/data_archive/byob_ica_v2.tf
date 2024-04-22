@@ -4,20 +4,17 @@
 locals {
   # The bucket holding all "active" production data
   pipeline_data_bucket_name = "${data.aws_caller_identity.current.account_id}-pipeline-cache"
+  # The bucket holding all development data
+  development_data_bucket_name = "${data.aws_caller_identity.current.account_id}-dev-cache"
   # prefix for the BYOB data in ICAv2
   icav2_prefix = "byob-icav2/"
-  # prefix for the "production" project in ICAv2
-  icav2_prod_project_prefix = "${local.icav2_prefix}production/"
-  # prefix for the "staging" project in ICAv2
-  icav2_stg_project_prefix = "${local.icav2_prefix}staging/"
-  # prefix for the "validation-data" project in ICAv2
-  icav2_val_project_prefix = "${local.icav2_prefix}validation-data/"
-  # prefix for oncoanalyser pipelines
-  oa_prod_prefix = "oncoanalyser/production/"
 }
 
 ################################################################################
 # Buckets
+
+# ------------------------------------------------------------------------------
+# pipeline cache
 
 resource "aws_s3_bucket" "pipeline_data" {
   bucket = local.pipeline_data_bucket_name
@@ -121,11 +118,112 @@ data "aws_iam_policy_document" "pipeline_data" {
   }
 }
 
-
 # CORS configuration for ILMN BYO buckets to support UI uploads
 # ref: https://help.ica.illumina.com/home/h-storage/s-awss3
 resource "aws_s3_bucket_cors_configuration" "pipeline_data" {
   bucket = aws_s3_bucket.pipeline_data.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
+    allowed_origins = ["https://ica.illumina.com"]
+    expose_headers  = ["ETag", "x-amz-meta-custom-header"]
+    max_age_seconds = 3000
+  }
+}
+
+# ------------------------------------------------------------------------------
+# development data
+
+resource "aws_s3_bucket" "development_data" {
+  bucket = local.development_data_bucket_name
+
+  tags = merge(
+    local.default_tags,
+    {
+      "Name"=local.development_data_bucket_name
+    }
+  )
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "development_data" {
+  bucket = aws_s3_bucket.development_data.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "development_data" {
+  bucket = aws_s3_bucket.development_data.bucket
+
+  rule {
+    id = "base_rule"
+    status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  rule {
+    id = "icav2_data_it_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}"
+    }
+    transition {
+      days          = 0
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "development_data" {
+  bucket = aws_s3_bucket.development_data.id
+  policy = data.aws_iam_policy_document.development_data.json
+}
+
+data "aws_iam_policy_document" "development_data" {
+  statement {
+	  sid = "prod_lo_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["472057503814"]
+    }
+    actions = [
+      "s3:List*",
+      "s3:GetBucketLocation",
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
+  statement {
+	  sid = "icav2_cross_account_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
+    }
+    actions = [
+      "s3:PutObject",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObject"
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
+}
+
+# CORS configuration for ILMN BYO buckets to support UI uploads
+# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+resource "aws_s3_bucket_cors_configuration" "development_data" {
+  bucket = aws_s3_bucket.development_data.id
 
   cors_rule {
     allowed_headers = ["*"]
@@ -176,7 +274,8 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:GetBucketVersioning"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}"
+      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}",
+      "arn:aws:s3:::${aws_s3_bucket.development_data.id}"
     ]
   }
 
@@ -190,7 +289,8 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:GetObjectVersion"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/*"
+      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/*",
+      "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*"
     ]
   }
 

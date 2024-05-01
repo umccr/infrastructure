@@ -125,10 +125,26 @@ resource "aws_ssm_parameter" "lambda_security_group_ids" {
   tags  = merge(local.default_tags)
 }
 
+# retain ssm param for backward compatibility and point to newer Portal domain
+resource "aws_ssm_parameter" "api_domain_name" {
+  name  = "${local.ssm_param_key_backend_prefix}/api_domain_name"
+  type  = "String"
+  value = local.api_domain2
+  tags  = merge(local.default_tags)
+}
+
 resource "aws_ssm_parameter" "api_domain_name2" {
   name  = "${local.ssm_param_key_backend_prefix}/api_domain_name2"
   type  = "String"
   value = local.api_domain2
+  tags  = merge(local.default_tags)
+}
+
+# retain ssm param for backward compatibility and point to newer Portal domain SSL cert
+resource "aws_ssm_parameter" "certificate_arn" {
+  name  = "${local.ssm_param_key_backend_prefix}/certificate_arn"
+  type  = "String"
+  value = data.aws_acm_certificate.backend_cert2.arn
   tags  = merge(local.default_tags)
 }
 

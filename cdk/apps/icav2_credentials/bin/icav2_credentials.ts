@@ -46,7 +46,7 @@ new Icav2CredentialsStack(
     `${CDK_APP_NAME}-umccr-prod-trial-dev`,
     {
         icav2_base_url: ICAV2_BASE_URL,
-        key_name: 'icav2-umccr-service-user-trial',
+        key_name: 'umccr-prod-service-trial',
         key_ssm_path: "/icav2/umccr-prod/service-user-trial-jwt-token-secret-arn",
         slack_host_ssm_name: SLACK_HOST_SSM_NAME,
         slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,

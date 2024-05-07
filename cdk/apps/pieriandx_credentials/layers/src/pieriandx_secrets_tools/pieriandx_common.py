@@ -5,14 +5,13 @@
 """
 
 import requests
-import typing
 from typing import Dict
 import jwt
 from datetime import datetime
 
 from jwt import DecodeError
 
-EXPIRY_BUFFER = 60  # 1 minute
+EXPIRY_BUFFER = 300  # 5 minutes
 
 
 # Twv2 platforms

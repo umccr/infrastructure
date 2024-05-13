@@ -10,7 +10,7 @@ from uuid import uuid4
 
 if typing.TYPE_CHECKING:
     from mypy_boto3_secretsmanager import SecretsManagerClient
-    from mypy_boto3_secretsmanager.type_defs import GetSecretValueResponseTypeDef
+    from mypy_boto3_secretsmanager.type_defs import GetSecretValueResponseTypeDef, DescribeSecretResponseTypeDef
     from mypy_boto3_lambda import LambdaClient
 
 
@@ -60,6 +60,21 @@ def get_current_jwt_token() -> str:
     Get the current JWT Token from AWS SecretsManager
     """
     return get_secret_value(environ['PIERIANDX_JWT_KEYNAME'])
+
+
+def get_secret_status(secret_name: str) -> bool:
+    client = get_secretsmanager_client()
+
+    secret_metadata: DescribeSecretResponseTypeDef = client.describe_secret(SecretId=secret_name)
+
+    for version in secret_metadata["VersionIdsToStages"]:
+        if 'AWSPENDING' in version:
+            return False
+    return True
+
+
+def get_jwt_token_status() -> bool:
+    return get_secret_status(environ['PIERIANDX_JWT_KEYNAME'])
 
 
 def get_email_password_institution() -> Tuple[str, str, str]:

@@ -86,7 +86,7 @@ variable "rds_min_capacity" {
 
 variable "rds_max_capacity" {
   default = {
-    prod = 16.0
+    prod = 32.0
     dev  = 4.0
     stg  = 16.0
   }

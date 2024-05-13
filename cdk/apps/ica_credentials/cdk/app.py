@@ -34,20 +34,6 @@ IcaCredentialsDeployment(
     env=Environment(account="843407916570", region="ap-southeast-2"),
 )
 
-# V2 (single token)
-IcaCredentialsDeployment(
-    app,
-    f"{CDK_APP_NAME}-dev-v2-stack",
-    True,
-    None,  # Token does not require project context in v2
-    None,  # Token does not require additional project list in v2
-    ICAV2_BASE_URL,
-    SLACK_HOST_SSM_NAME,
-    SLACK_WEBHOOK_SSM_NAME,
-    env=Environment(account="843407916570", region="ap-southeast-2"),
-)
-
-
 # Staging
 IcaCredentialsDeployment(
     app,

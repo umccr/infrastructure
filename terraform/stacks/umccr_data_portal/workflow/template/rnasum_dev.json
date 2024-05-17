@@ -1,7 +1,7 @@
 {
-  "dragen_wts_directory": null,
-  "arriba_directory": null,
+  "dragen_wts_dir": null,
   "arriba_dir": null,
+  "umccrise": null,
   "sample_name": null,
   "dataset": "PANCAN",
   "report_dir": null

@@ -4,9 +4,5 @@
   "umccrise_directory": null,
   "sample_name": null,
   "dataset": "PANCAN",
-  "report_directory": null,
-  "ref_data_directory": {
-    "class": "Directory",
-    "location": "gds://staging/reference-data/rnasum/"
-  }
+  "report_directory": null
 }

@@ -38,7 +38,7 @@ resource "aws_rds_cluster" "db" {
   # Engine & Mode. See https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBEngineVersions.html
   engine              = "aurora-mysql"
   engine_mode         = "provisioned"
-  engine_version      = "8.0.mysql_aurora.3.04.1"
+  engine_version      = "8.0.mysql_aurora.3.05.2"
   skip_final_snapshot = true
 
   database_name   = local.stack_name_us

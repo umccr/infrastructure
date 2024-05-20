@@ -6,6 +6,7 @@ from pieriandx_secrets_tools.secret_manager_common import (
 )
 
 from pieriandx_secrets_tools.pieriandx_common import jwt_is_valid
+import time
 
 
 def main(ev: Any, _: Any) -> Optional[Dict]:
@@ -19,7 +20,7 @@ def main(ev: Any, _: Any) -> Optional[Dict]:
 
     # Get the secret status (check if 'AWS_PENDING' or 'AWS_CURRENT')
     if not get_jwt_token_status():
-        # In AWS PENDING mode, we should not execute a secret rotation
+        # In rotating state
         return None
 
     # Get the secret value

@@ -68,9 +68,21 @@ def get_secret_status(secret_name: str) -> bool:
     secret_metadata: DescribeSecretResponseTypeDef = client.describe_secret(SecretId=secret_name)
 
     for version in secret_metadata["VersionIdsToStages"]:
-        if 'AWSPENDING' in version:
-            return False
-    return True
+        # From https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotate-secrets_lambda-functions.html
+        # When rotation is successful,
+        # the AWSPENDING staging label might be attached
+        # to the same version as the AWSCURRENT version, or it might not be attached to any version.
+        # If the AWSPENDING staging label is present but not attached
+        # to the same version as AWSCURRENT, then any later invocation of rotation assumes
+        # that a previous rotation request is still in progress and returns an error.
+        # When rotation is unsuccessful, the AWSPENDING staging label might be attached to an
+        # empty secret version. For more information, see Troubleshoot rotation.
+        if 'AWSPENDING' in version and 'AWSCURRENT' in version:
+            # The secret is in a non-rotating state
+            return True
+
+    # The secret is in a rotating state
+    return False
 
 
 def get_jwt_token_status() -> bool:
@@ -191,6 +203,7 @@ def do_finish_secret(arn: str, tok: str) -> None:
             current_version = version
             break
 
+    # Move the AWSCURRENT to the AWSPENDING version
     client.update_secret_version_stage(
         SecretId=arn,
         VersionStage="AWSCURRENT",

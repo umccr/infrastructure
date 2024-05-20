@@ -54,6 +54,16 @@ resource "aws_cognito_user_pool_client" "data2_client" {
     "ALLOW_USER_SRP_AUTH"
   ]
 
+  # Read this dev.to article. Especially, pay attention to the article's comment discussion about
+  # JWT self-contained stateless nature vs token revocation list tracking.
+  # https://dev.to/aymanepraxe/mastering-jwt-security-2kgn
+  # https://docs.aws.amazon.com/cognito/latest/developerguide/token-revocation.html
+  enable_token_revocation = true
+
+  # https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pool-managing-errors.html
+  # https://repost.aws/knowledge-center/cognito-prevent-user-existence-errors
+  prevent_user_existence_errors = "ENABLED"
+
   access_token_validity  = 60     # minutes (cognito default)
   id_token_validity      = 1440   # minutes (we bump this to max allow value)
   refresh_token_validity = 30     # 30 days (cognito default)

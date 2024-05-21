@@ -58,7 +58,7 @@ def jwt_is_valid(jwt_string: str) -> bool:
         timestamp_exp = decode_jwt(jwt_string).get("exp")
 
         # If timestamp will expire in less than one minute's time, return False
-        if int(timestamp_exp) + EXPIRY_BUFFER < int(datetime.now().timestamp()):
+        if int(timestamp_exp) < (int(datetime.now().timestamp()) + EXPIRY_BUFFER):
             return False
         else:
             return True

@@ -32,3 +32,7 @@ def main(ev: Any, _: Any) -> Optional[Dict]:
         return None
 
     return {"auth_token": access_token}
+
+
+if __name__ == "__main__":
+    main({}, None)

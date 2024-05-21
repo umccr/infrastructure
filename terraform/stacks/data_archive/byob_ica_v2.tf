@@ -519,7 +519,9 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
     ]
     resources = [
       "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}",
-      "arn:aws:s3:::${aws_s3_bucket.development_data.id}"
+      "arn:aws:s3:::${aws_s3_bucket.development_data.id}",
+      "arn:aws:s3:::${aws_s3_bucket.staging_data.id}",
+      "arn:aws:s3:::${aws_s3_bucket.production_data.id}"
     ]
   }
 
@@ -534,7 +536,9 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
     ]
     resources = [
       "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/*",
-      "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*"
+      "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*",
+      "arn:aws:s3:::${aws_s3_bucket.staging_data.id}/*",
+      "arn:aws:s3:::${aws_s3_bucket.production_data.id}/*"
     ]
   }
 

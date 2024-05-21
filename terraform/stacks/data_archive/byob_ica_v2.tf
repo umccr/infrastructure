@@ -8,7 +8,7 @@ locals {
   # The bucket holding all development data
   pipeline_data_bucket_name_dev = "pipeline-dev-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # The bucket holding all staging data
-  pipeline_data_bucket_name_stg = "staging-dev-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
   icav2_prefix = "byob-icav2/"
   account_id_prod = "472057503814"

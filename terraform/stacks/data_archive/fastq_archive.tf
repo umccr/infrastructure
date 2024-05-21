@@ -3,7 +3,8 @@
 
 locals {
   # The bucket holding all archived FASTQ data
-  fastq_archive_bucket_name = "${data.aws_caller_identity.current.account_id}-fastq-archive"
+  # fastq_archive_bucket_name = "${data.aws_caller_identity.current.account_id}-fastq-archive"
+  fastq_archive_bucket_name = "archive-prod-fastq-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
 }
 
 ################################################################################

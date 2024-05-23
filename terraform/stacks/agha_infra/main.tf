@@ -19,8 +19,8 @@ data "aws_region" "current" {}
 
 locals {
   common_tags = {
-    Environment="agha",
-    Stack="${var.stack_name}"
+    Environment = "agha",
+    Stack       = "${var.stack_name}"
   }
 }
 
@@ -77,7 +77,7 @@ resource "aws_s3_bucket" "agha_gdr_staging_2" {
   tags = merge(
     local.common_tags,
     {
-      "Name"=var.agha_gdr_staging_2_bucket_name
+      "Name" = var.agha_gdr_staging_2_bucket_name
     }
   )
 }
@@ -108,7 +108,7 @@ resource "aws_s3_bucket" "agha_gdr_store_2" {
   tags = merge(
     local.common_tags,
     {
-      Name=var.agha_gdr_store_2_bucket_name
+      Name = var.agha_gdr_store_2_bucket_name
     }
   )
 }
@@ -119,14 +119,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
   # Will deep archive all 2022 MM data
   rule {
     status = "Enabled"
-    id = "deep_archive_MM_NSWHP_2022"
+    id     = "deep_archive_MM_NSWHP_2022"
 
     filter {
       prefix = "MM_NSWHP/2022"
     }
 
     transition {
-      days = 0
+      days          = 0
       storage_class = "DEEP_ARCHIVE"
     }
 
@@ -135,17 +135,83 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
     }
 
   }
-  
+
+  # Will deep archive all 2024-04-24 MM data (>1MB)
   rule {
     status = "Enabled"
-    id = "deep_archive_MM_VCGS_2022"
-    
+    id     = "deep_archive_MM_NSWHP_2024"
+
+    filter {
+      and {
+        prefix                   = "MM_NSWHP/2024-04-24/"
+        object_size_greater_than = 1000000
+      }
+    }
+
+    transition {
+      days          = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  # Will archive all 2024 (01) MM data (>1MB)
+  rule {
+    status = "Enabled"
+    id     = "deep_archive_MM_NSWHP_2024_01"
+
+    filter {
+      and {
+        prefix                   = "MM_NSWHP/01/"
+        object_size_greater_than = 1000000
+      }
+    }
+
+    transition {
+      days          = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  # Will archive all 2024 (02) MM data (>1MB)
+  rule {
+    status = "Enabled"
+    id     = "deep_archive_MM_NSWHP_2024_02"
+
+    filter {
+      and {
+        prefix                   = "MM_NSWHP/02/"
+        object_size_greater_than = 1000000
+      }
+    }
+
+    transition {
+      days          = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    status = "Enabled"
+    id     = "deep_archive_MM_VCGS_2022"
+
     filter {
       prefix = "MM_VCGS/2022"
     }
 
     transition {
-      days = 0
+      days          = 0
       storage_class = "DEEP_ARCHIVE"
     }
 
@@ -156,7 +222,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
 
   rule {
     status = "Enabled"
-    id = "intelligent_tiering"
+    id     = "intelligent_tiering"
 
     transition {
       days          = 0
@@ -165,7 +231,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
   }
 
   rule {
-    id = "noncurrent_version_expiration"
+    id     = "noncurrent_version_expiration"
     status = "Enabled"
 
     noncurrent_version_expiration {
@@ -193,7 +259,7 @@ resource "aws_s3_bucket_ownership_controls" "agha_gdr_store_2" {
 # Result bucket
 resource "aws_s3_bucket" "agha_gdr_results_2" {
   bucket = var.agha_gdr_results_2_bucket_name
-  acl = "private"
+  acl    = "private"
 
   server_side_encryption_configuration {
     rule {
@@ -224,7 +290,7 @@ resource "aws_s3_bucket" "agha_gdr_results_2" {
   tags = merge(
     local.common_tags,
     {
-      Name=var.agha_gdr_results_2_bucket_name
+      Name = var.agha_gdr_results_2_bucket_name
     }
   )
 
@@ -266,7 +332,7 @@ resource "aws_s3_bucket" "agha_gdr_archive" {
   tags = merge(
     local.common_tags,
     {
-      "Name"=var.agha_gdr_archive_bucket_name
+      "Name" = var.agha_gdr_archive_bucket_name
     }
   )
 
@@ -357,16 +423,16 @@ module "notify_slack_lambda" {
   policy        = "arn:aws:iam::aws:policy/IAMReadOnlyAccess"
 
   environment_variables = {
-      SLACK_HOST             = "hooks.slack.com"
-      SLACK_WEBHOOK_ENDPOINT = "/services/${data.aws_secretsmanager_secret_version.slack_webhook_id.secret_string}"
-      SLACK_CHANNEL          = var.slack_channel
+    SLACK_HOST             = "hooks.slack.com"
+    SLACK_WEBHOOK_ENDPOINT = "/services/${data.aws_secretsmanager_secret_version.slack_webhook_id.secret_string}"
+    SLACK_CHANNEL          = var.slack_channel
   }
 
   tags = merge(
     local.common_tags,
     {
-      Name="${var.stack_name}_slack_lambda",
-      Description="Lambda to send notifications to UMCCR Slack"
+      Name        = "${var.stack_name}_slack_lambda",
+      Description = "Lambda to send notifications to UMCCR Slack"
     }
   )
 }
@@ -377,7 +443,7 @@ module "notify_slack_lambda" {
 resource "aws_cloudwatch_event_rule" "batch_failure" {
   name        = "${var.stack_name}_capture_batch_job_failure"
   description = "Capture Batch Job Failures"
-  is_enabled = false
+  is_enabled  = false
 
   event_pattern = <<PATTERN
 {

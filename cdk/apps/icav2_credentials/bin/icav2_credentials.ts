@@ -61,6 +61,28 @@ new Icav2CredentialsStack(
     }
 );
 
+/* Everything project in developmentv2 */
+new Icav2CredentialsStack(
+    app,
+    `${CDK_APP_NAME}-umccr-prod-dev`,
+    {
+        icav2_base_url: ICAV2_BASE_URL,
+        key_name: 'umccr-prod-service-dev',
+        key_ssm_path: "/icav2/umccr-prod/service-user-dev-jwt-token-secret-arn",
+        slack_host_ssm_name: SLACK_HOST_SSM_NAME,
+        slack_webhook_ssm_name: SLACK_WEBHOOK_SSM_NAME,
+        github_repos: [
+            "repo:umccr/cwl-ica:*"
+        ],
+        github_role_name: "gh-service-user-dev",
+        env: {
+            account: DEVELOPMENT_ACCOUNT_ID,
+            region: DEFAULT_REGION
+        },
+    }
+);
+
+
 /* Pipelines project in production */
 /* Used by cwl-ica GH Actions for deploying pipelines into pipelines project */
 /* And then deploying bundles into appropriate projects */

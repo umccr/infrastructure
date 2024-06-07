@@ -6,26 +6,23 @@
 locals {
   status_page   = "data-portal-status-page"
 
-  status_page_domain = "status.data.${var.base_domain[terraform.workspace]}"
+  status_page_domain = "status.${var.base_domain[terraform.workspace]}"
 
   status_page_alias_domain = {
-    prod = "status.data.umccr.org"
+    prod = "status.umccr.org"
     dev  = ""
     stg  = ""
   }
 
-  # FIXME: remove this when status page and apis is ready in production, https://github.com/umccr/data-portal-status-page/issues/105
-  status_page_dev_domain = "status.${var.base_domain[terraform.workspace]}"
-
   status_page_callback_urls = {
     prod = ["https://${local.status_page_domain}", "https://${local.status_page_alias_domain[terraform.workspace]}"]
-    dev  = ["https://${local.status_page_dev_domain}"]
+    dev  = ["https://${local.status_page_domain}"]
     stg  = ["https://${local.status_page_domain}"]
   }
 
   status_page_oauth_redirect_url = {
     prod = "https://${local.status_page_alias_domain[terraform.workspace]}"
-    dev  = "https://${local.status_page_dev_domain}"
+    dev  = "https://${local.status_page_domain}"
     stg  = "https://${local.status_page_domain}"
   }
 

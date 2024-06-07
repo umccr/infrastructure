@@ -6,10 +6,10 @@
 locals {
   status_page   = "data-portal-status-page"
 
-  status_page_domain = "status.data.${var.base_domain[terraform.workspace]}"
+  status_page_domain = "status.${var.base_domain[terraform.workspace]}"
 
   status_page_alias_domain = {
-    prod = "status.data.umccr.org"
+    prod = "status.umccr.org"
     dev  = ""
     stg  = ""
   }

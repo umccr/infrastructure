@@ -3,24 +3,44 @@
 
 locals {
   # The bucket holding all "active" production data
-  pipeline_data_bucket_name = "${data.aws_caller_identity.current.account_id}-pipeline-cache"
+  pipeline_data_bucket_name      = "${data.aws_caller_identity.current.account_id}-pipeline-cache"
   pipeline_data_bucket_name_prod = "pipeline-prod-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # The bucket holding all development data
   pipeline_data_bucket_name_dev = "pipeline-dev-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # The bucket holding all staging data
   pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
-  icav2_prefix = "byob-icav2/"
-  account_id_prod = "472057503814"
-  account_id_stg = "455634345446"
-  account_id_dev = "843407916570"
+  icav2_prefix             = "byob-icav2/"
+  account_id_prod          = "472057503814"
+  account_id_stg           = "455634345446"
+  account_id_dev           = "843407916570"
+  target_event_bus_arn_dev = "arn:aws:events:ap-southeast-2:${account_id_dev}:event-bus/default"
 }
+
+
+################################################################################
+# Common resources
+
+data "aws_iam_policy_document" "eventbridge_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
 
 ################################################################################
 # Buckets
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # pipeline cache
+# ==============================================================================
 
 resource "aws_s3_bucket" "pipeline_data" {
   bucket = local.pipeline_data_bucket_name
@@ -28,13 +48,13 @@ resource "aws_s3_bucket" "pipeline_data" {
   tags = merge(
     local.default_tags,
     {
-      "Name"=local.pipeline_data_bucket_name
+      "Name" = local.pipeline_data_bucket_name
     }
   )
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "pipeline_data" {
-  bucket = aws_s3_bucket.pipeline_data.bucket
+  bucket = aws_s3_bucket.pipeline_data.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -55,10 +75,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline_data" {
   # Must have bucket versioning enabled first to apply noncurrent version expiration
   depends_on = [aws_s3_bucket_versioning.pipeline_data]
 
-  bucket = aws_s3_bucket.pipeline_data.bucket
+  bucket = aws_s3_bucket.pipeline_data.id
 
   rule {
-    id = "base_rule"
+    id     = "base_rule"
     status = "Enabled"
     expiration {
       expired_object_delete_marker = true
@@ -72,10 +92,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "pipeline_data" {
   }
 
   rule {
-    id = "icav2_data_it_rule"
+    id     = "icav2_data_it_rule"
     status = "Enabled"
     filter {
-      prefix = "${local.icav2_prefix}"
+      prefix = local.icav2_prefix
     }
     transition {
       days          = 0
@@ -91,7 +111,7 @@ resource "aws_s3_bucket_policy" "pipeline_data" {
 
 data "aws_iam_policy_document" "pipeline_data" {
   statement {
-	  sid = "prod_lo_access"
+    sid = "prod_lo_access"
     principals {
       type        = "AWS"
       identifiers = ["472057503814"]
@@ -106,7 +126,7 @@ data "aws_iam_policy_document" "pipeline_data" {
     ]
   }
   statement {
-	  sid = "icav2_cross_account_access"
+    sid = "icav2_cross_account_access"
     principals {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
@@ -124,6 +144,7 @@ data "aws_iam_policy_document" "pipeline_data" {
   }
 }
 
+# ------------------------------------------------------------------------------
 # CORS configuration for ILMN BYO buckets to support UI uploads
 # ref: https://help.ica.illumina.com/home/h-storage/s-awss3
 resource "aws_s3_bucket_cors_configuration" "pipeline_data" {
@@ -138,8 +159,9 @@ resource "aws_s3_bucket_cors_configuration" "pipeline_data" {
   }
 }
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # production data
+# ==============================================================================
 
 resource "aws_s3_bucket" "production_data" {
   bucket = local.pipeline_data_bucket_name_prod
@@ -147,13 +169,13 @@ resource "aws_s3_bucket" "production_data" {
   tags = merge(
     local.default_tags,
     {
-      "Name"=local.pipeline_data_bucket_name_prod
+      "Name" = local.pipeline_data_bucket_name_prod
     }
   )
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "production_data" {
-  bucket = aws_s3_bucket.production_data.bucket
+  bucket = aws_s3_bucket.production_data.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -174,10 +196,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_data" {
   # Must have bucket versioning enabled first to apply noncurrent version expiration
   depends_on = [aws_s3_bucket_versioning.production_data]
 
-  bucket = aws_s3_bucket.production_data.bucket
+  bucket = aws_s3_bucket.production_data.id
 
   rule {
-    id = "base_rule"
+    id     = "base_rule"
     status = "Enabled"
     expiration {
       expired_object_delete_marker = true
@@ -191,10 +213,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_data" {
   }
 
   rule {
-    id = "icav2_data_it_rule"
+    id     = "icav2_data_it_rule"
     status = "Enabled"
     filter {
-      prefix = "${local.icav2_prefix}"
+      prefix = local.icav2_prefix
     }
     transition {
       days          = 0
@@ -210,7 +232,7 @@ resource "aws_s3_bucket_policy" "production_data" {
 
 data "aws_iam_policy_document" "production_data" {
   statement {
-	  sid = "prod_lo_access"
+    sid = "prod_lo_access"
     principals {
       type        = "AWS"
       identifiers = [local.account_id_prod]
@@ -225,7 +247,7 @@ data "aws_iam_policy_document" "production_data" {
     ]
   }
   statement {
-	  sid = "icav2_cross_account_access"
+    sid = "icav2_cross_account_access"
     principals {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
@@ -243,6 +265,7 @@ data "aws_iam_policy_document" "production_data" {
   }
 }
 
+# ------------------------------------------------------------------------------
 # CORS configuration for ILMN BYO buckets to support UI uploads
 # ref: https://help.ica.illumina.com/home/h-storage/s-awss3
 resource "aws_s3_bucket_cors_configuration" "production_data" {
@@ -257,8 +280,9 @@ resource "aws_s3_bucket_cors_configuration" "production_data" {
   }
 }
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # staging data
+# ==============================================================================
 
 resource "aws_s3_bucket" "staging_data" {
   bucket = local.pipeline_data_bucket_name_stg
@@ -266,13 +290,13 @@ resource "aws_s3_bucket" "staging_data" {
   tags = merge(
     local.default_tags,
     {
-      "Name"=local.pipeline_data_bucket_name_stg
+      "Name" = local.pipeline_data_bucket_name_stg
     }
   )
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "staging_data" {
-  bucket = aws_s3_bucket.staging_data.bucket
+  bucket = aws_s3_bucket.staging_data.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -293,10 +317,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "staging_data" {
   # Must have bucket versioning enabled first to apply noncurrent version expiration
   depends_on = [aws_s3_bucket_versioning.staging_data]
 
-  bucket = aws_s3_bucket.staging_data.bucket
+  bucket = aws_s3_bucket.staging_data.id
 
   rule {
-    id = "base_rule"
+    id     = "base_rule"
     status = "Enabled"
     expiration {
       expired_object_delete_marker = true
@@ -310,10 +334,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "staging_data" {
   }
 
   rule {
-    id = "icav2_data_it_rule"
+    id     = "icav2_data_it_rule"
     status = "Enabled"
     filter {
-      prefix = "${local.icav2_prefix}"
+      prefix = local.icav2_prefix
     }
     transition {
       days          = 0
@@ -329,7 +353,7 @@ resource "aws_s3_bucket_policy" "staging_data" {
 
 data "aws_iam_policy_document" "staging_data" {
   statement {
-	  sid = "stg_lo_access"
+    sid = "stg_lo_access"
     principals {
       type        = "AWS"
       identifiers = [local.account_id_stg]
@@ -344,7 +368,7 @@ data "aws_iam_policy_document" "staging_data" {
     ]
   }
   statement {
-	  sid = "icav2_cross_account_access"
+    sid = "icav2_cross_account_access"
     principals {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
@@ -362,6 +386,7 @@ data "aws_iam_policy_document" "staging_data" {
   }
 }
 
+# ------------------------------------------------------------------------------
 # CORS configuration for ILMN BYO buckets to support UI uploads
 # ref: https://help.ica.illumina.com/home/h-storage/s-awss3
 resource "aws_s3_bucket_cors_configuration" "staging_data" {
@@ -376,8 +401,9 @@ resource "aws_s3_bucket_cors_configuration" "staging_data" {
   }
 }
 
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # development data
+# ==============================================================================
 
 resource "aws_s3_bucket" "development_data" {
   bucket = local.pipeline_data_bucket_name_dev
@@ -385,13 +411,13 @@ resource "aws_s3_bucket" "development_data" {
   tags = merge(
     local.default_tags,
     {
-      "Name"=local.pipeline_data_bucket_name_dev
+      "Name" = local.pipeline_data_bucket_name_dev
     }
   )
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "development_data" {
-  bucket = aws_s3_bucket.development_data.bucket
+  bucket = aws_s3_bucket.development_data.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -401,10 +427,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "development_data"
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "development_data" {
-  bucket = aws_s3_bucket.development_data.bucket
+  bucket = aws_s3_bucket.development_data.id
 
   rule {
-    id = "base_rule"
+    id     = "base_rule"
     status = "Enabled"
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
@@ -412,10 +438,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "development_data" {
   }
 
   rule {
-    id = "icav2_data_it_rule"
+    id     = "icav2_data_it_rule"
     status = "Enabled"
     filter {
-      prefix = "${local.icav2_prefix}"
+      prefix = local.icav2_prefix
     }
     transition {
       days          = 0
@@ -431,7 +457,7 @@ resource "aws_s3_bucket_policy" "development_data" {
 
 data "aws_iam_policy_document" "development_data" {
   statement {
-	  sid = "dev_lo_access"
+    sid = "dev_lo_access"
     principals {
       type        = "AWS"
       identifiers = [local.account_id_dev]
@@ -446,7 +472,7 @@ data "aws_iam_policy_document" "development_data" {
     ]
   }
   statement {
-	  sid = "icav2_cross_account_access"
+    sid = "icav2_cross_account_access"
     principals {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
@@ -464,6 +490,7 @@ data "aws_iam_policy_document" "development_data" {
   }
 }
 
+# ------------------------------------------------------------------------------
 # CORS configuration for ILMN BYO buckets to support UI uploads
 # ref: https://help.ica.illumina.com/home/h-storage/s-awss3
 resource "aws_s3_bucket_cors_configuration" "development_data" {
@@ -477,6 +504,60 @@ resource "aws_s3_bucket_cors_configuration" "development_data" {
     max_age_seconds = 3000
   }
 }
+
+# ------------------------------------------------------------------------------
+# EventBridge rule to forward events from to the target account
+
+resource "aws_s3_bucket_notification" "development_data" {
+  bucket      = aws_s3_bucket.development_data.id
+  eventbridge = true
+}
+
+data "aws_iam_policy_document" "put_events_to_dev_bus" {
+  statement {
+    effect    = "Allow"
+    actions   = ["events:PutEvents"]
+    resources = [local.target_event_bus_arn_dev]
+  }
+}
+
+resource "aws_iam_policy" "put_events_to_dev_bus" {
+  name   = "put_events_to_dev_bus"
+  policy = data.aws_iam_policy_document.put_events_to_dev_bus.json
+}
+
+resource "aws_iam_role" "put_events_to_dev_bus" {
+  name               = "put_events_to_dev_bus"
+  assume_role_policy = data.aws_iam_policy_document.eventbridge_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "put_events_to_dev_bus" {
+  role       = aws_iam_role.put_events_to_dev_bus.name
+  policy_arn = aws_iam_policy.put_events_to_dev_bus.arn
+}
+
+# TODO: could restrice the events (detail-type) further to avoid unnecessary cost
+resource "aws_cloudwatch_event_rule" "put_events_to_dev_bus" {
+  name        = "put_events_to_dev_bus"
+  description = "Forward S3 events from dev bucket to dev event bus"
+  event_pattern = jsonencode({
+    source  = ["aws.s3"],
+    account = [data.aws_caller_identity.current.account_id],
+    detail = {
+      bucket = {
+        name = [aws_s3_bucket.development_data.id]
+      }
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "put_events_to_dev_bus" {
+  target_id = "put_events_to_dev_bus"
+  arn       = local.target_event_bus_arn_dev
+  rule      = aws_cloudwatch_event_rule.put_events_to_dev_bus.name
+  role_arn  = aws_iam_role.put_events_to_dev_bus.arn
+}
+
 
 ################################################################################
 # BYOB IAM User for ICAv2

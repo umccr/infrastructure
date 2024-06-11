@@ -14,7 +14,7 @@ locals {
   account_id_prod          = "472057503814"
   account_id_stg           = "455634345446"
   account_id_dev           = "843407916570"
-  target_event_bus_arn_dev = "arn:aws:events:ap-southeast-2:${account_id_dev}:event-bus/default"
+  target_event_bus_arn_dev = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
 }
 
 

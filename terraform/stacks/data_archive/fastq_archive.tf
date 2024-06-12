@@ -68,25 +68,42 @@ resource "aws_s3_bucket_lifecycle_configuration" "fastq_archive" {
   }
 }
 
-# resource "aws_s3_bucket_policy" "fastq_archive" {
-#   bucket = aws_s3_bucket.fastq_archive.id
-#   policy = data.aws_iam_policy_document.fastq_archive.json
-# }
+resource "aws_s3_bucket_policy" "fastq_archive" {
+  bucket = aws_s3_bucket.fastq_archive.id
+  policy = data.aws_iam_policy_document.fastq_archive.json
+}
 
-# data "aws_iam_policy_document" "fastq_archive" {
-#   statement {
-# 	  sid = "prod_list_access"
-#     principals {
-#       type        = "AWS"
-#       identifiers = ["472057503814"]
-#     }
-#     actions = [
-#       "s3:List*",
-#       "s3:GetBucketLocation",
-#     ]
-#     resources = [
-#       aws_s3_bucket.fastq_archive.arn,
-#       "${aws_s3_bucket.fastq_archive.arn}/*",
-#     ]
-#   }
-# }
+data "aws_iam_policy_document" "fastq_archive" {
+  # Statement to allow uploads from a dedicated role in the dev account
+  statement {
+	  sid = "AllowUploadFromDevInstanceRole"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::843407916570:role/EC2-to-S3"]
+    }
+    actions = [
+      "s3:List*",
+      "s3:GetObject",
+      "s3:DeleteObject",
+      "s3:PutObject"
+    ]
+    resources = [
+      aws_s3_bucket.fastq_archive.arn,
+      "${aws_s3_bucket.fastq_archive.arn}/*",
+    ]
+  }
+  # # Statement to allow access to any principal from the dev account
+  # statement {
+	#   sid = "prod_list_access"
+  #   principals {
+  #     type        = "AWS"
+  #     identifiers = ["472057503814"]
+  #   }
+  #   actions = [
+  #     "s3:List*"
+  #   ]
+  #   resources = [
+  #     aws_s3_bucket.fastq_archive.arn,
+  #   ]
+  # }
+}

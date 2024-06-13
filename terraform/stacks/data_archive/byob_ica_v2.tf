@@ -508,10 +508,11 @@ resource "aws_s3_bucket_cors_configuration" "development_data" {
 # ------------------------------------------------------------------------------
 # EventBridge rule to forward events from to the target account
 
-resource "aws_s3_bucket_notification" "development_data" {
-  bucket      = aws_s3_bucket.development_data.id
-  eventbridge = true
-}
+# NOTE: don't control notification settings from TF, as some is controlled by ICA
+# resource "aws_s3_bucket_notification" "development_data" {
+#   bucket      = aws_s3_bucket.development_data.id
+#   eventbridge = true
+# }
 
 data "aws_iam_policy_document" "put_events_to_dev_bus" {
   statement {

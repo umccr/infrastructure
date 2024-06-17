@@ -65,6 +65,7 @@ resource "aws_sqs_queue" "s3_event_queue" {
     s3_primary_data_bucket_arn = data.aws_s3_bucket.s3_primary_data_bucket.arn
     s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
     s3_oncoanalyser_arn = data.aws_s3_bucket.s3_oncoanalyser_bucket.arn
+    icav2_pipeline_cache_to_sqs_rule_arn = aws_cloudwatch_event_rule.icav2_pipeline_cache_to_sqs_rule.arn
   })
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
@@ -159,7 +160,7 @@ resource "aws_cloudwatch_event_rule" "icav2_pipeline_cache_to_sqs_rule" {
   description = "Forward S3 events from ICAv2 pipeline cache BYOB bucket to Portal S3 SQS"
   event_pattern = jsonencode({
     source  = ["aws.s3"],
-    account = [data.aws_caller_identity.current.account_id],
+    account = ["503977275616"],  # source contains UoM data account ID
     detail = {
       bucket = {
         name = [var.s3_icav2_pipeline_cache_bucket[terraform.workspace]]

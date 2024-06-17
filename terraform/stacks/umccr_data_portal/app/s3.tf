@@ -28,6 +28,15 @@ variable "s3_oncoanalyser_bucket" {
   description = "Name of the S3 bucket storing s3 oncoanalyser output to be used by crawler "
 }
 
+variable "s3_icav2_pipeline_cache_bucket" {
+  default = {
+    prod = "pipeline-prod-cache-503977275616-ap-southeast-2"
+    dev  = "pipeline-dev-cache-503977275616-ap-southeast-2"
+    stg  = "pipeline-stg-cache-503977275616-ap-southeast-2"
+  }
+  description = "Name of the S3 bucket from UoM data account for ICAv2 BYOB pipeline cache"
+}
+
 data "aws_s3_bucket" "s3_primary_data_bucket" {
   bucket = var.s3_primary_data_bucket[terraform.workspace]
 }
@@ -137,4 +146,41 @@ resource "aws_ssm_parameter" "s3_event_sqs_arn" {
   type  = "String"
   value = aws_sqs_queue.s3_event_queue.arn
   tags  = merge(local.default_tags)
+}
+
+# --- ICAv2 pipeline cache bucket subscription
+# Meanwhile building OrcaBus and FileManager, we also wish to show `ctTSOv2 pipeline result from ICAv2` in Portal
+# Part of the feature story:
+#  https://github.com/umccr/infrastructure/issues/434
+#  https://github.com/umccr/data-portal-apis/issues/684
+
+resource "aws_cloudwatch_event_rule" "icav2_pipeline_cache_to_sqs_rule" {
+  name        = "data-portal-icav2-pipeline-cache-to-portal-s3-sqs"
+  description = "Forward S3 events from ICAv2 pipeline cache BYOB bucket to Portal S3 SQS"
+  event_pattern = jsonencode({
+    source  = ["aws.s3"],
+    account = [data.aws_caller_identity.current.account_id],
+    detail = {
+      bucket = {
+        name = [var.s3_icav2_pipeline_cache_bucket[terraform.workspace]]
+      }
+    }
+  })
+  # TODO consider prefix filter once convention is stable. Portal typically want `cttsov2` outputs only.
+  #  e.g. `byob-icav2/<project-name>/<analysis-data>/cttsov2`
+  #  See https://github.com/umccr/orcabus/pull/350
+
+  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
+  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+  # https://repost.aws/knowledge-center/eventbridge-rule-monitors-s3
+
+  # Consider input transformer, if any
+  # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target#input-transformer-usage---json-object
+
+  tags = merge(local.default_tags)
+}
+
+resource "aws_cloudwatch_event_target" "icav2_pipeline_cache_to_sqs_target" {
+  arn  = aws_sqs_queue.s3_event_queue.arn
+  rule = aws_cloudwatch_event_rule.icav2_pipeline_cache_to_sqs_rule.name
 }

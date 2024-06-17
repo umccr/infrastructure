@@ -45,6 +45,10 @@ locals {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 data "aws_sns_topic" "portal_ops_sns_topic" {
   name = "DataPortalTopic"
 }

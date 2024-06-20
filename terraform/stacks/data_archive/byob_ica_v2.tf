@@ -15,6 +15,8 @@ locals {
   account_id_stg           = "455634345446"
   account_id_dev           = "843407916570"
   target_event_bus_arn_dev = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
+  # The role that the orcabus file manager uses to ingest events.
+  orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
 }
 
 
@@ -263,6 +265,21 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
+  statement {
+    sid = "orcabus_file_manager_ingest_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject"
+    ]
+    resources = [
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -384,6 +401,21 @@ data "aws_iam_policy_document" "staging_data" {
       "${aws_s3_bucket.staging_data.arn}/*",
     ]
   }
+  statement {
+    sid = "orcabus_file_manager_ingest_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_stg}:role/${local.orcabus_file_manager_ingest_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject"
+    ]
+    resources = [
+      aws_s3_bucket.staging_data.arn,
+      "${aws_s3_bucket.staging_data.arn}/*",
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -481,6 +513,21 @@ data "aws_iam_policy_document" "development_data" {
       "s3:PutObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
+      "s3:GetObject"
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
+  statement {
+    sid = "orcabus_file_manager_ingest_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/${local.orcabus_file_manager_ingest_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
       "s3:GetObject"
     ]
     resources = [

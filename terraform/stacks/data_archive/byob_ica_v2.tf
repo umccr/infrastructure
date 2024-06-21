@@ -280,6 +280,29 @@ data "aws_iam_policy_document" "production_data" {
   #     "${aws_s3_bucket.production_data.arn}/*",
   #   ]
   # }
+  statement {
+    sid = "data_protal_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role}"]
+    }
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -416,6 +439,29 @@ data "aws_iam_policy_document" "staging_data" {
   #     "${aws_s3_bucket.staging_data.arn}/*",
   #   ]
   # }
+  statement {
+    sid = "data_protal_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role}"]
+    }
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -529,6 +575,29 @@ data "aws_iam_policy_document" "development_data" {
     actions = [
       "s3:ListBucket",
       "s3:GetObject"
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
+  statement {
+    sid = "data_protal_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role}"]
+    }
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,

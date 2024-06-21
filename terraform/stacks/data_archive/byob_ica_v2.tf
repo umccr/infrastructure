@@ -265,21 +265,21 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
-  statement {
-    sid = "orcabus_file_manager_ingest_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
-    }
-    actions = [
-      "s3:ListBucket",
-      "s3:GetObject"
-    ]
-    resources = [
-      aws_s3_bucket.production_data.arn,
-      "${aws_s3_bucket.production_data.arn}/*",
-    ]
-  }
+  # statement {
+  #   sid = "orcabus_file_manager_ingest_access"
+  #   principals {
+  #     type        = "AWS"
+  #     identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
+  #   }
+  #   actions = [
+  #     "s3:ListBucket",
+  #     "s3:GetObject"
+  #   ]
+  #   resources = [
+  #     aws_s3_bucket.production_data.arn,
+  #     "${aws_s3_bucket.production_data.arn}/*",
+  #   ]
+  # }
 }
 
 # ------------------------------------------------------------------------------
@@ -401,21 +401,21 @@ data "aws_iam_policy_document" "staging_data" {
       "${aws_s3_bucket.staging_data.arn}/*",
     ]
   }
-  statement {
-    sid = "orcabus_file_manager_ingest_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.account_id_stg}:role/${local.orcabus_file_manager_ingest_role}"]
-    }
-    actions = [
-      "s3:ListBucket",
-      "s3:GetObject"
-    ]
-    resources = [
-      aws_s3_bucket.staging_data.arn,
-      "${aws_s3_bucket.staging_data.arn}/*",
-    ]
-  }
+  # statement {
+  #   sid = "orcabus_file_manager_ingest_access"
+  #   principals {
+  #     type        = "AWS"
+  #     identifiers = ["arn:aws:iam::${local.account_id_stg}:role/${local.orcabus_file_manager_ingest_role}"]
+  #   }
+  #   actions = [
+  #     "s3:ListBucket",
+  #     "s3:GetObject"
+  #   ]
+  #   resources = [
+  #     aws_s3_bucket.staging_data.arn,
+  #     "${aws_s3_bucket.staging_data.arn}/*",
+  #   ]
+  # }
 }
 
 # ------------------------------------------------------------------------------

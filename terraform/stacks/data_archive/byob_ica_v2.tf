@@ -284,7 +284,7 @@ data "aws_iam_policy_document" "production_data" {
     sid = "data_protal_access"
     principals {
       type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role"]
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/data_portal/data_portal_lambda_apis_role"]
     }
     actions = [
       "s3:GetBucketLocation",
@@ -443,7 +443,7 @@ data "aws_iam_policy_document" "staging_data" {
     sid = "data_protal_access"
     principals {
       type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role"]
+      identifiers = ["arn:aws:iam::${local.account_id_stg}:role/data_portal/data_portal_lambda_apis_role"]
     }
     actions = [
       "s3:GetBucketLocation",

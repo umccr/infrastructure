@@ -237,7 +237,7 @@ data "aws_iam_policy_document" "production_data" {
     sid = "prod_lo_access"
     principals {
       type        = "AWS"
-      identifiers = [local.account_id_prod]
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:root"]
     }
     actions = [
       "s3:List*",
@@ -299,8 +299,8 @@ data "aws_iam_policy_document" "production_data" {
       "s3:PutObjectVersionTagging"
     ]
     resources = [
-      aws_s3_bucket.development_data.arn,
-      "${aws_s3_bucket.development_data.arn}/*",
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
 }
@@ -396,7 +396,7 @@ data "aws_iam_policy_document" "staging_data" {
     sid = "stg_lo_access"
     principals {
       type        = "AWS"
-      identifiers = [local.account_id_stg]
+      identifiers = ["arn:aws:iam::${local.account_id_stg}:root"]
     }
     actions = [
       "s3:List*",
@@ -458,8 +458,8 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:PutObjectVersionTagging"
     ]
     resources = [
-      aws_s3_bucket.development_data.arn,
-      "${aws_s3_bucket.development_data.arn}/*",
+      aws_s3_bucket.staging_data.arn,
+      "${aws_s3_bucket.staging_data.arn}/*",
     ]
   }
 }
@@ -538,7 +538,7 @@ data "aws_iam_policy_document" "development_data" {
     sid = "dev_lo_access"
     principals {
       type        = "AWS"
-      identifiers = [local.account_id_dev]
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:root"]
     }
     actions = [
       "s3:List*",

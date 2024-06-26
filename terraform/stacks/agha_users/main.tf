@@ -19,8 +19,8 @@ data "aws_region" "current" {}
 
 locals {
   common_tags = {
-    "Environment": "agha",
-    "Stack": var.stack_name
+    "Environment" : "agha",
+    "Stack" : var.stack_name
   }
 }
 
@@ -42,16 +42,19 @@ data "aws_s3_bucket" "agha_gdr_store" {
 # # Dedicated user to generate long lived presigned URLs
 # # See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
 module "agha_presign" {
-  source    = "../../modules/iam_user/default_user"
-  username  = "agha_presign"
-  pgp_key   = "keybase:freisinger"
+  source   = "../../modules/iam_user/default_user"
+  username = "agha_presign"
+  pgp_key  = "keybase:freisinger"
 }
 
 #####
 # AGHA Users
+# NOTE: we don't manage access keys via Terraform as that would interfere with
+#       users rotating their access keys themselves. So upon user creation the
+#       initial access key will have to be created manually for the user.
 resource "aws_iam_user" "adavawala" {
-  name = "adavawala"
-  path = "/agha/"
+  name          = "adavawala"
+  path          = "/agha/"
   force_destroy = true
   tags = {
     email   = "ashil.davawala@vcgs.org.au",
@@ -60,9 +63,20 @@ resource "aws_iam_user" "adavawala" {
   }
 }
 
+resource "aws_iam_user" "richardallcock" {
+  name          = "richardallcock"
+  path          = "/agha/"
+  force_destroy = true
+  tags = {
+    email   = "Richard.Allcock@health.wa.gov.au",
+    name    = "Richard Allcock",
+    keybase = "richardallcock"
+  }
+}
+
 resource "aws_iam_user" "evachan" {
-  name = "evachan"
-  path = "/agha/"
+  name          = "evachan"
+  path          = "/agha/"
   force_destroy = true
   tags = {
     email   = "eva.chan@health.nsw.gov.au",
@@ -117,6 +131,7 @@ resource "aws_iam_group_membership" "default" {
     module.sarah_dm.username,
     aws_iam_user.adavawala.name,
     aws_iam_user.evachan.name,
+    aws_iam_user.richardallcock.name,
   ]
 }
 
@@ -132,6 +147,7 @@ resource "aws_iam_group_membership" "submitter" {
   users = [
     module.sarah_dm.username,
     aws_iam_user.adavawala.name,
+    aws_iam_user.richardallcock.name,
   ]
 }
 
@@ -187,13 +203,13 @@ resource "aws_iam_group_policy_attachment" "controller_dynamodb_ro_policy_attach
 resource "aws_iam_policy" "default_user_policy" {
   name_prefix = "default_user_policy"
   path        = "/agha/"
-  policy = file("policies/default-user-policy.json")
+  policy      = file("policies/default-user-policy.json")
 }
 
 resource "aws_iam_policy" "data_controller_policy" {
   name_prefix = "data_controller_policy"
   path        = "/agha/"
-  policy = file("policies/data-controller-policy.json")
+  policy      = file("policies/data-controller-policy.json")
 }
 
 data "template_file" "agha_staging_manage_policy" {
@@ -256,7 +272,7 @@ data "template_file" "abac_store_policy" {
   template = file("policies/bucket-ro-abac-s3-policy.json")
 
   vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_store.id,
+    bucket_name   = data.aws_s3_bucket.agha_gdr_store.id,
     consent_group = "True"
   }
 }
@@ -271,7 +287,7 @@ data "template_file" "abac_staging_policy" {
   template = file("policies/bucket-ro-abac-s3-policy.json")
 
   vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_staging.id,
+    bucket_name   = data.aws_s3_bucket.agha_gdr_staging.id,
     consent_group = "True"
   }
 }

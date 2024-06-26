@@ -27,8 +27,3 @@ output "sarah_dm_secret_access_key" {
 output "sarah_dm_console_login" {
   value = aws_iam_user_login_profile.sarah_dm.encrypted_password
 }
-
-# simon
-output "simon_username" {
-  value = module.simon.username
-}

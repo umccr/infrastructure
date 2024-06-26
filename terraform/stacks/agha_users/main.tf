@@ -48,25 +48,7 @@ module "agha_presign" {
 }
 
 #####
-# Dedicated user for Gen3 (fence_bot)
-resource "aws_iam_user" "fence_bot" {
-  name = "fence_bot"
-  path = "/gen3/"
-  tags = {
-    name    = "fence_bot"
-  }
-}
-
-
 # AGHA Users
-module "simon" {
-  source    = "../../modules/iam_user/only_user"
-  username  = "simon"
-  full_name = "Simon Sadedin"
-  keybase   = "simonsadedin"
-  email     = "simon.sadedin@vcgs.org.au"
-}
-
 resource "aws_iam_user" "adavawala" {
   name = "adavawala"
   path = "/agha/"
@@ -78,84 +60,6 @@ resource "aws_iam_user" "adavawala" {
   }
 }
 
-resource "aws_iam_user" "sgao" {
-  name = "sgao"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "song.gao@sa.gov.au",
-    name    = "Song Gao",
-    keybase = "sgao"
-  }
-}
-
-resource "aws_iam_user" "shyrav_consent" {
-  name = "shyrav_consent"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "s.ravishankar@garvan.org.au",
-    name    = "Shyamsundar Ravishankar",
-    keybase = "shyrav"
-  }
-}
-
-resource "aws_iam_user" "thangu_consent" {
-  name = "thangu_consent"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "thanh.nguyen@garvan.org.au",
-    name    = "Thanh Nguyen",
-    keybase = "thangu"
-  }
-}
-
-resource "aws_iam_user" "yingzhu" {
-  name = "yingzhu"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "Ying.Zhu@health.nsw.gov.au",
-    name    = "Ying Zhu",
-    keybase = "yingzhu"
-  }
-}
-
-resource "aws_iam_user" "fzhanghealth" {
-  name = "fzhanghealth"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "futao.zhang@health.nsw.gov.au",
-    name    = "Futao Zhang",
-    keybase = "fzhanghealth"
-  }
-}
-
-resource "aws_iam_user" "chiaraf" {
-  name = "chiaraf"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "22253832@student.uwa.edu.au",
-    name    = "Chiara Folland",
-    keybase = "chiaraf"
-  }
-}
-
-resource "aws_iam_user" "qimrbscott" {
-  name = "qimrbscott"
-  path = "/agha/"
-  force_destroy = true
-  tags = {
-    email   = "Scott.Wood@qimrberghofer.edu.au",
-    name    = "Scott Wood",
-    keybase = "qimrbscott"
-  }
-}
-
-
 resource "aws_iam_user" "evachan" {
   name = "evachan"
   path = "/agha/"
@@ -164,16 +68,6 @@ resource "aws_iam_user" "evachan" {
     email   = "eva.chan@health.nsw.gov.au",
     name    = "Eva Chan",
     keybase = "evachan"
-  }
-}
-
-resource "aws_iam_user" "ohofmann" {
-  name = "ohofmann"
-  path = "/agha/"
-  tags = {
-    email   = "ohofmann72@gmail.com",
-    name    = "Oliver Hofmann",
-    keybase = "ohofmann"
   }
 }
 
@@ -212,12 +106,6 @@ resource "aws_iam_group" "data_controller" {
   path = "/agha/"
 }
 
-# Gen3
-resource "aws_iam_group" "gen3" {
-  name = "agha_gdr_gen3"
-  path = "/gen3/"
-}
-
 ####################
 # Group memberships
 
@@ -227,16 +115,8 @@ resource "aws_iam_group_membership" "default" {
   group = aws_iam_group.default.name
   users = [
     module.sarah_dm.username,
-    module.simon.username,
     aws_iam_user.adavawala.name,
-    aws_iam_user.sgao.name,
-    aws_iam_user.yingzhu.name,
-    aws_iam_user.fzhanghealth.name,
-    aws_iam_user.chiaraf.name,
-    aws_iam_user.qimrbscott.name,
     aws_iam_user.evachan.name,
-    aws_iam_user.shyrav_consent.name,
-    aws_iam_user.thangu_consent.name,
   ]
 }
 
@@ -251,13 +131,7 @@ resource "aws_iam_group_membership" "submitter" {
   group = aws_iam_group.submitter.name
   users = [
     module.sarah_dm.username,
-    module.simon.username,
     aws_iam_user.adavawala.name,
-    aws_iam_user.sgao.name,
-    aws_iam_user.yingzhu.name,
-    aws_iam_user.fzhanghealth.name,
-    aws_iam_user.chiaraf.name,
-    aws_iam_user.qimrbscott.name,
   ]
 }
 
@@ -294,20 +168,6 @@ resource "aws_iam_group_policy_attachment" "controller_store_ro_policy_attachmen
 resource "aws_iam_group_policy_attachment" "controller_dynamodb_ro_policy_attachment" {
   group      = aws_iam_group.data_controller.name
   policy_arn = var.policy_arn_dynamodb_ro
-}
-
-# Gen3 services
-resource "aws_iam_group_membership" "gen3_services" {
-  name  = "${aws_iam_group.gen3.name}_membership"
-  group = aws_iam_group.gen3.name
-  users = [
-    aws_iam_user.fence_bot.name
-  ]
-}
-
-resource "aws_iam_group_policy_attachment" "gen3_services_store_ro_policy_attachment" {
-  group      = aws_iam_group.gen3.name
-  policy_arn = aws_iam_policy.agha_store_ro_policy.arn
 }
 
 ################################################################################
@@ -442,10 +302,7 @@ resource "aws_iam_group_membership" "abac" {
   name  = "${aws_iam_group.abac.name}_membership"
   group = aws_iam_group.abac.name
   users = [
-    aws_iam_user.abac.name,
-    aws_iam_user.ohofmann.name,
-    aws_iam_user.shyrav_consent.name,
-    aws_iam_user.thangu_consent.name,
+    aws_iam_user.abac.name
   ]
 }
 

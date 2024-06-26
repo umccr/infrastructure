@@ -89,17 +89,6 @@ resource "aws_iam_user" "sgao" {
   }
 }
 
-
-# resource "aws_iam_user" "shyrav" {
-#   name = "shyrav"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "s.ravishankar@garvan.org.au",
-#     name    = "Shyamsundar Ravishankar",
-#     keybase = "shyrav"
-#   }
-# }
 resource "aws_iam_user" "shyrav_consent" {
   name = "shyrav_consent"
   path = "/agha/"
@@ -143,17 +132,6 @@ resource "aws_iam_user" "fzhanghealth" {
     keybase = "fzhanghealth"
   }
 }
-
-# resource "aws_iam_user" "seanlianu" {
-#   name = "seanlianu"
-#   path = "/agha/"
-#   force_destroy = true
-#   tags = {
-#     email   = "sean.li@anu.edu.au",
-#     name    = "Sean Li",
-#     keybase = "seanlianu"
-#   }
-# }
 
 resource "aws_iam_user" "chiaraf" {
   name = "chiaraf"
@@ -252,10 +230,8 @@ resource "aws_iam_group_membership" "default" {
     module.simon.username,
     aws_iam_user.adavawala.name,
     aws_iam_user.sgao.name,
-    # module.shyrav.username,
     aws_iam_user.yingzhu.name,
     aws_iam_user.fzhanghealth.name,
-    # module.seanlianu.username,
     aws_iam_user.chiaraf.name,
     aws_iam_user.qimrbscott.name,
     aws_iam_user.evachan.name,
@@ -280,7 +256,6 @@ resource "aws_iam_group_membership" "submitter" {
     aws_iam_user.sgao.name,
     aws_iam_user.yingzhu.name,
     aws_iam_user.fzhanghealth.name,
-    # module.seanlianu.username,
     aws_iam_user.chiaraf.name,
     aws_iam_user.qimrbscott.name,
   ]
@@ -309,11 +284,6 @@ resource "aws_iam_group_policy_attachment" "controller_additional_policy_attachm
 resource "aws_iam_group_policy_attachment" "controller_staging_manage_policy_attachment" {
   group      = aws_iam_group.data_controller.name
   policy_arn = aws_iam_policy.agha_staging_manage_policy.arn
-}
-
-resource "aws_iam_group_policy_attachment" "controller_mm_manage_policy_attachment" {
-  group      = aws_iam_group.data_controller.name
-  policy_arn = aws_iam_policy.agha_mm_manage_policy.arn
 }
 
 resource "aws_iam_group_policy_attachment" "controller_store_ro_policy_attachment" {
@@ -492,96 +462,3 @@ resource "aws_iam_group_policy_attachment" "abac_staging_policy_attachment" {
 ################################################################################
 
 ## Mackenzie's Mission
-
-# bucket
-data "aws_s3_bucket" "agha_gdr_mm" {
-  bucket = var.agha_gdr_mm_bucket_name
-}
-
-# group
-resource "aws_iam_group" "mm" {
-  name = "agha_gdr_mm"
-  path = "/agha/"
-}
-
-# group membership
-resource "aws_iam_group_membership" "mm" {
-  name  = "${aws_iam_group.mm.name}_membership"
-  group = aws_iam_group.mm.name
-  users = [
-    module.sarah_dm.username
-  ]
-}
-
-# group policies
-resource "aws_iam_group_policy_attachment" "mm_mm_rw_policy_attachment" {
-  group      = aws_iam_group.mm.name
-  policy_arn = aws_iam_policy.agha_mm_submit_policy.arn
-}
-
-# policy
-data "template_file" "agha_mm_submit_policy" {
-  template = file("policies/bucket-submit-policy.json")
-
-  vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_mm.id
-  }
-}
-
-resource "aws_iam_policy" "agha_mm_submit_policy" {
-  name_prefix = "agha_mm_submit_policy"
-  path        = "/agha/"
-  policy      = data.template_file.agha_mm_submit_policy.rendered
-}
-
-data "template_file" "agha_mm_manage_policy" {
-  template = file("policies/bucket-manage-policy.json")
-
-  vars = {
-    bucket_name = data.aws_s3_bucket.agha_gdr_mm.id
-  }
-}
-
-resource "aws_iam_policy" "agha_mm_manage_policy" {
-  name_prefix = "agha_mm_manage_policy"
-  path        = "/agha/"
-  policy      = data.template_file.agha_mm_manage_policy.rendered
-}
-##### VCGS specific access to MM
-
-# # group
-# resource "aws_iam_group" "mm_vcgs" {
-#   name = "agha_gdr_mm_vcgs"
-#   path = "/agha/"
-# }
-
-# # group membership
-# resource "aws_iam_group_membership" "mm_vcgs" {
-#   name  = "${aws_iam_group.mm_vcgs.name}_membership"
-#   group = aws_iam_group.mm_vcgs.name
-#   users = [
-#     module.simon.username
-#   ]
-# }
-
-# # group policies
-# resource "aws_iam_group_policy_attachment" "mm_mm_vcgs_rw_policy_attachment" {
-#   group      = aws_iam_group.mm_vcgs.name
-#   policy_arn = aws_iam_policy.agha_mm_vcgs_rw_policy.arn
-# }
-
-# # policy
-# data "template_file" "agha_mm_vcgs_rw_policy" {
-#   template = file("policies/bucket-rw-prefix-policy.json")
-
-#   vars = {
-#     bucket_name = data.aws_s3_bucket.agha_gdr_mm.id,
-#     prefix = "vcgs"
-#   }
-# }
-
-# resource "aws_iam_policy" "agha_mm_vcgs_rw_policy" {
-#   name_prefix = "agha_mm_vcgs_rw_policy"
-#   path        = "/agha/"
-#   policy      = data.template_file.agha_mm_vcgs_rw_policy.rendered
-# }

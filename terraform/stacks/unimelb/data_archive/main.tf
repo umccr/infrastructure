@@ -17,30 +17,43 @@ terraform {
 provider "aws" {
   region = local.region
 }
-provider "awscc" {
-  region = local.region
-}
-
 
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
 locals {
-  region = "ap-southeast-2"
-  stack_name = "data_archive"
+  region                 = "ap-southeast-2"
+  stack_name             = "data_archive"
+  this_account_id        = data.aws_caller_identity.current.account_id
+  mgmt_account_id        = "363226301494"
+  cloudtrail_bucket_name = "cloudtrail-logs-${local.mgmt_account_id}-${local.region}"
+  data_trail_name        = "dataTrail"
 
   default_tags = {
     "Stack"       = local.stack_name
     "Creator"     = "terraform"
     "Environment" = "data_archive"
   }
-
 }
 
+resource "aws_cloudtrail" "dataTrail" {
+  name                          = local.data_trail_name
+  s3_bucket_name                = local.cloudtrail_bucket_name
 
-# resource "aws_s3_account_public_access_block" "account_pab" {
-#   block_public_acls   = true
-#   block_public_policy = true
-# }
+  event_selector {
+    read_write_type           = "All"
+    include_management_events = true
 
+    data_resource {
+      type   = "AWS::S3::Object"
+      values = ["arn:aws:s3"]
+    }
+  }
+  tags = merge(
+    local.default_tags,
+    {
+      "umccr:Name" = local.data_trail_name
+    }
+  )
+}

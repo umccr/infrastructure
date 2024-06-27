@@ -58,7 +58,7 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
 # From: https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-set-bucket-policy-for-multiple-accounts.html
 data "aws_iam_policy_document" "cloudtrail" {
   statement {
-    sid = "CloudTrail1"
+    sid = "CloudTrailAclCheck"
     principals {
       type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
@@ -73,13 +73,13 @@ data "aws_iam_policy_document" "cloudtrail" {
       test     = "ForAnyValue:StringEquals"
       variable = "aws:SourceArn"
       values = [
-        "arn:aws:cloudtrail:region:${local.this_account_id}:trail/mgntTrail",
-        "arn:aws:cloudtrail:region:${local.data_account_id}:trail/dataTrail"
+        "arn:aws:cloudtrail:${local.region}:${local.this_account_id}:trail/mgntTrail",
+        "arn:aws:cloudtrail:${local.region}:${local.data_account_id}:trail/dataTrail"
       ]
     }
   }
   statement {
-    sid = "CloudTrail2"
+    sid = "CloudTrailWrite"
     principals {
       type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
@@ -95,8 +95,8 @@ data "aws_iam_policy_document" "cloudtrail" {
       test     = "ForAnyValue:StringEquals"
       variable = "aws:SourceArn"
       values = [
-        "arn:aws:cloudtrail:region:${local.this_account_id}:trail/mgntTrail",
-        "arn:aws:cloudtrail:region:${local.data_account_id}:trail/dataTrail"
+        "arn:aws:cloudtrail:${local.region}:${local.this_account_id}:trail/mgntTrail",
+        "arn:aws:cloudtrail:${local.region}:${local.data_account_id}:trail/dataTrail"
       ]
     }
     condition {

@@ -10,7 +10,7 @@ locals {
   # The bucket holding all staging data
   pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
-  icav2_prefix             = "byob-icav2/"
+  icav2_prefix                    = "byob-icav2/"
   event_bus_arn_umccr_dev_default = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"

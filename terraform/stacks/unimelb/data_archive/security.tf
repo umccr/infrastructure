@@ -29,3 +29,50 @@ resource "aws_cloudtrail" "dataTrail" {
   )
 }
 
+
+# ------------------------------------------------------------------------------
+# EventBridge rule to forward events to the UMCCR org account
+
+data "aws_iam_policy_document" "put_events_to_org_bus" {
+  statement {
+    effect    = "Allow"
+    actions   = ["events:PutEvents"]
+    resources = [local.event_bus_arn_umccr_org_default]
+  }
+}
+
+resource "aws_iam_policy" "put_events_to_org_bus" {
+  name   = "put_events_to_org_bus"
+  policy = data.aws_iam_policy_document.put_events_to_org_bus.json
+}
+
+resource "aws_iam_role" "put_events_to_org_bus" {
+  name               = "put_events_to_org_bus"
+  assume_role_policy = data.aws_iam_policy_document.eventbridge_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "put_events_to_org_bus" {
+  role       = aws_iam_role.put_events_to_org_bus.name
+  policy_arn = aws_iam_policy.put_events_to_org_bus.arn
+}
+
+# TODO: could restrice the events (detail-type) further to avoid unnecessary cost
+resource "aws_cloudwatch_event_rule" "put_events_to_org_bus" {
+  name        = "put_events_to_org_bus"
+  description = "Forward S3 events from IAM Access Analyser to UMCCR org default event bus"
+  event_pattern = jsonencode({
+    source      = ["aws.access-analyzer"],
+    account     = [data.aws_caller_identity.current.account_id],
+    detail-type = ["Access Analyzer Finding"]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "put_events_to_org_bus" {
+  target_id = "put_events_to_org_bus"
+  arn       = local.event_bus_arn_umccr_org_default
+  rule      = aws_cloudwatch_event_rule.put_events_to_org_bus.name
+  role_arn  = aws_iam_role.put_events_to_org_bus.arn
+}
+
+
+

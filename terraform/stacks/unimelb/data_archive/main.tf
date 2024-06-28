@@ -23,12 +23,14 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  region                 = "ap-southeast-2"
-  stack_name             = "data_archive"
-  this_account_id        = data.aws_caller_identity.current.account_id
-  mgmt_account_id        = "363226301494"
-  cloudtrail_bucket_name = "cloudtrail-logs-${local.mgmt_account_id}-${local.region}"
-  data_trail_name        = "dataTrail"
+  region          = "ap-southeast-2"
+  stack_name      = "data_archive"
+  this_account_id = data.aws_caller_identity.current.account_id
+  mgmt_account_id = "363226301494"
+  account_id_prod = "472057503814"
+  account_id_stg  = "455634345446"
+  account_id_dev  = "843407916570"
+  account_id_org  = "650704067584"
 
   default_tags = {
     "Stack"       = local.stack_name
@@ -37,23 +39,20 @@ locals {
   }
 }
 
-resource "aws_cloudtrail" "dataTrail" {
-  name                          = local.data_trail_name
-  s3_bucket_name                = local.cloudtrail_bucket_name
+################################################################################
+# Common resources
 
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
+data "aws_iam_policy_document" "eventbridge_assume_role" {
+  statement {
+    effect = "Allow"
 
-    data_resource {
-      type   = "AWS::S3::Object"
-      values = ["arn:aws:s3"]
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
     }
+
+    actions = ["sts:AssumeRole"]
   }
-  tags = merge(
-    local.default_tags,
-    {
-      "umccr:Name" = local.data_trail_name
-    }
-  )
 }
+
+

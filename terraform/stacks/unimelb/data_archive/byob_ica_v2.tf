@@ -11,29 +11,9 @@ locals {
   pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
   icav2_prefix             = "byob-icav2/"
-  account_id_prod          = "472057503814"
-  account_id_stg           = "455634345446"
-  account_id_dev           = "843407916570"
-  target_event_bus_arn_dev = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
+  event_bus_arn_umccr_dev_default = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
-}
-
-
-################################################################################
-# Common resources
-
-data "aws_iam_policy_document" "eventbridge_assume_role" {
-  statement {
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["events.amazonaws.com"]
-    }
-
-    actions = ["sts:AssumeRole"]
-  }
 }
 
 
@@ -634,7 +614,7 @@ data "aws_iam_policy_document" "put_events_to_dev_bus" {
   statement {
     effect    = "Allow"
     actions   = ["events:PutEvents"]
-    resources = [local.target_event_bus_arn_dev]
+    resources = [local.event_bus_arn_umccr_dev_default]
   }
 }
 
@@ -670,7 +650,7 @@ resource "aws_cloudwatch_event_rule" "put_events_to_dev_bus" {
 
 resource "aws_cloudwatch_event_target" "put_events_to_dev_bus" {
   target_id = "put_events_to_dev_bus"
-  arn       = local.target_event_bus_arn_dev
+  arn       = local.event_bus_arn_umccr_dev_default
   rule      = aws_cloudwatch_event_rule.put_events_to_dev_bus.name
   role_arn  = aws_iam_role.put_events_to_dev_bus.arn
 }

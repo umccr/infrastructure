@@ -59,7 +59,7 @@ module "main_vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false  # No Public IP by default. See https://github.com/umccr/infrastructure/issues/432
 
   # See README Subnet Tagging section for the following tags combination
   public_subnet_tags = {

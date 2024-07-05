@@ -1,8 +1,8 @@
 {
-  "dragen_transcriptome_directory": null,
-  "arriba_directory": null,
-  "umccrise_directory": null,
+  "dragen_wts_dir": null,
+  "arriba_dir": null,
+  "umccrise": null,
   "sample_name": null,
   "dataset": "PANCAN",
-  "report_directory": null
+  "report_dir": null
 }

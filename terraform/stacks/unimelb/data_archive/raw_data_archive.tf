@@ -1,3 +1,8 @@
+
+locals {
+  raw_data_bucket_name = "archive-prod-sequencing-data-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+}
+
 ################################################################################
 # Buckets
 

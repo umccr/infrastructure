@@ -17,30 +17,42 @@ terraform {
 provider "aws" {
   region = local.region
 }
-provider "awscc" {
-  region = local.region
-}
-
 
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
 locals {
-  region = "ap-southeast-2"
-  stack_name = "data_archive"
+  region          = "ap-southeast-2"
+  stack_name      = "data_archive"
+  this_account_id = data.aws_caller_identity.current.account_id
+  mgmt_account_id = "363226301494"
+  account_id_prod = "472057503814"
+  account_id_stg  = "455634345446"
+  account_id_dev  = "843407916570"
+  account_id_org  = "650704067584"
 
   default_tags = {
     "Stack"       = local.stack_name
     "Creator"     = "terraform"
     "Environment" = "data_archive"
   }
-
 }
 
+################################################################################
+# Common resources
 
-# resource "aws_s3_account_public_access_block" "account_pab" {
-#   block_public_acls   = true
-#   block_public_policy = true
-# }
+data "aws_iam_policy_document" "eventbridge_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
 

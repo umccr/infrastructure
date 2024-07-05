@@ -6,9 +6,9 @@ locals {
   }
 
   rnasum_wfl_version = {
-    dev  = "0.6.5"
-    prod = "1.0.0--bb09214"
-    stg  = "0.4.9--3694eb2"
+    dev  = "1.1.0"
+    prod = "1.1.0--4ce529c"
+    stg  = "1.1.0--4ce529c"
   }
 
   rnasum_wfl_input = {

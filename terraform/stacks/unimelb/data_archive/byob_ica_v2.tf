@@ -13,6 +13,7 @@ locals {
   icav2_prefix                    = "byob-icav2/"
   event_bus_arn_umccr_dev_default = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
   event_bus_arn_umccr_stg_default = "arn:aws:events:ap-southeast-2:${local.account_id_stg}:event-bus/default"
+  event_bus_arn_umccr_prod_default = "arn:aws:events:ap-southeast-2:${local.account_id_prod}:event-bus/default"
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
 }
@@ -246,21 +247,21 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
-  # statement {
-  #   sid = "orcabus_file_manager_ingest_access"
-  #   principals {
-  #     type        = "AWS"
-  #     identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
-  #   }
-  #   actions = [
-  #     "s3:ListBucket",
-  #     "s3:GetObject"
-  #   ]
-  #   resources = [
-  #     aws_s3_bucket.production_data.arn,
-  #     "${aws_s3_bucket.production_data.arn}/*",
-  #   ]
-  # }
+  statement {
+    sid = "orcabus_file_manager_ingest_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject"
+    ]
+    resources = [
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
+    ]
+  }
   statement {
     sid = "data_protal_access"
     principals {
@@ -299,6 +300,60 @@ resource "aws_s3_bucket_cors_configuration" "production_data" {
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000
   }
+}
+
+# ------------------------------------------------------------------------------
+# EventBridge rule to forward events from to the target account
+
+# NOTE: don't control notification settings from TF, as some is controlled by ICA
+# resource "aws_s3_bucket_notification" "production_data" {
+#   bucket      = aws_s3_bucket.production_data.id
+#   eventbridge = true
+# }
+
+data "aws_iam_policy_document" "put_events_to_prod_bus" {
+  statement {
+    effect    = "Allow"
+    actions   = ["events:PutEvents"]
+    resources = [local.event_bus_arn_umccr_prod_default]
+  }
+}
+
+resource "aws_iam_policy" "put_events_to_prod_bus" {
+  name   = "put_events_to_prod_bus"
+  policy = data.aws_iam_policy_document.put_events_to_prod_bus.json
+}
+
+resource "aws_iam_role" "put_events_to_prod_bus" {
+  name               = "put_events_to_prod_bus"
+  assume_role_policy = data.aws_iam_policy_document.eventbridge_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "put_events_to_prod_bus" {
+  role       = aws_iam_role.put_events_to_prod_bus.name
+  policy_arn = aws_iam_policy.put_events_to_prod_bus.arn
+}
+
+# TODO: could restrict the events (detail-type) further to avoid unnecessary cost
+resource "aws_cloudwatch_event_rule" "put_events_to_prod_bus" {
+  name        = "put_events_to_prod_bus"
+  description = "Forward S3 events from prod bucket to prod event bus"
+  event_pattern = jsonencode({
+    source  = ["aws.s3"],
+    account = [data.aws_caller_identity.current.account_id],
+    detail = {
+      bucket = {
+        name = [aws_s3_bucket.production_data.id]
+      }
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "put_events_to_prod_bus" {
+  target_id = "put_events_to_prod_bus"
+  arn       = local.event_bus_arn_umccr_prod_default
+  rule      = aws_cloudwatch_event_rule.put_events_to_prod_bus.name
+  role_arn  = aws_iam_role.put_events_to_prod_bus.arn
 }
 
 # ==============================================================================

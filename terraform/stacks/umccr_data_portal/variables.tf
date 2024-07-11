@@ -87,7 +87,7 @@ variable "rds_min_capacity" {
 variable "rds_max_capacity" {
   default = {
     prod = 32.0
-    dev  = 4.0
+    dev  = 16.0
     stg  = 16.0
   }
   description = "The maximum capacity in Aurora Capacity Units (ACUs)"

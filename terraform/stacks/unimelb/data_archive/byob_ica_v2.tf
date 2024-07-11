@@ -255,7 +255,8 @@ data "aws_iam_policy_document" "production_data" {
     }
     actions = [
       "s3:ListBucket",
-      "s3:GetObject"
+      "s3:GetObject",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.production_data.arn,
@@ -278,7 +279,8 @@ data "aws_iam_policy_document" "production_data" {
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging"
+      "s3:PutObjectVersionTagging",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.production_data.arn,
@@ -468,7 +470,8 @@ data "aws_iam_policy_document" "staging_data" {
     }
     actions = [
       "s3:ListBucket",
-      "s3:GetObject"
+      "s3:GetObject",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.staging_data.arn,
@@ -491,7 +494,8 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging"
+      "s3:PutObjectVersionTagging",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.staging_data.arn,
@@ -625,7 +629,7 @@ resource "aws_s3_bucket_policy" "development_data" {
 
 data "aws_iam_policy_document" "development_data" {
   statement {
-    sid = "dev_lo_access"
+    sid = "dev_ro_access"
     principals {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_dev}:root"]
@@ -633,6 +637,8 @@ data "aws_iam_policy_document" "development_data" {
     actions = [
       "s3:List*",
       "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,
@@ -664,7 +670,8 @@ data "aws_iam_policy_document" "development_data" {
     }
     actions = [
       "s3:ListBucket",
-      "s3:GetObject"
+      "s3:GetObject",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,
@@ -687,7 +694,8 @@ data "aws_iam_policy_document" "development_data" {
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging"
+      "s3:PutObjectVersionTagging",
+      "s3:GetObjectAttributes"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,

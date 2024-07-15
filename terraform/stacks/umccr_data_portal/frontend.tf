@@ -72,6 +72,57 @@ resource "aws_cloudfront_origin_access_identity" "client_origin_access_identity"
   comment = "Origin access identity for client bucket"
 }
 
+# CloudFront response headers policy
+resource "aws_cloudfront_response_headers_policy" "response_headers_policy" {
+  # Based on SecurityHeadersPolicy
+  # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
+
+  name    = "SecurityHeadersPolicy-With-CSP"
+  comment = "Based on AWS managed SecurityHeadersPolicy with CSP headers for Portal"
+
+  security_headers_config {
+    # HSTS
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+    strict_transport_security {
+      override                   = true
+      access_control_max_age_sec = 31536000
+    }
+
+    xss_protection {
+      override   = true
+      protection = true
+      mode_block = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    referrer_policy {
+      override        = true
+      referrer_policy = "strict-origin-when-cross-origin"
+    }
+
+    frame_options {
+      override     = true
+      frame_option = "SAMEORIGIN"
+    }
+
+    ##
+    # CSP
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+    #
+    # NOTES:
+    # AWS Cloudfront accept policy statement in one (long) string format. Line breaks are not accepted.
+    # If we can remove 'http://localhost:60151' then we could achieve maximum score A/A+.
+    # Otherwise B+ with https://developer.mozilla.org/en-US/observatory
+    content_security_policy {
+      override                = true
+      content_security_policy = "default-src 'none'; img-src https://*; child-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'sha256-iyazmGim6+BpTEgzuYNeVGqbUJ+knl3GKSZKtwD/UH0='; connect-src https://api.unsplash.com https://*.ap-southeast-2.amazonaws.com https://*.auth.ap-southeast-2.amazoncognito.com https://*.s3.amazonaws.com https://s3.amazonaws.com https://api.portal.dev.umccr.org https://api.portal.stg.umccr.org https://api.portal.prod.umccr.org https://igv.org https://hgdownload.soe.ucsc.edu http://localhost:60151; frame-src 'self' https://*.s3.amazonaws.com;"
+    }
+  }
+}
+
 # CloudFront layer for client S3 bucket access
 resource "aws_cloudfront_distribution" "client_distribution" {
   origin {
@@ -110,9 +161,7 @@ resource "aws_cloudfront_distribution" "client_distribution" {
     default_ttl            = 0
     max_ttl                = 0
 
-    # SecurityHeadersPolicy
-    # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
-    response_headers_policy_id = "67f7725c-6f97-4210-82d7-5512b31e9d03"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.response_headers_policy.id
   }
 
   restrictions {

@@ -118,7 +118,7 @@ resource "aws_cloudfront_response_headers_policy" "response_headers_policy" {
     # Otherwise B+ with https://developer.mozilla.org/en-US/observatory
     content_security_policy {
       override                = true
-      content_security_policy = "default-src 'none'; img-src https://*; child-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'sha256-iyazmGim6+BpTEgzuYNeVGqbUJ+knl3GKSZKtwD/UH0='; connect-src https://api.unsplash.com https://*.ap-southeast-2.amazonaws.com https://*.auth.ap-southeast-2.amazoncognito.com https://*.s3.amazonaws.com https://s3.amazonaws.com https://api.portal.dev.umccr.org https://api.portal.stg.umccr.org https://api.portal.prod.umccr.org https://igv.org https://hgdownload.soe.ucsc.edu http://localhost:60151; frame-src 'self' https://*.s3.amazonaws.com;"
+      content_security_policy = "default-src 'none'; img-src https://*; child-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'sha256-iyazmGim6+BpTEgzuYNeVGqbUJ+knl3GKSZKtwD/UH0='; connect-src https://api.unsplash.com https://*.ap-southeast-2.amazonaws.com https://*.auth.ap-southeast-2.amazoncognito.com https://*.s3.amazonaws.com https://s3.amazonaws.com https://api.portal.dev.umccr.org https://api.portal.stg.umccr.org https://api.portal.prod.umccr.org https://igv.org https://hgdownload.soe.ucsc.edu http://localhost:60151; frame-src 'self' https://*.s3.amazonaws.com https://s3.ap-southeast-2.amazonaws.com;"
     }
   }
 }

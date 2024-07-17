@@ -130,6 +130,8 @@ resource "aws_cloudfront_distribution" "data2_client_distribution" {
     min_ttl                = 0
     default_ttl            = 0
     max_ttl                = 0
+
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.response_headers_policy.id
   }
 
   restrictions {

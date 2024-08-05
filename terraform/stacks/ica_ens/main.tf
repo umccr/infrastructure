@@ -75,6 +75,11 @@ resource "aws_sqs_queue" "ica_ens_queue" {
   })
   visibility_timeout_seconds = 30*6  # lambda function timeout * 6
   sqs_managed_sse_enabled = true
+
+  # Making ICA ENS `bssh.runs` SQS queue to be delayed queue
+  # See https://umccr.slack.com/archives/C03ABJTSN7J/p1721685789381979
+  delay_seconds = 90
+
   tags = merge(local.default_tags)
 }
 

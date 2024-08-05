@@ -17,6 +17,7 @@ VALID_ACCOUNTS=(
 # Production user
 VALID_API_KEY_SECRET_NAMES=(
   "ICAv2ApiKey-umccr-prod-service-pipelines" \
+  "ICAv2ApiKey-umccr-prod-service-dev" \
   "ICAv2ApiKey-umccr-prod-service-staging" \
   "ICAv2ApiKey-umccr-prod-service-production"
 )

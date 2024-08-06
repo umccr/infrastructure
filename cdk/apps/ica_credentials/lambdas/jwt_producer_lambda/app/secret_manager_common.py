@@ -2,7 +2,7 @@ import traceback
 from typing import Any, Callable
 
 
-def get_master_api_key(client: Any, master_arn) -> str:
+def get_master_api_key(client: Any, master_arn: str) -> str:
     """
     Get the master API key from the string content of the given
     secret arn.

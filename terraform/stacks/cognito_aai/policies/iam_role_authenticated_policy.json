@@ -8,7 +8,9 @@
         "cognito-sync:*",
         "cognito-identity:*"
       ],
-      "Resource": ["*"]
+      "Resource": [
+        "*"
+      ]
     },
     {
       "Effect": "Allow",
@@ -17,7 +19,19 @@
         "lambda:InvokeFunctionUrl",
         "lambda:InvokeFunction"
       ],
-      "Resource": ["*"]
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "*"
+      ]
     }
   ]
 }

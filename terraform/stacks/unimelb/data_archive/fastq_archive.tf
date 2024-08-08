@@ -52,7 +52,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "fastq_archive" {
     filter {
       object_size_greater_than = 5000000
     }
-    status = "Enabled"
+    status = "Disabled"
   }
 
   rule {
@@ -64,7 +64,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "fastq_archive" {
     filter {
       object_size_less_than = 5000000
     }
-    status = "Enabled"
+    status = "Disabled"
   }
 }
 

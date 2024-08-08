@@ -3,7 +3,6 @@
 
 locals {
   # The bucket holding all "active" production data
-  pipeline_data_bucket_name      = "${data.aws_caller_identity.current.account_id}-pipeline-cache"
   pipeline_data_bucket_name_prod = "pipeline-prod-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # The bucket holding all development data
   pipeline_data_bucket_name_dev = "pipeline-dev-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
@@ -21,127 +20,6 @@ locals {
 
 ################################################################################
 # Buckets
-
-# ==============================================================================
-# pipeline cache
-# ==============================================================================
-
-resource "aws_s3_bucket" "pipeline_data" {
-  bucket = local.pipeline_data_bucket_name
-
-  tags = merge(
-    local.default_tags,
-    {
-      "Name" = local.pipeline_data_bucket_name
-    }
-  )
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "pipeline_data" {
-  bucket = aws_s3_bucket.pipeline_data.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_versioning" "pipeline_data" {
-  bucket = aws_s3_bucket.pipeline_data.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "pipeline_data" {
-  # Must have bucket versioning enabled first to apply noncurrent version expiration
-  depends_on = [aws_s3_bucket_versioning.pipeline_data]
-
-  bucket = aws_s3_bucket.pipeline_data.id
-
-  rule {
-    id     = "base_rule"
-    status = "Enabled"
-    expiration {
-      expired_object_delete_marker = true
-    }
-    noncurrent_version_expiration {
-      noncurrent_days = 7
-    }
-    abort_incomplete_multipart_upload {
-      days_after_initiation = 7
-    }
-  }
-
-  rule {
-    id     = "icav2_data_it_rule"
-    status = "Enabled"
-    filter {
-      prefix = local.icav2_prefix
-    }
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-  }
-}
-
-resource "aws_s3_bucket_policy" "pipeline_data" {
-  bucket = aws_s3_bucket.pipeline_data.id
-  policy = data.aws_iam_policy_document.pipeline_data.json
-}
-
-data "aws_iam_policy_document" "pipeline_data" {
-  statement {
-    sid = "prod_lo_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["472057503814"]
-    }
-    actions = [
-      "s3:List*",
-      "s3:GetBucketLocation",
-    ]
-    resources = [
-      aws_s3_bucket.pipeline_data.arn,
-      "${aws_s3_bucket.pipeline_data.arn}/*",
-    ]
-  }
-  statement {
-    sid = "icav2_cross_account_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
-    }
-    actions = [
-      "s3:PutObject",
-      "s3:ListMultipartUploadParts",
-      "s3:AbortMultipartUpload",
-      "s3:GetObject"
-    ]
-    resources = [
-      aws_s3_bucket.pipeline_data.arn,
-      "${aws_s3_bucket.pipeline_data.arn}/*",
-    ]
-  }
-}
-
-# ------------------------------------------------------------------------------
-# CORS configuration for ILMN BYO buckets to support UI uploads
-# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
-resource "aws_s3_bucket_cors_configuration" "pipeline_data" {
-  bucket = aws_s3_bucket.pipeline_data.id
-
-  cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
-    allowed_origins = ["https://ica.illumina.com"]
-    expose_headers  = ["ETag", "x-amz-meta-custom-header"]
-    max_age_seconds = 3000
-  }
-}
 
 # ==============================================================================
 # production data
@@ -814,7 +692,6 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:GetBucketVersioning"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.production_data.id}"
@@ -831,7 +708,6 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:GetObjectVersion"
     ]
     resources = [
-      "arn:aws:s3:::${aws_s3_bucket.pipeline_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.production_data.id}/*"

@@ -176,8 +176,9 @@ resource "aws_s3_bucket_cors_configuration" "production_data" {
     allowed_headers = ["*"]
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
     allowed_origins = [
-      "https://ica.illumina.com", # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
-      "https://orcaui.umccr.org", # orcaui - https://github.com/umccr/orca-ui
+      "https://ica.illumina.com",       # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
+      "https://orcaui.umccr.org",       # orcaui - https://github.com/umccr/orca-ui
+      "https://orcaui.prod.umccr.org",  # orcaui - https://github.com/umccr/orca-ui
     ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000

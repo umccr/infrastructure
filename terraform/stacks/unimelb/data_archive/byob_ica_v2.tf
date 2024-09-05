@@ -9,9 +9,9 @@ locals {
   # The bucket holding all staging data
   pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
-  icav2_prefix                    = "byob-icav2/"
-  event_bus_arn_umccr_dev_default = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
-  event_bus_arn_umccr_stg_default = "arn:aws:events:ap-southeast-2:${local.account_id_stg}:event-bus/default"
+  icav2_prefix                     = "byob-icav2/"
+  event_bus_arn_umccr_dev_default  = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
+  event_bus_arn_umccr_stg_default  = "arn:aws:events:ap-southeast-2:${local.account_id_stg}:event-bus/default"
   event_bus_arn_umccr_prod_default = "arn:aws:events:ap-southeast-2:${local.account_id_prod}:event-bus/default"
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
@@ -168,15 +168,18 @@ data "aws_iam_policy_document" "production_data" {
 }
 
 # ------------------------------------------------------------------------------
-# CORS configuration for ILMN BYO buckets to support UI uploads
-# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# CORS configuration for ILMN BYO buckets
 resource "aws_s3_bucket_cors_configuration" "production_data" {
   bucket = aws_s3_bucket.production_data.id
 
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
-    allowed_origins = ["https://ica.illumina.com"]
+    allowed_origins = [
+      "https://ica.illumina.com",       # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
+      "https://orcaui.umccr.org",       # orcaui - https://github.com/umccr/orca-ui
+      "https://orcaui.prod.umccr.org",  # orcaui - https://github.com/umccr/orca-ui
+    ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000
   }
@@ -383,15 +386,17 @@ data "aws_iam_policy_document" "staging_data" {
 }
 
 # ------------------------------------------------------------------------------
-# CORS configuration for ILMN BYO buckets to support UI uploads
-# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# CORS configuration for ILMN BYO buckets
 resource "aws_s3_bucket_cors_configuration" "staging_data" {
   bucket = aws_s3_bucket.staging_data.id
 
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
-    allowed_origins = ["https://ica.illumina.com"]
+    allowed_origins = [
+      "https://ica.illumina.com",     # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
+      "https://orcaui.stg.umccr.org", # orcaui - https://github.com/umccr/orca-ui
+    ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000
   }
@@ -583,15 +588,17 @@ data "aws_iam_policy_document" "development_data" {
 }
 
 # ------------------------------------------------------------------------------
-# CORS configuration for ILMN BYO buckets to support UI uploads
-# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# CORS configuration for ILMN BYO buckets
 resource "aws_s3_bucket_cors_configuration" "development_data" {
   bucket = aws_s3_bucket.development_data.id
 
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
-    allowed_origins = ["https://ica.illumina.com"]
+    allowed_origins = [
+      "https://ica.illumina.com",     # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
+      "https://orcaui.dev.umccr.org", # orcaui - https://github.com/umccr/orca-ui
+    ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000
   }

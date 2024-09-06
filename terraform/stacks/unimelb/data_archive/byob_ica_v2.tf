@@ -101,6 +101,7 @@ data "aws_iam_policy_document" "production_data" {
     }
     actions = [
       "s3:List*",
+      "s3:GetObject",
       "s3:GetBucketLocation",
     ]
     resources = [

@@ -1,6 +1,13 @@
 ################################################################################
 # Local constants
 
+#
+# NOTE:
+# At ICAv2 side, when BYOB bucket that get attached to a project, we should share `storageConfiguration` tenant wide.
+# Because in our pipeline input/output preparation, we leverage this API to transition between icav2:// <> s3://
+# This is implemented through wrapica library. See https://umccr.slack.com/archives/C03ABJTSN7J/p1722818722795159
+#
+
 locals {
   # The bucket holding all "active" production data
   pipeline_data_bucket_name_prod = "pipeline-prod-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"

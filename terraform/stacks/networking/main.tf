@@ -16,6 +16,15 @@ terraform {
   }
 }
 
+locals {
+  pub_ip = {
+    prod = true,
+    dev  = false,
+    stg  = false,
+    agha = false
+  }
+}
+
 provider "aws" {
   region  = "ap-southeast-2"
 }
@@ -59,7 +68,11 @@ module "main_vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
-  map_public_ip_on_launch = false  # No Public IP by default. See https://github.com/umccr/infrastructure/issues/432
+
+  # No Public IP by default. See https://github.com/umccr/infrastructure/issues/432
+  # FIXME: Keep this open in `prod` only until we migrate pieriandx submission pipeline to orcabus 0.3.0
+  #  See https://umccr.slack.com/archives/C8CG6K76W/p1724159625121809
+  map_public_ip_on_launch = local.pub_ip[terraform.workspace]
 
   # See README Subnet Tagging section for the following tags combination
   public_subnet_tags = {

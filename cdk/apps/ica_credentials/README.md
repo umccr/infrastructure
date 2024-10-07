@@ -1,6 +1,6 @@
 # ICA Credentials
 
-A stack for managing ICA credentials and the production of up to date JWTs.
+A stack for managing ICA credentials and the production of up-to-date JWTs (as AWS secrets).
 
 ## Setup
 
@@ -48,7 +48,7 @@ The trick is:
 - then apply the CDK changes
 
 If your CDK stack gets stuck in "Failed Rollback":
-- manually change each secret to Disabled
+- manually change each secret rotation to Disabled
 - go to the Cloud Formation and 'continue rollback'
 - manually change each secret again to Disabled (the rollback will have re-enabled them)
 - then apply the CDK changes
@@ -56,13 +56,25 @@ If your CDK stack gets stuck in "Failed Rollback":
 
 ## Dev
 
-### Create Python virtual environment and install the dependencies
+A development system requires a working Python and Node.
 
-```bash
-python3.8 -m venv .venv
-source .venv/bin/activate
-# [Optional] Needed to upgrade dependencies and cleanup unused packages
-pip install pip-tools==6.1.0
-./scripts/install-deps.sh
-```
+`make` should be all that is required to do a setup and type check of the source code.
+
+To actually deploy to dev, use
+
+`make deploy-cdk-dev`
+
+whilst in a shell with AWS access keys for dev. The deployed stack in dev will
+perform rotations but only message to Slack infrequently. There are various
+settings in the code if you want to test more frequent Slack messaging.
+
+If you want to change the Python requirements, just edit the relevant `requirements.in`
+file and then do a `make`. It will re-compile the actual `requirements.txt` (and maybe
+also possibly update package versions). 
+
+NOTE: currently the lambdas do *not* require any Python libraries
+(other than AWS and urllib which are built in) so are
+built very simply by the CDK (they do not have their own `requirements.txt`). This
+might need to change - at which point the CDK build will need to be more
+sophisticated.
 

@@ -142,7 +142,14 @@ data "aws_iam_policy_document" "production_data" {
     actions = [
       "s3:ListBucket",
       "s3:GetObject",
-      "s3:GetObjectAttributes"
+      # Note, filemanager is not using GetObjectAttributes yet.
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
     ]
     resources = [
       aws_s3_bucket.production_data.arn,
@@ -361,7 +368,14 @@ data "aws_iam_policy_document" "staging_data" {
     actions = [
       "s3:ListBucket",
       "s3:GetObject",
-      "s3:GetObjectAttributes"
+      # Note, filemanager is not using GetObjectAttributes yet.
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
     ]
     resources = [
       aws_s3_bucket.staging_data.arn,
@@ -564,7 +578,14 @@ data "aws_iam_policy_document" "development_data" {
     actions = [
       "s3:ListBucket",
       "s3:GetObject",
-      "s3:GetObjectAttributes"
+      # Note, filemanager is not using GetObjectAttributes yet.
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,

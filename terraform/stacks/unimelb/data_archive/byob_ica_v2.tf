@@ -404,7 +404,7 @@ resource "aws_s3_bucket_cors_configuration" "staging_data" {
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
     allowed_origins = [
       "https://ica.illumina.com",     # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
-      "https://orcaui.stg.umccr.org", 
+      "https://orcaui.stg.umccr.org", # orcaui - https://github.com/umccr/orca-ui
       "https://portal.stg.umccr.org", # umccr data portal - https://github.com/umccr/umccr-data-portal
     ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]

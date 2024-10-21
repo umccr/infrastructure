@@ -20,21 +20,21 @@ data "aws_region" "current" {}
 ## Terraform resources #########################################################
 
 # DynamoDB table for Terraform state locking
-resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
-  name           = "terraform-state-lock"
-  hash_key       = "LockID"
-  read_capacity  = 2
-  write_capacity = 2
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags {
-    Name = "Terraform Lock Table"
-  }
-}
+# resource "aws_dynamodb_table" "dynamodb-terraform-lock" {
+#   name           = "terraform-state-lock"
+#   hash_key       = "LockID"
+#   read_capacity  = 2
+#   write_capacity = 2
+#
+#   attribute {
+#     name = "LockID"
+#     type = "S"
+#   }
+#
+#   tags {
+#     Name = "Terraform Lock Table"
+#   }
+# }
 
 ## Instance profile for SSM managed instances ##################################
 
@@ -123,84 +123,84 @@ resource "aws_iam_role_policy_attachment" "umccr_pipeline" {
 
 # S3 bucket for FASTQ data
 # NOTE: is meant to be a temporary solution until full support of primary data is there
-resource "aws_s3_bucket" "fastq_data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
+# resource "aws_s3_bucket" "fastq_data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${var.workspace_fastq_data_bucket_name[terraform.workspace]}"
+#
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+#
+#   lifecycle_rule {
+#     id      = "move_to_glacier"
+#     enabled = "${terraform.workspace == "dev" ? false : true}"
+#
+#     transition {
+#       days          = 0
+#       storage_class = "DEEP_ARCHIVE"
+#     }
+#   }
+# }
+# resource "aws_s3_bucket_public_access_block" "fastq_data" {
+#   bucket = "${aws_s3_bucket.fastq_data.id}"
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  lifecycle_rule {
-    id      = "move_to_glacier"
-    enabled = "${terraform.workspace == "dev" ? false : true}"
-
-    transition {
-      days          = 0
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-}
-resource "aws_s3_bucket_public_access_block" "fastq_data" {
-  bucket = "${aws_s3_bucket.fastq_data.id}"
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-data "template_file" "fastq_data_bucket_policy" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  template = "${file("policies/fastq-data-bucket-policy.json")}"
-}
-
-resource "aws_s3_bucket_policy" "fastq_data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${aws_s3_bucket.fastq_data.id}"
-  policy = "${data.template_file.fastq_data_bucket_policy.rendered}"
-}
+# data "template_file" "fastq_data_bucket_policy" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   template = "${file("policies/fastq-data-bucket-policy.json")}"
+# }
+#
+# resource "aws_s3_bucket_policy" "fastq_data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${aws_s3_bucket.fastq_data.id}"
+#   policy = "${data.template_file.fastq_data_bucket_policy.rendered}"
+# }
 
 
 # S3 bucket for raw sequencing data
-resource "aws_s3_bucket" "raw-sequencing-data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${var.workspace_seq_data_bucket_name[terraform.workspace]}"
-
-  versioning {
-    enabled = "${terraform.workspace == "prod" ? true : false}"
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  lifecycle_rule {
-    id      = "move_to_glacier"
-    enabled = "${terraform.workspace == "dev" ? false : true}"
-
-    transition {
-      days          = 0
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-}
-resource "aws_s3_bucket_public_access_block" "raw-sequencing-data" {
-  bucket = "${aws_s3_bucket.raw-sequencing-data.id}"
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+# resource "aws_s3_bucket" "raw-sequencing-data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${var.workspace_seq_data_bucket_name[terraform.workspace]}"
+#
+#   versioning {
+#     enabled = "${terraform.workspace == "prod" ? true : false}"
+#   }
+#
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+#
+#   lifecycle_rule {
+#     id      = "move_to_glacier"
+#     enabled = "${terraform.workspace == "dev" ? false : true}"
+#
+#     transition {
+#       days          = 0
+#       storage_class = "DEEP_ARCHIVE"
+#     }
+#   }
+# }
+# resource "aws_s3_bucket_public_access_block" "raw-sequencing-data" {
+#   bucket = "${aws_s3_bucket.raw-sequencing-data.id}"
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
 # # S3 bucket for research data
 # resource "aws_s3_bucket" "research" {
@@ -241,180 +241,180 @@ resource "aws_s3_bucket_public_access_block" "raw-sequencing-data" {
 #   }
 # }
 
-resource "aws_s3_bucket" "run-data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${var.workspace_run_data_bucket_name[terraform.workspace]}"
-
-  versioning {
-    enabled = "${terraform.workspace == "prod" ? true : false}"
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  lifecycle_rule {
-    id      = "expire_old_version"
-    enabled = "${terraform.workspace == "dev" ? false : true}"
-
-    noncurrent_version_expiration {
-      days = 90
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-}
-resource "aws_s3_bucket_public_access_block" "run-data" {
-  bucket = "${aws_s3_bucket.run-data.id}"
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+# resource "aws_s3_bucket" "run-data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${var.workspace_run_data_bucket_name[terraform.workspace]}"
+#
+#   versioning {
+#     enabled = "${terraform.workspace == "prod" ? true : false}"
+#   }
+#
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+#
+#   lifecycle_rule {
+#     id      = "expire_old_version"
+#     enabled = "${terraform.workspace == "dev" ? false : true}"
+#
+#     noncurrent_version_expiration {
+#       days = 90
+#     }
+#
+#     expiration {
+#       expired_object_delete_marker = true
+#     }
+#
+#     abort_incomplete_multipart_upload_days = 7
+#   }
+#
+# }
+# resource "aws_s3_bucket_public_access_block" "run-data" {
+#   bucket = "${aws_s3_bucket.run-data.id}"
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
 # S3 bucket to hold primary data
-resource "aws_s3_bucket" "primary_data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
-  acl    = "private"
-
-  versioning {
-    enabled = "${terraform.workspace == "prod" ? true : false}"
-
-    # mfa_delete = true # not supported. see: https://github.com/terraform-providers/terraform-provider-aws/issues/629
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  tags {
-    Name        = "primary-data"
-    Environment = "${terraform.workspace}"
-  }
-
-  lifecycle_rule {
-    id      = "intelligent_tiering"
-    enabled = "${terraform.workspace == "dev" ? false : true}"
-
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-
-    noncurrent_version_expiration {
-      days = 90
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-  lifecycle_rule {
-    id      = "glacier_older_than_60_days_bams"
-    enabled = "${terraform.workspace == "dev" ? false : true}"
-
-    tags = {
-      "Filetype" = "bam"
-      "Archive"  = "true"
-    }
-
-    transition {
-      days          = 60
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-}
-resource "aws_s3_bucket_public_access_block" "primary_data" {
-  bucket = "${aws_s3_bucket.primary_data.id}"
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+# resource "aws_s3_bucket" "primary_data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${var.workspace_primary_data_bucket_name[terraform.workspace]}"
+#   acl    = "private"
+#
+#   versioning {
+#     enabled = "${terraform.workspace == "prod" ? true : false}"
+#
+#     # mfa_delete = true # not supported. see: https://github.com/terraform-providers/terraform-provider-aws/issues/629
+#   }
+#
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+#
+#   tags {
+#     Name        = "primary-data"
+#     Environment = "${terraform.workspace}"
+#   }
+#
+#   lifecycle_rule {
+#     id      = "intelligent_tiering"
+#     enabled = "${terraform.workspace == "dev" ? false : true}"
+#
+#     transition {
+#       days          = 0
+#       storage_class = "INTELLIGENT_TIERING"
+#     }
+#
+#     noncurrent_version_expiration {
+#       days = 90
+#     }
+#
+#     expiration {
+#       expired_object_delete_marker = true
+#     }
+#
+#     abort_incomplete_multipart_upload_days = 7
+#   }
+#
+#   lifecycle_rule {
+#     id      = "glacier_older_than_60_days_bams"
+#     enabled = "${terraform.workspace == "dev" ? false : true}"
+#
+#     tags = {
+#       "Filetype" = "bam"
+#       "Archive"  = "true"
+#     }
+#
+#     transition {
+#       days          = 60
+#       storage_class = "DEEP_ARCHIVE"
+#     }
+#   }
+# }
+# resource "aws_s3_bucket_public_access_block" "primary_data" {
+#   bucket = "${aws_s3_bucket.primary_data.id}"
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
 # S3 bucket to hold validation data
-resource "aws_s3_bucket" "validation_data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${var.workspace_validation_bucket_name[terraform.workspace]}"
-  acl    = "private"
+# resource "aws_s3_bucket" "validation_data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${var.workspace_validation_bucket_name[terraform.workspace]}"
+#   acl    = "private"
+#
+#   versioning {
+#     enabled = "${terraform.workspace == "prod" ? true : false}"
+#   }
+#
+#   server_side_encryption_configuration {
+#     rule {
+#       apply_server_side_encryption_by_default {
+#         sse_algorithm = "AES256"
+#       }
+#     }
+#   }
+#
+#   tags {
+#     Name        = "validation"
+#     Environment = "${terraform.workspace}"
+#   }
+#
+#   lifecycle_rule {
+#     # TODO: data could go straight to INFREQUENT_ACCESS in both dev and prod?
+#     id      = "intelligent_tiering"
+#     enabled = "${terraform.workspace == "prod" ? true : false}"
+#
+#     transition {
+#       days          = 0
+#       storage_class = "INTELLIGENT_TIERING"
+#     }
+#
+#     expiration {
+#       expired_object_delete_marker = true
+#     }
+#
+#     abort_incomplete_multipart_upload_days = 7
+#   }
+# }
+# resource "aws_s3_bucket_public_access_block" "validation_data" {
+#   bucket = "${aws_s3_bucket.validation_data.id}"
+#
+#   block_public_acls       = true
+#   block_public_policy     = true
+#   ignore_public_acls      = true
+#   restrict_public_buckets = true
+# }
 
-  versioning {
-    enabled = "${terraform.workspace == "prod" ? true : false}"
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  tags {
-    Name        = "validation"
-    Environment = "${terraform.workspace}"
-  }
-
-  lifecycle_rule {
-    # TODO: data could go straight to INFREQUENT_ACCESS in both dev and prod?
-    id      = "intelligent_tiering"
-    enabled = "${terraform.workspace == "prod" ? true : false}"
-
-    transition {
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-}
-resource "aws_s3_bucket_public_access_block" "validation_data" {
-  bucket = "${aws_s3_bucket.validation_data.id}"
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-data "template_file" "validation_bucket_policy" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  template = "${file("policies/cross_account_bucket_policy.json")}"
-
-  vars {
-    bucket_name = "${aws_s3_bucket.validation_data.id}"
-    account_id  = "${var.dev_account_id}"
-  }
-}
-
-resource "aws_s3_bucket_policy" "validation_bucket_policy" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  bucket = "${aws_s3_bucket.validation_data.id}"
-  policy = "${data.template_file.validation_bucket_policy.rendered}"
-}
+# data "template_file" "validation_bucket_policy" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   template = "${file("policies/cross_account_bucket_policy.json")}"
+#
+#   vars {
+#     bucket_name = "${aws_s3_bucket.validation_data.id}"
+#     account_id  = "${var.dev_account_id}"
+#   }
+# }
+#
+# resource "aws_s3_bucket_policy" "validation_bucket_policy" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   bucket = "${aws_s3_bucket.validation_data.id}"
+#   policy = "${data.template_file.validation_bucket_policy.rendered}"
+# }
 
 ## Slack notify Lambda #########################################################
 
@@ -506,52 +506,52 @@ module "notify_slack_lambda" {
 # Dedicated user to generate long lived presigned URLs
 # See: https://aws.amazon.com/premiumsupport/knowledge-center/presigned-url-s3-bucket-expiration/
 
-module "presigned_urls" {
-  source   = "../../modules/iam_user/secure_user"
-  username = "presigned_urls"
-  pgp_key  = "keybase:brainstorm"
-}
+# module "presigned_urls" {
+#   source   = "../../modules/iam_user/secure_user"
+#   username = "presigned_urls"
+#   pgp_key  = "keybase:brainstorm"
+# }
 
-resource "aws_iam_user_policy_attachment" "presigned_user_primary_data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  user       = "${module.presigned_urls.username}"
-  policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
-}
+# resource "aws_iam_user_policy_attachment" "presigned_user_primary_data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   user       = "${module.presigned_urls.username}"
+#   policy_arn = "${aws_iam_policy.primary_data_reader.arn}"
+# }
 
-resource "aws_iam_user_policy_attachment" "presigned_user_fastq_data" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  user       = "${module.presigned_urls.username}"
-  policy_arn = "${aws_iam_policy.fastq_data_reader.arn}"
-}
+# resource "aws_iam_user_policy_attachment" "presigned_user_fastq_data" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   user       = "${module.presigned_urls.username}"
+#   policy_arn = "${aws_iam_policy.fastq_data_reader.arn}"
+# }
 
-data "template_file" "fastq_data_reader" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  template = "${file("policies/primary_data_reader.json")}"
+# data "template_file" "fastq_data_reader" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   template = "${file("policies/primary_data_reader.json")}"
+#
+#   vars {
+#     bucket_name = "${aws_s3_bucket.fastq_data.id}"
+#   }
+# }
 
-  vars {
-    bucket_name = "${aws_s3_bucket.fastq_data.id}"
-  }
-}
+# resource "aws_iam_policy" "fastq_data_reader" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   name   = "fastq_data_reader_${terraform.workspace}"
+#   path   = "/"
+#   policy = "${data.template_file.fastq_data_reader.rendered}"
+# }
 
-resource "aws_iam_policy" "fastq_data_reader" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  name   = "fastq_data_reader_${terraform.workspace}"
-  path   = "/"
-  policy = "${data.template_file.fastq_data_reader.rendered}"
-}
+# data "template_file" "primary_data_reader" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   template = "${file("policies/primary_data_reader.json")}"
+#
+#   vars {
+#     bucket_name = "${aws_s3_bucket.primary_data.id}"
+#   }
+# }
 
-data "template_file" "primary_data_reader" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  template = "${file("policies/primary_data_reader.json")}"
-
-  vars {
-    bucket_name = "${aws_s3_bucket.primary_data.id}"
-  }
-}
-
-resource "aws_iam_policy" "primary_data_reader" {
-  count  = "${terraform.workspace == "prod" ? 1 : 0}"
-  name   = "primary_data_reader_${terraform.workspace}"
-  path   = "/"
-  policy = "${data.template_file.primary_data_reader.rendered}"
-}
+# resource "aws_iam_policy" "primary_data_reader" {
+#   count  = "${terraform.workspace == "prod" ? 1 : 0}"
+#   name   = "primary_data_reader_${terraform.workspace}"
+#   path   = "/"
+#   policy = "${data.template_file.primary_data_reader.rendered}"
+# }

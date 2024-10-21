@@ -116,12 +116,12 @@ variable "workspace_operator_delete_buckets" {
 
 
 
-variable "workspace_root_domain" {
-  default = {
-    prod = "prod.umccr.org"
-    dev  = "dev.umccr.org"
-  }
-}
+# variable "workspace_root_domain" {
+#   default = {
+#     prod = "prod.umccr.org"
+#     dev  = "dev.umccr.org"
+#   }
+# }
 
 variable "workspace_slack_channel" {
   default = {

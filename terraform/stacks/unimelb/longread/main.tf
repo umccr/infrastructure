@@ -20,6 +20,10 @@ terraform {
 provider "aws" {
   region  = "ap-southeast-1"
 }
+provider "aws" {
+  alias = "sydney"
+  region  = "ap-southeast-2"
+}
 
 data "aws_caller_identity" "current" {}
 
@@ -27,6 +31,7 @@ data "aws_region" "current" {}
 
 locals {
   region          = "ap-southeast-1"
+  region_sydney   = "ap-southeast-2"
   stack_name      = "longread"
   this_account_id = data.aws_caller_identity.current.account_id
 

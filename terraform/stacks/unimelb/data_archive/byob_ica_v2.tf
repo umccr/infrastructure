@@ -620,7 +620,6 @@ data "aws_iam_policy_document" "development_data" {
     sid = "nextflow_batch"
     principals {
       type        = "AWS"
-      // arn:aws:iam::843407916570:role/nextflow/oncoanalyser-pipeline-batch-instance-role
       identifiers = [
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-oncoanalyser-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-oncoanalyser-task-batch-instance-role",
@@ -629,7 +628,6 @@ data "aws_iam_policy_document" "development_data" {
       ]
     }
     actions = [
-      "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
@@ -637,6 +635,7 @@ data "aws_iam_policy_document" "development_data" {
       "s3:AbortMultipartUpload",
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
+      "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:GetObjectAttributes"

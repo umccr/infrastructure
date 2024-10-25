@@ -33,6 +33,10 @@ resource "aws_cloudwatch_event_rule" "oncoanalyser" {
       "jobQueue" : [
         { "prefix" : "arn:aws:batch:${local.region}:${local.account_id}:job-queue/nextflow-pipeline" }
       ],
+      "parameters": {
+        "orcabus": [ { "exists": false } ],
+        "portal_run_id": [ { "exists": true } ]
+      }
     }
   })
   tags = merge(local.default_tags)

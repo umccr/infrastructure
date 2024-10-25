@@ -599,7 +599,6 @@ data "aws_iam_policy_document" "development_data" {
       identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role"]
     }
     actions = [
-      "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
@@ -607,6 +606,7 @@ data "aws_iam_policy_document" "development_data" {
       "s3:AbortMultipartUpload",
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
+      "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:GetObjectAttributes"

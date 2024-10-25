@@ -11,8 +11,9 @@ import {
     ATHENA_LAMBDA_FUNCTION_NAME,
     ATHENA_OUTPUT_BUCKET_PATH, ATHENA_USER_NAME,
     ATHENA_OUTPUT_BUCKET, DATABRICKS_HOST_URL_PROD,
-    ICA_SECRETS_READ_ONLY_PATH,
-    SERVICE_USER_ACCESS_TOKEN_SECRETS_MANAGER_PATH
+    ICA_SECRETS_READ_ONLY_SECRET_ID,
+    SERVICE_USER_ACCESS_TOKEN_SECRETS_MANAGER_PATH,
+    ORCABUS_JWT_SECRETS_MANAGER_ID,
 } from "../constants";
 import {IParameter} from "aws-cdk-lib/aws-ssm/lib/parameter";
 
@@ -325,40 +326,18 @@ export class DataBricksSecretsRotationStack extends cdk.Stack {
         )
     }
 
-    private add_permissions_to_sync_ica_function(secrets_to_access_read_only: ISecret[], sync_ica_lambda_function: lambda.Function) {
-        sync_ica_lambda_function.addToRolePolicy(
-            new iam.PolicyStatement(
-                {
-                    actions: [
-                        "secretsmanager:DescribeSecret",
-                        "secretsmanager:GetSecretValue"
-                    ],
-                    resources: secrets_to_access_read_only.map(
-                        (secret_obj) => secret_obj.secretArn
-                    )
-                }
-            )
-        )
-
-
+    private add_secrets_access_permissions_to_sync_function(secrets_to_access_read_only: ISecret[], sync_lambda_function: lambda.Function) {
+        /*
+        Grant access to lambda function
+        */
+        secrets_to_access_read_only.forEach((secret_obj) => secret_obj.grantRead(sync_lambda_function))
     }
 
     private add_ssm_parameter_get_permissions_to_lambda_function_role(ssm_parameter: IParameter, lambda_function: lambda.Function){
         /*
         Allows the lambda function access to get the ssm parameter
         */
-        lambda_function.addToRolePolicy(
-            new iam.PolicyStatement(
-                {
-                    actions: [
-                        "ssm:GetParameter"
-                    ],
-                    resources: [
-                        ssm_parameter.parameterArn
-                    ]
-                }
-            )
-        )
+        ssm_parameter.grantRead(lambda_function)
     }
 
     private add_schedule(rule_id: string, rule_frequency: string, input_json: Object, target_lambda_function: lambda.Function) {
@@ -401,13 +380,6 @@ export class DataBricksSecretsRotationStack extends cdk.Stack {
                 secretName: SERVICE_USER_ACCESS_TOKEN_SECRETS_MANAGER_PATH,
                 description: "Databricks service user token, used for updating databricks secrets"
             }
-        )
-
-        // Get ICA Access token as a secret object
-        let ica_access_token_secret = secretsmanager.Secret.fromSecretCompleteArn(
-            this,
-            "ica_secrets_read_only_path",
-            `arn:aws:secretsmanager:${this.region}:${this.account}:secret:${ICA_SECRETS_READ_ONLY_PATH}`
         )
 
         // Create the databricks host as a ssm parameter
@@ -475,18 +447,26 @@ export class DataBricksSecretsRotationStack extends cdk.Stack {
         // End of Athena Lambda Rotator Function setup with scheduler
 
         // ICA Access Token Lambda function with daily scheduler
+        // Get ICA Access token as a secret object
+
+        let ica_access_token_secret = secretsmanager.Secret.fromSecretNameV2(
+            this,
+            "ica_secrets_read_only_path",
+            ICA_SECRETS_READ_ONLY_SECRET_ID
+        )
+
         let [ica_access_token_sync_lambda_role, ica_access_token_sync_lambda_function] = this.create_docker_image_function_with_standard_role(
             "ica_access_token_sync_role",
             "databricks_ica_access_token_sync_role",
             "ica_access_token_sync_lambda_function",
             "databricks_ica_access_token_sync_lambda_function",
-            "Get current JWT and sync to DataBricks",
+            "Get current ICA JWT and sync to DataBricks",
             "./lambdas/sync_icav1_jwt"
         )
 
         // Add permissions to function
         // Allow get secret value for SERVICE_USER_ACCESS_TOKEN_SECRETS_MANAGER_PATH
-        this.add_permissions_to_sync_ica_function(
+        this.add_secrets_access_permissions_to_sync_function(
             [databricks_service_user_access_token_secret, ica_access_token_secret],
             ica_access_token_sync_lambda_function
         )
@@ -510,15 +490,56 @@ export class DataBricksSecretsRotationStack extends cdk.Stack {
         )
         // End of ICA Access Token Lambda function with daily schedule
 
+        // Repeat for the orcabus token
+        let orcabus_token_secret = secretsmanager.Secret.fromSecretNameV2(
+            this,
+            "orcabus_secret",
+            ORCABUS_JWT_SECRETS_MANAGER_ID
+        )
+
+        let [orcabus_token_sync_lambda_role, orcabus_token_sync_lambda_function] = this.create_docker_image_function_with_standard_role(
+            "orcabus_token_sync_role",
+            "databricks_orcabus_token_sync_role",
+            "orcabus_token_sync_lambda_function",
+            "databricks_orcabus_token_sync_lambda_function",
+            "Get current orcabus JWT and sync to DataBricks",
+            "./lambdas/sync_orcabus_jwt"
+        )
+
+        // Add permissions to function
+        // Allow get secret value for SERVICE_USER_ACCESS_TOKEN_SECRETS_MANAGER_PATH
+        this.add_secrets_access_permissions_to_sync_function(
+            [databricks_service_user_access_token_secret, orcabus_token_secret],
+            orcabus_token_sync_lambda_function
+        )
+
+        // Add permission to get access to the host ssm parameter
+        this.add_ssm_parameter_get_permissions_to_lambda_function_role(
+            databricks_host_ssm_parameter,
+            orcabus_token_sync_lambda_function
+        )
+
+        // Add lambda rotation schedule
+        // Orcabus token expires every 24 hours
+        this.add_schedule(
+            "orcabus_jwt_access_rotation_schedule",
+            "12 hours",
+            {
+                ORCABUS_TOKEN_SECRETS_MANAGER_ARN: orcabus_token_secret.secretArn,
+                DATABRICKS_SERVICE_USER_TOKEN_SECRETS_MANAGER_ARN: databricks_service_user_access_token_secret.secretArn,
+                DATABRICKS_HOST_SSM_PARAMETER_NAME: databricks_host_ssm_parameter.parameterName
+            },
+            orcabus_token_sync_lambda_function
+        )
+
         // Final adjustment - remove access to databricks secret for everyone except for the lambda functions
         this.add_deny_for_everyone_except_lambda_functions(
             databricks_service_user_access_token_secret,
             [
+                orcabus_token_sync_lambda_function,
                 ica_access_token_sync_lambda_function,
                 athena_access_rotator_lambda_function
             ]
         )
     }
 }
-
-

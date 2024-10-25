@@ -10,7 +10,10 @@ export const SERVICE_USER_ACCESS_TOKEN_SECRETS_MANAGER_PATH = "/databricks/acces
 
 // ICA Secrets Portal
 // https://github.com/umccr/infrastructure/tree/master/cdk/apps/ica_credentials
-export const ICA_SECRETS_READ_ONLY_PATH = "IcaSecretsPortal-Catuey"
+export const ICA_SECRETS_READ_ONLY_SECRET_ID = "IcaSecretsPortal"
+
+// Orcabus JWT Secret
+export const ORCABUS_JWT_SECRETS_MANAGER_ID = "orcabus/token-service-jwt"
 
 // Athena functions
 // Doesn't actually correlate to data_portal though, not sure where this is sourced from
@@ -22,7 +25,7 @@ export const ATHENA_LAMBDA_FUNCTION_NAME = "data_portal"
 export const ATHENA_OUTPUT_BUCKET = "umccr-data-portal-build-prod"
 export const ATHENA_OUTPUT_BUCKET_PATH = "athena-query-results"
 
-// Athena WorkGRoup Name
+// Athena WorkGroup Name
 // https://github.com/umccr/infrastructure/blob/9685c9715b2984e69d57feb74bd679dd7a04d2f3/terraform/stacks/umccr_data_portal/athena.tf#L45
 export const ATHENA_DATA_CATALOG = "data_portal"
 

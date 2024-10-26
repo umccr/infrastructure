@@ -628,17 +628,18 @@ data "aws_iam_policy_document" "development_data" {
       ]
     }
     actions = [
-      "s3:GetObject",
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
+      "s3:GetObject",
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes",
       "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
-      "s3:GetObjectAttributes"
+      "s3:DeleteObject"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,

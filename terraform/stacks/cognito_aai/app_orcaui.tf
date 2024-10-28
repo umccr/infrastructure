@@ -4,7 +4,7 @@
 #
 
 locals {
-  orcaui_page   = "orcaui"
+  orcaui_page = "orcaui"
 
   orcaui_page_domain = "orcaui.${var.base_domain[terraform.workspace]}"
 
@@ -44,7 +44,16 @@ resource "aws_cognito_user_pool_client" "orcaui_page_app_client" {
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
 
-  id_token_validity = 24
+
+  refresh_token_validity = 30
+  access_token_validity  = 60
+  id_token_validity      = 1
+
+  token_validity_units {
+    refresh_token = "days"
+    access_token  = "minutes"
+    id_token      = "days"
+  }
 
   # Need to explicitly specify this dependency
   depends_on = [aws_cognito_identity_provider.identity_provider]

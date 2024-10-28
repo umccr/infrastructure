@@ -34,7 +34,7 @@ locals {
 
   iam_role_path = "/${local.stack_name_us}/"
 
-  ssm_param_key_client_prefix = "/${local.stack_name_us}/client"  # pls note this namespace param has few references
+  ssm_param_key_client_prefix = "/${local.stack_name_us}/client" # pls note this namespace param has few references
 }
 
 data "aws_region" "current" {}
@@ -92,6 +92,24 @@ resource "aws_cognito_identity_provider" "identity_provider" {
     email    = "email"
     username = "sub"
   }
+}
+
+################################################################################
+# Cognito User Group
+# Defining group roles within this data-portal cognito user pool
+
+
+# admin: 
+# 
+# The admin role should ideally have full read/write permissions within the data-portal Cognito 
+# user pool. The specific actions it can perform depend on the applications/stacks 
+# using this role as their principal.
+# 
+# Use case: OrcaBus Admins
+resource "aws_cognito_user_group" "main" {
+  name         = "admin"
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+  description  = "Admin group role within the data-portal cognito user pool"
 }
 
 ################################################################################

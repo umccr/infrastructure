@@ -161,22 +161,16 @@ resource "aws_cloudwatch_event_rule" "icav2_pipeline_cache_to_sqs_rule" {
   event_pattern = jsonencode({
     source  = ["aws.s3"],
     account = ["503977275616"],  # source contains UoM data account ID
+    detail-type: [ "Object Created", "Object Deleted" ],
     detail = {
       bucket = {
         name = [var.s3_icav2_pipeline_cache_bucket[terraform.workspace]]
+      },
+      object: {
+        key: [{ anything-but: { wildcard: "byob-icav2/*/cache/*" }}]
       }
     }
   })
-  # TODO consider prefix filter once convention is stable. Portal typically want `cttsov2` outputs only.
-  #  e.g. `byob-icav2/<project-name>/<analysis-data>/cttsov2`
-  #  See https://github.com/umccr/orcabus/pull/350
-
-  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
-  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
-  # https://repost.aws/knowledge-center/eventbridge-rule-monitors-s3
-
-  # Consider input transformer, if any
-  # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target#input-transformer-usage---json-object
 
   tags = merge(local.default_tags)
 }

@@ -99,3 +99,57 @@ data "aws_iam_policy_document" "analysis_archive" {
     ]
   }
 }
+
+# ------------------------------------------------------------------------------
+# EventBridge rule to forward events from to the target account
+
+# NOTE: don't control notification settings from TF, as some is controlled by ICA
+# resource "aws_s3_bucket_notification" "analysis_archive" {
+#   bucket      = aws_s3_bucket.analysis_archive.id
+#   eventbridge = true
+# }
+
+data "aws_iam_policy_document" "put_archvie_events_to_prod_bus" {
+  statement {
+    effect    = "Allow"
+    actions   = ["events:PutEvents"]
+    resources = [local.event_bus_arn_umccr_prod_default]
+  }
+}
+
+resource "aws_iam_policy" "put_archvie_events_to_prod_bus" {
+  name   = "put_archvie_events_to_prod_bus"
+  policy = data.aws_iam_policy_document.put_archvie_events_to_prod_bus.json
+}
+
+resource "aws_iam_role" "put_archvie_events_to_prod_bus" {
+  name               = "put_archvie_events_to_prod_bus"
+  assume_role_policy = data.aws_iam_policy_document.eventbridge_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "put_archvie_events_to_prod_bus" {
+  role       = aws_iam_role.put_archvie_events_to_prod_bus.name
+  policy_arn = aws_iam_policy.put_archvie_events_to_prod_bus.arn
+}
+
+# TODO: could restrict the events (detail-type) further to avoid unnecessary cost
+resource "aws_cloudwatch_event_rule" "put_archvie_events_to_prod_bus" {
+  name        = "put_archvie_events_to_prod_bus"
+  description = "Forward S3 events from prod archive bucket to prod event bus"
+  event_pattern = jsonencode({
+    source  = ["aws.s3"],
+    account = [data.aws_caller_identity.current.account_id],
+    detail = {
+      bucket = {
+        name = [aws_s3_bucket.analysis_archive.id]
+      }
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "put_archvie_events_to_prod_bus" {
+  target_id = "put_archvie_events_to_prod_bus"
+  arn       = local.event_bus_arn_umccr_prod_default
+  rule      = aws_cloudwatch_event_rule.put_archvie_events_to_prod_bus.name
+  role_arn  = aws_iam_role.put_archvie_events_to_prod_bus.arn
+}

@@ -773,17 +773,18 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
   statement {
     actions = [
       "s3:PutObject",
-      "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging",
       "s3:GetObject",
-      "s3:GetObjectTagging",
-      "s3:GetObjectVersionTagging",
       "s3:RestoreObject",
       "s3:DeleteObject",
-      "s3:DeleteObjectTagging",
       "s3:DeleteObjectVersion",
+      "s3:GetObjectVersion",
+      # Add tagging
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:DeleteObjectTagging",
       "s3:DeleteObjectVersionTagging",
-      "s3:GetObjectVersion"
     ]
     resources = [
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*",

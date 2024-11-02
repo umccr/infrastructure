@@ -124,6 +124,7 @@ data "aws_iam_policy_document" "production_data" {
     }
     actions = [
       "s3:PutObject",
+      "s3:DeleteObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
       "s3:GetObject"
@@ -350,6 +351,7 @@ data "aws_iam_policy_document" "staging_data" {
     }
     actions = [
       "s3:PutObject",
+      "s3:DeleteObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
       "s3:GetObject"
@@ -560,6 +562,7 @@ data "aws_iam_policy_document" "development_data" {
     }
     actions = [
       "s3:PutObject",
+      "s3:DeleteObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
       "s3:GetObject"

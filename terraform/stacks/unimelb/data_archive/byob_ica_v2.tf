@@ -562,7 +562,9 @@ data "aws_iam_policy_document" "development_data" {
       "s3:PutObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
-      "s3:GetObject"
+      "s3:GetObject",
+      # https://stackoverflow.com/questions/55523504/nosuchbucket-when-calling-the-copyobject-operation,
+      "s3:ListBucket"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,

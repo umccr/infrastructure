@@ -13,6 +13,9 @@ resource "aws_iam_role" "lambda_apis_role" {
   name = "${local.stack_name_us}_lambda_apis_role"
   path = local.iam_role_path
 
+  # Setting 12 hour so presigned URL generated (by the lambda) could live up to this max duration
+  max_session_duration = 43200
+
   # IAM role for lambda functions (to be use by Serverless framework)
   assume_role_policy = templatefile("policies/lambda_apis_role_assume_role_policy.json", {})
 

@@ -55,8 +55,7 @@ _which stack use this?_
 
 - Data Portal (both backend and frontend)
 - Samplesheet Checker (both backend and frontend)
-- Status Page (frontend)
-- Illumination v2 (frontend)
+- OrcaUI
 - Htsget-RI (backend)
 
 ## Usage
@@ -78,12 +77,10 @@ _which stack use this?_
 
 - If you are on _pure_ frontend dev and, in need of authentication, you can utilise this Cognito AAI in conjunction with Amplify framework. Steps are as follows.
 
-  1. Replicate and create a user pool app client like any of the existing app; examples [app_sscheck.tf](app_sscheck.tf) or [app_status_page.tf](app_status_page.tf) or [app_data_portal.tf](app_data_portal.tf)
+  1. Replicate and create a user pool app client like any of the existing app; examples [app_sscheck.tf](app_sscheck.tf) or [app_data_portal.tf](app_data_portal.tf)
   2. Register your user pool app client into Identity Pool; _if-only-if_ your client need to access to AWS resources such as SSM Parameters or `execute-api` API Gateway endpoints, etc. Just a need of login/logout authentication alone, you won't need Identity Pool.
   3. Then, you can use Amplify Auth component to code away your client side authentication needs; including OAuth JWT flow and/or; AWS v4 Signature signed request with AWS IAM authorizer authentication flow. 
 
 We have, by now, quite few examples on this such as 
-- [Samplesheet Checker](https://github.com/umccr/samplesheet-check-frontend) client, 
-- [Status Page](https://github.com/umccr/data-portal-status-page) client, 
-- [Illumination v2](https://github.com/umccr/illumination-v2) client; or 
+- [Samplesheet Checker](https://github.com/umccr/samplesheet-check-frontend) client, or
 - the original [Data Portal client](https://github.com/umccr/data-portal-client) code itself ... whereas all this Cognito auth pattern is spun off from.

@@ -111,7 +111,7 @@ data "aws_iam_policy_document" "fastq_archive" {
     ]
     resources = [
       aws_s3_bucket.fastq_archive.arn,
-      "${aws_s3_bucket.fastq_archive.arn}/*",
+      "${aws_s3_bucket.fastq_archive.arn}/*"
     ]
   }
   # Statement to allow access to any principal from the prod account
@@ -126,6 +126,7 @@ data "aws_iam_policy_document" "fastq_archive" {
     ]
     resources = [
       aws_s3_bucket.fastq_archive.arn,
+      "${aws_s3_bucket.fastq_archive.arn}/*"
     ]
   }
 }

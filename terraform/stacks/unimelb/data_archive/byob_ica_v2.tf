@@ -116,6 +116,7 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
+
   statement {
     sid = "icav2_cross_account_access"
     principals {
@@ -127,13 +128,19 @@ data "aws_iam_policy_document" "production_data" {
       "s3:DeleteObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
-      "s3:GetObject"
+      "s3:GetObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectVersionTagging",
     ]
     resources = [
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
+
   statement {
     sid = "orcabus_file_manager_ingest_access"
     principals {
@@ -157,6 +164,7 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
+
   statement {
     sid = "data_portal_access"
     principals {
@@ -181,6 +189,7 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ]
   }
+
   statement {
     sid = "nextflow_batch"
     principals {
@@ -415,30 +424,6 @@ data "aws_iam_policy_document" "staging_data" {
     ]
   }
   statement {
-    sid = "data_portal_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.account_id_stg}:role/data_portal/data_portal_lambda_apis_role"]
-    }
-    actions = [
-      "s3:GetBucketLocation",
-      "s3:GetObject",
-      "s3:ListBucket",
-      "s3:ListBucketMultipartUploads",
-      "s3:ListMultipartUploadParts",
-      "s3:AbortMultipartUpload",
-      "s3:GetObjectTagging",
-      "s3:GetObjectVersionTagging",
-      "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging",
-      "s3:GetObjectAttributes"
-    ]
-    resources = [
-      aws_s3_bucket.staging_data.arn,
-      "${aws_s3_bucket.staging_data.arn}/*",
-    ]
-  }
-  statement {
     sid = "nextflow_batch"
     principals {
       type        = "AWS"
@@ -481,7 +466,6 @@ resource "aws_s3_bucket_cors_configuration" "staging_data" {
     allowed_origins = [
       "https://ica.illumina.com",     # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
       "https://orcaui.stg.umccr.org", # orcaui - https://github.com/umccr/orca-ui
-      "https://portal.stg.umccr.org", # umccr data portal - https://github.com/umccr/umccr-data-portal
     ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000

@@ -1,5 +1,15 @@
 # ICA ENS
 
+> DEPRECATION NOTICE:
+> 
+> This stack has been deprecated from all environments. It has been using as temporary measure; in order to trigger weekly BSSH Runs in parallel between ICAv1 & ICAv2 systems as part of early development and migration purpose.
+> 
+> We are now using more permanent solution with ICAv2 ENS subscription for `bssh.runs` event at OrcaBus.
+>   - https://trello.com/c/eRYktdZp
+>   - https://github.com/umccr/orcabus/issues/696
+> 
+> The following instruction no longer applicable anymore.
+
 ```
 terraform workspace list
   default

@@ -22,6 +22,7 @@ locals {
   event_bus_arn_umccr_prod_default = "arn:aws:events:ap-southeast-2:${local.account_id_prod}:event-bus/default"
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
+  orcabus_data_mover_role = "orcabus-data-mover-role"
 }
 
 
@@ -158,6 +159,27 @@ data "aws_iam_policy_document" "production_data" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
+    ]
+    resources = [
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
+    ]
+  }
+
+  statement {
+    sid = "orcabus_data_mover_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_data_mover_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      # Also need delete object for moves
+      "s3:DeleteObject"
     ]
     resources = [
       aws_s3_bucket.production_data.arn,
@@ -423,6 +445,28 @@ data "aws_iam_policy_document" "staging_data" {
       "${aws_s3_bucket.staging_data.arn}/*",
     ]
   }
+
+  statement {
+    sid = "orcabus_data_mover_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_stg}:role/${local.orcabus_data_mover_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      # Also need delete object for moves
+      "s3:DeleteObject"
+    ]
+    resources = [
+      aws_s3_bucket.staging_data.arn,
+      "${aws_s3_bucket.staging_data.arn}/*",
+    ]
+  }
+
   statement {
     sid = "nextflow_batch"
     principals {
@@ -648,6 +692,28 @@ data "aws_iam_policy_document" "development_data" {
       "${aws_s3_bucket.development_data.arn}/*",
     ]
   }
+
+  statement {
+    sid = "orcabus_data_mover_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:role/${local.orcabus_data_mover_role}"]
+    }
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      # Also need delete object for moves
+      "s3:DeleteObject"
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+  }
+
   statement {
     sid = "data_portal_access"
     principals {

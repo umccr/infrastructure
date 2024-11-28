@@ -98,6 +98,26 @@ data "aws_iam_policy_document" "analysis_archive" {
       "${aws_s3_bucket.analysis_archive.arn}/*",
     ]
   }
+
+  # Allow the data mover access to copy to this bucket.
+  statement {
+    sid = "orcabus_data_mover_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_data_mover_role}"]
+    }
+    actions = [
+      # List is needed for aws s3 sync
+      "s3:ListBucket",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging"
+    ]
+    resources = [
+      aws_s3_bucket.analysis_archive.arn,
+      "${aws_s3_bucket.analysis_archive.arn}/*",
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------

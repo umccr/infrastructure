@@ -459,7 +459,13 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
       # Also need delete object for moves
-      "s3:DeleteObject"
+      "s3:DeleteObject",
+      # For dev/staging allow moving to the same bucket for testing.
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      # List is needed for aws s3 sync
+      "s3:ListBucket"
     ]
     resources = [
       aws_s3_bucket.staging_data.arn,
@@ -706,7 +712,13 @@ data "aws_iam_policy_document" "development_data" {
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
       # Also need delete object for moves
-      "s3:DeleteObject"
+      "s3:DeleteObject",
+      # For dev/staging allow moving to the same bucket for testing.
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      # List is needed for aws s3 sync
+      "s3:ListBucket"
     ]
     resources = [
       aws_s3_bucket.development_data.arn,

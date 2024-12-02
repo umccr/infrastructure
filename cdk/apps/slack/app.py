@@ -23,7 +23,7 @@ BatchLambdaStack(
     app,
     "batch-slack-lambda-dev",
     env={'account': '843407916570', 'region': 'ap-southeast-2'},
-    slack_channel='#arteria-dev'
+    slack_channel='#alerts-dev'
 )
 # TODO DEPRECATED STACK
 # BatchLambdaStack(
@@ -36,13 +36,13 @@ BatchLambdaStack(
     app,
     "batch-slack-lambda-prod",
     env={'account': '472057503814', 'region': 'ap-southeast-2'},
-    slack_channel='#biobots'
+    slack_channel='#alerts-prod'
 )
 BatchLambdaStack(
     app,
     "batch-slack-lambda-stg",
     env={'account': '455634345446', 'region': 'ap-southeast-2'},
-    slack_channel='#devops-alerts'
+    slack_channel='#alerts-stg'
 )
 
 app.synth()

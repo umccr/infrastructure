@@ -416,17 +416,17 @@ resource "aws_codebuild_project" "codebuild_apis" {
 
 ################################################################################
 # Notification: CodeBuild build status send through SNS topic to ChatBot to
-# Slack channel #arteria-dev for DEV, #data-portal for PROD, #devops-alerts for STG
+# Slack channel #alerts-build for all CodeBuild environments
 
-data "aws_sns_topic" "chatbot_topic" {
-  name = "AwsChatBotTopic"
+data "aws_sns_topic" "alerts_build_topic" {
+  name = "AwsChatBotTopic-alerts-build"
 }
 
 locals {
   notification_sns_topic_arn = {
-    prod = aws_sns_topic.portal_ops_sns_topic.arn
-    dev  = data.aws_sns_topic.chatbot_topic.arn
-    stg  = data.aws_sns_topic.chatbot_topic.arn
+    prod = data.aws_sns_topic.alerts_build_topic.arn
+    dev  = data.aws_sns_topic.alerts_build_topic.arn
+    stg  = data.aws_sns_topic.alerts_build_topic.arn
   }
 }
 

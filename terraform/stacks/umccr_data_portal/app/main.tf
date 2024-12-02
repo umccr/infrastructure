@@ -39,7 +39,7 @@ locals {
   }
 
   notification_sns_topic_arn = {
-    prod = data.aws_sns_topic.portal_ops_sns_topic.arn
+    prod = data.aws_sns_topic.chatbot_topic.arn
     dev  = data.aws_sns_topic.chatbot_topic.arn
     stg  = data.aws_sns_topic.chatbot_topic.arn
   }
@@ -49,12 +49,8 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-data "aws_sns_topic" "portal_ops_sns_topic" {
-  name = "DataPortalTopic"
-}
-
 data "aws_sns_topic" "chatbot_topic" {
-  name = "AwsChatBotTopic"
+  name = "AwsChatBotTopic-alerts"
 }
 
 # see each app resources in their own tf files: s3.tf, report.tf

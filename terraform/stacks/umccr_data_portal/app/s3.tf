@@ -59,6 +59,7 @@ resource "aws_sqs_queue" "s3_event_dlq" {
 # SQS Queue for S3 event delivery
 resource "aws_sqs_queue" "s3_event_queue" {
   name = "${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"
+  message_retention_seconds = 1209600  # keep max 14 days
   policy = templatefile("policies/sqs_s3_primary_data_event_policy.json", {
     # Use the same name as above, if referring there will be circular dependency
     sqs_arn = "arn:aws:sqs:*:*:${local.stack_name_dash}-${terraform.workspace}-s3-event-queue"

@@ -97,6 +97,15 @@ resource "aws_rds_cluster_instance" "db_instance_ro_replica" {
   tags = merge(local.default_tags)
 }
 
+locals {
+  # for dev, we don't need reader endpoint. so point it to the same default endpoint
+  rds_aurora_reader_endpoint = {
+    prod = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.reader_endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+    dev  = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+    stg  = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+  }
+}
+
 # Composed database url for backend to use
 resource "aws_ssm_parameter" "ssm_full_db_url" {
   name        = "${local.ssm_param_key_backend_prefix}/full_db_url"
@@ -108,12 +117,10 @@ resource "aws_ssm_parameter" "ssm_full_db_url" {
 }
 
 resource "aws_ssm_parameter" "ssm_full_db_url_ro" {
-  count = var.rds_read_replica[terraform.workspace]
-
   name        = "${local.ssm_param_key_backend_prefix}/full_db_url_ro"
   type        = "SecureString"
   description = "Database url used by the Django app - read only replica"
-  value       = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.reader_endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+  value       = local.rds_aurora_reader_endpoint[terraform.workspace]
 
   tags = merge(local.default_tags)
 }

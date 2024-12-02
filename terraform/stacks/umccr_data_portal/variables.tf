@@ -75,6 +75,15 @@ variable "rds_auto_pause" {
   description = "Whether to keep RDS serverless alive or pause if no load"
 }
 
+variable "rds_read_replica" {
+  default = {
+    prod = 1
+    dev  = 0
+    stg  = 0
+  }
+  description = "Whether to create read only replica db instances"
+}
+
 variable "rds_min_capacity" {
   default = {
     prod = 0.5
@@ -86,7 +95,7 @@ variable "rds_min_capacity" {
 
 variable "rds_max_capacity" {
   default = {
-    prod = 32.0
+    prod = 64.0
     dev  = 16.0
     stg  = 16.0
   }

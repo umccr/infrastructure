@@ -38,7 +38,7 @@ resource "aws_rds_cluster" "db" {
   # Engine & Mode. See https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBEngineVersions.html
   engine              = "aurora-mysql"
   engine_mode         = "provisioned"
-  engine_version      = "8.0.mysql_aurora.3.05.2"
+  engine_version      = "8.0.mysql_aurora.3.08.0"
   skip_final_snapshot = true
 
   database_name   = local.stack_name_us
@@ -78,12 +78,49 @@ resource "aws_rds_cluster_instance" "db_instance" {
   tags = merge(local.default_tags)
 }
 
+resource "aws_rds_cluster_instance" "db_instance_ro_replica" {
+  count = var.rds_read_replica[terraform.workspace]
+
+  cluster_identifier = aws_rds_cluster.db.id
+  instance_class     = "db.serverless"
+  engine             = aws_rds_cluster.db.engine
+  engine_version     = aws_rds_cluster.db.engine_version
+
+  db_subnet_group_name = aws_rds_cluster.db.db_subnet_group_name
+  publicly_accessible  = false
+  # monitoring_interval  = var.rds_monitoring_interval[terraform.workspace]
+
+  promotion_tier = 2  # scale independently from master node (writer instance)
+
+  apply_immediately = true
+
+  tags = merge(local.default_tags)
+}
+
+locals {
+  # for dev, we don't need reader endpoint. so point it to the same default endpoint
+  rds_aurora_reader_endpoint = {
+    prod = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.reader_endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+    dev  = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+    stg  = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+  }
+}
+
 # Composed database url for backend to use
 resource "aws_ssm_parameter" "ssm_full_db_url" {
   name        = "${local.ssm_param_key_backend_prefix}/full_db_url"
   type        = "SecureString"
   description = "Database url used by the Django app"
   value       = "mysql://${data.aws_ssm_parameter.rds_db_username.value}:${data.aws_ssm_parameter.rds_db_password.value}@${aws_rds_cluster.db.endpoint}:${aws_rds_cluster.db.port}/${aws_rds_cluster.db.database_name}"
+
+  tags = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "ssm_full_db_url_ro" {
+  name        = "${local.ssm_param_key_backend_prefix}/full_db_url_ro"
+  type        = "SecureString"
+  description = "Database url used by the Django app - read only replica"
+  value       = local.rds_aurora_reader_endpoint[terraform.workspace]
 
   tags = merge(local.default_tags)
 }

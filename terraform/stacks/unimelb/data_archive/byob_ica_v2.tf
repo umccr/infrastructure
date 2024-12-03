@@ -648,6 +648,7 @@ data "aws_iam_policy_document" "development_data" {
       "${aws_s3_bucket.development_data.arn}/*",
     ]
   }
+
   statement {
      # See https://help.ica.illumina.com/home/h-storage/s-awss3#enabling-cross-account-access-for-copy-and-move-operations
     sid = "icav2_cross_account_access"
@@ -675,6 +676,7 @@ data "aws_iam_policy_document" "development_data" {
       "${aws_s3_bucket.development_data.arn}/*",
     ]
   }
+
   statement {
     sid = "orcabus_file_manager_ingest_access"
     principals {
@@ -750,6 +752,7 @@ data "aws_iam_policy_document" "development_data" {
       "${aws_s3_bucket.development_data.arn}/*",
     ]
   }
+
   statement {
     sid = "nextflow_batch"
     principals {
@@ -780,7 +783,31 @@ data "aws_iam_policy_document" "development_data" {
       "${aws_s3_bucket.development_data.arn}/*",
     ]
   }
+
+  statement {
+    sid = "AccessPointDelegation"
+    principals {
+      type        = "AWS"
+      identifiers = [
+        "*"
+      ]
+    }
+    actions = [
+      "s3:ListBucket*",
+      "s3:GetObject*",
+    ]
+    resources = [
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ]
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "s3:DataAccessPointAccount"
+      values   = [local.this_account_id]
+    }
+  }
 }
+
 
 # ------------------------------------------------------------------------------
 # CORS configuration for ILMN BYO buckets

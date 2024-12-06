@@ -74,6 +74,23 @@ resource "aws_s3_bucket_policy" "analysis_archive" {
 }
 
 data "aws_iam_policy_document" "analysis_archive" {
+  # blanket read only access for the production account
+  statement {
+    sid = "prod_ro_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:root"]
+    }
+    actions = [
+      "s3:List*",
+      "s3:GetObject*"
+    ]
+    resources = [
+      aws_s3_bucket.analysis_archive.arn,
+      "${aws_s3_bucket.analysis_archive.arn}/*",
+    ]
+  }
+
   # Statement to allow FileManager access
   statement {
     sid = "orcabus_file_manager_access"

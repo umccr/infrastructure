@@ -267,8 +267,8 @@ resource "aws_codebuild_project" "codebuild_data2" {
 
   environment {
     compute_type = "BUILD_GENERAL1_SMALL"
-    image        = "aws/codebuild/standard:7.0"
-    type         = "LINUX_CONTAINER"
+    image        = "aws/codebuild/amazonlinux-aarch64-standard:3.0"
+    type         = "ARM_CONTAINER"
 
     environment_variable {
       name  = "STAGE"

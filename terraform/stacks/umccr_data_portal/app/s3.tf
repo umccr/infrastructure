@@ -180,3 +180,51 @@ resource "aws_cloudwatch_event_target" "icav2_pipeline_cache_to_sqs_target" {
   arn  = aws_sqs_queue.s3_event_queue.arn
   rule = aws_cloudwatch_event_rule.icav2_pipeline_cache_to_sqs_rule.name
 }
+
+resource "aws_cloudwatch_event_rule" "icav2_analysis_archive_to_sqs_rule" {
+  count       = terraform.workspace == "prod" ? 1 : 0
+  name        = "data-portal-icav2-analysis-archive-to-portal-s3-sqs"
+  description = "Forward S3 events from ICAv2 analysis archive bucket to Portal S3 SQS"
+  event_pattern = jsonencode({
+    source  = ["aws.s3"],
+    account = ["503977275616"],  # source contains UoM data account ID
+    detail-type: [ "Object Created", "Object Deleted" ],
+    detail = {
+      bucket = {
+        name = ["archive-prod-analysis-503977275616-ap-southeast-2"]
+      }
+    }
+  })
+
+  tags = merge(local.default_tags)
+}
+
+resource "aws_cloudwatch_event_target" "icav2_analysis_archive_to_sqs_target" {
+  count = terraform.workspace == "prod" ? 1 : 0
+  arn   = aws_sqs_queue.s3_event_queue.arn
+  rule  = aws_cloudwatch_event_rule.icav2_analysis_archive_to_sqs_rule[count.index].name
+}
+
+resource "aws_cloudwatch_event_rule" "icav2_fastq_archive_to_sqs_rule" {
+  count       = terraform.workspace == "prod" ? 1 : 0
+  name        = "data-portal-icav2-fastq-archive-to-portal-s3-sqs"
+  description = "Forward S3 events from ICAv2 fastq archive bucket to Portal S3 SQS"
+  event_pattern = jsonencode({
+    source  = ["aws.s3"],
+    account = ["503977275616"],  # source contains UoM data account ID
+    detail-type: [ "Object Created", "Object Deleted" ],
+    detail = {
+      bucket = {
+        name = ["archive-prod-fastq-503977275616-ap-southeast-2"]
+      }
+    }
+  })
+
+  tags = merge(local.default_tags)
+}
+
+resource "aws_cloudwatch_event_target" "icav2_fastq_archive_to_sqs_target" {
+  count = terraform.workspace == "prod" ? 1 : 0
+  arn   = aws_sqs_queue.s3_event_queue.arn
+  rule  = aws_cloudwatch_event_rule.icav2_fastq_archive_to_sqs_rule[count.index].name
+}

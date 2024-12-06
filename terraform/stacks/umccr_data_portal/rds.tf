@@ -78,24 +78,24 @@ resource "aws_rds_cluster_instance" "db_instance" {
   tags = merge(local.default_tags)
 }
 
-resource "aws_rds_cluster_instance" "db_instance_ro_replica" {
-  count = var.rds_read_replica[terraform.workspace]
-
-  cluster_identifier = aws_rds_cluster.db.id
-  instance_class     = "db.serverless"
-  engine             = aws_rds_cluster.db.engine
-  engine_version     = aws_rds_cluster.db.engine_version
-
-  db_subnet_group_name = aws_rds_cluster.db.db_subnet_group_name
-  publicly_accessible  = false
-  # monitoring_interval  = var.rds_monitoring_interval[terraform.workspace]
-
-  promotion_tier = 2  # scale independently from master node (writer instance)
-
-  apply_immediately = true
-
-  tags = merge(local.default_tags)
-}
+# resource "aws_rds_cluster_instance" "db_instance_ro_replica" {
+#   count = var.rds_read_replica[terraform.workspace]
+#
+#   cluster_identifier = aws_rds_cluster.db.id
+#   instance_class     = "db.serverless"
+#   engine             = aws_rds_cluster.db.engine
+#   engine_version     = aws_rds_cluster.db.engine_version
+#
+#   db_subnet_group_name = aws_rds_cluster.db.db_subnet_group_name
+#   publicly_accessible  = false
+#   # monitoring_interval  = var.rds_monitoring_interval[terraform.workspace]
+#
+#   promotion_tier = 2  # scale independently from master node (writer instance)
+#
+#   apply_immediately = true
+#
+#   tags = merge(local.default_tags)
+# }
 
 locals {
   # for dev, we don't need reader endpoint. so point it to the same default endpoint

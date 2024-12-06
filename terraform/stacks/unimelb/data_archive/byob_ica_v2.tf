@@ -803,7 +803,7 @@ data "aws_iam_policy_document" "development_data" {
     condition {
       test     = "ForAnyValue:StringEquals"
       variable = "s3:DataAccessPointAccount"
-      values   = [local.this_account_id]
+      values   = [local.account_id_dev]
     }
   }
 }

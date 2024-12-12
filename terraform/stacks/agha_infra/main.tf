@@ -204,10 +204,29 @@ resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
 
   rule {
     status = "Enabled"
-    id     = "deep_archive_MM_VCGS_2022"
+    id     = "deep_archive_MM_VCGS"
 
     filter {
-      prefix = "MM_VCGS/2022"
+      prefix = "MM_VCGS"
+    }
+
+    transition {
+      days          = 0
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+
+  rule {
+    status = "Enabled"
+    id     = "deep_archive_MM_PATHWEST"
+
+    filter {
+      prefix = "MM_PATHWEST"
     }
 
     transition {

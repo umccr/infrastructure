@@ -68,7 +68,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "fastq_archive" {
     filter {
       object_size_greater_than = 5000000
     }
-    status = "Disabled"
+    status = "Enabled"
   }
 
   rule {
@@ -79,8 +79,13 @@ resource "aws_s3_bucket_lifecycle_configuration" "fastq_archive" {
     }
     filter {
       object_size_less_than = 5000000
+      # Confirmed. This is implicitly taken care of by AWS. Keeping note here as doc purpose.
+      #     > Starting September 2024, the default behavior prevents objects smaller
+      #     > than 128 KB from being transitioned to any storage class.
+      # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html
+      # object_size_greater_than = 150000
     }
-    status = "Disabled"
+    status = "Enabled"
   }
 }
 

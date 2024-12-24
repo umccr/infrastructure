@@ -117,7 +117,7 @@ data "aws_iam_policy_document" "prod_cross_account_access" {
       identifiers = ["arn:aws:iam::472057503814:root"]
     }
 
-    actions = [
+    actions = sort([
       "s3:List*",
       "s3:Get*",
       "s3:DeleteObject",
@@ -125,12 +125,12 @@ data "aws_iam_policy_document" "prod_cross_account_access" {
       "s3:RestoreObject",
       "s3:PutObjectTagging",
       "s3:PutObject"
-    ]
+    ])
 
-    resources = [
+    resources = sort([
       aws_s3_bucket.oncoanalyser_bucket.arn,
       "${aws_s3_bucket.oncoanalyser_bucket.arn}/*",
-    ]
+    ])
   }
 
   # TODO: test before implementation (possibility to look yourself out!)

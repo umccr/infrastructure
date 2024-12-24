@@ -62,6 +62,40 @@
                     "aws:SourceArn": "${icav2_pipeline_cache_to_sqs_rule_arn}"
                 }
             }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "events.amazonaws.com"
+            },
+           "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl"
+           ],
+            "Resource": "${sqs_arn}",
+            "Condition": {
+                "ArnEquals": {
+                    "aws:SourceArn": "${archive_fastq_to_sqs_rule_arn}"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "events.amazonaws.com"
+            },
+           "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl"
+           ],
+            "Resource": "${sqs_arn}",
+            "Condition": {
+                "ArnEquals": {
+                    "aws:SourceArn": "${archive_analysis_to_sqs_rule_arn}"
+                }
+            }
         }
     ]
 }

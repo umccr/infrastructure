@@ -107,15 +107,15 @@ data "aws_iam_policy_document" "production_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_prod}:root"]
     }
-    actions = [
+    actions = sort([
       "s3:List*",
       "s3:GetObject",
       "s3:GetBucketLocation",
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -124,7 +124,7 @@ data "aws_iam_policy_document" "production_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
     }
-    actions = [
+    actions = sort([
       "s3:PutObject",
       "s3:DeleteObject",
       "s3:ListMultipartUploadParts",
@@ -135,11 +135,11 @@ data "aws_iam_policy_document" "production_data" {
       "s3:GetObjectVersion",
       "s3:GetObjectVersionAttributes",
       "s3:GetObjectVersionTagging",
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -148,7 +148,7 @@ data "aws_iam_policy_document" "production_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
@@ -159,11 +159,11 @@ data "aws_iam_policy_document" "production_data" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -172,7 +172,7 @@ data "aws_iam_policy_document" "production_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_data_mover_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       "s3:GetObjectVersion",
@@ -180,11 +180,11 @@ data "aws_iam_policy_document" "production_data" {
       "s3:GetObjectVersionTagging",
       # Also need delete object for moves
       "s3:DeleteObject"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -193,7 +193,7 @@ data "aws_iam_policy_document" "production_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_prod}:role/data_portal/data_portal_lambda_apis_role"]
     }
-    actions = [
+    actions = sort([
       "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:ListBucket",
@@ -205,25 +205,25 @@ data "aws_iam_policy_document" "production_data" {
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:GetObjectAttributes"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
     sid = "nextflow_batch"
     principals {
       type        = "AWS"
-      identifiers = [
+      identifiers = sort([
         "arn:aws:iam::${local.account_id_prod}:role/nextflow-oncoanalyser-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_prod}:role/nextflow-oncoanalyser-task-batch-instance-role",
         "arn:aws:iam::${local.account_id_prod}:role/nextflow-sash-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_prod}:role/nextflow-sash-task-batch-instance-role",
-      ]
+      ])
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
       "s3:ListMultipartUploadParts",
@@ -236,11 +236,11 @@ data "aws_iam_policy_document" "production_data" {
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:DeleteObject"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.production_data.arn,
       "${aws_s3_bucket.production_data.arn}/*",
-    ]
+    ])
   }
 }
 
@@ -395,14 +395,14 @@ data "aws_iam_policy_document" "staging_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_stg}:root"]
     }
-    actions = [
+    actions = sort([
       "s3:List*",
       "s3:GetBucketLocation",
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.staging_data.arn,
       "${aws_s3_bucket.staging_data.arn}/*",
-    ]
+    ])
   }
   statement {
     sid = "icav2_cross_account_access"
@@ -410,17 +410,17 @@ data "aws_iam_policy_document" "staging_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
     }
-    actions = [
+    actions = sort([
       "s3:PutObject",
       "s3:DeleteObject",
       "s3:ListMultipartUploadParts",
       "s3:AbortMultipartUpload",
       "s3:GetObject"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.staging_data.arn,
       "${aws_s3_bucket.staging_data.arn}/*",
-    ]
+    ])
   }
   statement {
     sid = "orcabus_file_manager_ingest_access"
@@ -428,7 +428,7 @@ data "aws_iam_policy_document" "staging_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_stg}:role/${local.orcabus_file_manager_ingest_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
@@ -439,11 +439,11 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.staging_data.arn,
       "${aws_s3_bucket.staging_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -452,7 +452,7 @@ data "aws_iam_policy_document" "staging_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_stg}:role/${local.orcabus_data_mover_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       "s3:GetObjectVersion",
@@ -466,25 +466,25 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:PutObjectVersionTagging",
       # List is needed for aws s3 sync
       "s3:ListBucket"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.staging_data.arn,
       "${aws_s3_bucket.staging_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
     sid = "nextflow_batch"
     principals {
       type        = "AWS"
-      identifiers = [
+      identifiers = sort([
         "arn:aws:iam::${local.account_id_stg}:role/nextflow-oncoanalyser-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_stg}:role/nextflow-oncoanalyser-task-batch-instance-role",
         "arn:aws:iam::${local.account_id_stg}:role/nextflow-sash-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_stg}:role/nextflow-sash-task-batch-instance-role",
-      ]
+      ])
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
       "s3:ListMultipartUploadParts",
@@ -497,11 +497,11 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:DeleteObject"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.staging_data.arn,
       "${aws_s3_bucket.staging_data.arn}/*",
-    ]
+    ])
   }
 }
 
@@ -637,16 +637,16 @@ data "aws_iam_policy_document" "development_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_dev}:root"]
     }
-    actions = [
+    actions = sort([
       "s3:List*",
       "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:GetObjectAttributes"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.development_data.arn,
       "${aws_s3_bucket.development_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -656,7 +656,7 @@ data "aws_iam_policy_document" "development_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
     }
-    actions = [
+    actions = sort([
       # Standard actions
       "s3:PutObject",
       "s3:DeleteObject",
@@ -670,11 +670,11 @@ data "aws_iam_policy_document" "development_data" {
       "s3:GetObjectVersionTagging",
       "s3:DeleteObjectTagging",
       "s3:DeleteObjectVersionTagging"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.development_data.arn,
       "${aws_s3_bucket.development_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -683,7 +683,7 @@ data "aws_iam_policy_document" "development_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_dev}:role/${local.orcabus_file_manager_ingest_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
@@ -694,11 +694,11 @@ data "aws_iam_policy_document" "development_data" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.development_data.arn,
       "${aws_s3_bucket.development_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -707,7 +707,7 @@ data "aws_iam_policy_document" "development_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_dev}:role/${local.orcabus_data_mover_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       "s3:GetObjectVersion",
@@ -721,11 +721,11 @@ data "aws_iam_policy_document" "development_data" {
       "s3:PutObjectVersionTagging",
       # List is needed for aws s3 sync
       "s3:ListBucket"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.development_data.arn,
       "${aws_s3_bucket.development_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -734,7 +734,7 @@ data "aws_iam_policy_document" "development_data" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_dev}:role/data_portal/data_portal_lambda_apis_role"]
     }
-    actions = [
+    actions = sort([
       "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:ListBucket",
@@ -746,25 +746,25 @@ data "aws_iam_policy_document" "development_data" {
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:GetObjectAttributes"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.development_data.arn,
       "${aws_s3_bucket.development_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
     sid = "nextflow_batch"
     principals {
       type        = "AWS"
-      identifiers = [
+      identifiers = sort([
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-oncoanalyser-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-oncoanalyser-task-batch-instance-role",
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-sash-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-sash-task-batch-instance-role",
-      ]
+      ])
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
       "s3:ListMultipartUploadParts",
@@ -777,11 +777,11 @@ data "aws_iam_policy_document" "development_data" {
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
       "s3:DeleteObject"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.development_data.arn,
       "${aws_s3_bucket.development_data.arn}/*",
-    ]
+    ])
   }
 
   statement {
@@ -913,23 +913,23 @@ resource "aws_iam_group_policy_attachment" "icav2_group_policy_attachment" {
 
 data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
   statement {
-    actions = [
+    actions = sort([
       "s3:PutBucketNotification",
       "s3:ListBucket",
       "s3:GetBucketNotification",
       "s3:GetBucketLocation",
       "s3:ListBucketVersions",
       "s3:GetBucketVersioning"
-    ]
-    resources = [
+    ])
+    resources = sort([
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.production_data.id}"
-    ]
+    ])
   }
 
   statement {
-    actions = [
+    actions = sort([
       "s3:PutObject",
       "s3:GetObject",
       "s3:RestoreObject",
@@ -943,18 +943,18 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "s3:GetObjectVersionTagging",
       "s3:DeleteObjectTagging",
       "s3:DeleteObjectVersionTagging",
-    ]
-    resources = [
+    ])
+    resources = sort([
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.production_data.id}/*"
-    ]
+    ])
   }
 
   statement {
-    actions = [
+    actions = sort([
       "sts:GetFederationToken",
-    ]
+    ])
     resources = ["*"]
   }
 }

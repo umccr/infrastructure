@@ -102,7 +102,7 @@ data "aws_iam_policy_document" "fastq_archive" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
     }
-    actions = [
+    actions = sort([
       "s3:ListBucket",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
@@ -113,11 +113,11 @@ data "aws_iam_policy_document" "fastq_archive" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.fastq_archive.arn,
       "${aws_s3_bucket.fastq_archive.arn}/*"
-    ]
+    ])
   }
 
   # Allow the data mover access to copy to this bucket.
@@ -127,17 +127,17 @@ data "aws_iam_policy_document" "fastq_archive" {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_data_mover_role}"]
     }
-    actions = [
+    actions = sort([
       # List is needed for aws s3 sync
       "s3:ListBucket",
       "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.fastq_archive.arn,
       "${aws_s3_bucket.fastq_archive.arn}/*"
-    ]
+    ])
   }
 
   # Statement to allow access to any principal from the prod account
@@ -147,13 +147,13 @@ data "aws_iam_policy_document" "fastq_archive" {
       type        = "AWS"
       identifiers = ["472057503814"]
     }
-    actions = [
+    actions = sort([
       "s3:List*"
-    ]
-    resources = [
+    ])
+    resources = sort([
       aws_s3_bucket.fastq_archive.arn,
       "${aws_s3_bucket.fastq_archive.arn}/*"
-    ]
+    ])
   }
 }
 

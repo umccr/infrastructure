@@ -67,6 +67,8 @@ resource "aws_sqs_queue" "s3_event_queue" {
     s3_run_data_bucket_arn = data.aws_s3_bucket.s3_run_data_bucket.arn
     s3_oncoanalyser_arn = data.aws_s3_bucket.s3_oncoanalyser_bucket.arn
     icav2_pipeline_cache_to_sqs_rule_arn = aws_cloudwatch_event_rule.icav2_pipeline_cache_to_sqs_rule.arn
+    archive_analysis_to_sqs_rule_arn = aws_cloudwatch_event_rule.icav2_analysis_archive_to_sqs_rule.arn
+    archive_fastq_to_sqs_rule_arn = aws_cloudwatch_event_rule.icav2_fastq_archive_to_sqs_rule.arn
   })
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.s3_event_dlq.arn
@@ -181,8 +183,18 @@ resource "aws_cloudwatch_event_target" "icav2_pipeline_cache_to_sqs_target" {
   rule = aws_cloudwatch_event_rule.icav2_pipeline_cache_to_sqs_rule.name
 }
 
+locals {
+  rule_state = {
+    prod = true
+    dev  = false
+    stg  = false
+    # prod = "ENABLED"
+    # dev  = "DISABLED"
+    # stg  = "DISABLED"
+  }
+}
+
 resource "aws_cloudwatch_event_rule" "icav2_analysis_archive_to_sqs_rule" {
-  count       = terraform.workspace == "prod" ? 1 : 0
   name        = "data-portal-icav2-analysis-archive-to-portal-s3-sqs"
   description = "Forward S3 events from ICAv2 analysis archive bucket to Portal S3 SQS"
   event_pattern = jsonencode({
@@ -196,17 +208,18 @@ resource "aws_cloudwatch_event_rule" "icav2_analysis_archive_to_sqs_rule" {
     }
   })
 
+  is_enabled = local.rule_state[terraform.workspace]
+  # state = local.rule_state[terraform.workspace]
+
   tags = merge(local.default_tags)
 }
 
 resource "aws_cloudwatch_event_target" "icav2_analysis_archive_to_sqs_target" {
-  count = terraform.workspace == "prod" ? 1 : 0
   arn   = aws_sqs_queue.s3_event_queue.arn
-  rule  = aws_cloudwatch_event_rule.icav2_analysis_archive_to_sqs_rule[count.index].name
+  rule  = aws_cloudwatch_event_rule.icav2_analysis_archive_to_sqs_rule.name
 }
 
 resource "aws_cloudwatch_event_rule" "icav2_fastq_archive_to_sqs_rule" {
-  count       = terraform.workspace == "prod" ? 1 : 0
   name        = "data-portal-icav2-fastq-archive-to-portal-s3-sqs"
   description = "Forward S3 events from ICAv2 fastq archive bucket to Portal S3 SQS"
   event_pattern = jsonencode({
@@ -220,11 +233,13 @@ resource "aws_cloudwatch_event_rule" "icav2_fastq_archive_to_sqs_rule" {
     }
   })
 
+  is_enabled = local.rule_state[terraform.workspace]
+  # state = local.rule_state[terraform.workspace]
+
   tags = merge(local.default_tags)
 }
 
 resource "aws_cloudwatch_event_target" "icav2_fastq_archive_to_sqs_target" {
-  count = terraform.workspace == "prod" ? 1 : 0
   arn   = aws_sqs_queue.s3_event_queue.arn
-  rule  = aws_cloudwatch_event_rule.icav2_fastq_archive_to_sqs_rule[count.index].name
+  rule  = aws_cloudwatch_event_rule.icav2_fastq_archive_to_sqs_rule.name
 }

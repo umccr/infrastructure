@@ -149,6 +149,10 @@ data "aws_iam_policy_document" "analysis_archive" {
       "s3:RestoreObject",
       "s3:GetObject",
       "s3:GetObjectVersion",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
     ])
     resources = sort([
       aws_s3_bucket.analysis_archive.arn,

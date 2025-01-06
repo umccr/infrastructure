@@ -93,7 +93,8 @@ module "main_vpc" {
 }
 
 module "main_vpc_endpoints" {
-  source = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  version = "5.1.2"
 
   vpc_id             = module.main_vpc.vpc_id
   security_group_ids = [data.aws_security_group.default_sg.id]
@@ -235,6 +236,59 @@ resource "aws_security_group" "main_vpc_sg_uom" {
   tags = {
     Name        = "ssh_from_uom"
     Tier        = var.umccr_subnet_tier.PRIVATE
+    Environment = terraform.workspace
+    Stack       = var.stack_name
+    Creator     = "terraform"
+  }
+}
+
+# ---
+
+# EC2 Instance Connect Endpoint (EICE)
+# https://aws.amazon.com/blogs/compute/secure-connectivity-from-public-to-private-introducing-ec2-instance-connect-endpoint-june-13-2023/
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-with-ec2-instance-connect-endpoint.html
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/eice-quotas.html
+
+resource "aws_security_group" "main_vpc_sg_eice" {
+  name        = "main-vpc-sg-eice"
+  description = "Main VPC Security Group allow traffic through EC2 Instance Connect Endpoint"
+  vpc_id      = module.main_vpc.vpc_id
+
+  # Allows SSH traffic within the VPC through this group
+  egress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [ module.main_vpc.vpc_cidr_block ]
+    self        = true
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [ module.main_vpc.vpc_cidr_block ]
+    self        = true
+  }
+
+  tags = {
+    Name        = "ssh_from_eice"
+    Tier        = var.umccr_subnet_tier.PRIVATE
+    Environment = terraform.workspace
+    Stack       = var.stack_name
+    Creator     = "terraform"
+  }
+}
+
+resource "aws_ec2_instance_connect_endpoint" "main_vpc_eice" {
+  subnet_id = module.main_vpc.private_subnets[0]  # az ap-southeast-2a
+
+  security_group_ids = [
+    aws_security_group.main_vpc_sg_eice.id,
+  ]
+
+  tags = {
+    Name        = "main-vpc-eice"
     Environment = terraform.workspace
     Stack       = var.stack_name
     Creator     = "terraform"

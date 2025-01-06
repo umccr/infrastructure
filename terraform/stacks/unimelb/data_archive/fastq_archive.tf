@@ -5,6 +5,8 @@ locals {
   # The bucket holding all archived FASTQ data
   # fastq_archive_bucket_name = "${data.aws_caller_identity.current.account_id}-fastq-archive"
   fastq_archive_bucket_name = "archive-prod-fastq-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  # The role that the https://github.com/umccr/steps-s3-copy stack for data restore and data sharing
+  steps_s3_copy_restore_share_role = "umccr-wehi-data-sharing-role"  # FIXME to be changed it to a more permanent data sharing role in future
 }
 
 ################################################################################
@@ -133,6 +135,30 @@ data "aws_iam_policy_document" "fastq_archive" {
       "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
+    ])
+    resources = sort([
+      aws_s3_bucket.fastq_archive.arn,
+      "${aws_s3_bucket.fastq_archive.arn}/*"
+    ])
+  }
+
+  # Allow the steps-s3-copy role to restore and read to this bucket.
+  statement {
+    sid = "steps_s3_copy_restore_share_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.steps_s3_copy_restore_share_role}"]
+    }
+    actions = sort([
+      # List is needed for aws s3 sync
+      "s3:ListBucket",
+      "s3:RestoreObject",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
     ])
     resources = sort([
       aws_s3_bucket.fastq_archive.arn,

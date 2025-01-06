@@ -135,6 +135,30 @@ data "aws_iam_policy_document" "analysis_archive" {
       "${aws_s3_bucket.analysis_archive.arn}/*",
     ])
   }
+
+  # Allow the steps-s3-copy role to restore and read to this bucket.
+  statement {
+    sid = "steps_s3_copy_restore_share_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.steps_s3_copy_restore_share_role}"]
+    }
+    actions = sort([
+      # List is needed for aws s3 sync
+      "s3:ListBucket",
+      "s3:RestoreObject",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionAttributes",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+    ])
+    resources = sort([
+      aws_s3_bucket.analysis_archive.arn,
+      "${aws_s3_bucket.analysis_archive.arn}/*",
+    ])
+  }
 }
 
 # ------------------------------------------------------------------------------

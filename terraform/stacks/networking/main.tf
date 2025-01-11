@@ -113,13 +113,13 @@ module "main_vpc_endpoints" {
     s3 = {
       service         = "s3"
       service_type    = "Gateway"
-      route_table_ids = flatten([module.main_vpc.intra_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
+      route_table_ids = flatten([module.main_vpc.database_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
       tags            = { Name = "s3-vpc-endpoint" }
     },
     dynamodb = {
       service         = "dynamodb"
       service_type    = "Gateway"
-      route_table_ids = flatten([module.main_vpc.intra_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
+      route_table_ids = flatten([module.main_vpc.database_route_table_ids, module.main_vpc.private_route_table_ids, module.main_vpc.public_route_table_ids])
       # policy          = data.aws_iam_policy_document.dynamodb_endpoint_policy.json
       tags            = { Name = "dynamodb-vpc-endpoint" }
     },

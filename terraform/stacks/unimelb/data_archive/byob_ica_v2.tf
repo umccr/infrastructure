@@ -110,6 +110,7 @@ data "aws_iam_policy_document" "production_data" {
     actions = sort([
       "s3:List*",
       "s3:GetObject",
+      "s3:GetObjectTagging",
       "s3:GetBucketLocation",
     ])
     resources = sort([
@@ -398,6 +399,8 @@ data "aws_iam_policy_document" "staging_data" {
     actions = sort([
       "s3:List*",
       "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:GetObjectTagging"
     ])
     resources = sort([
       aws_s3_bucket.staging_data.arn,
@@ -641,6 +644,7 @@ data "aws_iam_policy_document" "development_data" {
       "s3:List*",
       "s3:GetBucketLocation",
       "s3:GetObject",
+      "s3:GetObjectTagging",
       "s3:GetObjectAttributes"
     ])
     resources = sort([

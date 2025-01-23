@@ -23,6 +23,9 @@ locals {
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
   orcabus_data_mover_role = "orcabus-data-mover-role"
+
+  # S3 Stops Copy Share role
+  steps_s3_copy_restore_share_role = "umccr-wehi-data-sharing-role"  # FIXME to be changed it to a more permanent data sharing role in future
 }
 
 
@@ -243,6 +246,35 @@ data "aws_iam_policy_document" "production_data" {
       "${aws_s3_bucket.production_data.arn}/*",
     ])
   }
+
+  statement {
+    sid = "steps_s3_copy_restore_share_access"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_prod}:role/${local.steps_s3_copy_restore_share_role}",
+      ])
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      "s3:DeleteObject"
+    ])
+    resources = sort([
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
+    ])
+  }
+
 }
 
 # ------------------------------------------------------------------------------
@@ -506,6 +538,35 @@ data "aws_iam_policy_document" "staging_data" {
       "${aws_s3_bucket.staging_data.arn}/*",
     ])
   }
+
+  statement {
+    sid = "steps_s3_copy_restore_share_access"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_stg}:role/${local.steps_s3_copy_restore_share_role}",
+      ])
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      "s3:DeleteObject"
+    ])
+    resources = sort([
+      aws_s3_bucket.staging_data.arn,
+      "${aws_s3_bucket.staging_data.arn}/*",
+    ])
+  }
+
 }
 
 # ------------------------------------------------------------------------------
@@ -766,6 +827,34 @@ data "aws_iam_policy_document" "development_data" {
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-oncoanalyser-task-batch-instance-role",
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-sash-pipeline-batch-instance-role",
         "arn:aws:iam::${local.account_id_dev}:role/nextflow-sash-task-batch-instance-role",
+      ])
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      "s3:DeleteObject"
+    ])
+    resources = sort([
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ])
+  }
+
+  statement {
+    sid = "steps_s3_copy_restore_share_access"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_dev}:role/${local.steps_s3_copy_restore_share_role}",
       ])
     }
     actions = sort([

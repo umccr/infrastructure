@@ -17,6 +17,13 @@ locals {
   pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
   icav2_prefix                     = "byob-icav2/"
+  # Project prefixes for the BYOB data in ICAv2
+  icav2_production_project_name = "production"
+  icav2_staging_project_name    = "staging"
+  icav2_development_project_name = "development"
+
+  restored_data_prefix = "restored/"
+
   event_bus_arn_umccr_dev_default  = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
   event_bus_arn_umccr_stg_default  = "arn:aws:events:ap-southeast-2:${local.account_id_stg}:event-bus/default"
   event_bus_arn_umccr_prod_default = "arn:aws:events:ap-southeast-2:${local.account_id_prod}:event-bus/default"
@@ -248,7 +255,7 @@ data "aws_iam_policy_document" "production_data" {
   }
 
   statement {
-    sid = "steps_s3_copy_restore_share_access"
+    sid = "steps_s3_copy_restore_share_access_read"
     principals {
       type        = "AWS"
       identifiers = sort([
@@ -259,11 +266,28 @@ data "aws_iam_policy_document" "production_data" {
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
       "s3:ListMultipartUploadParts",
-      "s3:AbortMultipartUpload",
       "s3:GetObject",
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
-      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes"
+    ])
+    resources = sort([
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
+    ])
+  }
+
+  statement {
+    sid = "steps_s3_copy_restore_share_access_write"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_prod}:role/${local.steps_s3_copy_restore_share_role}",
+      ])
+    }
+    actions = sort([
+      "s3:AbortMultipartUpload",
       "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
@@ -271,7 +295,7 @@ data "aws_iam_policy_document" "production_data" {
     ])
     resources = sort([
       aws_s3_bucket.production_data.arn,
-      "${aws_s3_bucket.production_data.arn}/*",
+      "${aws_s3_bucket.production_data.arn}/${local.icav2_prefix}${local.icav2_production_project_name}/${local.restored_data_prefix}*",
     ])
   }
 
@@ -540,7 +564,7 @@ data "aws_iam_policy_document" "staging_data" {
   }
 
   statement {
-    sid = "steps_s3_copy_restore_share_access"
+    sid = "steps_s3_copy_restore_share_access_read"
     principals {
       type        = "AWS"
       identifiers = sort([
@@ -555,7 +579,25 @@ data "aws_iam_policy_document" "staging_data" {
       "s3:GetObject",
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
-      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes"
+    ])
+    resources = sort([
+      aws_s3_bucket.staging_data.arn,
+      "${aws_s3_bucket.staging_data.arn}/*",
+    ])
+  }
+
+  statement {
+    sid = "steps_s3_copy_restore_share_access_write"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_stg}:role/${local.steps_s3_copy_restore_share_role}",
+      ])
+    }
+    actions = sort([
+      "s3:AbortMultipartUpload",
       "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
@@ -563,7 +605,7 @@ data "aws_iam_policy_document" "staging_data" {
     ])
     resources = sort([
       aws_s3_bucket.staging_data.arn,
-      "${aws_s3_bucket.staging_data.arn}/*",
+      "${aws_s3_bucket.staging_data.arn}/${local.icav2_prefix}${local.icav2_staging_project_name}/${local.restored_data_prefix}*",
     ])
   }
 
@@ -850,7 +892,7 @@ data "aws_iam_policy_document" "development_data" {
   }
 
   statement {
-    sid = "steps_s3_copy_restore_share_access"
+    sid = "steps_s3_copy_restore_share_access_read"
     principals {
       type        = "AWS"
       identifiers = sort([
@@ -865,7 +907,25 @@ data "aws_iam_policy_document" "development_data" {
       "s3:GetObject",
       "s3:GetObjectTagging",
       "s3:GetObjectVersionTagging",
-      "s3:GetObjectAttributes",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes"
+    ])
+    resources = sort([
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ])
+  }
+
+  statement {
+    sid = "steps_s3_copy_restore_share_access_write"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_dev}:role/${local.steps_s3_copy_restore_share_role}",
+      ])
+    }
+    actions = sort([
+      "s3:AbortMultipartUpload",
       "s3:PutObject",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging",
@@ -873,7 +933,7 @@ data "aws_iam_policy_document" "development_data" {
     ])
     resources = sort([
       aws_s3_bucket.development_data.arn,
-      "${aws_s3_bucket.development_data.arn}/*",
+      "${aws_s3_bucket.development_data.arn}/${local.icav2_prefix}${local.icav2_development_project_name}/${local.restored_data_prefix}*",
     ])
   }
 

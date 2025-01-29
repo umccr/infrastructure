@@ -112,6 +112,17 @@ resource "aws_cognito_user_group" "main" {
   description  = "Admin group role within the data-portal cognito user pool"
 }
 
+# curators: 
+# 
+# Group for curators with inherited actions.
+# Curators generally have read permissions and limited actions (e.g. rerun RNAsum).
+# Actual implementation is handled at the application level.
+resource "aws_cognito_user_group" "curators_cognito_group" {
+  name         = "curators"
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+  description  = "Group for curators with actions applied to all members"
+}
+
 ################################################################################
 # Cognito Identity Pool
 

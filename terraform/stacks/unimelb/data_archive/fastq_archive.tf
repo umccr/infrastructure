@@ -174,7 +174,8 @@ data "aws_iam_policy_document" "fastq_archive" {
       identifiers = ["472057503814"]
     }
     actions = sort([
-      "s3:List*"
+      "s3:List*",
+      "s3:GetObjectTagging"
     ])
     resources = sort([
       aws_s3_bucket.fastq_archive.arn,

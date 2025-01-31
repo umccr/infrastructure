@@ -99,7 +99,7 @@ resource "aws_cognito_identity_provider" "identity_provider" {
 # Defining group roles within this data-portal cognito user pool
 
 
-# admin: 
+# admin
 # 
 # The admin role should ideally have full read/write permissions within the data-portal Cognito 
 # user pool. The specific actions it can perform depend on the applications/stacks 
@@ -112,7 +112,7 @@ resource "aws_cognito_user_group" "main" {
   description  = "Admin group role within the data-portal cognito user pool"
 }
 
-# curators: 
+# curators
 # 
 # Group for curators with inherited actions.
 # Curators generally have read permissions and limited actions (e.g. rerun RNAsum).
@@ -121,6 +121,17 @@ resource "aws_cognito_user_group" "curators_cognito_group" {
   name         = "curators"
   user_pool_id = aws_cognito_user_pool.user_pool.id
   description  = "Group for curators with actions applied to all members"
+}
+
+# bioinfo
+# 
+# Group for bioinformatics members.
+# Bioinformatics members generally have the same permissions as curators with additional actions.
+# Actual implementation is handled at the application level.
+resource "aws_cognito_user_group" "bioinfo_cognito_group" {
+  name         = "bioinfo"
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+  description  = "Group for bioinformatics members"
 }
 
 ################################################################################

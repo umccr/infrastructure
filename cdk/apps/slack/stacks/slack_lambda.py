@@ -95,8 +95,8 @@ class BatchLambdaStack(Stack):
                 detail={
                     'status': [
                         'FAILED',
-                        'SUCCEEDED',
-                        'RUNNABLE',
+                        # 'SUCCEEDED',
+                        # 'RUNNABLE',
                     ],
                     'jobQueue': [{'anything-but': {'prefix': s}} for s in job_queue_exclude_eb_patterns],
                 },

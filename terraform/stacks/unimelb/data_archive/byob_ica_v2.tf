@@ -22,6 +22,7 @@ locals {
   icav2_staging_project_name    = "staging"
   icav2_development_project_name = "development"
 
+  temp_data_prefix = "cache/"
   restored_data_prefix = "restored/"
 
   event_bus_arn_umccr_dev_default  = "arn:aws:events:ap-southeast-2:${local.account_id_dev}:event-bus/default"
@@ -98,6 +99,76 @@ resource "aws_s3_bucket_lifecycle_configuration" "production_data" {
     transition {
       days          = 0
       storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+
+  rule {
+    id     = "cache_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}${local.icav2_production_project_name}/${local.temp_data_prefix}"
+    }
+    expiration {
+      days = 3
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    id     = "restored_base_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}${local.icav2_production_project_name}/${local.restored_data_prefix}"
+    }
+    expiration {
+      days = 60
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    id     = "restored_7d_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}${local.icav2_production_project_name}/${local.restored_data_prefix}7d/"
+    }
+    expiration {
+      days = 7
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    id     = "restored_14d_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}${local.icav2_production_project_name}/${local.restored_data_prefix}14d/"
+    }
+    expiration {
+      days = 14
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
+  rule {
+    id     = "restored_30d_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}${local.icav2_production_project_name}/${local.restored_data_prefix}30d/"
+    }
+    expiration {
+      days = 30
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
     }
   }
 }

@@ -30,7 +30,9 @@ locals {
   event_bus_arn_umccr_prod_default = "arn:aws:events:ap-southeast-2:${local.account_id_prod}:event-bus/default"
   # The role that the orcabus file manager uses to ingest events.
   orcabus_file_manager_ingest_role = "orcabus-file-manager-ingest-role"
-  orcabus_data_mover_role = "orcabus-data-mover-role"
+  # The user that the orcabus file manager uses to presign URLs up to 7 days long.
+  orcabus_file_manager_presign_user = "orcabus-file-manager-presign-user"
+  orcabus_data_mover_role           = "orcabus-data-mover-role"
 }
 
 
@@ -238,6 +240,22 @@ data "aws_iam_policy_document" "production_data" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
+    ])
+    resources = sort([
+      aws_s3_bucket.production_data.arn,
+      "${aws_s3_bucket.production_data.arn}/*",
+    ])
+  }
+
+  statement {
+    sid = "orcabus_file_manager_presign_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:user/${local.orcabus_file_manager_presign_user}"]
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:GetObject",
     ])
     resources = sort([
       aws_s3_bucket.production_data.arn,
@@ -574,6 +592,22 @@ data "aws_iam_policy_document" "staging_data" {
   }
 
   statement {
+    sid = "orcabus_file_manager_presign_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_stg}:user/${local.orcabus_file_manager_presign_user}"]
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:GetObject",
+    ])
+    resources = sort([
+      aws_s3_bucket.staging_data.arn,
+      "${aws_s3_bucket.staging_data.arn}/*",
+    ])
+  }
+
+  statement {
     sid = "orcabus_data_mover_access"
     principals {
       type        = "AWS"
@@ -869,6 +903,22 @@ data "aws_iam_policy_document" "development_data" {
       "s3:GetObjectVersionTagging",
       "s3:PutObjectTagging",
       "s3:PutObjectVersionTagging"
+    ])
+    resources = sort([
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ])
+  }
+
+  statement {
+    sid = "orcabus_file_manager_presign_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_dev}:user/${local.orcabus_file_manager_presign_user}"]
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:GetObject",
     ])
     resources = sort([
       aws_s3_bucket.development_data.arn,

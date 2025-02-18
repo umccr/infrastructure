@@ -116,6 +116,23 @@ data "aws_iam_policy_document" "analysis_archive" {
     ])
   }
 
+  # Allow the presign user to presign URLs from this bucket.
+  statement {
+    sid = "orcabus_file_manager_presign_access"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:user/${local.orcabus_file_manager_presign_user}"]
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:GetObject"
+    ])
+    resources = sort([
+      aws_s3_bucket.analysis_archive.arn,
+      "${aws_s3_bucket.analysis_archive.arn}/*",
+    ])
+  }
+
   # Allow the data mover access to copy to this bucket.
   statement {
     sid = "orcabus_data_mover_access"

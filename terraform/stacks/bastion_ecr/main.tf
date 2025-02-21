@@ -131,3 +131,27 @@ resource "aws_ecr_lifecycle_policy" "sash_lifecycle" {
   repository = aws_ecr_repository.sash.name
   policy     = templatefile("policies/untagged_image_policy.json", {})
 }
+
+####
+# orcavault-dbt
+# https://github.com/umccr/orcahouse
+
+resource "aws_ecr_repository" "orcavault_dbt" {
+  name                 = "orcavault-dbt"
+  image_tag_mutability = "MUTABLE"
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+}
+
+resource "aws_ecr_repository_policy" "orcavault_dbt_cross_accounts" {
+  # https://aws.amazon.com/blogs/compute/introducing-cross-account-amazon-ecr-access-for-aws-lambda/
+  repository = aws_ecr_repository.orcavault_dbt.name
+  policy     = templatefile("policies/cross_accounts_policy_umccr.json", {})
+}
+
+# Policy on untagged image
+resource "aws_ecr_lifecycle_policy" "orcavault_dbt_lifecycle" {
+  repository = aws_ecr_repository.orcavault_dbt.name
+  policy     = templatefile("policies/untagged_image_policy.json", {})
+}

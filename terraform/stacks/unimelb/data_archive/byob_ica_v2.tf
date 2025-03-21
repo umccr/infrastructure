@@ -888,51 +888,51 @@ data "aws_iam_policy_document" "development_data" {
     ])
   }
 
-  # statement {
-  #   sid = "steps_s3_copy_restore_share_access_read"
-  #   principals {
-  #     type        = "AWS"
-  #     identifiers = sort([
-  #       "arn:aws:iam::${local.account_id_dev}:role/${local.steps_s3_copy_restore_share_role}",
-  #     ])
-  #   }
-  #   actions = sort([
-  #     "s3:ListBucket",
-  #     "s3:ListBucketMultipartUploads",
-  #     "s3:ListMultipartUploadParts",
-  #     "s3:AbortMultipartUpload",
-  #     "s3:GetObject",
-  #     "s3:GetObjectTagging",
-  #     "s3:GetObjectVersionTagging",
-  #     "s3:GetObjectVersionTagging",
-  #     "s3:GetObjectAttributes"
-  #   ])
-  #   resources = sort([
-  #     aws_s3_bucket.development_data.arn,
-  #     "${aws_s3_bucket.development_data.arn}/*",
-  #   ])
-  # }
+  statement {
+    sid = "steps_s3_copy_restore_share_access_read"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_dev}:role/${local.steps_s3_copy_restore_share_role_dev}",
+      ])
+    }
+    actions = sort([
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:GetObjectAttributes"
+    ])
+    resources = sort([
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/*",
+    ])
+  }
 
-  # statement {
-  #   sid = "steps_s3_copy_restore_share_access_write"
-  #   principals {
-  #     type        = "AWS"
-  #     identifiers = sort([
-  #       "arn:aws:iam::${local.account_id_dev}:role/${local.steps_s3_copy_restore_share_role}",
-  #     ])
-  #   }
-  #   actions = sort([
-  #     "s3:AbortMultipartUpload",
-  #     "s3:PutObject",
-  #     "s3:PutObjectTagging",
-  #     "s3:PutObjectVersionTagging",
-  #     "s3:DeleteObject"
-  #   ])
-  #   resources = sort([
-  #     aws_s3_bucket.development_data.arn,
-  #     "${aws_s3_bucket.development_data.arn}/${local.icav2_prefix}${local.icav2_development_project_name}/${local.restored_data_prefix}*",
-  #   ])
-  # }
+  statement {
+    sid = "steps_s3_copy_restore_share_access_write"
+    principals {
+      type        = "AWS"
+      identifiers = sort([
+        "arn:aws:iam::${local.account_id_dev}:role/${local.steps_s3_copy_restore_share_role_dev}",
+      ])
+    }
+    actions = sort([
+      "s3:AbortMultipartUpload",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      "s3:DeleteObject"
+    ])
+    resources = sort([
+      aws_s3_bucket.development_data.arn,
+      "${aws_s3_bucket.development_data.arn}/${local.icav2_prefix}${local.icav2_development_project_name}/${local.restored_data_prefix}*",
+    ])
+  }
 
   statement {
     sid = "AccessPointDelegation"

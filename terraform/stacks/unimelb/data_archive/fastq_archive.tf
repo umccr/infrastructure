@@ -7,6 +7,7 @@ locals {
   fastq_archive_bucket_name = "archive-prod-fastq-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # The role that the https://github.com/umccr/steps-s3-copy stack for data restore and data sharing
   steps_s3_copy_restore_share_role = "umccr-wehi-data-sharing-role"  # FIXME to be changed it to a more permanent data sharing role in future
+  steps_s3_copy_restore_share_role_dev = "steps-s3-copy-role"  # FIXME to be changed / merged to a more permanent data sharing role in future
 }
 
 ################################################################################

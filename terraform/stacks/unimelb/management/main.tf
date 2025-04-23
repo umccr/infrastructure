@@ -29,6 +29,7 @@ locals {
   region                     = data.aws_region.current.name
   this_account_id            = data.aws_caller_identity.current.account_id
   data_account_id            = "503977275616"
+  account_id_montauk         = "977251586657"
   cloudtrail_bucket_name_dev = "cloudtrail-logs-${local.this_account_id}-${local.region}"
   common_tags = {
     "umccr:Environment" : "management",
@@ -74,6 +75,7 @@ data "aws_iam_policy_document" "cloudtrail" {
       variable = "aws:SourceArn"
       values = [
         "arn:aws:cloudtrail:${local.region}:${local.this_account_id}:trail/mgntTrail",
+        "arn:aws:cloudtrail:${local.region}:${local.account_id_montauk}:trail/montaukTrail",
         "arn:aws:cloudtrail:${local.region}:${local.data_account_id}:trail/dataTrail"
       ]
     }
@@ -89,6 +91,7 @@ data "aws_iam_policy_document" "cloudtrail" {
     ]
     resources = [
       "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${local.this_account_id}/*",
+      "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${local.account_id_montauk}/*",
       "${aws_s3_bucket.cloudtrail.arn}/AWSLogs/${local.data_account_id}/*"
     ]
     condition {
@@ -96,6 +99,7 @@ data "aws_iam_policy_document" "cloudtrail" {
       variable = "aws:SourceArn"
       values = [
         "arn:aws:cloudtrail:${local.region}:${local.this_account_id}:trail/mgntTrail",
+        "arn:aws:cloudtrail:${local.region}:${local.account_id_montauk}:trail/montaukTrail",
         "arn:aws:cloudtrail:${local.region}:${local.data_account_id}:trail/dataTrail"
       ]
     }

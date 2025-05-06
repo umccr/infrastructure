@@ -1,5 +1,14 @@
 # UMCCR Data Portal Stack
 
+> DEPRECATION NOTICE:
+> 
+> This stack (and substacks) has been deprecated (and destroyed) from all environments.
+> The following instruction is no longer applicable anymore.
+> https://github.com/umccr/infrastructure/issues/272
+> 
+> 
+
+
 This stack deploys the AWS resources for the UMCCR data portal.
 
 ## Quickstart

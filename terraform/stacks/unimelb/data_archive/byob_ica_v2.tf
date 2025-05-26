@@ -231,6 +231,7 @@ data "aws_iam_policy_document" "production_data" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
       "s3:GetObjectAttributes",
@@ -255,6 +256,7 @@ data "aws_iam_policy_document" "production_data" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
     ])
     resources = sort([
@@ -550,6 +552,7 @@ data "aws_iam_policy_document" "staging_data" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
       "s3:GetObjectAttributes",
@@ -574,6 +577,7 @@ data "aws_iam_policy_document" "staging_data" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
     ])
     resources = sort([
@@ -869,6 +873,7 @@ data "aws_iam_policy_document" "development_data" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
       "s3:GetObjectAttributes",
@@ -893,6 +898,7 @@ data "aws_iam_policy_document" "development_data" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
     ])
     resources = sort([

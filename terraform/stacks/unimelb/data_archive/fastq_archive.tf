@@ -107,6 +107,7 @@ data "aws_iam_policy_document" "fastq_archive" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
       # Note, filemanager is not using GetObjectAttributes yet.
       "s3:GetObjectAttributes",
@@ -131,6 +132,7 @@ data "aws_iam_policy_document" "fastq_archive" {
     }
     actions = sort([
       "s3:ListBucket",
+      "s3:ListBucketVersions",
       "s3:GetObject",
     ])
     resources = sort([

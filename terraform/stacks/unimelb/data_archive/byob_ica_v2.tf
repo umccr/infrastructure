@@ -15,6 +15,8 @@ locals {
   pipeline_data_bucket_name_dev = "pipeline-dev-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   # The bucket holding all staging data
   pipeline_data_bucket_name_stg = "pipeline-stg-cache-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+
+  research_data_atlas_bucket_name = "research-data-${local.account_id_atlas}-${data.aws_region.current.name}"
   # prefix for the BYOB data in ICAv2
   icav2_prefix                     = "byob-icav2/"
   # Project prefixes for the BYOB data in ICAv2
@@ -1151,7 +1153,9 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
     resources = sort([
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}",
-      "arn:aws:s3:::${aws_s3_bucket.production_data.id}"
+      "arn:aws:s3:::${aws_s3_bucket.production_data.id}",
+      "arn:aws:s3:::${local.research_data_atlas_bucket_name}",
+      "arn:aws:s3:::${aws_s3_bucket.test_data.id}"
     ])
   }
 
@@ -1174,7 +1178,9 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
     resources = sort([
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}/*",
-      "arn:aws:s3:::${aws_s3_bucket.production_data.id}/*"
+      "arn:aws:s3:::${aws_s3_bucket.production_data.id}/*",
+      "arn:aws:s3:::${local.research_data_atlas_bucket_name}/*",
+      "arn:aws:s3:::${aws_s3_bucket.test_data.id}/*"
     ])
   }
 

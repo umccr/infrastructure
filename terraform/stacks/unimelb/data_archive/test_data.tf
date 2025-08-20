@@ -59,7 +59,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "test_data" {
     id     = "icav2_data_it_rule"
     status = "Enabled"
     filter {
-      prefix = local.icav2_prefix
+      prefix = local.prefix_testdata
     }
     transition {
       days          = 0
@@ -86,7 +86,7 @@ data "aws_iam_policy_document" "test_data" {
     }
     actions = sort([
       "s3:ListBucket*",
-	  "s3:List*MultiPart*",
+	    "s3:List*MultiPart*",
       "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:GetObject*Tagging",
@@ -226,5 +226,79 @@ resource "aws_cloudwatch_event_target" "put_test_events_to_prod_bus" {
 
 ################################################################################
 # BYOB IAM User for ICAv2
-# NOTE: instead of creating a project specific user for ICA, we allow our
-#       default platform user to access / control the BYOB of this account.
+# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# NOTE: manipulating IAM user/groups in UoM accounts requires Owner access
+
+resource "aws_iam_user" "icav2_test_data_admin" {
+  name = "icav2_test_data_admin"
+  path = "/icav2/"
+  tags = local.default_tags
+}
+
+resource "aws_iam_group" "icav2_test_data_admin" {
+  name = "icav2_test_data_admin"
+  path = "/icav2/"
+}
+
+resource "aws_iam_group_membership" "icav2_test_data_admin" {
+  name  = "${aws_iam_group.icav2_test_data_admin.name}_membership"
+  group = aws_iam_group.icav2_test_data_admin.name
+  users = [
+    aws_iam_user.icav2_test_data_admin.name,
+  ]
+}
+
+resource "aws_iam_group_policy_attachment" "icav2_test_data_admin" {
+  group      = aws_iam_group.icav2_test_data_admin.name
+  policy_arn = aws_iam_policy.icav2_test_data_admin.arn
+}
+
+data "aws_iam_policy_document" "icav2_test_data_admin" {
+  statement {
+    actions = sort([
+      "s3:PutBucketNotification",
+      "s3:ListBucket",
+      "s3:GetBucketNotification",
+      "s3:GetBucketLocation",
+      "s3:ListBucketVersions",
+      "s3:GetBucketVersioning"
+    ])
+    resources = sort([
+      "arn:aws:s3:::${aws_s3_bucket.test_data.id}"
+    ])
+  }
+
+  statement {
+    actions = sort([
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:RestoreObject",
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+      "s3:GetObjectVersion",
+      # Add tagging
+      "s3:PutObjectTagging",
+      "s3:PutObjectVersionTagging",
+      "s3:GetObjectTagging",
+      "s3:GetObjectVersionTagging",
+      "s3:DeleteObjectTagging",
+      "s3:DeleteObjectVersionTagging",
+    ])
+    resources = sort([
+      "arn:aws:s3:::${aws_s3_bucket.test_data.id}/*"
+    ])
+  }
+
+  statement {
+    actions = sort([
+      "sts:GetFederationToken",
+    ])
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "icav2_test_data_admin" {
+  name   = "icav2_test_data_admin"
+  path   = "/icav2/"
+  policy = data.aws_iam_policy_document.icav2_test_data_admin.json
+}

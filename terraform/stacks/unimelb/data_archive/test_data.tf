@@ -75,6 +75,7 @@ resource "aws_s3_bucket_policy" "test_data" {
 }
 
 data "aws_iam_policy_document" "test_data" {
+  # general read-only access for dev/stg/prod
   statement {
     sid = "testdata_ro_access"
     principals {
@@ -90,6 +91,7 @@ data "aws_iam_policy_document" "test_data" {
 	    "s3:List*MultiPart*",
       "s3:GetBucketLocation",
       "s3:GetObject",
+      "s3:GetObjectVersion",
       "s3:GetObject*Tagging",
       "s3:GetObject*Attributes"
     ])
@@ -99,56 +101,26 @@ data "aws_iam_policy_document" "test_data" {
     ])
   }
 
+  # dedicated (prod) FileManager access (ingest)
   statement {
-    sid = "test_output_rw_access"
+    sid = "orcabus_file_manager_ingest_access"
     principals {
       type        = "AWS"
-      identifiers = [
-		"arn:aws:iam::${local.account_id_dev}:root",
-		"arn:aws:iam::${local.account_id_stg}:root",
-		"arn:aws:iam::${local.account_id_prod}:root"
-		]
+      identifiers = ["arn:aws:iam::${local.account_id_prod}:role/${local.orcabus_file_manager_ingest_role}"]
     }
     actions = sort([
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:AbortMultipartUpload",
-      "s3:PutObject*Tagging",
-      "s3:DeleteObject*Tagging",
+      "s3:ListBucket*",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObject*Attributes",
+      "s3:GetObject*Tagging",
+      "s3:PutObject*Tagging"
     ])
     resources = sort([
-      "${aws_s3_bucket.test_data.arn}/${local.prefix_output}*",
+      aws_s3_bucket.test_data.arn,
+      "${aws_s3_bucket.test_data.arn}/*",
     ])
   }
-
-  # Should not need this for simle "external data" integration
-  # statement {
-  #    # See https://help.ica.illumina.com/home/h-storage/s-awss3#enabling-cross-account-access-for-copy-and-move-operations
-  #   sid = "icav2_cross_account_access"
-  #   principals {
-  #     type        = "AWS"
-  #     identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
-  #   }
-  #   actions = sort([
-  #     # Standard actions
-  #     "s3:PutObject",
-  #     "s3:DeleteObject",
-  #     "s3:ListMultipartUploadParts",
-  #     "s3:AbortMultipartUpload",
-  #     "s3:GetObject",
-  #     # Add tagging
-  #     "s3:PutObjectTagging",
-  #     "s3:PutObjectVersionTagging",
-  #     "s3:GetObjectTagging",
-  #     "s3:GetObjectVersionTagging",
-  #     "s3:DeleteObjectTagging",
-  #     "s3:DeleteObjectVersionTagging"
-  #   ])
-  #   resources = sort([
-  #     aws_s3_bucket.test_data.arn,
-  #     "${aws_s3_bucket.test_data.arn}/*",
-  #   ])
-  # }
 
 }
 

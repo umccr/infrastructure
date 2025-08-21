@@ -1154,8 +1154,7 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}",
       "arn:aws:s3:::${aws_s3_bucket.production_data.id}",
-      "arn:aws:s3:::${local.research_data_atlas_bucket_name}",
-      "arn:aws:s3:::${aws_s3_bucket.test_data.id}"
+      "arn:aws:s3:::${local.research_data_atlas_bucket_name}"
     ])
   }
 
@@ -1179,8 +1178,7 @@ data "aws_iam_policy_document" "icav2_pipeline_data_user_policy" {
       "arn:aws:s3:::${aws_s3_bucket.development_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.staging_data.id}/*",
       "arn:aws:s3:::${aws_s3_bucket.production_data.id}/*",
-      "arn:aws:s3:::${local.research_data_atlas_bucket_name}/*",
-      "arn:aws:s3:::${aws_s3_bucket.test_data.id}/*"
+      "arn:aws:s3:::${local.research_data_atlas_bucket_name}/*"
     ])
   }
 

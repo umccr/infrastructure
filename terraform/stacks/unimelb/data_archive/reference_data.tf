@@ -10,9 +10,10 @@ locals {
 }
 
 # ==============================================================================
-# reference data
+# Reference data
 # ==============================================================================
-
+# NOTE: This is not a BYOB! It will be used as and "external data" source only.
+#       We do not allow ICA to controll the bucket, just to access the data.
 resource "aws_s3_bucket" "ref_data" {
   bucket = local.bucket_name_ref_data
 
@@ -112,39 +113,11 @@ data "aws_iam_policy_document" "ref_data" {
     ])
   }
 
-  statement {
-    # See https://help.ica.illumina.com/home/h-storage/s-awss3#enabling-cross-account-access-for-copy-and-move-operations
-    sid = "icav2_cross_account_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
-    }
-    actions = sort([
-      # Standard actions
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:ListMultipartUploadParts",
-      "s3:AbortMultipartUpload",
-      "s3:GetObject",
-      # Add tagging
-      "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging",
-      "s3:GetObjectTagging",
-      "s3:GetObjectVersionTagging",
-      "s3:DeleteObjectTagging",
-      "s3:DeleteObjectVersionTagging"
-    ])
-    resources = sort([
-      aws_s3_bucket.ref_data.arn,
-      "${aws_s3_bucket.ref_data.arn}/*",
-    ])
-  }
-
 }
 
 
 # ------------------------------------------------------------------------------
-# CORS configuration for ILMN BYO buckets
+# CORS configuration
 resource "aws_s3_bucket_cors_configuration" "ref_data" {
   bucket = aws_s3_bucket.ref_data.id
 
@@ -152,9 +125,11 @@ resource "aws_s3_bucket_cors_configuration" "ref_data" {
     allowed_headers = ["*"]
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
     allowed_origins = [
-      "https://ica.illumina.com",     # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
-      "https://orcaui.dev.umccr.org", # orcaui - https://github.com/umccr/orca-ui
-      "https://portal.dev.umccr.org", # umccr data portal - https://github.com/umccr/umccr-data-portal
+      "https://orcaui.dev.umccr.org",
+      "https://orcaui.stg.umccr.org",
+      "https://orcaui.prod.umccr.org",
+      "https://orcaui.umccr.org",
+      "https://portal.umccr.org"
     ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000
@@ -164,13 +139,11 @@ resource "aws_s3_bucket_cors_configuration" "ref_data" {
 # ------------------------------------------------------------------------------
 # EventBridge rule to forward events from to the target account
 
-# NOTE: Don't control notification settings from TF, as some are controlled by ICA.
-#       This has to tbe enabled manually on the bucket.
-#       See: https://registry.terraform.io/providers/-/aws/latest/docs/resources/s3_bucket_notification
-# resource "aws_s3_bucket_notification" "ref_data" {
-#   bucket      = aws_s3_bucket.ref_data.id
-#   eventbridge = true
-# }
+# NOTE: We do not let ICA control this bucket, so we can assume full control of all notifications
+resource "aws_s3_bucket_notification" "ref_data" {
+  bucket      = aws_s3_bucket.ref_data.id
+  eventbridge = true
+}
 
 data "aws_iam_policy_document" "put_ref_events_to_prod_bus" {
   statement {
@@ -219,14 +192,23 @@ resource "aws_cloudwatch_event_target" "put_ref_events_to_prod_bus" {
 
 
 ################################################################################
-# BYOB IAM User for ICAv2
-# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# IAM User for ICAv2 access ("external data")
+# ref: https://help.ica.illumina.com/home/h-storage
 # NOTE: manipulating IAM user/groups in UoM accounts requires Owner access
 
 resource "aws_iam_user" "icav2_ref_data_admin" {
   name = "icav2_ref_data_admin"
   path = "/icav2/"
-  tags = local.default_tags
+  tags = merge(
+    local.default_tags,
+    {
+      # The Access Key is created manually via Concole, which will add tags to the IAM user.
+      # We record this here manually to avoid uncontrolled change of Access Keys
+      # (any Access Key change will have to be followed up by tag adjustment)
+      "AKIAXKV3C6DQLHFVPNXH" = "ICA credentials"
+    }
+  )
+
 }
 
 resource "aws_iam_group" "icav2_ref_data_admin" {

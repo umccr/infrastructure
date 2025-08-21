@@ -232,7 +232,16 @@ resource "aws_cloudwatch_event_target" "put_test_events_to_prod_bus" {
 resource "aws_iam_user" "icav2_test_data_admin" {
   name = "icav2_test_data_admin"
   path = "/icav2/"
-  tags = local.default_tags
+  tags = merge(
+    local.default_tags,
+    {
+      # The Access Key is created manually via Concole, which will add tags to the IAM user.
+      # We record this here manually to avoid uncontrolled change of Access Keys
+      # (any Access Key change will have to be followed up by tag adjustment)
+      "AKIAXKV3C6DQLRER63VF" = "ICA credentials"
+    }
+  )
+
 }
 
 resource "aws_iam_group" "icav2_test_data_admin" {

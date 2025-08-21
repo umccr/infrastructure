@@ -14,7 +14,8 @@ locals {
 # ==============================================================================
 # test data
 # ==============================================================================
-
+# NOTE: This is not a BYOB! It will be used as and "external data" source only.
+#       We do not allow ICA to controll the bucket, just to access the data.
 resource "aws_s3_bucket" "test_data" {
   bucket = local.bucket_name_test_data
 
@@ -120,39 +121,40 @@ data "aws_iam_policy_document" "test_data" {
     ])
   }
 
-  statement {
-     # See https://help.ica.illumina.com/home/h-storage/s-awss3#enabling-cross-account-access-for-copy-and-move-operations
-    sid = "icav2_cross_account_access"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
-    }
-    actions = sort([
-      # Standard actions
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:ListMultipartUploadParts",
-      "s3:AbortMultipartUpload",
-      "s3:GetObject",
-      # Add tagging
-      "s3:PutObjectTagging",
-      "s3:PutObjectVersionTagging",
-      "s3:GetObjectTagging",
-      "s3:GetObjectVersionTagging",
-      "s3:DeleteObjectTagging",
-      "s3:DeleteObjectVersionTagging"
-    ])
-    resources = sort([
-      aws_s3_bucket.test_data.arn,
-      "${aws_s3_bucket.test_data.arn}/*",
-    ])
-  }
+  # Should not need this for simle "external data" integration
+  # statement {
+  #    # See https://help.ica.illumina.com/home/h-storage/s-awss3#enabling-cross-account-access-for-copy-and-move-operations
+  #   sid = "icav2_cross_account_access"
+  #   principals {
+  #     type        = "AWS"
+  #     identifiers = ["arn:aws:iam::079623148045:role/ica_aps2_crossacct"]
+  #   }
+  #   actions = sort([
+  #     # Standard actions
+  #     "s3:PutObject",
+  #     "s3:DeleteObject",
+  #     "s3:ListMultipartUploadParts",
+  #     "s3:AbortMultipartUpload",
+  #     "s3:GetObject",
+  #     # Add tagging
+  #     "s3:PutObjectTagging",
+  #     "s3:PutObjectVersionTagging",
+  #     "s3:GetObjectTagging",
+  #     "s3:GetObjectVersionTagging",
+  #     "s3:DeleteObjectTagging",
+  #     "s3:DeleteObjectVersionTagging"
+  #   ])
+  #   resources = sort([
+  #     aws_s3_bucket.test_data.arn,
+  #     "${aws_s3_bucket.test_data.arn}/*",
+  #   ])
+  # }
 
 }
 
 
 # ------------------------------------------------------------------------------
-# CORS configuration for ILMN BYO buckets
+# CORS configuration
 resource "aws_s3_bucket_cors_configuration" "test_data" {
   bucket = aws_s3_bucket.test_data.id
 
@@ -160,9 +162,11 @@ resource "aws_s3_bucket_cors_configuration" "test_data" {
     allowed_headers = ["*"]
     allowed_methods = ["HEAD", "GET", "PUT", "POST", "DELETE"]
     allowed_origins = [
-      "https://ica.illumina.com",     # ILMN UI uploads - https://help.ica.illumina.com/home/h-storage/s-awss3
-      "https://orcaui.dev.umccr.org", # orcaui - https://github.com/umccr/orca-ui
-      "https://portal.dev.umccr.org", # umccr data portal - https://github.com/umccr/umccr-data-portal
+      "https://orcaui.dev.umccr.org",
+      "https://orcaui.stg.umccr.org",
+      "https://orcaui.prod.umccr.org",
+      "https://orcaui.umccr.org",
+      "https://portal.umccr.org"
     ]
     expose_headers  = ["ETag", "x-amz-meta-custom-header"]
     max_age_seconds = 3000
@@ -172,11 +176,11 @@ resource "aws_s3_bucket_cors_configuration" "test_data" {
 # ------------------------------------------------------------------------------
 # EventBridge rule to forward events from to the target account
 
-# NOTE: don't control notification settings from TF, as some is controlled by ICA
-# resource "aws_s3_bucket_notification" "test_data" {
-#   bucket      = aws_s3_bucket.test_data.id
-#   eventbridge = true
-# }
+# NOTE: We do not let ICA control this bucket, so we can assume full control of all notifications
+resource "aws_s3_bucket_notification" "test_data" {
+  bucket      = aws_s3_bucket.test_data.id
+  eventbridge = true
+}
 
 data "aws_iam_policy_document" "put_test_events_to_prod_bus" {
   statement {
@@ -225,8 +229,8 @@ resource "aws_cloudwatch_event_target" "put_test_events_to_prod_bus" {
 
 
 ################################################################################
-# BYOB IAM User for ICAv2
-# ref: https://help.ica.illumina.com/home/h-storage/s-awss3
+# IAM User for ICAv2 access ("external data")
+# ref: https://help.ica.illumina.com/home/h-storage
 # NOTE: manipulating IAM user/groups in UoM accounts requires Owner access
 
 resource "aws_iam_user" "icav2_test_data_admin" {

@@ -1,0 +1,116 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Bootstrap the Terraform S3 Backend"
+
+#
+# This CloudFormation stack template initializes all the resources necessary
+# to utilize the Terraform S3 backend, see;
+# https://www.terraform.io/language/settings/backends/s3
+#
+# A Deny policy is established on the bucket to deny non-admins from viewing the terraform state.
+#
+# Note that should this CloudFormation stack be deleted the S3 bucket will be retained for safety's sake.
+#
+
+# Operational commands:
+# aws cloudformation validate-template --template-body file://terraform-bootstrap.yaml
+
+# Make sure to operate on the correct region:
+# aws configure get region
+# 
+# Then deploy the CloudFormation template
+# aws cloudformation deploy \
+#   --template-file terraform-bootstrap.yaml \
+#   --stack-name terraform-bootstrap \
+#   [--no-execute-changeset]
+
+Parameters:
+
+  S3BucketName:
+    Type: String
+    Description: >-
+      Name for the S3 bucket created to store Terraform state.
+    Default: ""
+
+  S3StatePrefix:
+    Type: String
+    Description: >-
+      Prefix within the S3 bucket to store Terraform state.
+    Default: "terraform-state"
+
+Rules:
+
+  StatePrefixConstraint:
+    Assertions:
+      - Assert: !Not [ !Equals [ !Ref S3StatePrefix, "" ] ]
+        AssertDescription: >-
+          The S3 prefix for state objects may not be blank.
+
+
+Conditions:
+
+  HasSpecifiedS3BucketName: !Not [ !Equals [ !Ref S3BucketName, "" ] ]
+
+
+Resources:
+
+  #
+  # Stores the Terraform state. This bucket may be used as the backend for more
+  # than one remote state instance.
+  #
+  Bucket:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !If [ HasSpecifiedS3BucketName, !Ref S3BucketName, !Join ['-', [ 'terraform-state', !Ref AWS::AccountId, !Ref AWS::Region ] ] ]
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
+      Tags:
+        - Key: "umccr:Stack"
+          Value: "management"
+        - Key: "umccr:Creator"
+          Value: "cloudformation"
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # non-admins must not be able to view terraform state as it contains plaintext secrets etc.
+          - Sid: DenyAllExceptAdminsAndRoot
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+                - !GetAtt Bucket.Arn
+                - !Sub 'arn:aws:s3:::${Bucket}/*'
+            Condition:
+              StringNotEquals:
+                # allow account root as a fallback in case of SSO issues
+                'aws:userid': !Sub '${AWS::AccountId}:root'
+              'ForAllValues:StringNotLike':
+                'aws:arn':
+                  # SSO roles for UoM organisation
+                  - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/AWSReservedSSO_AdministratorAccess_????????????????/*'
+                  - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/AWSReservedSSO_AWSAdministratorAccess_????????????????/*'
+                  - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/AWSReservedSSO_PlatformAdminAccess_????????????????/*'
+                  - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/AWSReservedSSO_PlatformOwnerAccess_????????????????/*'
+
+Outputs:
+
+  Bucket:
+    Description: Terraform state S3 bucket
+    Value: !Ref Bucket
+    Export:
+      Name: !Sub "${AWS::StackName}:bucket-name"

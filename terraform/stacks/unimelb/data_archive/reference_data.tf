@@ -82,7 +82,16 @@ data "aws_iam_policy_document" "ref_data" {
       ]
     }
     actions = sort([
-      "s3:*"
+      "s3:ListBucket*",
+      "s3:List*MultiPart*",
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:GetObject*Tagging",
+      "s3:GetObject*Attributes",
+      "s3:AbortMultipartUpload",
+      "s3:PutObject",
+      "s3:PutObject*Tagging",
+      "s3:DeleteObject",
     ])
     resources = sort([
       aws_s3_bucket.ref_data.arn,

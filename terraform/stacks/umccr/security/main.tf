@@ -84,7 +84,7 @@ data "aws_secretsmanager_secret" "slack_channel_config" {
 }
 
 data "aws_secretsmanager_secret_version" "slack_channel_config" {
-  secret_id = data.aws_secretsmanager_secret.slack_channel_config.id
+  secret_id     = data.aws_secretsmanager_secret.slack_channel_config.id
   version_stage = "AWSCURRENT"
 }
 
@@ -130,7 +130,7 @@ data "aws_iam_policy_document" "sns_topic_policy" {
   policy_id = "__default_policy_ID"
 
   statement {
-    sid = "__default_statement_ID"
+    sid    = "__default_statement_ID"
     effect = "Allow"
     actions = [
       "SNS:Subscribe",
@@ -161,7 +161,7 @@ data "aws_iam_policy_document" "sns_topic_policy" {
   }
 
   statement {
-    sid = "AllowEventBridgeToPublish"
+    sid    = "AllowEventBridgeToPublish"
     effect = "Allow"
     actions = [
       "SNS:Publish"
@@ -211,8 +211,8 @@ resource "aws_chatbot_slack_channel_configuration" "security_notifications" {
   iam_role_arn          = aws_iam_role.security_notifications.arn
   slack_channel_id      = jsondecode(data.aws_secretsmanager_secret_version.slack_channel_config.secret_string)["channel_id"]
   slack_team_id         = jsondecode(data.aws_secretsmanager_secret_version.slack_channel_config.secret_string)["workspace_id"]
-  guardrail_policy_arns = [ "arn:aws:iam::aws:policy/ReadOnlyAccess" ]
-  sns_topic_arns        = [ aws_sns_topic.security_notifications.arn ]
+  guardrail_policy_arns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
+  sns_topic_arns        = [aws_sns_topic.security_notifications.arn]
 
   tags = merge(
     local.default_tags,
@@ -250,22 +250,46 @@ resource "aws_chatbot_slack_channel_configuration" "security_notifications" {
 # }
 
 resource "aws_cloudwatch_event_rule" "security_event_routing" {
-  name          = "security_event_routing"
-  description   = "Forward IAM Access Analyser events to the SNS topic for Chatbot / Slack"
+  name        = "security_event_routing"
+  description = "Forward IAM Access Analyser events to the SNS topic for Chatbot / Slack"
   event_pattern = jsonencode({
     source      = ["aws.access-analyzer"],
     detail-type = ["Access Analyzer Finding"]
-	detail      = {
-		isDeleted = [ false ]
-	}
+    detail = {
+      isDeleted = [false]
+    }
   })
 }
 
 resource "aws_cloudwatch_event_target" "security_event_routing" {
-#   target_id = "security_event_routing"
+  #   target_id = "security_event_routing"
   target_id = aws_cloudwatch_event_rule.security_event_routing.id
   arn       = aws_sns_topic.security_notifications.arn
   rule      = aws_cloudwatch_event_rule.security_event_routing.name
-#   role_arn  = aws_iam_role.security_event_routing.arn
+  #   role_arn  = aws_iam_role.security_event_routing.arn
+
+  input_transformer {
+    input_paths = {
+      "eventAccountId": "$.account",
+      "accountId" : "$.detail.accountId",
+      "action" : "$.detail.action",
+      "id" : "$.detail.id",
+      "principal" : "$.detail.principal.AWS",
+      "resource" : "$.detail.resource",
+      "resourceType" : "$.detail.resourceType"
+    }
+
+    # Example: https://umccr.slack.com/archives/C06T9S6DZKK/p1764022823299979
+    input_template = jsondecode({
+      "version" : "1.0",
+      "source" : "custom",
+      "content" : {
+        "textType" : "client-markdown",
+        "title" : "Access Analyzer Finding - UMCCR (<eventAccountId>)",
+        "description" : "*CONTEXT* \n• Finding ID: `<id>`\n• Account ID: `<accountId>`\n\n*RESOURCE*\n• Type: `<resourceType>`\n• ARN: `<resource>`\n\n*ACCESS DETAILS*\n• Principal (AWS Account): `<principal>`"
+      }
+    })
+  }
+
 }
 

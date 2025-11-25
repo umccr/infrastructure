@@ -279,16 +279,17 @@ resource "aws_cloudwatch_event_target" "security_event_routing" {
       "resourceType" : "$.detail.resourceType"
     }
 
-    # Example: https://umccr.slack.com/archives/C06T9S6DZKK/p1764022823299979
-    input_template = jsonencode({
-      "version" : "1.0",
-      "source" : "custom",
-      "content" : {
-        "textType" : "client-markdown",
-        "title" : "Access Analyzer Finding - UMCCR (<eventAccountId>)",
-        "description" : "*CONTEXT* \n• Finding ID: `<id>`\n• Account ID: `<accountId>`\n\n*RESOURCE*\n• Type: `<resourceType>`\n• ARN: `<resource>`\n\n*ACCESS DETAILS*\n• Principal (AWS Account): `<principal>`"
-      }
-    })
+    input_template = <<EOT
+{
+  "version": "1.0",
+  "source": "custom",
+  "content": {
+    "textType": "client-markdown",
+    "title": "Access Analyzer Finding - UMCCR (<eventAccountId>)",
+    "description": "*CONTEXT* \n• Finding ID: `<id>`\n\n*RESOURCE*\n• Account ID: `<accountId>`\n• Type: `<resourceType>`\n• ARN: `<resource>`\n\n*ACCESS DETAILS*\n• Principal (AWS Account): `<principal>`"
+  }
+}
+EOT
   }
 
 }

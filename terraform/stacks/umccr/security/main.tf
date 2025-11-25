@@ -270,7 +270,7 @@ resource "aws_cloudwatch_event_target" "security_event_routing" {
 
   input_transformer {
     input_paths = {
-      "eventAccountId": "$.account",
+      "eventAccountId" : "$.account",
       "accountId" : "$.detail.accountId",
       "action" : "$.detail.action",
       "id" : "$.detail.id",
@@ -280,7 +280,7 @@ resource "aws_cloudwatch_event_target" "security_event_routing" {
     }
 
     # Example: https://umccr.slack.com/archives/C06T9S6DZKK/p1764022823299979
-    input_template = jsondecode({
+    input_template = jsonencode({
       "version" : "1.0",
       "source" : "custom",
       "content" : {

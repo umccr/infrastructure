@@ -257,7 +257,7 @@ resource "aws_cloudwatch_event_rule" "security_event_routing" {
     detail-type = ["Access Analyzer Finding"]
     detail = {
       isDeleted = [false]
-      status = ["ACTIVE"]
+      status    = ["ACTIVE"]
     }
   })
 }
@@ -307,7 +307,7 @@ resource "aws_cloudwatch_event_rule" "guardduty_event_routing" {
     source      = ["aws.guardduty"],
     detail-type = ["GuardDuty Finding"]
     detail = {
-      severity = [ { "numeric": [ ">=", 7 ] } ]
+      severity = [{ "numeric" : [">=", 7] }]
     }
   })
 }
@@ -321,7 +321,7 @@ resource "aws_cloudwatch_event_target" "guardduty_event_routing" {
     input_paths = {
       "reportingAccountId" : "$.account",
       "findingId" : "$.detail.id",
-      "findingAccountId" : "$.detail.action",
+      "findingAccountId" : "$.detail.accountId",
       "findingTitle" : "$.detail.title",
       "findingDescription" : "$.detail.description"
     }

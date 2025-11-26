@@ -297,4 +297,47 @@ EOT
 }
 
 
+resource "aws_cloudwatch_event_rule" "guardduty_event_routing" {
+  name        = "guardduty_event_routing"
+  description = "Forward GuardDuty findings events to the SNS topic for Chatbot / Slack"
+
+  # only forward High and Critical severity
+  # https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html
+  event_pattern = jsonencode({
+    source      = ["aws.guardduty"],
+    detail-type = ["GuardDuty Finding"]
+    detail = {
+      severity = [ { "numeric": [ ">=", 7 ] } ]
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "guardduty_event_routing" {
+  target_id = aws_cloudwatch_event_rule.guardduty_event_routing.id
+  arn       = aws_sns_topic.security_notifications.arn
+  rule      = aws_cloudwatch_event_rule.guardduty_event_routing.name
+
+  input_transformer {
+    input_paths = {
+      "reportingAccountId" : "$.account",
+      "findingId" : "$.detail.id",
+      "findingAccountId" : "$.detail.action",
+      "findingTitle" : "$.detail.title",
+      "findingDescription" : "$.detail.description"
+    }
+
+    input_template = <<EOT
+{
+  "version": "1.0",
+  "source": "custom",
+  "content": {
+    "textType": "client-markdown",
+    "title": "Guard Duty HIGH/CRITICAL Finding - Reporting Account: <reportingAccountId>",
+    "description": "Finding ID: `<findingId>`\n\n*Resource*\n• Account ID: `<findingAccountId>`\n• Title: `<findingTitle>`\n\n*Description*\n```<findingDescription>```"
+  }
+}
+EOT
+  }
+
+}
 

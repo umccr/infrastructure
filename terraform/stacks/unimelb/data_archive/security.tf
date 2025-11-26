@@ -61,9 +61,9 @@ resource "aws_cloudwatch_event_rule" "put_events_to_org_bus" {
   name        = "put_events_to_org_bus"
   description = "Forward S3 events from IAM Access Analyser to UMCCR org default event bus"
   event_pattern = jsonencode({
-    source      = ["aws.access-analyzer"],
+    source      = ["aws.access-analyzer", "aws.guardduty"],
     account     = [data.aws_caller_identity.current.account_id],
-    detail-type = ["Access Analyzer Finding"]
+    detail-type = ["Access Analyzer Finding", "GuardDuty Finding"]
   })
 }
 
@@ -73,6 +73,3 @@ resource "aws_cloudwatch_event_target" "put_events_to_org_bus" {
   rule      = aws_cloudwatch_event_rule.put_events_to_org_bus.name
   role_arn  = aws_iam_role.put_events_to_org_bus.arn
 }
-
-
-

@@ -257,6 +257,7 @@ resource "aws_cloudwatch_event_rule" "security_event_routing" {
     detail-type = ["Access Analyzer Finding"]
     detail = {
       isDeleted = [false]
+      status = ["ACTIVE"]
     }
   })
 }
@@ -277,6 +278,7 @@ resource "aws_cloudwatch_event_target" "security_event_routing" {
       "principal" : "$.detail.principal.AWS",
       "resource" : "$.detail.resource",
       "resourceType" : "$.detail.resourceType"
+      "status" : "$.detail.status"
     }
 
     input_template = <<EOT
@@ -285,12 +287,14 @@ resource "aws_cloudwatch_event_target" "security_event_routing" {
   "source": "custom",
   "content": {
     "textType": "client-markdown",
-    "title": "Access Analyzer Finding - UMCCR (<eventAccountId>)",
-    "description": "*CONTEXT* \n• Finding ID: `<id>`\n\n*RESOURCE*\n• Account ID: `<accountId>`\n• Type: `<resourceType>`\n• ARN: `<resource>`\n\n*ACCESS DETAILS*\n• Principal (AWS Account): `<principal>`"
+    "title": "Access Analyzer <status> Finding - Reporting Account: <eventAccountId>",
+    "description": "Finding ID: `<id>`\n\n*Resource*\n• Account ID: `<accountId>`\n• Type: `<resourceType>`\n• ARN: `<resource>`\n\n*Access Details*\n• Principal (AWS Account): `<principal>`"
   }
 }
 EOT
   }
 
 }
+
+
 

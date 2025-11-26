@@ -812,6 +812,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "development_data" {
       storage_class = "INTELLIGENT_TIERING"
     }
   }
+
+  rule {
+    id     = "icav2_data_dev_cleanup_rule"
+    status = "Enabled"
+    filter {
+      prefix = "${local.icav2_prefix}${local.icav2_development_project_name}/"
+    }
+    expiration {
+      days = 90
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "development_data" {

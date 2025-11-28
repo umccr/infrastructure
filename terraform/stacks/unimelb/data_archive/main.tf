@@ -16,6 +16,10 @@ terraform {
 # Configure the AWS Provider
 provider "aws" {
   region = local.region
+
+  default_tags {
+    tags = local.default_tags
+  }
 }
 
 data "aws_caller_identity" "current" {}
@@ -23,20 +27,22 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  region           = "ap-southeast-2"
-  stack_name       = "data_archive"
-  this_account_id  = data.aws_caller_identity.current.account_id
-  mgmt_account_id  = "363226301494"
-  account_id_prod  = "472057503814"
-  account_id_stg   = "455634345446"
-  account_id_dev   = "843407916570"
-  account_id_org   = "650704067584"
-  account_id_atlas = "550435500918"
+  region              = "ap-southeast-2"
+  stack_name          = "data_archive"
+  this_account_id     = data.aws_caller_identity.current.account_id
+  mgmt_account_id     = "363226301494"
+  account_id_prod     = "472057503814"
+  account_id_stg      = "455634345446"
+  account_id_dev      = "843407916570"
+  account_id_org      = "650704067584"
+  account_id_atlas    = "550435500918"
+  account_id_security = "266735799852"
 
   default_tags = {
     "Stack"       = local.stack_name
     "Creator"     = "terraform"
     "Environment" = "data_archive"
+    "Source"      = "https://github.com/umccr/infrastructure/tree/master/terraform/stacks/unimelb/data_archive"
   }
 }
 

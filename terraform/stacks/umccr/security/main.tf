@@ -109,6 +109,35 @@ resource "aws_iam_role_policy_attachment" "aws_support_access" {
 
 
 ################################################################################
+# Configure Account Event Bus to allow cross-account events for IAM Access Analyzer
+
+data "aws_iam_policy_document" "default_bus" {
+  statement {
+    sid    = "IamAccessAnalyserPutEvents"
+    effect = "Allow"
+    actions = [
+      "events:PutEvents",
+    ]
+    resources = [
+      data.aws_cloudwatch_event_bus.default.arn
+    ]
+
+    principals {
+      type        = "AWS"
+      identifiers = [
+        "503977275616",  # UniMelb data account
+        "977251586657"   # UniMelb Montauk research account
+      ]
+    }
+  }
+}
+
+resource "aws_cloudwatch_event_bus_policy" "default_bus" {
+  policy         = data.aws_iam_policy_document.default_bus.json
+  event_bus_name = data.aws_cloudwatch_event_bus.default.name
+}
+
+################################################################################
 # Slack Notifications via Chatbot
 # NOTE: the AWS account first needs to be authorised for the Slack workspace
 #       Go to the Chatbot / Amazon Q console and "Configure new client"

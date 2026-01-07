@@ -4,26 +4,26 @@
 #
 
 locals {
-  orcaui_page = "orcaui"
+  app_namespace = "orcaui"
 
-  orcaui_page_domain = "orcaui.${var.base_domain[terraform.workspace]}"
+  orcaui_domain = "portal.${var.base_domain[terraform.workspace]}"
 
-  orcaui_page_alias_domain = {
-    prod = "orcaui.umccr.org"
+  orcaui_alias_domain = {
+    prod = "portal.umccr.org"
     dev  = ""
     stg  = ""
   }
 
   orcaui_page_callback_urls = {
-    prod = ["https://${local.orcaui_page_domain}", "https://${local.orcaui_page_alias_domain[terraform.workspace]}"]
-    dev  = ["https://${local.orcaui_page_domain}"]
-    stg  = ["https://${local.orcaui_page_domain}"]
+    prod = ["https://${local.orcaui_domain}", "https://${local.orcaui_alias_domain[terraform.workspace]}"]
+    dev  = ["https://${local.orcaui_domain}"]
+    stg  = ["https://${local.orcaui_domain}"]
   }
 
   orcaui_page_oauth_redirect_url = {
-    prod = "https://${local.orcaui_page_alias_domain[terraform.workspace]}"
-    dev  = "https://${local.orcaui_page_domain}"
-    stg  = "https://${local.orcaui_page_domain}"
+    prod = "https://${local.orcaui_alias_domain[terraform.workspace]}"
+    dev  = "https://${local.orcaui_domain}"
+    stg  = "https://${local.orcaui_domain}"
   }
 
   orcaui_page_param_prefix = "/orcaui"
@@ -31,7 +31,7 @@ locals {
 
 # orcaui-page app client
 resource "aws_cognito_user_pool_client" "orcaui_page_app_client" {
-  name                         = "${local.orcaui_page}-app-${terraform.workspace}"
+  name                         = "${local.app_namespace}-app-${terraform.workspace}"
   user_pool_id                 = aws_cognito_user_pool.user_pool.id
   supported_identity_providers = ["Google"]
 

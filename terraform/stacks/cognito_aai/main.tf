@@ -134,73 +134,6 @@ resource "aws_cognito_user_group" "bioinfo_cognito_group" {
   description  = "Group for bioinformatics members"
 }
 
-################################################################################
-# Cognito Identity Pool
-
-# Main identity pool to assume role with web identity for accessing AWS resources
-resource "aws_cognito_identity_pool" "identity_pool" {
-  identity_pool_name               = "Data Portal ${terraform.workspace}"
-  allow_unauthenticated_identities = false
-
-  # Register your UMCCR client below
-  # This could be Web SPA (Single Page Application), Mobile or Desktop app client
-  # For which AWS resources are allowed to authenticated user, see policy docs
-
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.portal_app_client.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  # FIXME: Data Portal App Client for data2 -- this shall be replaced with above, one day.
-  #  See `app_data_portal_data2.tf`
-  #  See https://github.com/umccr/infrastructure/issues/272
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.data2_client.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.portal_app_client_local.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  cognito_identity_providers {
-    client_id               = aws_cognito_user_pool_client.sscheck_app_client.id
-    provider_name           = aws_cognito_user_pool.user_pool.endpoint
-    server_side_token_check = false
-  }
-
-  tags = merge(local.default_tags)
-}
-
-resource "aws_iam_role" "role_authenticated" {
-  name = "${local.stack_name_us}_identity_pool_authenticated"
-  path = local.iam_role_path
-
-  assume_role_policy = templatefile("policies/iam_role_authenticated_assume_role_policy.json", {
-    identity_pool_id = aws_cognito_identity_pool.identity_pool.id
-  })
-
-  tags = merge(local.default_tags)
-}
-
-resource "aws_iam_role_policy" "role_policy_authenticated" {
-  name = "${local.stack_name_us}_authenticated_policy"
-  role = aws_iam_role.role_authenticated.id
-
-  policy = templatefile("policies/iam_role_authenticated_policy.json", {})
-}
-
-resource "aws_cognito_identity_pool_roles_attachment" "identity_pool_role_attach" {
-  identity_pool_id = aws_cognito_identity_pool.identity_pool.id
-
-  roles = {
-    "authenticated" = aws_iam_role.role_authenticated.arn
-  }
-}
 
 ################################################################################
 # Save configurations in SSM Parameter Store
@@ -209,13 +142,6 @@ resource "aws_ssm_parameter" "cog_user_pool_id" {
   name  = "${local.ssm_param_key_client_prefix}/cog_user_pool_id"
   type  = "String"
   value = aws_cognito_user_pool.user_pool.id
-  tags  = merge(local.default_tags)
-}
-
-resource "aws_ssm_parameter" "cog_identity_pool_id" {
-  name  = "${local.ssm_param_key_client_prefix}/cog_identity_pool_id"
-  type  = "String"
-  value = aws_cognito_identity_pool.identity_pool.id
   tags  = merge(local.default_tags)
 }
 

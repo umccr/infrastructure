@@ -3,6 +3,11 @@
 # Note: Data Portal App Localhost Client
 #
 
+locals {
+  portal              = "data-portal"
+  portal_param_prefix = "/data_portal/client"
+}
+
 # data-portal app client for local dev (localhost access)
 resource "aws_cognito_user_pool_client" "portal_app_client_local" {
   name                         = "${local.portal}-app-${terraform.workspace}-localhost"

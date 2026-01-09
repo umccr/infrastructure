@@ -30,6 +30,7 @@ locals {
     "Stack"       = local.stack_name_us
     "Creator"     = "terraform"
     "Environment" = terraform.workspace
+    "Source"      = "https://github.com/umccr/infrastructure/blob/master/terraform/stacks/cognito_aai"
   }
 
   iam_role_path = "/${local.stack_name_us}/"

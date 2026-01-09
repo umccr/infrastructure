@@ -6,10 +6,7 @@
 
 locals {
   namespace = "service"
-
-  # SSM parameter prefix for legacy compatibility
-  # Services reference parameters under this path, so retaining without updating dependents
-  ssm_prefix = "/data_portal/client/data2"
+  ssm_prefix = "/cognito/service-app"
 }
 
 # data-portal app client
@@ -59,8 +56,25 @@ resource "aws_cognito_user_pool_client" "data2_client" {
   depends_on = [aws_cognito_identity_provider.identity_provider]
 }
 
+# For backward compatibility, maintain the legacy SSM parameter for existing consumers.
+# The platform-cdk-constructs package (api-gateway config) currently references this path.
+# Once all dependent stacks migrate to the new parameter path, this legacy parameter can be removed.
+# Migration tracking: https://github.com/OrcaBus/platform-cdk-constructs/blob/3f15cd1648bd5b6672917b260e193a8069365ee3/packages/api-gateway/config.ts#L43
 resource "aws_ssm_parameter" "data2_client_id_stage" {
-  name  = "${local.ssm_prefix}/cog_app_client_id_stage"
+  name  = "/data_portal/client/data2/cog_app_client_id_stage"
+  type  = "String"
+  value = aws_cognito_user_pool_client.data2_client.id
+  tags  = merge(
+    local.default_tags,
+    {
+      Status      = "deprecated"
+      Description = "use ${local.ssm_prefix}/app-client-id instead"
+    }
+  )
+}
+
+resource "aws_ssm_parameter" "service_app_client_id" {
+  name  = "${local.ssm_prefix}/app-client-id"
   type  = "String"
   value = aws_cognito_user_pool_client.data2_client.id
   tags  = merge(local.default_tags)

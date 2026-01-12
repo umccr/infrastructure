@@ -26,7 +26,7 @@ locals {
     stg  = "https://${local.orcaui_domain}"
   }
 
-  orcaui_page_param_prefix = "/orcaui"
+  app_orcaui_param_prefix = "/cognito/orcaui-app"
 }
 
 # orcaui-page app client
@@ -59,22 +59,51 @@ resource "aws_cognito_user_pool_client" "orcaui_page_app_client" {
   depends_on = [aws_cognito_identity_provider.identity_provider]
 }
 
+#------------------------------------------------------------------------------
+# Legacy SSM Parameters - DEPRECATED
+#------------------------------------------------------------------------------
+# Maintained for backward compatibility with existing data-portal consumers.
+# Migrate to new parameters under '/cognito/localhost-app/' prefix.
+
 resource "aws_ssm_parameter" "orcaui_page_app_client_id_stage" {
-  name  = "${local.orcaui_page_param_prefix}/cog_app_client_id_stage"
+  name  = "/orcaui/cog_app_client_id_stage"
   type  = "String"
   value = aws_cognito_user_pool_client.orcaui_page_app_client.id
   tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "orcaui_page_oauth_redirect_in_stage" {
-  name  = "${local.orcaui_page_param_prefix}/oauth_redirect_in_stage"
+  name  = "/orcaui/oauth_redirect_in_stage"
   type  = "String"
   value = local.orcaui_page_oauth_redirect_url[terraform.workspace]
   tags  = merge(local.default_tags)
 }
 
 resource "aws_ssm_parameter" "orcaui_page_oauth_redirect_out_stage" {
-  name  = "${local.orcaui_page_param_prefix}/oauth_redirect_out_stage"
+  name  = "/orcaui/oauth_redirect_out_stage"
+  type  = "String"
+  value = local.orcaui_page_oauth_redirect_url[terraform.workspace]
+  tags  = merge(local.default_tags)
+}
+#------------------------------------------------------------------------------
+
+
+resource "aws_ssm_parameter" "orcaui_page_client_id" {
+  name  = "${local.app_orcaui_param_prefix}/app-client-id"
+  type  = "String"
+  value = aws_cognito_user_pool_client.orcaui_page_app_client.id
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "orcaui_oauth_redirect_in" {
+  name  = "${local.app_orcaui_param_prefix}/oauth-redirect-in"
+  type  = "String"
+  value = local.orcaui_page_oauth_redirect_url[terraform.workspace]
+  tags  = merge(local.default_tags)
+}
+
+resource "aws_ssm_parameter" "orcaui_oauth_redirect_out" {
+  name  = "${local.app_orcaui_param_prefix}/oauth-redirect-out"
   type  = "String"
   value = local.orcaui_page_oauth_redirect_url[terraform.workspace]
   tags  = merge(local.default_tags)

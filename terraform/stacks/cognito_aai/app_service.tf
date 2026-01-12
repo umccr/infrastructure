@@ -56,6 +56,7 @@ resource "aws_cognito_user_pool_client" "data2_client" {
   depends_on = [aws_cognito_identity_provider.identity_provider]
 }
 
+#------------------------------------------------------------------------------
 # For backward compatibility, maintain the legacy SSM parameter for existing consumers.
 # The platform-cdk-constructs package (api-gateway config) currently references this path.
 # Once all dependent stacks migrate to the new parameter path, this legacy parameter can be removed.
@@ -72,6 +73,7 @@ resource "aws_ssm_parameter" "data2_client_id_stage" {
     }
   )
 }
+#------------------------------------------------------------------------------
 
 resource "aws_ssm_parameter" "service_app_client_id" {
   name  = "${local.app_service_ssm_prefix}/app-client-id"

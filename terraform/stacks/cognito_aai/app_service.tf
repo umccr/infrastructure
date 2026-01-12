@@ -5,13 +5,13 @@
 # Used by OrcaBus token service stack for JWT token generation
 
 locals {
-  namespace = "service"
-  ssm_prefix = "/cognito/service-app"
+  app_service_namespace = "service"
+  app_service_ssm_prefix = "/cognito/service-app"
 }
 
 # data-portal app client
 resource "aws_cognito_user_pool_client" "data2_client" {
-  name         = "${local.namespace}-cognito-client"
+  name         = "${local.app_service_namespace}-cognito-client"
   user_pool_id = aws_cognito_user_pool.user_pool.id
 
   supported_identity_providers = ["Google", "COGNITO"]
@@ -68,13 +68,13 @@ resource "aws_ssm_parameter" "data2_client_id_stage" {
     local.default_tags,
     {
       Status      = "deprecated"
-      Description = "use ${local.ssm_prefix}/app-client-id instead"
+      Description = "use ${local.app_service_ssm_prefix}/app-client-id instead"
     }
   )
 }
 
 resource "aws_ssm_parameter" "service_app_client_id" {
-  name  = "${local.ssm_prefix}/app-client-id"
+  name  = "${local.app_service_ssm_prefix}/app-client-id"
   type  = "String"
   value = aws_cognito_user_pool_client.data2_client.id
   tags  = merge(local.default_tags)

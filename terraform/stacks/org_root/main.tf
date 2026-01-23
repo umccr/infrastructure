@@ -1,133 +1,122 @@
 terraform {
-  required_version = "~> 0.11.14"
-
   backend "s3" {
     bucket         = "umccr-terraform-states-org"
     key            = "org_root/terraform.tfstate"
     region         = "ap-southeast-2"
-    dynamodb_table = "terraform-state-lock"
+    use_lockfile   = true
   }
 }
 
 provider "aws" {
   region = "ap-southeast-2"
+
+  default_tags {
+    tags = {
+      Stack = var.stack_name
+    }
+  }
 }
 
-locals {
-  common_tags = "${map(
-    "Stack", "${var.stack_name}"
-  )}"
+################################################################################
+# Get Organisation information (output them just to show what info we have)
+
+# Use the data source to retrieve the organization details
+data "aws_organizations_organization" "current" {}
+
+data "aws_organizations_organizational_unit" "production_ou" {
+  parent_id = data.aws_organizations_organization.current.roots[0].id
+  name      = "production"
+}
+
+data "aws_organizations_organizational_unit_descendant_accounts" "production_accounts" {
+  parent_id = data.aws_organizations_organizational_unit.production_ou.id
+}
+
+data "aws_organizations_organizational_unit" "operational_ou" {
+  parent_id = data.aws_organizations_organization.current.roots[0].id
+  name      = "operational"
+}
+
+data "aws_organizations_organizational_unit_descendant_accounts" "operational_accounts" {
+  parent_id = data.aws_organizations_organizational_unit.operational_ou.id
+}
+
+output "all_account_ids" {
+  description = "List of all organization account IDs"
+  value       = data.aws_organizations_organization.current.accounts[*].id
+}
+
+output "production_account_ids" {
+  description = "List of all production account IDs (according to OU)"
+  value       = data.aws_organizations_organizational_unit_descendant_accounts.production_accounts.accounts[*].id
+}
+
+output "operational_account_ids" {
+  description = "List of all operational account IDs (according to OU)"
+  value       = data.aws_organizations_organizational_unit_descendant_accounts.operational_accounts.accounts[*].id
+}
+
+output "all_accounts_details" {
+  description = "List of all accounts with details"
+  value       = data.aws_organizations_organization.current.accounts
 }
 
 ################################################################################
 # Buckets
 
 resource "aws_s3_bucket" "cloudtrail_root" {
-  bucket = "${var.cloudtrail_bucket}"
+  bucket = var.cloudtrail_bucket
+}
 
-  lifecycle_rule {
-    id      = "org_account"                       # org account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/650704067584"
-    enabled = false
+resource "aws_s3_bucket_ownership_controls" "cloudtrail_root" {
+  bucket = aws_s3_bucket.cloudtrail_root.id
 
-    transition {
-      days          = 90
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-
-  lifecycle_rule {
-    id      = "bastion_account"                   # bastion account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/383856791668"
-    enabled = false
-
-    transition {
-      days          = 90
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-
-  lifecycle_rule {
-    id      = "prod_account"                      # prod account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/472057503814"
-    enabled = false
-
-    transition {
-      days          = 180
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-
-  lifecycle_rule {
-    id      = "agha_account"                      # agha account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/602836945884"
-    enabled = false
-
-    transition {
-      days          = 90
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-
-  lifecycle_rule {
-    id      = "arvados_agha_account"              # ArvadosAGHA account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/941767615664"
-    enabled = false
-
-    transition {
-      days          = 90
-      storage_class = "DEEP_ARCHIVE"
-    }
-  }
-
-  lifecycle_rule {
-    id      = "dev_account"                       # dev account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/843407916570"
-    enabled = false
-
-    transition {
-      days          = 90
-      storage_class = "DEEP_ARCHIVE"
-    }
-
-    expiration {
-      days = 365 # keep for one year
-    }
-  }
-
-  lifecycle_rule {
-    id      = "old_dev_account"                   # old dev account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/620123204273"
-    enabled = false
-
-    transition {
-      days          = 90
-      storage_class = "DEEP_ARCHIVE"
-    }
-
-    expiration {
-      days = 365 # keep for one year
-    }
-  }
-
-  lifecycle_rule {
-    id      = "onboarding_account"                # onboarding account
-    prefix  = "AWSLogs/o-p5xvdd9ddb/702956374523"
-    enabled = true
-
-    transition {
-      days          = 30
-      storage_class = "DEEP_ARCHIVE"
-    }
-
-    expiration {
-      days = 365 # keep for one year
-    }
+  # disable ACLs entirely on the bucket
+  rule {
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
+# THE CURRENT DEPLOYED CLOUDTRAIL BUCKET HAS A BUNCH OF LIFECYCLE RULES
+# BUT THEY ARE ALL DISABLED. LEAVING THIS HERE AS THE NEW CONSTRUCT
+# IF WE WANTED TO SWITCH THEM ON
+#
+# resource "aws_s3_bucket_lifecycle_configuration" "example" {
+#   for_each = toset(data.aws_organizations_organization.current.accounts[*].id)
+#
+#   bucket = aws_s3_bucket.cloudtrail_root.id
+#
+#   rule {
+#     id     = "${each.value} logs lifecycle"
+#     status = "Enabled"
+#
+#     filter {
+#       prefix = "AWSLogs/o-p5xvdd9ddb/${each.value}"
+#     }
+#
+#     transition {
+#       days          = 90
+#       storage_class = "DEEP_ARCHIVE"
+#     }
+#
+#     expiration {
+#       days          = lookup(var.override_cloudtrail_expiration_days, each.value, 7*365)
+#     }
+#   }
+# }
+
+# by default we want to keep cloudtrail logs for 7 years - but if listed here then this is
+# an override of their expiry (for dev accounts etc)
+variable "override_cloudtrail_expiration_days" {
+  type = map(number)
+  default = {
+    "843407916570" = 365
+  }
+}
+
+
 resource "aws_s3_bucket_policy" "cloudtrail_root" {
-  bucket = "${aws_s3_bucket.cloudtrail_root.id}"
+  bucket = aws_s3_bucket.cloudtrail_root.id
 
   policy = <<POLICY
 {
@@ -139,36 +128,26 @@ resource "aws_s3_bucket_policy" "cloudtrail_root" {
             "Principal": {
                 "Service": "cloudtrail.amazonaws.com"
             },
-            "Action": "s3:GetBucketAcl",
+            "Action": ["s3:GetBucketAcl", "s3:ListBucket"],
             "Resource": "arn:aws:s3:::umccr-cloudtrail-org-root"
         },
         {
-            "Sid": "AWSCloudTrailWrite20150319",
+            "Sid": "AllowCloudTrailWritesThisAccount",
             "Effect": "Allow",
             "Principal": {
                 "Service": "cloudtrail.amazonaws.com"
             },
             "Action": "s3:PutObject",
-            "Resource": "arn:aws:s3:::umccr-cloudtrail-org-root/AWSLogs/650704067584/*",
-            "Condition": {
-                "StringEquals": {
-                    "s3:x-amz-acl": "bucket-owner-full-control"
-                }
-            }
+            "Resource": "arn:aws:s3:::umccr-cloudtrail-org-root/AWSLogs/650704067584/*"
         },
         {
-            "Sid": "AWSCloudTrailWrite20150319",
+            "Sid": "AllowCloudTrailWritesOrganisation",
             "Effect": "Allow",
             "Principal": {
                 "Service": "cloudtrail.amazonaws.com"
             },
             "Action": "s3:PutObject",
-            "Resource": "arn:aws:s3:::umccr-cloudtrail-org-root/AWSLogs/o-p5xvdd9ddb/*",
-            "Condition": {
-                "StringEquals": {
-                    "s3:x-amz-acl": "bucket-owner-full-control"
-                }
-            }
+            "Resource": "arn:aws:s3:::umccr-cloudtrail-org-root/AWSLogs/o-p5xvdd9ddb/*"
         }
     ]
 }
@@ -181,6 +160,4 @@ POLICY
 resource "aws_sns_topic" "chatbot_slack_topic" {
   name_prefix  = "chatbot_slack_topic"
   display_name = "chatbot_slack_topic"
-
-  tags = "${local.common_tags}"
 }

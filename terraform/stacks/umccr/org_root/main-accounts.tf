@@ -27,6 +27,16 @@ data "aws_organizations_organizational_unit_descendant_accounts" "operational_ac
   parent_id = data.aws_organizations_organizational_unit.operational_ou.id
 }
 
+data "aws_organizations_organizational_unit" "development_ou" {
+  parent_id = data.aws_organizations_organization.current.roots[0].id
+  name      = "development"
+}
+
+data "aws_organizations_organizational_unit_descendant_accounts" "development_accounts" {
+  parent_id = data.aws_organizations_organizational_unit.development_ou.id
+}
+
+
 # output "all_account_ids" {
 #   description = "List of all organization account IDs"
 #   value       = data.aws_organizations_organization.current.accounts[*].id

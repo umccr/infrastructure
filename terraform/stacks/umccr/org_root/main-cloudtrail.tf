@@ -13,28 +13,38 @@ resource "aws_cloudtrail" "org_trail" {
   kms_key_id                 = aws_kms_key.org_trail_key.id
   s3_bucket_name             = aws_s3_bucket.cloudtrail_root.id
   sns_topic_name             = null
-  event_selector {
-    exclude_management_event_sources = []
-    include_management_events        = true
-    read_write_type                  = "All"
-    data_resource {
-      type   = "AWS::S3::Object"
-      values = ["arn:aws:s3"]
-    }
-    data_resource {
-      type   = "AWS::Lambda::Function"
-      values = ["arn:aws:lambda"]
-    }
-  }
+
   insight_selector {
     insight_type = "ApiCallRateInsight"
+  }
+
+  dynamic "advanced_event_selector" {
+    for_each = local.common_advanced_event_selectors
+    content {
+      name = advanced_event_selector.value.name
+
+      dynamic "field_selector" {
+        for_each = advanced_event_selector.value.field_selectors
+        content {
+          field  = field_selector.value.field
+          equals = try(field_selector.value.equals, null)
+          not_equals = try(field_selector.value.not_equals, null)
+          starts_with = try(field_selector.value.starts_with, null)
+          ends_with = try(field_selector.value.ends_with, null)
+          not_starts_with = try(field_selector.value.not_starts_with, null)
+          not_ends_with = try(field_selector.value.not_ends_with, null)
+        }
+      }
+    }
   }
 }
 
 resource "aws_cloudwatch_log_group" "org_trail_log_group" {
   name              = "CloudTrail/DefaultLogGroup"
   log_group_class   = "STANDARD"
-  retention_in_days = 0
+  # the cloudwatch log output is used for some metrics and live activity but is
+  # not our primary spot for retain cloudtrail data - so we expire relatively quickly
+  retention_in_days = 30
 }
 
 # __generated__ by Terraform from "arn:aws:kms:ap-southeast-2:650704067584:key/c7169941-5700-4b98-b128-2dc1d2dd2607"

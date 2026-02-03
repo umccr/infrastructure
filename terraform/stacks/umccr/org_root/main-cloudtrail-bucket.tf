@@ -3,12 +3,17 @@
 #
 # Setting for the bucket that stores all our organisation cloudtrails
 
-# by default we want to keep cloudtrail logs for 7 years - but if listed here then this is
+# by default we want to keep cloudtrail logs for a long time - but if listed here then this is
 # an override of their expiry (for dev accounts etc)
 variable "override_cloudtrail_expiration_days" {
   type = map(number)
   default = {
-    "843407916570" = 365 # dev
+    # dev
+    "843407916570" = 365
+    # onboarding
+    "702956374523" = 365
+    # guardians dev
+    "842385035780" = 365
   }
 }
 
@@ -34,39 +39,30 @@ resource "aws_s3_bucket_policy" "cloudtrail_root" {
       "Version" : "2012-10-17",
       "Statement" : [
         {
-          "Sid" : "AWSCloudTrailAclCheck20150319",
+          "Sid" : "AWSCloudTrailAclCheck",
           "Effect" : "Allow",
           "Principal" : {
             "Service" : "cloudtrail.amazonaws.com"
           },
           "Action" : ["s3:GetBucketAcl", "s3:ListBucket"],
-          "Resource" : "arn:aws:s3:::umccr-cloudtrail-org-root",
-          #"Condition" : {
-          #  "StringEquals" : {
-          #    "aws:SourceArn" : "arn:aws:cloudtrail:*:${data.aws_organizations_organization.current.master_account_id}:trail/*"
-          #  }
-          #}
+          "Resource" : aws_s3_bucket.cloudtrail_root.arn
+          "Condition" : {
+            "StringEquals" : {
+              "aws:SourceArn" : aws_cloudtrail.org_trail.arn
+            }
+          }
         },
-        #{
-        #  "Sid" : "AllowCloudTrailWritesThisAccount",
-        #  "Effect" : "Allow",
-        #  "Principal" : {
-        #    "Service" : "cloudtrail.amazonaws.com"
-        #  },
-        #  "Action" : "s3:PutObject",
-        #  "Resource" : "arn:aws:s3:::umccr-cloudtrail-org-root/AWSLogs/650704067584/*"
-        #},
         {
-          "Sid" : "AWSCloudTrailWrite20150319",
+          "Sid" : "AWSCloudTrailWrite",
           "Effect" : "Allow",
           "Principal" : {
             "Service" : "cloudtrail.amazonaws.com"
           },
           "Action" : "s3:PutObject",
-          "Resource" : "arn:aws:s3:::umccr-cloudtrail-org-root/AWSLogs/o-p5xvdd9ddb/*",
-          "Condition": {
-            "StringEquals": {
-              "s3:x-amz-acl": "bucket-owner-full-control"
+          "Resource" : "${aws_s3_bucket.cloudtrail_root.arn}/AWSLogs/${data.aws_organizations_organization.current.id}/*",
+          "Condition" : {
+            "StringEquals" : {
+              "aws:SourceArn" : aws_cloudtrail.org_trail.arn
             }
           }
         }
@@ -74,30 +70,29 @@ resource "aws_s3_bucket_policy" "cloudtrail_root" {
   })
 }
 
-# THE CURRENT DEPLOYED CLOUDTRAIL BUCKET HAS A BUNCH OF LIFECYCLE RULES
-# BUT THEY ARE ALL DISABLED. LEAVING THIS HERE AS THE NEW CONSTRUCT
-# IF WE WANTED TO SWITCH THEM ON
-#
-# resource "aws_s3_bucket_lifecycle_configuration" "example" {
-#   for_each = toset(data.aws_organizations_organization.current.accounts[*].id)
-#
-#   bucket = aws_s3_bucket.cloudtrail_root.id
-#
-#   rule {
-#     id     = "${each.value} logs lifecycle"
-#     status = "Enabled"
-#
-#     filter {
-#       prefix = "AWSLogs/o-p5xvdd9ddb/${each.value}"
-#     }
-#
-#     transition {
-#       days          = 90
-#       storage_class = "DEEP_ARCHIVE"
-#     }
-#
-#     expiration {
-#       days          = lookup(var.override_cloudtrail_expiration_days, each.value, 7*365)
-#     }
-#   }
-# }
+resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail_root" {
+  bucket = aws_s3_bucket.cloudtrail_root.id
+
+  # a lifecycle rule per account
+  dynamic "rule" {
+    for_each = toset(data.aws_organizations_organization.current.accounts[*].id)
+
+    content {
+      id     = "Account ${rule.value} logs lifecycle - tier 60 days, expire ${lookup(var.override_cloudtrail_expiration_days, rule.value, 7 * 365)} days"
+      status = "Enabled"
+
+      filter {
+        prefix = "AWSLogs/${data.aws_organizations_organization.current.id}/${rule.value}/"
+      }
+
+      transition {
+        days          = 60
+        storage_class = "INTELLIGENT_TIERING"
+      }
+
+      expiration {
+        days = lookup(var.override_cloudtrail_expiration_days, rule.value, 7 * 365)
+      }
+    }
+  }
+}

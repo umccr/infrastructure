@@ -1,17 +1,18 @@
 terraform {
-  required_version = ">= 1.5.7"
+  required_version = ">= 1.14.4"
 
   backend "s3" {
     bucket         = "terraform-states-363226301494-ap-southeast-2"
     key            = "management/terraform.tfstate"
     region         = "ap-southeast-2"
-    dynamodb_table = "terraform-state-lock"
+    encrypt        = true
+    use_lockfile   = true
   }
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.21.0"
+      version = "6.31.0"
     }
   }
 }
@@ -19,22 +20,28 @@ terraform {
 
 provider "aws" {
   region = "ap-southeast-2"
+
+  default_tags {
+    tags = {
+      "umccr:Stack"   = "uom_management"
+      "umccr:Environment" : "management",
+      "umccr:Creator" = "Terraform"
+    }
+  }
 }
 
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+data "aws_partition" "current" {}
+
 locals {
-  region                     = data.aws_region.current.name
+  region                     = data.aws_region.current.region
   this_account_id            = data.aws_caller_identity.current.account_id
   data_account_id            = "503977275616"
   account_id_montauk         = "977251586657"
   cloudtrail_bucket_name_dev = "cloudtrail-logs-${local.this_account_id}-${local.region}"
-  common_tags = {
-    "umccr:Environment" : "management",
-    "umccr:Stack" : "uom_management"
-  }
 }
 
 
@@ -42,12 +49,9 @@ locals {
 resource "aws_s3_bucket" "cloudtrail" {
   bucket = local.cloudtrail_bucket_name_dev
 
-  tags = merge(
-    local.common_tags,
-    {
+  tags =     {
       "Name" = local.cloudtrail_bucket_name_dev
     }
-  )
 }
 
 # bucket policy to allow other UoM accounts trails to log to this bucket

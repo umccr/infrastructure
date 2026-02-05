@@ -1,7 +1,3 @@
-
-
-
-
 SELECT AvailabilityZone,
        BilledCost,
        BillingAccountId,

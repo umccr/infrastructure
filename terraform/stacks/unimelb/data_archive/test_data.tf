@@ -101,6 +101,32 @@ data "aws_iam_policy_document" "test_data" {
     ])
   }
 
+  # read-write access for data uploads (from prod only)
+  statement {
+    sid = "testdata_rw_access"
+    principals {
+      type        = "AWS"
+      identifiers = [
+		"arn:aws:iam::${local.account_id_prod}:root"
+		]
+    }
+    actions = sort([
+      "s3:ListBucket*",
+	    "s3:List*MultiPart*",
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetObject*Tagging",
+      "s3:GetObject*Attributes",
+      "s3:PutObject",
+      "s3:PutObject*Tagging"
+    ])
+    resources = sort([
+      aws_s3_bucket.test_data.arn,
+      "${aws_s3_bucket.test_data.arn}/${local.prefix_testdata}*",
+    ])
+  }
+
   # dedicated (prod) FileManager access (ingest)
   statement {
     sid = "orcabus_file_manager_ingest_access"

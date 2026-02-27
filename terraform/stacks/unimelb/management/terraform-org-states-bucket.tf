@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "terraform_org_states" {
     condition {
       variable = "aws:PrincipalArn"
       test     = "StringLike"
-      values = local.terraform_allowed_roles
+      values   = local.terraform_allowed_roles
     }
   }
 
@@ -80,7 +80,7 @@ data "aws_iam_policy_document" "terraform_org_states" {
     condition {
       variable = "aws:PrincipalArn"
       test     = "StringLike"
-      values = local.terraform_allowed_roles
+      values   = local.terraform_allowed_roles
     }
   }
 }

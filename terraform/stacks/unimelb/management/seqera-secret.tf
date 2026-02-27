@@ -51,7 +51,7 @@ resource "aws_secretsmanager_secret_policy" "seqera_secret" {
         # rely on this condition
         Condition = {
           StringLike = {
-            "aws:PrincipalArn": local.terraform_allowed_roles
+            "aws:PrincipalArn" : local.terraform_allowed_roles
           }
         }
       }

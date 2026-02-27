@@ -7,12 +7,10 @@ locals {
       name = "Log all management and data events"
 
       # include management events
-      field_selectors = [
-        {
+      field_selectors = [{
           field  = "eventCategory"
           equals = ["Management"]
-        }
-      ]
+      }]
     },
 
     {

@@ -6,23 +6,11 @@ locals {
     {
       name = "Log all management and data events"
 
-      # include management events but exclude routine KMS activity
+      # include management events
       field_selectors = [
         {
           field  = "eventCategory"
           equals = ["Management"]
-        },
-        {
-          field = "eventName"
-          not_equals = [
-            "Decrypt",
-            "Encrypt",
-            "GenerateDataKey",
-            "GenerateDataKeyWithoutPlaintext",
-            "GenerateDataKeyPair",
-            "GenerateDataKeyPairWithoutPlaintext",
-            "ReEncrypt"
-          ]
         }
       ]
     },

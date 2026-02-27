@@ -1,3 +1,15 @@
+/**
+ * S3 bucket for terraform state
+ *
+ * This bucket and policy allows sub organisation accounts to read/write terraform
+ * state into this central bucket. They are only allowed to operation on a prefix
+ * that matches their account id.
+ *
+ * This is all in aid of not needing to bootstrap each research account
+ * before we use terraform in it. Terraform can be used immediately in each account (assuming the account
+ * is registered in our master account list here)
+ */
+
 resource "aws_s3_bucket" "terraform_org_states" {
   bucket = "terraform-org-states-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
 }

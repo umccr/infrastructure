@@ -1,3 +1,14 @@
+/**
+ * Secret for storing Seqera API details for sharing across accounts for terraforming.
+ *
+ * Research accounts need a powerful API token from seqera in order to create
+ * workspaces and compute environments. The user of the token should be a service
+ * user so that workspaces do not need to be removed when staff move.
+ *
+ * We store here an API token and server URL for Seqera biocommons such
+ * that it can be used by downstream accounts as part of provisioning
+ * their terraform seqera provider.
+ */
 
 locals {
   secret_name        = "seqera-biocommons"

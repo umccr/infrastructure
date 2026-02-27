@@ -8,8 +8,8 @@ locals {
 
       # include management events
       field_selectors = [{
-          field  = "eventCategory"
-          equals = ["Management"]
+        field  = "eventCategory"
+        equals = ["Management"]
       }]
     },
 

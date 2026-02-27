@@ -12,6 +12,9 @@ resource "aws_cloudtrail_event_data_store" "org_trail_store" {
   # until we work out we want this we allow it to be deleted
   termination_protection_enabled = false
 
+  # we want to switch on enrichment when it comes
+  # see https://github.com/hashicorp/terraform-provider-aws/issues/44998
+
   dynamic "advanced_event_selector" {
     for_each = local.common_advanced_event_selectors
     content {

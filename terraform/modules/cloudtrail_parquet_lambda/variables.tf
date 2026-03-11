@@ -34,9 +34,9 @@ variable "account_ids" {
 }
 
 variable "organisation_id" {
-  description = "AWS Organizations ID prefix, or empty string if none"
+  description = "AWS Organizations ID prefix, or null if none"
   type        = string
-  default     = ""
+  default     = null
 }
 
 

@@ -39,8 +39,8 @@ data "aws_organizations_organizational_unit_descendant_accounts" "development_ac
 }
 
 locals {
-  all_account_ids = data.aws_organizations_organization.current.accounts[*].id
-  production_account_ids = data.aws_organizations_organizational_unit_descendant_accounts.production_accounts.accounts[*].id
+  all_account_ids         = data.aws_organizations_organization.current.accounts[*].id
+  production_account_ids  = data.aws_organizations_organizational_unit_descendant_accounts.production_accounts.accounts[*].id
   operational_account_ids = data.aws_organizations_organizational_unit_descendant_accounts.operational_accounts.accounts[*].id
   development_account_ids = data.aws_organizations_organizational_unit_descendant_accounts.development_accounts.accounts[*].id
 }

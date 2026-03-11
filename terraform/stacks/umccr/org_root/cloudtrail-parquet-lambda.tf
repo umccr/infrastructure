@@ -14,7 +14,7 @@ module "cloudtrail_parquet_lambda" {
   cloudtrail_base_input_path  = "s3://${aws_s3_bucket.cloudtrail_root.id}/"
   cloudtrail_base_output_path = "s3://${aws_s3_bucket.cloudtrail_root.id}/"
 
-  organisation_id             = "o-p5xvdd9ddb"
+  organisation_id = "o-p5xvdd9ddb"
 
   # trialing on these accounts
   account_ids = concat(

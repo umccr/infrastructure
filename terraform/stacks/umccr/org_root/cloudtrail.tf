@@ -26,13 +26,13 @@ resource "aws_cloudtrail" "org_trail" {
       dynamic "field_selector" {
         for_each = advanced_event_selector.value.field_selectors
         content {
-          field  = field_selector.value.field
-          equals = try(field_selector.value.equals, null)
-          not_equals = try(field_selector.value.not_equals, null)
-          starts_with = try(field_selector.value.starts_with, null)
-          ends_with = try(field_selector.value.ends_with, null)
+          field           = field_selector.value.field
+          equals          = try(field_selector.value.equals, null)
+          not_equals      = try(field_selector.value.not_equals, null)
+          starts_with     = try(field_selector.value.starts_with, null)
+          ends_with       = try(field_selector.value.ends_with, null)
           not_starts_with = try(field_selector.value.not_starts_with, null)
-          not_ends_with = try(field_selector.value.not_ends_with, null)
+          not_ends_with   = try(field_selector.value.not_ends_with, null)
         }
       }
     }
@@ -40,8 +40,8 @@ resource "aws_cloudtrail" "org_trail" {
 }
 
 resource "aws_cloudwatch_log_group" "org_trail_log_group" {
-  name              = "CloudTrail/DefaultLogGroup"
-  log_group_class   = "STANDARD"
+  name            = "CloudTrail/DefaultLogGroup"
+  log_group_class = "STANDARD"
   # the cloudwatch log output is used for some metrics and live activity but is
   # not our primary spot for retain cloudtrail data - so we expire relatively quickly
   retention_in_days = 30
@@ -124,7 +124,7 @@ resource "aws_kms_key" "org_trail_key" {
         }
         Resource = "*"
         Sid      = "Allow alias creation during setup"
-      }, {
+        }, {
         Action = ["kms:Decrypt", "kms:ReEncryptFrom"]
         Condition = {
           StringEquals = {
@@ -140,7 +140,7 @@ resource "aws_kms_key" "org_trail_key" {
         }
         Resource = "*"
         Sid      = "Enable cross account log decryption"
-      }]
+    }]
     Version = "2012-10-17"
   })
   rotation_period_in_days = 365

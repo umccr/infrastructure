@@ -75,7 +75,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail_root" {
 
   # a lifecycle rule per account
   dynamic "rule" {
-    for_each = toset(data.aws_organizations_organization.current.accounts[*].id)
+    for_each = toset(local.all_account_ids)
 
     content {
       id     = "Account ${rule.value} logs lifecycle - tier 60 days, expire ${lookup(var.override_cloudtrail_expiration_days, rule.value, 7 * 365)} days"

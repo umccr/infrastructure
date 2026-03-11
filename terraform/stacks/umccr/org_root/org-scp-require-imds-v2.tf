@@ -1,4 +1,11 @@
-
+/**
+ * Organisation SCP that requires IMDSv2 for development accounts.
+ *
+ * Note: this is currently just put in terraform as a direct copy of what was in
+ * production (via console click-ops). We should probably think about why
+  this is here and what it applies to and
+ * document it here in this terraform.
+ */
 data "aws_iam_policy_document" "require_imds_v2" {
   statement {
     effect = "Deny"
@@ -14,9 +21,9 @@ data "aws_iam_policy_document" "require_imds_v2" {
 }
 
 resource "aws_organizations_policy" "require_imds_v2" {
-  name    = "RequireIMDSv2"
-  type    = "SERVICE_CONTROL_POLICY"
-  content = data.aws_iam_policy_document.require_imds_v2.json
+  name        = "RequireIMDSv2"
+  type        = "SERVICE_CONTROL_POLICY"
+  content     = data.aws_iam_policy_document.require_imds_v2.json
   description = "[EC2.8] EC2 instances should use Instance Metadata Service Version 2 (IMDSv2) See: https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-8"
 }
 

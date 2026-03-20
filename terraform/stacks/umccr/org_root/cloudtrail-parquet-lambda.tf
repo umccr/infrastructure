@@ -9,7 +9,7 @@ module "cloudtrail_parquet_lambda" {
   aws_region = data.aws_region.current.id
 
   ghcr_repo = "ghcr.io/umccr/cloudtrail-parquet-lambda"
-  ghcr_tag  = "1.0.0"
+  ghcr_tag  = "2.0.0"
 
   cloudtrail_base_input_path  = "s3://${aws_s3_bucket.cloudtrail_root.id}/"
   cloudtrail_base_output_path = "s3://${aws_s3_bucket.cloudtrail_root.id}/"

@@ -8,10 +8,10 @@ resource "aws_scheduler_schedule_group" "lambda_function_group" {
 }
 
 # create an event bridge CRON event for each account
-resource "aws_scheduler_schedule" "lambda_functions_cron" {
+resource "aws_scheduler_schedule" "lambda_functions_cron_yesterday" {
   for_each = toset(var.account_ids)
 
-  name = "${var.name}-${each.key}-twice-daily"
+  name = "${var.name}-${each.key}-yesterdays"
   group_name  = aws_scheduler_schedule_group.lambda_function_group.name
 
   flexible_time_window {
@@ -31,10 +31,42 @@ resource "aws_scheduler_schedule" "lambda_functions_cron" {
     role_arn = aws_iam_role.scheduler.arn
 
     input = jsonencode({
-      base_input_path  = var.cloudtrail_base_input_path
-      base_output_path = var.cloudtrail_base_output_path
-      organisation_id  = var.organisation_id
-      account_id       = each.key
+      baseInputPath  = var.cloudtrail_base_input_path
+      baseOutputPath = var.cloudtrail_base_output_path
+      organisationId  = var.organisation_id
+      accountId       = each.key
+      processDate     = "yesterday"
+    })
+  }
+}
+
+resource "aws_scheduler_schedule" "lambda_functions_cron_today" {
+  for_each = toset(var.account_ids)
+
+  name = "${var.name}-${each.key}-todays"
+  group_name  = aws_scheduler_schedule_group.lambda_function_group.name
+
+  flexible_time_window {
+    mode                      = "FLEXIBLE"
+    maximum_window_in_minutes = 30
+  }
+
+  # run 10 past the hour 4 times a day
+  # will gradually build up the "day" logs over the day
+  # we make sure that 10 + (30 mins flex window) + 15 lambda runtime < 1 hr
+  schedule_expression          = "cron(10 0,6,12,18 * * ? *)"
+  schedule_expression_timezone = "UTC"
+
+  target {
+    arn      = aws_lambda_function.this.arn
+    role_arn = aws_iam_role.scheduler.arn
+
+    input = jsonencode({
+      baseInputPath  = var.cloudtrail_base_input_path
+      baseOutputPath = var.cloudtrail_base_output_path
+      organisationId  = var.organisation_id
+      accountId       = each.key
+      processDate     = "today"
     })
   }
 }

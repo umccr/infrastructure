@@ -66,7 +66,7 @@ resource "aws_lambda_function" "this" {
   # mem usage is about 1 Gib and should be roughly constant irrespective of
   # the amount of entries)
   timeout       = 15*60
-  memory_size   = 4096
+  memory_size   = 3000
 
   depends_on = [
     aws_iam_role_policy_attachment.basic_execution,

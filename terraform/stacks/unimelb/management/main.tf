@@ -50,13 +50,15 @@ locals {
   account_id_montauk             = "977251586657"
   account_id_grimmond            = "980504796380"
   account_id_breast_cancer_atlas = "550435500918"
+  account_id_hofmann_main        = "465105354675"
 
   # all accounts that are not *this* management account
   account_id_list_without_management_account = [
     local.data_account_id,
     local.account_id_montauk,
     local.account_id_grimmond,
-    local.account_id_breast_cancer_atlas
+    local.account_id_breast_cancer_atlas,
+    local.account_id_hofmann_main
   ]
 
   # a list of roles that will be performing terraform operations throughout our accounts

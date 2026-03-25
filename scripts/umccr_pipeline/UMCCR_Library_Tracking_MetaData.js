@@ -13,6 +13,7 @@ function onOpen() {
   ui.createMenu('UMCCR')
       .addItem('Generate internal SubjectIDs', 'menuCreateIds')
       .addItem('Show next internal SubjectID', 'showNextSubjectId')
+      .addItem('Row ranges → URL string', 'exportSelectedRowRangesToUrlString')
       .addToUi();
 }
 
@@ -169,4 +170,80 @@ function createNewIntSubIds() {
 
     Logger.log("New IDs created: " + (cnt - startCnt));
     return (cnt - startCnt);
+}
+
+
+function exportSelectedRowRangesToUrlString() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var sheetName = sheet.getName();               // Get current sheet name
+  var rangeList = sheet.getActiveRangeList().getRanges();
+
+  if (!rangeList || rangeList.length === 0) {
+    SpreadsheetApp.getUi().alert('Please select at least one row or range.');
+    return;
+  }
+
+  var compressed = [];
+  var rowIndices = [];
+
+  // Collect all row numbers from all selected ranges
+  rangeList.forEach(function(range) {
+    var startRow = range.getRow();
+    var numRows = range.getNumRows();
+    for (var i = 0; i < numRows; i++) {
+      rowIndices.push(startRow + i);
+    }
+  });
+
+  // Deduplicate and sort
+  rowIndices = Array.from(new Set(rowIndices)).sort(function(a, b) {
+    return a - b;
+  });
+
+  // Compress consecutive rows into ranges
+  var rangeStart = rowIndices[0];
+  var prev = rowIndices[0];
+
+  for (var i = 1; i < rowIndices.length; i++) {
+    var current = rowIndices[i];
+    if (current === prev + 1) {
+      prev = current;
+    } else {
+      if (rangeStart === prev) {
+        compressed.push(String(rangeStart));
+      } else {
+        compressed.push(rangeStart + ':' + prev);
+      }
+      rangeStart = current;
+      prev = current;
+    }
+  }
+  // Close last range
+  if (rangeStart === prev) {
+    compressed.push(String(rangeStart));
+  } else {
+    compressed.push(rangeStart + ':' + prev);
+  }
+
+  // Build final query string:
+  // Example: syncType=gsheet-range&year=2026&rows=5:10,17:20,23
+  // https://stackoverflow.com/a/53152712
+  var rowsValue = compressed.join(',');
+  var queryString =
+    'syncType=' + encodeURIComponent("gsheet-range") +
+    '&year=' + encodeURIComponent(sheetName) +
+    '&ranges=' + encodeURIComponent(rowsValue);
+  var portalUrl = 'https://portal.dev.umccr.org/lab/sync?' + queryString
+
+  var html = '<script>window.open("' + portalUrl + '");<\/script>'
+    + '<p style="font-family:Arial;font-size:13px;">'
+    + 'If it did not open automatically, try enabling popups for this site.<br><br>'
+    + 'Or <a href="' + portalUrl + '" target="_blank">click here</a> / copy-paste the link below:<br><br>'
+    + '<span style="font-size:12px;color:#1a73e8;">' + portalUrl + '</span>'
+    + '</p>';
+
+  var template = HtmlService.createHtmlOutput(html).setWidth(420).setHeight(130);
+  SpreadsheetApp.getUi().showModalDialog(template, 'Opening portal in 5s...');
+
+  Logger.log(queryString);
 }

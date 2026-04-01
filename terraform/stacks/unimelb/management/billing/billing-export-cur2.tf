@@ -1,5 +1,5 @@
 data "local_file" "data_export_cur2_sql" {
-  filename = "${path.module}/../../../common/data_export/cur2.sql"
+  filename = "${path.module}/../../../../common/data_export/cur2.sql"
 }
 
 resource "aws_bcmdataexports_export" "cur2_export" {

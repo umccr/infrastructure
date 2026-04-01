@@ -31,6 +31,12 @@ resource "aws_secretsmanager_secret_version" "seqera_secret" {
     apiToken  = "REPLACEME"
     serverUrl = "REPLACEME"
   })
+
+  # The real secret value is set out of band. Prevent Terraform from overwriting it
+  # with the placeholder above on every plan after the initial import.
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret_policy" "seqera_secret" {

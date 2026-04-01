@@ -1,13 +1,18 @@
-data "local_file" "data_export_carbon_sql" {
-  filename = "${path.module}/../../../common/data_export/carbon.sql"
+data "local_file" "data_export_focus12_sql" {
+  filename = "${path.module}/../../../../common/data_export/focus12.sql"
 }
 
-resource "aws_bcmdataexports_export" "carbon_export" {
+resource "aws_bcmdataexports_export" "focus12_export" {
   export {
-    name = "carbon"
+    name = "focus12-hourly"
 
     data_query {
-      query_statement = data.local_file.data_export_carbon_sql.content
+      query_statement = data.local_file.data_export_focus12_sql.content
+      table_configurations = {
+        FOCUS_1_2_AWS = {
+          TIME_GRANULARITY = "HOURLY"
+        }
+      }
     }
 
     destination_configurations {

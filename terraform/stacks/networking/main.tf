@@ -20,8 +20,24 @@ provider "aws" {
   region  = "ap-southeast-2"
 }
 
+locals {
+  # This configuration controls whether we want to have a NAT Gateway per workspace / account environment
+  # See epic https://github.com/umccr/infrastructure/issues/539
+  enable_nat_gateway_map = {
+    default      = false
+    dev          = true
+    stg          = true
+    prod         = true
+    data-control = false
+    enclave      = false
+    agha         = false
+  }
+  # Index into the map using the current workspace name
+  enable_nat_gateway_per_ws = lookup(local.enable_nat_gateway_map, terraform.workspace, local.enable_nat_gateway_map["default"])
+}
+
 resource "aws_eip" "main_vpc_nat_gateway" {
-  count = 1
+  count  = local.enable_nat_gateway_per_ws ? 1 : 0
   domain = "vpc"
 
   tags = {
@@ -45,7 +61,7 @@ module "main_vpc" {
   database_subnets = ["10.2.40.0/23", "10.2.42.0/23", "10.2.44.0/23"]
 
   # Single NAT Gateway Scenario
-  enable_nat_gateway     = true
+  enable_nat_gateway     = local.enable_nat_gateway_per_ws
   single_nat_gateway     = true
   one_nat_gateway_per_az = false
 

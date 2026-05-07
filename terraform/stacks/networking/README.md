@@ -182,16 +182,16 @@ app.synth()
 
 ## Workspaces
 
-Login to AWS.
-```
-aws sso login --profile=dev && export AWS_PROFILE=dev
-```
+- Login to AWS. 
+- Having AWS named profile according to [scripts/all-accounts-aws-config.ini](https://github.com/umccr/infrastructure/blob/c37100b/scripts/all-accounts-aws-config.ini)  
 
 This stack uses terraform workspaces.
 ```
 terraform workspace list
   default
   agha
+  data-control
+  enclave
 * dev
   prod
   stg
@@ -200,7 +200,6 @@ terraform workspace list
 It is typically applied against the AWS `prod` and `dev` accounts and uses Terraform workspaces to distinguish between those accounts.
 
 ```
-terraform workspace select dev
-terraform plan
+export AWS_PROFILE=umccr-dev-admin && terraform workspace select dev && terraform plan
 terraform apply
 ```

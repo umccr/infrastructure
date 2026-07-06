@@ -113,6 +113,24 @@ resource "aws_s3_bucket" "agha_gdr_store_2" {
   )
 }
 
+# Preferred over direct DEEP_ARCHIVE transitions: same storage cost but no 180-day minimum charge
+# and no retrieval fee when accessing archived objects.
+resource "aws_s3_bucket_intelligent_tiering_configuration" "agha_gdr_store_2" {
+  bucket = aws_s3_bucket.agha_gdr_store_2.id
+  name   = "EntireBucket"
+
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 90
+  }
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
+
+}
+
+
 resource "aws_s3_bucket_lifecycle_configuration" "agha_gdr_store_2" {
   bucket = aws_s3_bucket.agha_gdr_store_2.id
 

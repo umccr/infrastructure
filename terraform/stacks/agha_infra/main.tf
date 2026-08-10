@@ -36,6 +36,7 @@ locals {
 # Staging bucket
 resource "aws_s3_bucket" "agha_gdr_staging_2" {
   bucket = var.agha_gdr_staging_2_bucket_name
+  force_destroy = true
 
   server_side_encryption_configuration {
     rule {

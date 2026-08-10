@@ -33,62 +33,6 @@ locals {
 #           when spawning the new resource
 #           Ref: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-4-upgrade#changes-to-s3-bucket-drift-detection
 
-# Staging bucket
-resource "aws_s3_bucket" "agha_gdr_staging_2" {
-  bucket = var.agha_gdr_staging_2_bucket_name
-  force_destroy = true
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  lifecycle_rule {
-    enabled = "1"
-    noncurrent_version_expiration {
-      days = 30
-    }
-
-    expiration {
-      expired_object_delete_marker = true
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-  lifecycle_rule {
-    id      = "intelligent_tiering"
-    enabled = "1"
-
-    transition {
-      storage_class = "INTELLIGENT_TIERING"
-    }
-
-    abort_incomplete_multipart_upload_days = 7
-  }
-
-
-  versioning {
-    enabled = true
-  }
-
-  tags = merge(
-    local.common_tags,
-    {
-      "Name" = var.agha_gdr_staging_2_bucket_name
-    }
-  )
-}
-
-resource "aws_s3_bucket_ownership_controls" "agha_gdr_staging_2" {
-  bucket = aws_s3_bucket.agha_gdr_staging_2.id
-  rule {
-    object_ownership = "BucketOwnerPreferred"
-  }
-}
 
 # Store bucket
 resource "aws_s3_bucket" "agha_gdr_store_2" {

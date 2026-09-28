@@ -14,14 +14,20 @@ locals {
     stg  = ""
   }
 
-  orcaui_page_callback_urls = {
-    prod = ["https://${local.orcaui_domain}", "https://${local.orcaui_alias_domain[terraform.workspace]}"]
-    dev  = ["https://${local.orcaui_domain}"]
-    stg  = ["https://${local.orcaui_domain}"]
-  }
+  # Origins this app client may return a user to, in the current workspace. Prod is reachable on both
+  # the stage domain and the shorter alias, so both are registered.
+  orcaui_origins = compact([
+    "https://${local.orcaui_domain}",
+    local.orcaui_alias_domain[terraform.workspace] == "" ? "" : "https://${local.orcaui_alias_domain[terraform.workspace]}",
+  ])
+
+  orcaui_page_callback_urls = [
+    for pair in setproduct(local.orcaui_origins, local.portal_app_paths) :
+    "${pair[0]}${pair[1]}"
+  ]
 
   orcaui_page_oauth_redirect_url = {
-    prod = "https://${local.orcaui_alias_domain[terraform.workspace]}"
+    prod = "https://${local.orcaui_alias_domain["prod"]}"
     dev  = "https://${local.orcaui_domain}"
     stg  = "https://${local.orcaui_domain}"
   }
@@ -35,8 +41,9 @@ resource "aws_cognito_user_pool_client" "orcaui_page_app_client" {
   user_pool_id                 = aws_cognito_user_pool.user_pool.id
   supported_identity_providers = ["Google"]
 
-  callback_urls = local.orcaui_page_callback_urls[terraform.workspace]
-  logout_urls   = local.orcaui_page_callback_urls[terraform.workspace]
+  # One entry per portal app per origin; see portal_apps.tf for why each path needs its own URL.
+  callback_urls = local.orcaui_page_callback_urls
+  logout_urls   = local.orcaui_page_callback_urls
 
   generate_secret = false
 

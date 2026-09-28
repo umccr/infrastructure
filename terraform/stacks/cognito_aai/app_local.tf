@@ -39,8 +39,10 @@ resource "aws_cognito_user_pool_client" "portal_app_client_local" {
   user_pool_id                 = aws_cognito_user_pool.user_pool.id
   supported_identity_providers = ["Google"]
 
-  callback_urls = [var.localhost_url]
-  logout_urls   = [var.localhost_url]
+  # One entry per portal app, so a developer running any of them locally can sign in. The apps derive
+  # their redirect the same way in development as when deployed; see portal_apps.tf.
+  callback_urls = [for path in local.portal_app_paths : "${var.localhost_url}${path}"]
+  logout_urls   = [for path in local.portal_app_paths : "${var.localhost_url}${path}"]
 
   generate_secret = false
 
@@ -64,7 +66,7 @@ resource "aws_ssm_parameter" "portal_app_client_id_local" {
   name  = "/data_portal/client/cog_app_client_id_local"
   type  = "String"
   value = aws_cognito_user_pool_client.portal_app_client_local[count.index].id
-  tags  = merge(
+  tags = merge(
     local.default_tags,
     {
       Status      = "deprecated"
@@ -78,8 +80,8 @@ resource "aws_ssm_parameter" "portal_oauth_redirect_in_local" {
 
   name  = "/data_portal/client/oauth_redirect_in_local"
   type  = "String"
-  value = sort(aws_cognito_user_pool_client.portal_app_client_local[count.index].callback_urls)[0]
-  tags  = merge(
+  value = var.localhost_url
+  tags = merge(
     local.default_tags,
     {
       Status      = "deprecated"
@@ -93,8 +95,8 @@ resource "aws_ssm_parameter" "portal_oauth_redirect_out_local" {
 
   name  = "/data_portal/client/oauth_redirect_out_local"
   type  = "String"
-  value = sort(aws_cognito_user_pool_client.portal_app_client_local[count.index].logout_urls)[0]
-  tags  = merge(
+  value = var.localhost_url
+  tags = merge(
     local.default_tags,
     {
       Status      = "deprecated"
@@ -120,7 +122,7 @@ resource "aws_ssm_parameter" "localhost_oauth_redirect_in" {
 
   name  = "${local.app_local_ssm_prefix}/oauth-redirect-in"
   type  = "String"
-  value = sort(aws_cognito_user_pool_client.portal_app_client_local[count.index].callback_urls)[0]
+  value = var.localhost_url
   tags  = merge(local.default_tags)
 }
 
@@ -129,6 +131,6 @@ resource "aws_ssm_parameter" "localhost_oauth_redirect_out" {
 
   name  = "${local.app_local_ssm_prefix}/oauth-redirect-out"
   type  = "String"
-  value = sort(aws_cognito_user_pool_client.portal_app_client_local[count.index].logout_urls)[0]
+  value = var.localhost_url
   tags  = merge(local.default_tags)
 }

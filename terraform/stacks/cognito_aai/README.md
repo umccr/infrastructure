@@ -55,6 +55,7 @@ _which stack use this?_
 
 - OrcaUI
 - Htsget-RI (backend)
+- docs.umccr.org (`app_docs.tf`), the sign-in page of the authenticated documentation site
 
 ## Usage
 
@@ -75,3 +76,7 @@ _which stack use this?_
 
 When configuring a frontend to this Cognito user pool, you may need custom app client settings (e.g., redirect/logout URLs, scopes).
 See the implementation of the OrcaUI ([cognito_aai/app_orcaui](./app_orcaui)) for example.
+
+The docs site client ([app_docs.tf](./app_docs.tf)) is a public client like OrcaUI's, with one callback and logout URL
+per docs hostname: `https://<host>/_auth/`. Apply it to a workspace before the docs site serves `/_auth/` in that
+stage. The docs certificate lives in the sibling [umccr_docs_domain](../umccr_docs_domain) stack.

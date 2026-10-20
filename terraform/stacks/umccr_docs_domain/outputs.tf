@@ -7,7 +7,7 @@ output "docs_certificate_arn" {
 }
 
 # Records to add to the umccr.org zone by hand, in prod only: the certificate validation record for docs.umccr.org,
-# and docs.umccr.org as a CNAME of the prod stage hostname. Empty in dev and stg.
+# and docs.umccr.org as a CNAME of the prod stage hostname. Empty in dev.
 output "umccr_org_zone_records" {
   value = local.docs_alias_domain == "" ? [] : concat(
     [

@@ -6,13 +6,16 @@
 locals {
   app_docs_namespace = "docs"
 
+  # docs.umccr.org runs in dev and prod only. In any other workspace of this shared stack, such as stg, this file
+  # creates nothing.
+  docs_enabled = contains(["dev", "prod"], terraform.workspace)
+
   docs_domain = "docs.${var.base_domain[terraform.workspace]}"
 
-  docs_alias_domain = {
+  docs_alias_domain = lookup({
     prod = "docs.umccr.org"
     dev  = ""
-    stg  = ""
-  }
+  }, terraform.workspace, "")
 
   ###
   # docs.umccr.org signs readers in the same way as the portal apps: Amplify in the browser, the Cognito hosted UI
@@ -31,7 +34,7 @@ locals {
   ###
   docs_origins = compact([
     "https://${local.docs_domain}",
-    local.docs_alias_domain[terraform.workspace] == "" ? "" : "https://${local.docs_alias_domain[terraform.workspace]}",
+    local.docs_alias_domain == "" ? "" : "https://${local.docs_alias_domain}",
   ])
 
   docs_app_urls = [for origin in local.docs_origins : "${origin}/_auth/"]
@@ -41,6 +44,8 @@ locals {
 
 # docs-app app client
 resource "aws_cognito_user_pool_client" "docs_app_client" {
+  count = local.docs_enabled ? 1 : 0
+
   name                         = "${local.app_docs_namespace}-app-${terraform.workspace}"
   user_pool_id                 = aws_cognito_user_pool.user_pool.id
   supported_identity_providers = ["Google"]
@@ -80,8 +85,22 @@ resource "aws_cognito_user_pool_client" "docs_app_client" {
 # Read at deploy time by the docs hosting stack (umccr/docs-platform), for the sign-in page, and by OrcaSonar
 # (umccr/orcasonar), whose chat API accepts this client's ID tokens.
 resource "aws_ssm_parameter" "docs_app_client_id" {
+  count = local.docs_enabled ? 1 : 0
+
   name  = "${local.app_docs_ssm_prefix}/app-client-id"
   type  = "String"
-  value = aws_cognito_user_pool_client.docs_app_client.id
+  value = aws_cognito_user_pool_client.docs_app_client[0].id
   tags  = merge(local.default_tags)
+}
+
+# Both existed before `count`: these keep dev's and prod's in their state. Without them, Terraform would replace the
+# client, and a new client ID signs every docs reader out and breaks OrcaSonar's authorizer until it is redeployed.
+moved {
+  from = aws_cognito_user_pool_client.docs_app_client
+  to   = aws_cognito_user_pool_client.docs_app_client[0]
+}
+
+moved {
+  from = aws_ssm_parameter.docs_app_client_id
+  to   = aws_ssm_parameter.docs_app_client_id[0]
 }

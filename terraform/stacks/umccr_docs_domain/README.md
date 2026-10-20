@@ -13,6 +13,9 @@
 | dev       | `docs.dev.umccr.org`                    |
 | prod      | `docs.prod.umccr.org`, `docs.umccr.org` |
 
+docs.umccr.org has no stage in stg, so this stack has no `stg` workspace; a plan in any other workspace stops with an
+error.
+
 ## Deploy
 
 Login to AWS.
@@ -29,7 +32,7 @@ terraform plan
 terraform apply
 ```
 
-In `dev` and `stg`, apply waits until ACM has validated the certificate through the stage zone.
+In `dev`, apply waits until ACM has validated the certificate through the stage zone.
 
 ## Prod: records in the umccr.org zone
 
@@ -45,6 +48,18 @@ The `umccr.org` zone is managed in another account, so this stack does not write
 3. Wait for the certificate to show **Issued** in ACM (`us-east-1`), then let the docs pipeline,
    `UMCCR-DocsInfrastructure`, promote the hosting stack to prod. CloudFront rejects a certificate that is still
    pending.
+
+ACM stops validating after 72 hours. A certificate whose `docs.umccr.org` record was not there in time shows
+**Validation timed out** (`VALIDATION_TIMED_OUT`) and is never issued. Request a new one in the `prod` workspace,
+then add or check the records the output lists, and wait for **Issued** again:
+
+```
+terraform apply -replace=aws_acm_certificate.docs
+terraform output umccr_org_zone_records
+```
+
+The replacement is created before the old certificate is removed (`create_before_destroy`), and
+`/docs/certificate_arn` moves to it, so the docs hosting stack picks it up at its next deploy.
 
 ## Order across repositories
 

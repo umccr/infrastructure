@@ -79,4 +79,5 @@ See the implementation of the OrcaUI ([cognito_aai/app_orcaui](./app_orcaui)) fo
 
 The docs site client ([app_docs.tf](./app_docs.tf)) is a public client like OrcaUI's, with one callback and logout URL
 per docs hostname: `https://<host>/_auth/`. Apply it to a workspace before the docs site serves `/_auth/` in that
-stage. The docs certificate lives in the sibling [umccr_docs_domain](../umccr_docs_domain) stack.
+stage. It exists in the `dev` and `prod` workspaces only: docs.umccr.org has no stage in stg, so applying `stg` creates
+no docs client. The docs certificate lives in the sibling [umccr_docs_domain](../umccr_docs_domain) stack.

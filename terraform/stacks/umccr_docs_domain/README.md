@@ -36,22 +36,41 @@ In `dev`, apply waits until ACM has validated the certificate through the stage 
 
 ## Prod: records in the umccr.org zone
 
-The `umccr.org` zone is managed in another account, so this stack does not write to it. After applying `prod`:
+The `umccr.org` zone is in the bastion account, and no Terraform manages it, so this stack does not write to it: its
+records, the `portal.umccr.org` ones included, are added by hand. After applying `prod`, within 72 hours:
 
-1. Read the records to create:
+1. Read the records to create, with prod credentials:
    ```
-   terraform output umccr_org_zone_records
+   terraform workspace select prod
+   terraform output -json umccr_org_zone_records > /tmp/umccr-org-records.json
    ```
-2. Add both to the `umccr.org` zone, the same way the `portal.umccr.org` records were added:
    - the ACM validation CNAME for `docs.umccr.org`;
    - `docs.umccr.org` as a CNAME of `docs.prod.umccr.org`.
-3. Wait for the certificate to show **Issued** in ACM (`us-east-1`), then let the docs pipeline,
-   `UMCCR-DocsInfrastructure`, promote the hosting stack to prod. CloudFront rejects a certificate that is still
-   pending.
+2. Add both to the `umccr.org` zone with an admin profile for the bastion account (`umccr-bastion-admin` in
+   `scripts/all-accounts-aws-config.ini`). `CREATE` refuses the whole change if either record exists already:
+   ```
+   aws sso login --profile=umccr-bastion-admin && export AWS_PROFILE=umccr-bastion-admin
+   ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name umccr.org --max-items 1 \
+     --query "HostedZones[?Name=='umccr.org.'].Id | [0]" --output text)
+   jq '{Changes: [.[] | {Action: "CREATE", ResourceRecordSet: {Name: .name, Type: .type, TTL: 300,
+     ResourceRecords: [{Value: .value}]}}]}' /tmp/umccr-org-records.json > /tmp/umccr-org-change.json
+   aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" \
+     --change-batch file:///tmp/umccr-org-change.json
+   ```
+   Or in the bastion account's Route 53 console: **Hosted zones → umccr.org → Create record**, a CNAME with TTL 300
+   for each, typing only the part of the name before `.umccr.org`.
+3. Check that both resolve at the zone's name server, for example
+   `dig +short CNAME docs.umccr.org @$(dig +short NS umccr.org | head -1)`. Wait for the certificate to show
+   **Issued** in ACM (`us-east-1`), then let the docs pipeline, `UMCCR-DocsInfrastructure`, promote the hosting stack
+   to prod. CloudFront rejects a certificate that is still pending.
+
+Keep the validation record: ACM checks it again at every renewal. umccr/docs-platform's `docs/deploy.md` has the
+same steps with every check.
 
 ACM stops validating after 72 hours. A certificate whose `docs.umccr.org` record was not there in time shows
 **Validation timed out** (`VALIDATION_TIMED_OUT`) and is never issued. Request a new one in the `prod` workspace,
-then add or check the records the output lists, and wait for **Issued** again:
+then check the records the output lists against the zone, and wait for **Issued** again. ACM gives a name the same
+validation record for every certificate in the account, so the one already added normally still applies:
 
 ```
 terraform apply -replace=aws_acm_certificate.docs

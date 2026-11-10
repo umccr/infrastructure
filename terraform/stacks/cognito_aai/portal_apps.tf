@@ -31,5 +31,6 @@ locals {
     "/v2/",        # orca-ui-v2
     "/hub/",       # umccr/hub
     "/orcahouse/", # umccr/orcahouse-ui
+    "/orcasonar/", # umccr/orcasonar-console
   ]
 }
